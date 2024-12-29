@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .  # Path to Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ENV: DEV
+      LOG_LEVEL: debug
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: human-network
+
+    depends_on:
+      db:
+        condition: service_healthy  # Wait for the db service to become healthy
+    networks:
+      - human-network-auth-service
+
+  db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: human-network
+      DB_SCHEMA: auth
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Persistent volume for PostgreSQL data
+    ports:
+      - "5432:5432"
+    networks:
+      - human-network-auth-service
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  human-network-auth-service:
