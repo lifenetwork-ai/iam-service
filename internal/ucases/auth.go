@@ -3,6 +3,7 @@ package ucases
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -10,14 +11,22 @@ import (
 	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
+	"github.com/genefriendway/human-network-auth/pkg/utils"
 )
 
 type authUCase struct {
 	accountRepository interfaces.AccountRepository
+	authRepository    interfaces.AuthRepository
 }
 
-func NewAuthUCase(accountRepository interfaces.AccountRepository) interfaces.AuthUCase {
-	return &authUCase{accountRepository: accountRepository}
+func NewAuthUCase(
+	accountRepository interfaces.AccountRepository,
+	authRepository interfaces.AuthRepository,
+) interfaces.AuthUCase {
+	return &authUCase{
+		accountRepository: accountRepository,
+		authRepository:    authRepository,
+	}
 }
 
 // Register handles the creation of a new account and its role-specific details
@@ -104,31 +113,116 @@ func (u *authUCase) Register(input *dto.RegisterAccountDTO, role constants.Accou
 	}
 }
 
-// Login authenticates an account by email and password
-func (u *authUCase) Login(email, password string) (*dto.AccountDTO, error) {
+// Login authenticates the user and returns a token pair (Access + Refresh)
+func (u *authUCase) Login(email, password string) (*dto.TokenPairDTO, error) {
 	// Validate input
 	if strings.TrimSpace(email) == "" || strings.TrimSpace(password) == "" {
 		return nil, errors.New("email and password are required")
 	}
 
-	// Find account by email
+	// Fetch account by email
 	account, err := u.accountRepository.FindAccountByEmail(email)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("failed to fetch account")
 	}
 	if account == nil {
 		return nil, errors.New("invalid credentials")
 	}
 
-	// Verify password
-	if account.PasswordHash == nil {
-		return nil, errors.New("password authentication is not supported for this account")
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(*account.PasswordHash), []byte(password)); err != nil {
+	// Compare password
+	if account.PasswordHash == nil || bcrypt.CompareHashAndPassword([]byte(*account.PasswordHash), []byte(password)) != nil {
 		return nil, errors.New("invalid credentials")
 	}
 
-	// Convert to DTO and return
-	accountDTO := account.ToDTO()
-	return accountDTO, nil
+	// Generate Access Token
+	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
+	if err != nil {
+		return nil, errors.New("failed to generate access token")
+	}
+
+	// Generate Refresh Token
+	refreshToken, err := utils.GenerateRefreshToken()
+	if err != nil {
+		return nil, errors.New("failed to generate refresh token")
+	}
+
+	// Hash and save Refresh Token
+	hashedToken := utils.HashToken(refreshToken)
+	if err := u.authRepository.CreateRefreshToken(&domain.RefreshToken{
+		AccountID:   account.ID,
+		HashedToken: hashedToken,
+		ExpiresAt:   time.Now().Add(constants.RefreshTokenExpiry),
+	}); err != nil {
+		return nil, errors.New("failed to store refresh token")
+	}
+
+	// Return Token Pair
+	return &dto.TokenPairDTO{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+// RefreshTokens generates a new token pair using the provided refresh token
+func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error) {
+	// Hash incoming token
+	hashedToken := utils.HashToken(refreshToken)
+
+	// Validate refresh token
+	storedToken, err := u.authRepository.FindRefreshToken(hashedToken)
+	if err != nil || storedToken == nil || storedToken.ExpiresAt.Before(time.Now()) {
+		return nil, errors.New("invalid or expired refresh token")
+	}
+
+	// Generate new Access Token
+	account, err := u.accountRepository.FindAccountByID(storedToken.AccountID)
+	if err != nil || account == nil {
+		return nil, errors.New("account not found")
+	}
+	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
+	if err != nil {
+		return nil, errors.New("failed to generate access token")
+	}
+
+	// Generate new Refresh Token
+	newRefreshToken, err := utils.GenerateRefreshToken()
+	if err != nil {
+		return nil, errors.New("failed to generate refresh token")
+	}
+	newHashedToken := utils.HashToken(newRefreshToken)
+
+	// Replace the old refresh token
+	err = u.authRepository.DeleteRefreshToken(hashedToken)
+	if err != nil {
+		return nil, errors.New("failed to delete old refresh token")
+	}
+	err = u.authRepository.CreateRefreshToken(&domain.RefreshToken{
+		AccountID:   account.ID,
+		HashedToken: newHashedToken,
+		ExpiresAt:   time.Now().Add(constants.RefreshTokenExpiry),
+	})
+	if err != nil {
+		return nil, errors.New("failed to store new refresh token")
+	}
+
+	return &dto.TokenPairDTO{
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken,
+	}, nil
+}
+
+// ValidateToken validates an access token and retrieves account details
+func (u *authUCase) ValidateToken(token string) (*dto.AccountDTO, error) {
+	claims, err := utils.ParseToken(token)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch account details
+	account, err := u.accountRepository.FindAccountByID(claims.AccountID)
+	if err != nil || account == nil {
+		return nil, errors.New("account not found")
+	}
+
+	return account.ToDTO(), nil
 }

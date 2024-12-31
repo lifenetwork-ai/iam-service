@@ -13,6 +13,8 @@ type AuthRepository interface {
 }
 
 type AuthUCase interface {
-	Register(account *dto.RegisterAccountDTO, roleSpecificDetails constants.AccountRole) error
-	Login(email, password string) (*dto.AccountDTO, error)
+	Register(input *dto.RegisterAccountDTO, role constants.AccountRole) error
+	Login(email, password string) (*dto.TokenPairDTO, error)
+	RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error)
+	ValidateToken(token string) (*dto.AccountDTO, error)
 }

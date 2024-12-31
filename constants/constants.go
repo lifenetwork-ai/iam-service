@@ -41,3 +41,9 @@ const (
 	Customer  AccountRole = "CUSTOMER"
 	Validator AccountRole = "VALIDATOR"
 )
+
+// Token expiry
+const (
+	AccessTokenExpiry  = 15 * time.Minute
+	RefreshTokenExpiry = 7 * 24 * time.Hour
+)
