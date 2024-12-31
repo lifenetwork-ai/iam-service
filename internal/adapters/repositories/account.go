@@ -13,7 +13,7 @@ type accountRepository struct {
 	db *gorm.DB
 }
 
-func NewAuthRepository(db *gorm.DB) interfaces.AccountRepository {
+func NewAccountRepository(db *gorm.DB) interfaces.AccountRepository {
 	return &accountRepository{db: db}
 }
 
