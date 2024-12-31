@@ -18,6 +18,20 @@ const (
 	CleanupInterval   = 1 * time.Minute
 )
 
+// Webhook constants
+const (
+	MaxWebhookWorkers = 10
+	WebhookTimeout    = 5 * time.Second
+)
+
+// Order direction
+type OrderDirection string
+
+const (
+	Asc  OrderDirection = "ASC"
+	Desc OrderDirection = "DESC"
+)
+
 // Account role
 const (
 	User      = "USER"

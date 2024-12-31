@@ -14,8 +14,6 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.3
-	github.com/tyler-smith/go-bip32 v1.0.0
-	github.com/tyler-smith/go-bip39 v1.1.0
 	go.uber.org/mock v0.5.0
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/postgres v1.5.9
@@ -28,8 +26,6 @@ require (
 )
 
 require (
-	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
-	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
