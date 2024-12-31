@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/genefriendway/human-network-auth/internal/dto"
+)
 
 type ValidatorDetail struct {
 	ID                     uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
@@ -12,6 +16,18 @@ type ValidatorDetail struct {
 	UpdatedAt              time.Time `json:"updated_at"`
 }
 
-func (v *ValidatorDetail) TableName() string {
+func (m *ValidatorDetail) TableName() string {
 	return "validator_details"
+}
+
+func (m *ValidatorDetail) ToDTO() dto.ValidatorDetailDTO {
+	return dto.ValidatorDetailDTO{
+		ID:                     m.ID,
+		AccountID:              m.AccountID,
+		ValidationOrganization: m.ValidationOrganization,
+		ContactPerson:          m.ContactPerson,
+		PhoneNumber:            m.PhoneNumber,
+		CreatedAt:              m.CreatedAt,
+		UpdatedAt:              m.UpdatedAt,
+	}
 }

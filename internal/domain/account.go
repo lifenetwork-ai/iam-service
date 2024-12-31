@@ -2,6 +2,8 @@ package domain
 
 import (
 	"time"
+
+	"github.com/genefriendway/human-network-auth/internal/dto"
 )
 
 type Account struct {
@@ -16,6 +18,19 @@ type Account struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-func (a *Account) TableName() string {
+func (m *Account) TableName() string {
 	return "accounts"
+}
+
+func (m *Account) ToDTO() dto.AccountDTO {
+	return dto.AccountDTO{
+		ID:            m.ID,
+		Email:         m.Email,
+		Role:          m.Role,
+		APIKey:        m.APIKey,
+		OAuthProvider: m.OAuthProvider,
+		OAuthID:       m.OAuthID,
+		CreatedAt:     m.CreatedAt,
+		UpdatedAt:     m.UpdatedAt,
+	}
 }

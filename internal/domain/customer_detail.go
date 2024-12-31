@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/genefriendway/human-network-auth/internal/dto"
+)
 
 type CustomerDetail struct {
 	ID               uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
@@ -13,6 +17,19 @@ type CustomerDetail struct {
 	UpdatedAt        time.Time `json:"updated_at"`
 }
 
-func (c *CustomerDetail) TableName() string {
+func (m *CustomerDetail) TableName() string {
 	return "customer_details"
+}
+
+func (m *CustomerDetail) ToDTO() dto.CustomerDetailDTO {
+	return dto.CustomerDetailDTO{
+		ID:               m.ID,
+		AccountID:        m.AccountID,
+		OrganizationName: m.OrganizationName,
+		Industry:         m.Industry,
+		ContactName:      m.ContactName,
+		PhoneNumber:      m.PhoneNumber,
+		CreatedAt:        m.CreatedAt,
+		UpdatedAt:        m.UpdatedAt,
+	}
 }
