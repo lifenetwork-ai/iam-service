@@ -2,8 +2,6 @@ package domain
 
 import (
 	"time"
-
-	"github.com/genefriendway/human-network-auth/internal/dto"
 )
 
 type CustomerDetail struct {
@@ -19,17 +17,4 @@ type CustomerDetail struct {
 
 func (m *CustomerDetail) TableName() string {
 	return "customer_details"
-}
-
-func (m *CustomerDetail) ToDTO() dto.CustomerDetailDTO {
-	return dto.CustomerDetailDTO{
-		ID:               m.ID,
-		AccountID:        m.AccountID,
-		OrganizationName: m.OrganizationName,
-		Industry:         m.Industry,
-		ContactName:      m.ContactName,
-		PhoneNumber:      m.PhoneNumber,
-		CreatedAt:        m.CreatedAt,
-		UpdatedAt:        m.UpdatedAt,
-	}
 }

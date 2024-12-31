@@ -22,8 +22,8 @@ func (m *Account) TableName() string {
 	return "accounts"
 }
 
-func (m *Account) ToDTO() dto.AccountDTO {
-	return dto.AccountDTO{
+func (m *Account) ToDTO() *dto.AccountDTO {
+	return &dto.AccountDTO{
 		ID:            m.ID,
 		Email:         m.Email,
 		Role:          m.Role,

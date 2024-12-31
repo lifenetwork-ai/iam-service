@@ -1,6 +1,10 @@
 package interfaces
 
-import "github.com/genefriendway/human-network-auth/internal/domain"
+import (
+	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-auth/internal/domain"
+	"github.com/genefriendway/human-network-auth/internal/dto"
+)
 
 type AccountRepository interface {
 	// Accounts
@@ -23,4 +27,9 @@ type AccountRepository interface {
 	// ValidatorDetails
 	FindValidatorDetailByAccountID(accountID uint64) (*domain.ValidatorDetail, error)
 	CreateValidatorDetail(detail *domain.ValidatorDetail) error
+}
+
+type AccountUCase interface {
+	FindAccountByEmail(email string) (*dto.AccountDTO, error)
+	FindDetailByAccountID(accountID uint64, role constants.AccountRole) (*dto.AccountDetailDTO, error)
 }

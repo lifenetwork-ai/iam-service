@@ -33,9 +33,11 @@ const (
 )
 
 // Account role
+type AccountRole string
+
 const (
-	User      = "USER"
-	Partner   = "PARTNER"
-	Customer  = "CUSTOMER"
-	Validator = "VALIDATOR"
+	User      AccountRole = "USER"
+	Partner   AccountRole = "PARTNER"
+	Customer  AccountRole = "CUSTOMER"
+	Validator AccountRole = "VALIDATOR"
 )

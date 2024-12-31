@@ -12,3 +12,18 @@ type AccountDTO struct {
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
+
+type AccountDetailDTO struct {
+	ID                     uint64     `json:"id"`
+	AccountID              uint64     `json:"account_id"`
+	Role                   string     `json:"role"`
+	ValidationOrganization *string    `json:"validation_organization,omitempty"`
+	CompanyName            *string    `json:"company_name,omitempty"`
+	ContactName            *string    `json:"contact_name,omitempty"`
+	FirstName              *string    `json:"first_name,omitempty"`
+	LastName               *string    `json:"last_name,omitempty"`
+	DateOfBirth            *time.Time `json:"date_of_birth,omitempty"`
+	PhoneNumber            *string    `json:"phone_number,omitempty"`
+	Industry               *string    `json:"industry,omitempty"`
+	OrganizationName       *string    `json:"organization_name,omitempty"`
+}
