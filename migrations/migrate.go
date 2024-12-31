@@ -31,6 +31,7 @@ func RunMigrations(db *gorm.DB) error {
 		"migrations/sql/03_customer_details.sql",
 		"migrations/sql/04_partner_details.sql",
 		"migrations/sql/05_validator_details.sql",
+		"migrations/sql/06_refresh_tokens.sql",
 	}
 
 	for _, script := range sqlScripts {
