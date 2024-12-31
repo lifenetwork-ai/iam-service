@@ -17,13 +17,12 @@ func RegisterRoutes(
 	r *gin.Engine,
 	config *conf.Configuration,
 	db *gorm.DB,
-	fileObjectUCase interfaces.FileObjectUCase,
+	authUCase interfaces.AuthUCase,
 ) {
 	v1 := r.Group("/api/v1")
 	appRouter := v1.Group("")
 
-	// SECTION: file object
-	fileObjectHandler := handlers.NewFileObjectHandler(fileObjectUCase, config)
-	appRouter.POST("/file-object/upload", fileObjectHandler.UploadFile)
-	appRouter.GET("/file-object/:object_id", fileObjectHandler.GetDetail)
+	// SECTION: auth
+	authHandler := handlers.NewAuthHandler(authUCase)
+	appRouter.POST("/auth/login", authHandler.Login)
 }

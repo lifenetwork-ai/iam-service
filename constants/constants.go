@@ -44,6 +44,6 @@ const (
 
 // Token expiry
 const (
-	AccessTokenExpiry  = 15 * time.Minute
-	RefreshTokenExpiry = 7 * 24 * time.Hour
+	AccessTokenExpiry  = 15 * time.Minute   // 15 minutes
+	RefreshTokenExpiry = 7 * 24 * time.Hour // 7 days
 )

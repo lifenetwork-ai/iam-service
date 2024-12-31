@@ -7,7 +7,6 @@
 package wire
 
 import (
-	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/internal/adapters/repositories"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	"github.com/genefriendway/human-network-auth/internal/ucases"
@@ -18,13 +17,14 @@ import (
 // Injectors from wire.go:
 
 // Init ucase
-func InitializeFileObjectUCase(db *gorm.DB, config *conf.Configuration) interfaces.FileObjectUCase {
-	fileObjectRepository := repositories.NewFileObjectRepository(db)
-	fileObjectUCase := ucases.NewFileObjectUCase(fileObjectRepository)
-	return fileObjectUCase
+func InitializeAuthUCase(db *gorm.DB) interfaces.AuthUCase {
+	accountRepository := repositories.NewAccountRepository(db)
+	authRepository := repositories.NewAuthRepository(db)
+	authUCase := ucases.NewAuthUCase(accountRepository, authRepository)
+	return authUCase
 }
 
 // wire.go:
 
 // UCase set
-var fileObjectUCaseSet = wire.NewSet(repositories.NewFileObjectRepository, ucases.NewFileObjectUCase)
+var authUCaseSet = wire.NewSet(repositories.NewAccountRepository, repositories.NewAuthRepository, ucases.NewAuthUCase)

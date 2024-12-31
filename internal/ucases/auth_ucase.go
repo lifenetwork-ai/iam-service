@@ -120,18 +120,18 @@ func (u *authUCase) Login(email, password string) (*dto.TokenPairDTO, error) {
 		return nil, errors.New("email and password are required")
 	}
 
-	// Fetch account by email
+	// Find account by email
 	account, err := u.accountRepository.FindAccountByEmail(email)
 	if err != nil {
 		return nil, errors.New("failed to fetch account")
 	}
 	if account == nil {
-		return nil, errors.New("invalid credentials")
+		return nil, domain.ErrInvalidCredentials
 	}
 
 	// Compare password
 	if account.PasswordHash == nil || bcrypt.CompareHashAndPassword([]byte(*account.PasswordHash), []byte(password)) != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, domain.ErrInvalidCredentials
 	}
 
 	// Generate Access Token
@@ -146,7 +146,7 @@ func (u *authUCase) Login(email, password string) (*dto.TokenPairDTO, error) {
 		return nil, errors.New("failed to generate refresh token")
 	}
 
-	// Hash and save Refresh Token
+	// Save hashed refresh token
 	hashedToken := utils.HashToken(refreshToken)
 	if err := u.authRepository.CreateRefreshToken(&domain.RefreshToken{
 		AccountID:   account.ID,

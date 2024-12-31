@@ -1,10 +1,7 @@
 package dto
 
-type TokenTransferPayloadDTO struct {
-	Network     string `json:"network"`
-	FromAddress string `json:"from_address"`
-	ToAddress   string `json:"to_address"`
-	TokenAmount string `json:"token_amount"`
-	RequestID   string `json:"request_id"`
-	Symbol      string `json:"symbol"`
+// LoginPayloadDTO defines the payload for the login request
+type LoginPayloadDTO struct {
+	Email    string `json:"email" validate:"required,email"` // User email
+	Password string `json:"password" validate:"required"`    // User password
 }
