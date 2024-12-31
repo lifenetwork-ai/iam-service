@@ -10,7 +10,6 @@ import (
 	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/internal/adapters/handlers"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
-	"github.com/genefriendway/human-network-auth/internal/middleware"
 )
 
 func RegisterRoutes(
@@ -25,6 +24,6 @@ func RegisterRoutes(
 
 	// SECTION: file object
 	fileObjectHandler := handlers.NewFileObjectHandler(fileObjectUCase, config)
-	appRouter.POST("/file-object/upload", middleware.ValidateVendorID(), fileObjectHandler.UploadFile)
-	appRouter.GET("/file-object/:object_id", middleware.ValidateVendorID(), fileObjectHandler.GetDetail)
+	appRouter.POST("/file-object/upload", fileObjectHandler.UploadFile)
+	appRouter.GET("/file-object/:object_id", fileObjectHandler.GetDetail)
 }
