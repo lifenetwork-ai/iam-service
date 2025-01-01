@@ -31,7 +31,7 @@ type AccountDetailDTO struct {
 type RegisterAccountDTO struct {
 	Email                  string     `json:"email" validate:"required,email"`
 	Password               string     `json:"password" validate:"required"`
-	Role                   string     `json:"role" validate:"required"`
+	Role                   string     `json:"role" validate:"required"` // USER, PARTNER, CUSTOMER, VALIDATOR
 	FirstName              *string    `json:"first_name,omitempty"`
 	LastName               *string    `json:"last_name,omitempty"`
 	DateOfBirth            *time.Time `json:"date_of_birth,omitempty"`

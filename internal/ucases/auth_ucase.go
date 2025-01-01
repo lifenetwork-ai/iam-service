@@ -36,6 +36,15 @@ func (u *authUCase) Register(input *dto.RegisterAccountDTO, role constants.Accou
 		return errors.New("email, password, and role are required")
 	}
 
+	// Check if account already exists
+	existingAccount, err := u.accountRepository.FindAccountByEmail(input.Email)
+	if err != nil {
+		return errors.New("failed to check if account exists")
+	}
+	if existingAccount != nil {
+		return domain.ErrAccountAlreadyExists
+	}
+
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {

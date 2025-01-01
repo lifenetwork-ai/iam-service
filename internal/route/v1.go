@@ -25,4 +25,5 @@ func RegisterRoutes(
 	// SECTION: auth
 	authHandler := handlers.NewAuthHandler(authUCase)
 	appRouter.POST("/auth/login", authHandler.Login)
+	appRouter.POST("/auth/register", authHandler.Register)
 }

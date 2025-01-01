@@ -11,6 +11,38 @@ definitions:
     - email
     - password
     type: object
+  dto.RegisterAccountDTO:
+    properties:
+      company_name:
+        type: string
+      contact_name:
+        type: string
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      industry:
+        type: string
+      last_name:
+        type: string
+      organization_name:
+        type: string
+      password:
+        type: string
+      phone_number:
+        type: string
+      role:
+        description: USER, PARTNER, CUSTOMER, VALIDATOR
+        type: string
+      validation_organization:
+        type: string
+    required:
+    - email
+    - password
+    - role
+    type: object
   dto.TokenPairDTO:
     properties:
       access_token:
@@ -68,6 +100,42 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
       summary: Authenticate user
+      tags:
+      - authentication
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint registers a new account and its associated role-specific
+        details.
+      parameters:
+      - description: User registration details
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterAccountDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'Registration successful: {\"success\": true}'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "409":
+          description: Account already exists
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Register a new account
       tags:
       - authentication
 swagger: "2.0"
