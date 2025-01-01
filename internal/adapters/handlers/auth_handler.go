@@ -200,3 +200,39 @@ func (h *authHandler) RefreshTokens(ctx *gin.Context) {
 		"refresh_token": tokenPair.RefreshToken,
 	})
 }
+
+// ValidateToken validates an access token and retrieves user information.
+// @Summary Validate access token
+// @Description This endpoint validates an access token and retrieves the corresponding user's details.
+// @Tags authentication
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer access token"
+// @Success 200 {object} dto.AccountDTO "Token is valid: User details"
+// @Failure 401 {object} response.GeneralError "Invalid or expired token"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/auth/validate-token [get]
+func (h *authHandler) ValidateToken(ctx *gin.Context) {
+	// Extract the token from the Authorization header
+	token := ctx.GetHeader("Authorization")
+	if token == "" {
+		logger.GetLogger().Error("Missing Authorization header")
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Missing Authorization header", nil)
+		return
+	}
+
+	// Validate the token using the use case
+	account, err := h.ucase.ValidateToken(token)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to validate token: %v", err)
+		if errors.Is(err, domain.ErrInvalidToken) || errors.Is(err, domain.ErrExpiredToken) {
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid or expired token", err)
+		} else {
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to validate token", err)
+		}
+		return
+	}
+
+	// Respond with user details
+	ctx.JSON(http.StatusOK, account)
+}

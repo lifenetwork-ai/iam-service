@@ -28,4 +28,5 @@ func RegisterRoutes(
 	appRouter.POST("/auth/login", authHandler.Login)
 	appRouter.POST("/auth/logout", authHandler.Logout)
 	appRouter.POST("/auth/refresh-tokens", authHandler.RefreshTokens)
+	appRouter.GET("/validate-token", authHandler.ValidateToken)
 }

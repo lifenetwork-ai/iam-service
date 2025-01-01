@@ -224,9 +224,86 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/auth/validate-token": {
+            "get": {
+                "description": "This endpoint validates an access token and retrieves the corresponding user's details.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authentication"
+                ],
+                "summary": "Validate access token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token is valid: User details",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AccountDTO"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired token",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "dto.AccountDTO": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "description": "Nullable",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "oauth_id": {
+                    "description": "Nullable",
+                    "type": "string"
+                },
+                "oauth_provider": {
+                    "description": "Nullable",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.LoginPayloadDTO": {
             "type": "object",
             "required": [
