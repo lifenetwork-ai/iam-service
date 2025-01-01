@@ -10,7 +10,6 @@ type UserDetail struct {
 	Account     Account   `json:"account" gorm:"foreignKey:AccountID;references:ID"`
 	FirstName   string    `json:"first_name"`
 	LastName    string    `json:"last_name"`
-	DateOfBirth time.Time `json:"date_of_birth"`
 	PhoneNumber string    `json:"phone_number"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

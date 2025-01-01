@@ -43,7 +43,6 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 			},
 			FirstName:   &detail.FirstName,
 			LastName:    &detail.LastName,
-			DateOfBirth: &detail.DateOfBirth,
 			PhoneNumber: &detail.PhoneNumber,
 		}, nil
 

@@ -1,7 +1,5 @@
 package dto
 
-import "time"
-
 type AccountDTO struct {
 	ID            uint64  `json:"id"`
 	Email         string  `json:"email"`
@@ -20,7 +18,6 @@ type AccountDetailDTO struct {
 	ContactName            *string    `json:"contact_name,omitempty"`
 	FirstName              *string    `json:"first_name,omitempty"`
 	LastName               *string    `json:"last_name,omitempty"`
-	DateOfBirth            *time.Time `json:"date_of_birth,omitempty"`
 	PhoneNumber            *string    `json:"phone_number,omitempty"`
 	Industry               *string    `json:"industry,omitempty"`
 	OrganizationName       *string    `json:"organization_name,omitempty"`

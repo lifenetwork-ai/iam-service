@@ -75,7 +75,6 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 			AccountID:   domainAccount.ID,
 			FirstName:   *input.FirstName,
 			LastName:    *input.LastName,
-			DateOfBirth: *input.DateOfBirth,
 			PhoneNumber: *input.PhoneNumber,
 		}
 		return u.accountRepository.CreateUserDetail(domainDetail)

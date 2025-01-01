@@ -354,9 +354,6 @@ const docTemplate = `{
                 "contact_name": {
                     "type": "string"
                 },
-                "date_of_birth": {
-                    "type": "string"
-                },
                 "first_name": {
                     "type": "string"
                 },
@@ -434,9 +431,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "contact_name": {
-                    "type": "string"
-                },
-                "date_of_birth": {
                     "type": "string"
                 },
                 "email": {

@@ -343,9 +343,6 @@
                 "contact_name": {
                     "type": "string"
                 },
-                "date_of_birth": {
-                    "type": "string"
-                },
                 "first_name": {
                     "type": "string"
                 },
@@ -423,9 +420,6 @@
                     "type": "string"
                 },
                 "contact_name": {
-                    "type": "string"
-                },
-                "date_of_birth": {
                     "type": "string"
                 },
                 "email": {
