@@ -68,51 +68,51 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 	// Save role-specific details
 	switch role {
 	case constants.User:
-		if input.FirstName == nil || input.LastName == nil || input.PhoneNumber == nil {
+		if input.FirstName == "" || input.LastName == "" || input.PhoneNumber == "" {
 			return errors.New("first_name, last_name, and phone_number are required for USER role")
 		}
 		domainDetail := &domain.UserDetail{
 			AccountID:   domainAccount.ID,
-			FirstName:   *input.FirstName,
-			LastName:    *input.LastName,
-			PhoneNumber: *input.PhoneNumber,
+			FirstName:   input.FirstName,
+			LastName:    input.LastName,
+			PhoneNumber: input.PhoneNumber,
 		}
 		return u.accountRepository.CreateUserDetail(domainDetail)
 
 	case constants.Partner:
-		if input.CompanyName == nil || input.PhoneNumber == nil {
+		if input.CompanyName == "" || input.PhoneNumber == "" {
 			return errors.New("company_name and phone_number are required for PARTNER role")
 		}
 		domainDetail := &domain.PartnerDetail{
 			AccountID:   domainAccount.ID,
-			CompanyName: *input.CompanyName,
-			ContactName: *input.ContactName,
-			PhoneNumber: *input.PhoneNumber,
+			CompanyName: input.CompanyName,
+			ContactName: input.ContactName,
+			PhoneNumber: input.PhoneNumber,
 		}
 		return u.accountRepository.CreatePartnerDetail(domainDetail)
 
 	case constants.Customer:
-		if input.OrganizationName == nil || input.PhoneNumber == nil {
+		if input.OrganizationName == "" || input.PhoneNumber == "" {
 			return errors.New("organization_name and phone_number are required for CUSTOMER role")
 		}
 		domainDetail := &domain.CustomerDetail{
 			AccountID:        domainAccount.ID,
-			OrganizationName: *input.OrganizationName,
-			Industry:         *input.Industry,
-			ContactName:      *input.ContactName,
-			PhoneNumber:      *input.PhoneNumber,
+			OrganizationName: input.OrganizationName,
+			Industry:         input.Industry,
+			ContactName:      input.ContactName,
+			PhoneNumber:      input.PhoneNumber,
 		}
 		return u.accountRepository.CreateCustomerDetail(domainDetail)
 
 	case constants.Validator:
-		if input.ValidationOrganization == nil || input.PhoneNumber == nil {
+		if input.ValidationOrganization == "" || input.PhoneNumber == "" {
 			return errors.New("validation_organization and phone_number are required for VALIDATOR role")
 		}
 		domainDetail := &domain.ValidatorDetail{
 			AccountID:              domainAccount.ID,
-			ValidationOrganization: *input.ValidationOrganization,
-			ContactPerson:          *input.ContactName,
-			PhoneNumber:            *input.PhoneNumber,
+			ValidationOrganization: input.ValidationOrganization,
+			ContactPerson:          input.ContactName,
+			PhoneNumber:            input.PhoneNumber,
 		}
 		return u.accountRepository.CreateValidatorDetail(domainDetail)
 
