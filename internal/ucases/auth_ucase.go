@@ -172,6 +172,29 @@ func (u *authUCase) Login(email, password string) (*dto.TokenPairDTO, error) {
 	}, nil
 }
 
+// Logout invalidates the provided refresh token.
+func (u *authUCase) Logout(refreshToken string) error {
+	// Hash the incoming token
+	hashedToken := utils.HashToken(refreshToken)
+
+	// Validate refresh token existence
+	storedToken, err := u.authRepository.FindRefreshToken(hashedToken)
+	if err != nil {
+		return domain.ErrInvalidToken
+	}
+	if storedToken == nil {
+		return domain.ErrInvalidToken
+	}
+
+	// Delete the refresh token
+	err = u.authRepository.DeleteRefreshToken(hashedToken)
+	if err != nil {
+		return errors.New("failed to delete refresh token")
+	}
+
+	return nil
+}
+
 // RefreshTokens generates a new token pair using the provided refresh token
 func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error) {
 	// Hash the incoming token

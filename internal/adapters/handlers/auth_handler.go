@@ -26,47 +26,6 @@ func NewAuthHandler(
 	}
 }
 
-// Login authenticates the user and returns a token pair (Access + Refresh).
-// @Summary Authenticate user
-// @Description This endpoint authenticates the user by email and password, and returns an access token and refresh token.
-// @Tags authentication
-// @Accept json
-// @Produce json
-// @Param payload body dto.LoginPayloadDTO true "User credentials (email and password)"
-// @Success 200 {object} dto.TokenPairDTO "Login successful: {\"access_token\": \"...\", \"refresh_token\": \"...\"}"
-// @Failure 400 {object} response.GeneralError "Invalid payload"
-// @Failure 401 {object} response.GeneralError "Invalid credentials"
-// @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/auth/login [post]
-func (h *authHandler) Login(ctx *gin.Context) {
-	var req dto.LoginPayloadDTO
-
-	// Parse and validate the request payload
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		logger.GetLogger().Errorf("Invalid login payload: %v", err)
-		httpresponse.Error(ctx, http.StatusBadRequest, "Failed to login, invalid payload", err)
-		return
-	}
-
-	// Authenticate the user using the use case
-	tokenPair, err := h.ucase.Login(req.Email, req.Password)
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to login for email %s: %v", req.Email, err)
-		if errors.Is(err, domain.ErrInvalidCredentials) {
-			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid credentials", err)
-		} else {
-			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to login", err)
-		}
-		return
-	}
-
-	// Respond with success and token pair
-	ctx.JSON(http.StatusOK, gin.H{
-		"access_token":  tokenPair.AccessToken,
-		"refresh_token": tokenPair.RefreshToken,
-	})
-}
-
 // Register creates a new user account and role-specific details.
 // @Summary Register a new account
 // @Description This endpoint registers a new account and its associated role-specific details.
@@ -112,6 +71,47 @@ func (h *authHandler) Register(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"success": true})
 }
 
+// Login authenticates the user and returns a token pair (Access + Refresh).
+// @Summary Authenticate user
+// @Description This endpoint authenticates the user by email and password, and returns an access token and refresh token.
+// @Tags authentication
+// @Accept json
+// @Produce json
+// @Param payload body dto.LoginPayloadDTO true "User credentials (email and password)"
+// @Success 200 {object} dto.TokenPairDTO "Login successful: {\"access_token\": \"...\", \"refresh_token\": \"...\"}"
+// @Failure 400 {object} response.GeneralError "Invalid payload"
+// @Failure 401 {object} response.GeneralError "Invalid credentials"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/auth/login [post]
+func (h *authHandler) Login(ctx *gin.Context) {
+	var req dto.LoginPayloadDTO
+
+	// Parse and validate the request payload
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logger.GetLogger().Errorf("Invalid login payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Failed to login, invalid payload", err)
+		return
+	}
+
+	// Authenticate the user using the use case
+	tokenPair, err := h.ucase.Login(req.Email, req.Password)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to login for email %s: %v", req.Email, err)
+		if errors.Is(err, domain.ErrInvalidCredentials) {
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid credentials", err)
+		} else {
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to login", err)
+		}
+		return
+	}
+
+	// Respond with success and token pair
+	ctx.JSON(http.StatusOK, gin.H{
+		"access_token":  tokenPair.AccessToken,
+		"refresh_token": tokenPair.RefreshToken,
+	})
+}
+
 // ValidateAccountRole validates if the role is one of the predefined roles
 func (h *authHandler) validateAccountRole(role string) (constants.AccountRole, error) {
 	switch constants.AccountRole(role) {
@@ -120,6 +120,44 @@ func (h *authHandler) validateAccountRole(role string) (constants.AccountRole, e
 	default:
 		return "", errors.New("invalid role provided")
 	}
+}
+
+// Logout invalidates the refresh token.
+// @Summary Logout user
+// @Description This endpoint invalidates the refresh token, effectively logging the user out.
+// @Tags authentication
+// @Accept json
+// @Produce json
+// @Param payload body dto.LogoutPayloadDTO true "Logout payload containing the refresh token"
+// @Success 200 {object} map[string]interface{} "Logout successful: {\"success\": true}"
+// @Failure 400 {object} response.GeneralError "Invalid payload"
+// @Failure 401 {object} response.GeneralError "Invalid or expired refresh token"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/auth/logout [post]
+func (h *authHandler) Logout(ctx *gin.Context) {
+	var req dto.LogoutPayloadDTO
+
+	// Parse and validate the request payload
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logger.GetLogger().Errorf("Invalid logout payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Failed to logout, invalid payload", err)
+		return
+	}
+
+	// Invalidate the refresh token using the use case
+	err := h.ucase.Logout(req.RefreshToken)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to logout: %v", err)
+		if errors.Is(err, domain.ErrInvalidToken) || errors.Is(err, domain.ErrExpiredToken) {
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid or expired refresh token", err)
+		} else {
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to logout", err)
+		}
+		return
+	}
+
+	// Respond with success
+	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 // RefreshTokens generates new access and refresh tokens using a valid refresh token.

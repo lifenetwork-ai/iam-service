@@ -15,6 +15,7 @@ type AuthRepository interface {
 type AuthUCase interface {
 	Register(input *dto.RegisterPayloadDTO, role constants.AccountRole) error
 	Login(email, password string) (*dto.TokenPairDTO, error)
+	Logout(refreshToken string) error
 	RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error)
 	ValidateToken(token string) (*dto.AccountDTO, error)
 }

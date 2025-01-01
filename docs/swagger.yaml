@@ -11,6 +11,13 @@ definitions:
     - email
     - password
     type: object
+  dto.LogoutPayloadDTO:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
   dto.RefreshTokenPayloadDTO:
     properties:
       refresh_token:
@@ -107,6 +114,42 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
       summary: Authenticate user
+      tags:
+      - authentication
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint invalidates the refresh token, effectively logging
+        the user out.
+      parameters:
+      - description: Logout payload containing the refresh token
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LogoutPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Logout successful: {\"success\": true}'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Logout user
       tags:
       - authentication
   /api/v1/auth/refresh-tokens:
