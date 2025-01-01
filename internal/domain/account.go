@@ -30,7 +30,5 @@ func (m *Account) ToDTO() *dto.AccountDTO {
 		APIKey:        m.APIKey,
 		OAuthProvider: m.OAuthProvider,
 		OAuthID:       m.OAuthID,
-		CreatedAt:     m.CreatedAt,
-		UpdatedAt:     m.UpdatedAt,
 	}
 }

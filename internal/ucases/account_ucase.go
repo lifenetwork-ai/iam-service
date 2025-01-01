@@ -37,11 +37,9 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:        detail.Account.ID,
-				Email:     detail.Account.Email,
-				Role:      detail.Account.Role,
-				CreatedAt: detail.Account.CreatedAt,
-				UpdatedAt: detail.Account.UpdatedAt,
+				ID:    detail.Account.ID,
+				Email: detail.Account.Email,
+				Role:  detail.Account.Role,
 			},
 			FirstName:   &detail.FirstName,
 			LastName:    &detail.LastName,
@@ -61,11 +59,9 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:        detail.Account.ID,
-				Email:     detail.Account.Email,
-				Role:      detail.Account.Role,
-				CreatedAt: detail.Account.CreatedAt,
-				UpdatedAt: detail.Account.UpdatedAt,
+				ID:    detail.Account.ID,
+				Email: detail.Account.Email,
+				Role:  detail.Account.Role,
 			},
 			CompanyName: &detail.CompanyName,
 			ContactName: &detail.ContactName,
@@ -84,11 +80,9 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:        detail.Account.ID,
-				Email:     detail.Account.Email,
-				Role:      detail.Account.Role,
-				CreatedAt: detail.Account.CreatedAt,
-				UpdatedAt: detail.Account.UpdatedAt,
+				ID:    detail.Account.ID,
+				Email: detail.Account.Email,
+				Role:  detail.Account.Role,
 			},
 			OrganizationName: &detail.OrganizationName,
 			Industry:         &detail.Industry,
@@ -108,11 +102,9 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:        detail.Account.ID,
-				Email:     detail.Account.Email,
-				Role:      detail.Account.Role,
-				CreatedAt: detail.Account.CreatedAt,
-				UpdatedAt: detail.Account.UpdatedAt,
+				ID:    detail.Account.ID,
+				Email: detail.Account.Email,
+				Role:  detail.Account.Role,
 			},
 			ValidationOrganization: &detail.ValidationOrganization,
 			ContactName:            &detail.ContactPerson,
