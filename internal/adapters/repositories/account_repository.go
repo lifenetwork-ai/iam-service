@@ -47,7 +47,8 @@ func (r *accountRepository) CreateAccount(account *domain.Account) error {
 // User detail
 func (r *accountRepository) FindUserDetailByAccountID(accountID uint64) (*domain.UserDetail, error) {
 	var details domain.UserDetail
-	if err := r.db.Where("account_id = ?", accountID).First(&details).Error; err != nil {
+	// Use Preload to eagerly load the Account relationship
+	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -63,7 +64,8 @@ func (r *accountRepository) CreateUserDetail(detail *domain.UserDetail) error {
 // Partner detail
 func (r *accountRepository) FindPartnerDetailByAccountID(accountID uint64) (*domain.PartnerDetail, error) {
 	var details domain.PartnerDetail
-	if err := r.db.Where("account_id = ?", accountID).First(&details).Error; err != nil {
+	// Use Preload to eagerly load the Account relationship
+	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -79,7 +81,8 @@ func (r *accountRepository) CreatePartnerDetail(detail *domain.PartnerDetail) er
 // Customer detail
 func (r *accountRepository) FindCustomerDetailByAccountID(accountID uint64) (*domain.CustomerDetail, error) {
 	var details domain.CustomerDetail
-	if err := r.db.Where("account_id = ?", accountID).First(&details).Error; err != nil {
+	// Use Preload to eagerly load the Account relationship
+	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -95,7 +98,8 @@ func (r *accountRepository) CreateCustomerDetail(detail *domain.CustomerDetail) 
 // Validator detail
 func (r *accountRepository) FindValidatorDetailByAccountID(accountID uint64) (*domain.ValidatorDetail, error) {
 	var details domain.ValidatorDetail
-	if err := r.db.Where("account_id = ?", accountID).First(&details).Error; err != nil {
+	// Use Preload to eagerly load the Account relationship
+	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}

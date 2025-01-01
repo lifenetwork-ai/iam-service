@@ -7,6 +7,7 @@ import (
 type UserDetail struct {
 	ID          uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
 	AccountID   uint64    `json:"account_id"`
+	Account     Account   `json:"account" gorm:"foreignKey:AccountID;references:ID"`
 	FirstName   string    `json:"first_name"`
 	LastName    string    `json:"last_name"`
 	DateOfBirth time.Time `json:"date_of_birth"`

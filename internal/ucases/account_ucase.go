@@ -30,10 +30,19 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		if err != nil {
 			return nil, err
 		}
+		if detail == nil {
+			return nil, errors.New("user detail not found")
+		}
+		// Map UserDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID:          detail.ID,
-			AccountID:   detail.AccountID,
-			Role:        string(constants.User),
+			ID: detail.ID,
+			Account: dto.AccountDTO{
+				ID:        detail.Account.ID,
+				Email:     detail.Account.Email,
+				Role:      detail.Account.Role,
+				CreatedAt: detail.Account.CreatedAt,
+				UpdatedAt: detail.Account.UpdatedAt,
+			},
 			FirstName:   &detail.FirstName,
 			LastName:    &detail.LastName,
 			DateOfBirth: &detail.DateOfBirth,
@@ -45,10 +54,19 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		if err != nil {
 			return nil, err
 		}
+		if detail == nil {
+			return nil, errors.New("partner detail not found")
+		}
+		// Map PartnerDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID:          detail.ID,
-			AccountID:   detail.AccountID,
-			Role:        string(constants.Partner),
+			ID: detail.ID,
+			Account: dto.AccountDTO{
+				ID:        detail.Account.ID,
+				Email:     detail.Account.Email,
+				Role:      detail.Account.Role,
+				CreatedAt: detail.Account.CreatedAt,
+				UpdatedAt: detail.Account.UpdatedAt,
+			},
 			CompanyName: &detail.CompanyName,
 			ContactName: &detail.ContactName,
 			PhoneNumber: &detail.PhoneNumber,
@@ -59,10 +77,19 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		if err != nil {
 			return nil, err
 		}
+		if detail == nil {
+			return nil, errors.New("customer detail not found")
+		}
+		// Map CustomerDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID:               detail.ID,
-			AccountID:        detail.AccountID,
-			Role:             string(constants.Customer),
+			ID: detail.ID,
+			Account: dto.AccountDTO{
+				ID:        detail.Account.ID,
+				Email:     detail.Account.Email,
+				Role:      detail.Account.Role,
+				CreatedAt: detail.Account.CreatedAt,
+				UpdatedAt: detail.Account.UpdatedAt,
+			},
 			OrganizationName: &detail.OrganizationName,
 			Industry:         &detail.Industry,
 			ContactName:      &detail.ContactName,
@@ -74,10 +101,19 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		if err != nil {
 			return nil, err
 		}
+		if detail == nil {
+			return nil, errors.New("validator detail not found")
+		}
+		// Map ValidatorDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID:                     detail.ID,
-			AccountID:              detail.AccountID,
-			Role:                   string(constants.Validator),
+			ID: detail.ID,
+			Account: dto.AccountDTO{
+				ID:        detail.Account.ID,
+				Email:     detail.Account.Email,
+				Role:      detail.Account.Role,
+				CreatedAt: detail.Account.CreatedAt,
+				UpdatedAt: detail.Account.UpdatedAt,
+			},
 			ValidationOrganization: &detail.ValidationOrganization,
 			ContactName:            &detail.ContactPerson,
 			PhoneNumber:            &detail.PhoneNumber,

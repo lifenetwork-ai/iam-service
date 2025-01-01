@@ -15,7 +15,7 @@ type AccountDTO struct {
 
 type AccountDetailDTO struct {
 	ID                     uint64     `json:"id"`
-	AccountID              uint64     `json:"account_id"`
+	Account                AccountDTO `json:"account"`
 	Role                   string     `json:"role"`
 	ValidationOrganization *string    `json:"validation_organization,omitempty"`
 	CompanyName            *string    `json:"company_name,omitempty"`

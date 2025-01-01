@@ -7,6 +7,7 @@ import (
 type ValidatorDetail struct {
 	ID                     uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
 	AccountID              uint64    `json:"account_id"`
+	Account                Account   `json:"account" gorm:"foreignKey:AccountID;references:ID"`
 	ValidationOrganization string    `json:"validation_organization"`
 	ContactPerson          string    `json:"contact_person"`
 	PhoneNumber            string    `json:"phone_number"`
