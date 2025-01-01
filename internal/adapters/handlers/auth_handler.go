@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -213,27 +212,15 @@ func (h *authHandler) RefreshTokens(ctx *gin.Context) {
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/auth/validate-token [get]
 func (h *authHandler) ValidateToken(ctx *gin.Context) {
-	// Extract and validate the token from the Authorization header
-	authHeader := ctx.GetHeader("Authorization")
-	if authHeader == "" {
-		logger.GetLogger().Error("Missing Authorization header")
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Missing Authorization header", nil)
+	// Retrieve the token from the context
+	token, exists := ctx.Get("token")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", nil)
 		return
 	}
-
-	// Ensure it starts with "Bearer "
-	const bearerPrefix = "Bearer "
-	if !strings.HasPrefix(authHeader, bearerPrefix) {
-		logger.GetLogger().Error("Invalid Authorization header format")
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid Authorization header format", nil)
-		return
-	}
-
-	// Extract the token part
-	token := strings.TrimPrefix(authHeader, bearerPrefix)
 
 	// Validate the token using the use case
-	account, err := h.ucase.ValidateToken(token)
+	account, err := h.ucase.ValidateToken(token.(string))
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to validate token: %v", err)
 		if errors.Is(err, domain.ErrInvalidToken) || errors.Is(err, domain.ErrExpiredToken) {

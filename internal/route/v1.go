@@ -10,6 +10,7 @@ import (
 	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/internal/adapters/handlers"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
+	"github.com/genefriendway/human-network-auth/internal/middleware"
 )
 
 func RegisterRoutes(
@@ -18,6 +19,7 @@ func RegisterRoutes(
 	config *conf.Configuration,
 	db *gorm.DB,
 	authUCase interfaces.AuthUCase,
+	accountUCase interfaces.AccountUCase,
 ) {
 	v1 := r.Group("/api/v1")
 	appRouter := v1.Group("")
@@ -28,5 +30,9 @@ func RegisterRoutes(
 	appRouter.POST("/auth/login", authHandler.Login)
 	appRouter.POST("/auth/logout", authHandler.Logout)
 	appRouter.POST("/auth/refresh-tokens", authHandler.RefreshTokens)
-	appRouter.GET("/validate-token", authHandler.ValidateToken)
+	appRouter.GET("/validate-token", middleware.ValidateBearerToken(), authHandler.ValidateToken)
+
+	// SECTION: account
+	accountHandler := handlers.NewAccountHandler(accountUCase, authUCase)
+	appRouter.GET("/account/me", middleware.ValidateBearerToken(), accountHandler.GetCurrentUser)
 }

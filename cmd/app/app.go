@@ -41,7 +41,8 @@ func RunApp(config *conf.Configuration) {
 	}
 
 	// Initialize use cases and queue
-	fileObjectUCase := wire.InitializeAuthUCase(db)
+	authUCase := wire.InitializeAuthUCase(db)
+	accountUCase := wire.InitializeAccountUCase(db)
 
 	// Register routes
 	routev1.RegisterRoutes(
@@ -49,7 +50,8 @@ func RunApp(config *conf.Configuration) {
 		r,
 		config,
 		db,
-		fileObjectUCase,
+		authUCase,
+		accountUCase,
 	)
 
 	// Start server

@@ -17,8 +17,18 @@ var authUCaseSet = wire.NewSet(
 	ucases.NewAuthUCase,
 )
 
+var accountUCaseSet = wire.NewSet(
+	repositories.NewAccountRepository,
+	ucases.NewAccountUCase,
+)
+
 // Init ucase
 func InitializeAuthUCase(db *gorm.DB) interfaces.AuthUCase {
 	wire.Build(authUCaseSet)
+	return nil
+}
+
+func InitializeAccountUCase(db *gorm.DB) interfaces.AccountUCase {
+	wire.Build(accountUCaseSet)
 	return nil
 }
