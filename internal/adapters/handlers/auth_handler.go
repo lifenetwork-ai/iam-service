@@ -121,3 +121,44 @@ func (h *authHandler) validateAccountRole(role string) (constants.AccountRole, e
 		return "", errors.New("invalid role provided")
 	}
 }
+
+// RefreshTokens generates new access and refresh tokens using a valid refresh token.
+// @Summary Refresh tokens
+// @Description This endpoint generates a new pair of access and refresh tokens using a valid refresh token.
+// @Tags authentication
+// @Accept json
+// @Produce json
+// @Param payload body dto.RefreshTokenPayloadDTO true "Refresh token payload"
+// @Success 200 {object} dto.TokenPairDTO "Tokens refreshed successfully"
+// @Failure 400 {object} response.GeneralError "Invalid payload"
+// @Failure 401 {object} response.GeneralError "Invalid or expired refresh token"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/auth/refresh-tokens [post]
+func (h *authHandler) RefreshTokens(ctx *gin.Context) {
+	var req dto.RefreshTokenPayloadDTO
+
+	// Parse and validate the request payload
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logger.GetLogger().Errorf("Invalid refresh token payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Failed to refresh tokens, invalid payload", err)
+		return
+	}
+
+	// Refresh tokens using the use case
+	tokenPair, err := h.ucase.RefreshTokens(req.RefreshToken)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to refresh tokens: %v", err)
+		if errors.Is(err, domain.ErrInvalidToken) || errors.Is(err, domain.ErrExpiredToken) {
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid or expired refresh token", err)
+		} else {
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to refresh tokens", err)
+		}
+		return
+	}
+
+	// Respond with the new token pair
+	ctx.JSON(http.StatusOK, gin.H{
+		"access_token":  tokenPair.AccessToken,
+		"refresh_token": tokenPair.RefreshToken,
+	})
+}

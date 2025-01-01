@@ -174,33 +174,38 @@ func (u *authUCase) Login(email, password string) (*dto.TokenPairDTO, error) {
 
 // RefreshTokens generates a new token pair using the provided refresh token
 func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error) {
-	// Hash incoming token
+	// Hash the incoming token
 	hashedToken := utils.HashToken(refreshToken)
 
 	// Validate refresh token
 	storedToken, err := u.authRepository.FindRefreshToken(hashedToken)
-	if err != nil || storedToken == nil || storedToken.ExpiresAt.Before(time.Now()) {
-		return nil, errors.New("invalid or expired refresh token")
+	if err != nil {
+		return nil, domain.ErrInvalidToken
+	}
+	if storedToken == nil || storedToken.ExpiresAt.Before(time.Now()) {
+		return nil, domain.ErrExpiredToken
 	}
 
-	// Generate new Access Token
+	// Fetch the account associated with the token
 	account, err := u.accountRepository.FindAccountByID(storedToken.AccountID)
 	if err != nil || account == nil {
-		return nil, errors.New("account not found")
+		return nil, domain.ErrInvalidToken
 	}
+
+	// Generate a new Access Token
 	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
 
-	// Generate new Refresh Token
+	// Generate a new Refresh Token
 	newRefreshToken, err := utils.GenerateRefreshToken()
 	if err != nil {
 		return nil, errors.New("failed to generate refresh token")
 	}
 	newHashedToken := utils.HashToken(newRefreshToken)
 
-	// Replace the old refresh token
+	// Replace the old refresh token in the repository
 	err = u.authRepository.DeleteRefreshToken(hashedToken)
 	if err != nil {
 		return nil, errors.New("failed to delete old refresh token")
@@ -214,6 +219,7 @@ func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error
 		return nil, errors.New("failed to store new refresh token")
 	}
 
+	// Return the new token pair
 	return &dto.TokenPairDTO{
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,

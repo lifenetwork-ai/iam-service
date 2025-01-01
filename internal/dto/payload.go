@@ -23,3 +23,13 @@ type RegisterPayloadDTO struct {
 	Industry               *string    `json:"industry,omitempty"`
 	ValidationOrganization *string    `json:"validation_organization,omitempty"`
 }
+
+// RefreshTokenPayloadDTO defines the payload for refreshing tokens request
+type RefreshTokenPayloadDTO struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
+// LogoutPayloadDTO defines the payload for the logout request
+type LogoutPayloadDTO struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}

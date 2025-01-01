@@ -26,4 +26,5 @@ func RegisterRoutes(
 	authHandler := handlers.NewAuthHandler(authUCase)
 	appRouter.POST("/auth/login", authHandler.Login)
 	appRouter.POST("/auth/register", authHandler.Register)
+	appRouter.POST("/auth/refresh-tokens", authHandler.RefreshTokens)
 }

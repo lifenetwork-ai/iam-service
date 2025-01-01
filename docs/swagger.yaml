@@ -11,6 +11,13 @@ definitions:
     - email
     - password
     type: object
+  dto.RefreshTokenPayloadDTO:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
   dto.RegisterPayloadDTO:
     properties:
       company_name:
@@ -100,6 +107,41 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
       summary: Authenticate user
+      tags:
+      - authentication
+  /api/v1/auth/refresh-tokens:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint generates a new pair of access and refresh tokens
+        using a valid refresh token.
+      parameters:
+      - description: Refresh token payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RefreshTokenPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens refreshed successfully
+          schema:
+            $ref: '#/definitions/dto.TokenPairDTO'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Refresh tokens
       tags:
       - authentication
   /api/v1/auth/register:
