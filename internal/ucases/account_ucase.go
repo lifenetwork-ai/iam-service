@@ -6,6 +6,7 @@ import (
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
+	"github.com/genefriendway/human-network-auth/pkg/crypto"
 )
 
 type accountUCase struct {
@@ -33,13 +34,22 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		if detail == nil {
 			return nil, errors.New("user detail not found")
 		}
+
+		// Generate wallet address
+		account, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
+		if err != nil {
+			return nil, err
+		}
+		walletAddress := account.Address.Hex()
+
 		// Map UserDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:    detail.Account.ID,
-				Email: detail.Account.Email,
-				Role:  detail.Account.Role,
+				ID:            detail.Account.ID,
+				Email:         detail.Account.Email,
+				Role:          detail.Account.Role,
+				WalletAddress: &walletAddress,
 			},
 			FirstName:   &detail.FirstName,
 			LastName:    &detail.LastName,
@@ -54,13 +64,22 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		if detail == nil {
 			return nil, errors.New("partner detail not found")
 		}
+
+		// Generate wallet address
+		account, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.Partner), accountID)
+		if err != nil {
+			return nil, err
+		}
+		walletAddress := account.Address.Hex()
+
 		// Map PartnerDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:    detail.Account.ID,
-				Email: detail.Account.Email,
-				Role:  detail.Account.Role,
+				ID:            detail.Account.ID,
+				Email:         detail.Account.Email,
+				Role:          detail.Account.Role,
+				WalletAddress: &walletAddress,
 			},
 			CompanyName: &detail.CompanyName,
 			ContactName: &detail.ContactName,
@@ -75,13 +94,22 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		if detail == nil {
 			return nil, errors.New("customer detail not found")
 		}
+
+		// Generate wallet address
+		account, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.Customer), accountID)
+		if err != nil {
+			return nil, err
+		}
+		walletAddress := account.Address.Hex()
+
 		// Map CustomerDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:    detail.Account.ID,
-				Email: detail.Account.Email,
-				Role:  detail.Account.Role,
+				ID:            detail.Account.ID,
+				Email:         detail.Account.Email,
+				Role:          detail.Account.Role,
+				WalletAddress: &walletAddress,
 			},
 			OrganizationName: &detail.OrganizationName,
 			Industry:         &detail.Industry,
@@ -97,13 +125,22 @@ func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.Ac
 		if detail == nil {
 			return nil, errors.New("validator detail not found")
 		}
+
+		// Generate wallet address
+		account, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.Validator), accountID)
+		if err != nil {
+			return nil, err
+		}
+		walletAddress := account.Address.Hex()
+
 		// Map ValidatorDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:    detail.Account.ID,
-				Email: detail.Account.Email,
-				Role:  detail.Account.Role,
+				ID:            detail.Account.ID,
+				Email:         detail.Account.Email,
+				Role:          detail.Account.Role,
+				WalletAddress: &walletAddress,
 			},
 			ValidationOrganization: &detail.ValidationOrganization,
 			ContactName:            &detail.ContactPerson,

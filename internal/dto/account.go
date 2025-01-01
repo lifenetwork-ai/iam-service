@@ -4,6 +4,7 @@ type AccountDTO struct {
 	ID            uint64  `json:"id"`
 	Email         string  `json:"email"`
 	Role          string  `json:"role"`                     // USER, PARTNER, CUSTOMER, VALIDATOR
+	WalletAddress *string `json:"wallet_address,omitempty"` // Nullable
 	APIKey        *string `json:"api_key,omitempty"`        // Nullable
 	OAuthProvider *string `json:"oauth_provider,omitempty"` // Nullable
 	OAuthID       *string `json:"oauth_id,omitempty"`       // Nullable
@@ -12,7 +13,6 @@ type AccountDTO struct {
 type AccountDetailDTO struct {
 	ID                     uint64     `json:"id"`
 	Account                AccountDTO `json:"account"`
-	Role                   string     `json:"role"`
 	ValidationOrganization *string    `json:"validation_organization,omitempty"`
 	CompanyName            *string    `json:"company_name,omitempty"`
 	ContactName            *string    `json:"contact_name,omitempty"`

@@ -17,6 +17,9 @@ definitions:
       role:
         description: USER, PARTNER, CUSTOMER, VALIDATOR
         type: string
+      wallet_address:
+        description: Nullable
+        type: string
     type: object
   dto.AccountDetailDTO:
     properties:
@@ -37,8 +40,6 @@ definitions:
       organization_name:
         type: string
       phone_number:
-        type: string
-      role:
         type: string
       validation_organization:
         type: string

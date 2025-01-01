@@ -328,6 +328,10 @@
                 "role": {
                     "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
                     "type": "string"
+                },
+                "wallet_address": {
+                    "description": "Nullable",
+                    "type": "string"
                 }
             }
         },
@@ -359,9 +363,6 @@
                     "type": "string"
                 },
                 "phone_number": {
-                    "type": "string"
-                },
-                "role": {
                     "type": "string"
                 },
                 "validation_organization": {

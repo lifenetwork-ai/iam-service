@@ -339,6 +339,10 @@ const docTemplate = `{
                 "role": {
                     "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
                     "type": "string"
+                },
+                "wallet_address": {
+                    "description": "Nullable",
+                    "type": "string"
                 }
             }
         },
@@ -370,9 +374,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone_number": {
-                    "type": "string"
-                },
-                "role": {
                     "type": "string"
                 },
                 "validation_organization": {
