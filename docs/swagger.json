@@ -267,9 +267,6 @@
                     "description": "Nullable",
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
                 },
@@ -286,9 +283,6 @@
                 },
                 "role": {
                     "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }

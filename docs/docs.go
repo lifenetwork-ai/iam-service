@@ -278,9 +278,6 @@ const docTemplate = `{
                     "description": "Nullable",
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
                 },
@@ -297,9 +294,6 @@ const docTemplate = `{
                 },
                 "role": {
                     "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }

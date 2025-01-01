@@ -4,8 +4,6 @@ definitions:
       api_key:
         description: Nullable
         type: string
-      created_at:
-        type: string
       email:
         type: string
       id:
@@ -18,8 +16,6 @@ definitions:
         type: string
       role:
         description: USER, PARTNER, CUSTOMER, VALIDATOR
-        type: string
-      updated_at:
         type: string
     type: object
   dto.LoginPayloadDTO:
