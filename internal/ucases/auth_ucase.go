@@ -30,7 +30,7 @@ func NewAuthUCase(
 }
 
 // Register handles the creation of a new account and its role-specific details
-func (u *authUCase) Register(input *dto.RegisterAccountDTO, role constants.AccountRole) error {
+func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.AccountRole) error {
 	// Validate input
 	if strings.TrimSpace(input.Email) == "" || strings.TrimSpace(input.Password) == "" || strings.TrimSpace(string(role)) == "" {
 		return errors.New("email, password, and role are required")

@@ -87,7 +87,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RegisterAccountDTO"
+                            "$ref": "#/definitions/dto.RegisterPayloadDTO"
                         }
                     }
                 ],
@@ -139,7 +139,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.RegisterAccountDTO": {
+        "dto.RegisterPayloadDTO": {
             "type": "object",
             "required": [
                 "email",

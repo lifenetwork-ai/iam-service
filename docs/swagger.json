@@ -76,7 +76,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RegisterAccountDTO"
+                            "$ref": "#/definitions/dto.RegisterPayloadDTO"
                         }
                     }
                 ],
@@ -128,7 +128,7 @@
                 }
             }
         },
-        "dto.RegisterAccountDTO": {
+        "dto.RegisterPayloadDTO": {
             "type": "object",
             "required": [
                 "email",

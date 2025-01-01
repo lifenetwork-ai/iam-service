@@ -73,14 +73,14 @@ func (h *authHandler) Login(ctx *gin.Context) {
 // @Tags authentication
 // @Accept json
 // @Produce json
-// @Param payload body dto.RegisterAccountDTO true "User registration details"
+// @Param payload body dto.RegisterPayloadDTO true "User registration details"
 // @Success 201 {object} map[string]interface{} "Registration successful: {\"success\": true}"
 // @Failure 400 {object} response.GeneralError "Invalid payload"
 // @Failure 409 {object} response.GeneralError "Account already exists"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/auth/register [post]
 func (h *authHandler) Register(ctx *gin.Context) {
-	var req dto.RegisterAccountDTO
+	var req dto.RegisterPayloadDTO
 
 	// Parse and validate the request payload
 	if err := ctx.ShouldBindJSON(&req); err != nil {

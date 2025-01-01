@@ -11,7 +11,7 @@ definitions:
     - email
     - password
     type: object
-  dto.RegisterAccountDTO:
+  dto.RegisterPayloadDTO:
     properties:
       company_name:
         type: string
@@ -114,7 +114,7 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/dto.RegisterAccountDTO'
+          $ref: '#/definitions/dto.RegisterPayloadDTO'
       produces:
       - application/json
       responses:
