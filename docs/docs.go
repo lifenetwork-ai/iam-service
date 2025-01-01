@@ -241,7 +241,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer access token",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
                         "name": "Authorization",
                         "in": "header",
                         "required": true

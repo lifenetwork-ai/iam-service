@@ -249,7 +249,7 @@ paths:
       description: This endpoint validates an access token and retrieves the corresponding
         user's details.
       parameters:
-      - description: Bearer access token
+      - description: Bearer access token (e.g., 'Bearer <token>')
         in: header
         name: Authorization
         required: true

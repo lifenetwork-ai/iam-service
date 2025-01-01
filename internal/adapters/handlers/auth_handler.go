@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -201,25 +202,35 @@ func (h *authHandler) RefreshTokens(ctx *gin.Context) {
 	})
 }
 
-// ValidateToken validates an access token and retrieves user information.
 // @Summary Validate access token
 // @Description This endpoint validates an access token and retrieves the corresponding user's details.
 // @Tags authentication
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer access token"
+// @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
 // @Success 200 {object} dto.AccountDTO "Token is valid: User details"
 // @Failure 401 {object} response.GeneralError "Invalid or expired token"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/auth/validate-token [get]
 func (h *authHandler) ValidateToken(ctx *gin.Context) {
-	// Extract the token from the Authorization header
-	token := ctx.GetHeader("Authorization")
-	if token == "" {
+	// Extract and validate the token from the Authorization header
+	authHeader := ctx.GetHeader("Authorization")
+	if authHeader == "" {
 		logger.GetLogger().Error("Missing Authorization header")
 		httpresponse.Error(ctx, http.StatusUnauthorized, "Missing Authorization header", nil)
 		return
 	}
+
+	// Ensure it starts with "Bearer "
+	const bearerPrefix = "Bearer "
+	if !strings.HasPrefix(authHeader, bearerPrefix) {
+		logger.GetLogger().Error("Invalid Authorization header format")
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid Authorization header format", nil)
+		return
+	}
+
+	// Extract the token part
+	token := strings.TrimPrefix(authHeader, bearerPrefix)
 
 	// Validate the token using the use case
 	account, err := h.ucase.ValidateToken(token)
