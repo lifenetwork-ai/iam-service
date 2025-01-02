@@ -85,9 +85,9 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 		}
 		domainDetail := &domain.UserDetail{
 			AccountID:   domainAccount.ID,
-			FirstName:   input.FirstName,
-			LastName:    input.LastName,
-			PhoneNumber: input.PhoneNumber,
+			FirstName:   &input.FirstName,
+			LastName:    &input.LastName,
+			PhoneNumber: &input.PhoneNumber,
 		}
 		return u.accountRepository.CreateUserDetail(domainDetail)
 
@@ -97,9 +97,9 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 		}
 		domainDetail := &domain.PartnerDetail{
 			AccountID:   domainAccount.ID,
-			CompanyName: input.CompanyName,
-			ContactName: input.ContactName,
-			PhoneNumber: input.PhoneNumber,
+			CompanyName: &input.CompanyName,
+			ContactName: &input.ContactName,
+			PhoneNumber: &input.PhoneNumber,
 		}
 		return u.accountRepository.CreatePartnerDetail(domainDetail)
 
@@ -109,10 +109,10 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 		}
 		domainDetail := &domain.CustomerDetail{
 			AccountID:        domainAccount.ID,
-			OrganizationName: input.OrganizationName,
-			Industry:         input.Industry,
-			ContactName:      input.ContactName,
-			PhoneNumber:      input.PhoneNumber,
+			OrganizationName: &input.OrganizationName,
+			Industry:         &input.Industry,
+			ContactName:      &input.ContactName,
+			PhoneNumber:      &input.PhoneNumber,
 		}
 		return u.accountRepository.CreateCustomerDetail(domainDetail)
 
@@ -122,9 +122,9 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 		}
 		domainDetail := &domain.ValidatorDetail{
 			AccountID:              domainAccount.ID,
-			ValidationOrganization: input.ValidationOrganization,
-			ContactPerson:          input.ContactName,
-			PhoneNumber:            input.PhoneNumber,
+			ValidationOrganization: &input.ValidationOrganization,
+			ContactPerson:          &input.ContactName,
+			PhoneNumber:            &input.PhoneNumber,
 		}
 		return u.accountRepository.CreateValidatorDetail(domainDetail)
 

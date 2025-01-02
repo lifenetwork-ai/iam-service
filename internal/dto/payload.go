@@ -1,6 +1,8 @@
 package dto
 
-import "github.com/genefriendway/human-network-auth/constants"
+import (
+	"github.com/genefriendway/human-network-auth/constants"
+)
 
 // LoginPayloadDTO defines the payload for the login request
 type LoginPayloadDTO struct {

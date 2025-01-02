@@ -51,9 +51,9 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 				Role:          detail.Account.Role,
 				WalletAddress: &walletAddress,
 			},
-			FirstName:   &detail.FirstName,
-			LastName:    &detail.LastName,
-			PhoneNumber: &detail.PhoneNumber,
+			FirstName:   detail.FirstName,
+			LastName:    detail.LastName,
+			PhoneNumber: detail.PhoneNumber,
 		}, nil
 
 	case constants.Partner:
@@ -81,9 +81,9 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 				Role:          detail.Account.Role,
 				WalletAddress: &walletAddress,
 			},
-			CompanyName: &detail.CompanyName,
-			ContactName: &detail.ContactName,
-			PhoneNumber: &detail.PhoneNumber,
+			CompanyName: detail.CompanyName,
+			ContactName: detail.ContactName,
+			PhoneNumber: detail.PhoneNumber,
 		}, nil
 
 	case constants.Customer:
@@ -111,10 +111,10 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 				Role:          detail.Account.Role,
 				WalletAddress: &walletAddress,
 			},
-			OrganizationName: &detail.OrganizationName,
-			Industry:         &detail.Industry,
-			ContactName:      &detail.ContactName,
-			PhoneNumber:      &detail.PhoneNumber,
+			OrganizationName: detail.OrganizationName,
+			Industry:         detail.Industry,
+			ContactName:      detail.ContactName,
+			PhoneNumber:      detail.PhoneNumber,
 		}, nil
 
 	case constants.Validator:
@@ -142,9 +142,9 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 				Role:          detail.Account.Role,
 				WalletAddress: &walletAddress,
 			},
-			ValidationOrganization: &detail.ValidationOrganization,
-			ContactName:            &detail.ContactPerson,
-			PhoneNumber:            &detail.PhoneNumber,
+			ValidationOrganization: detail.ValidationOrganization,
+			ContactName:            detail.ContactPerson,
+			PhoneNumber:            detail.PhoneNumber,
 		}, nil
 
 	default:
