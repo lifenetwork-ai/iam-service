@@ -326,7 +326,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "oauth_id": {
                     "description": "Nullable",
@@ -338,6 +338,9 @@ const docTemplate = `{
                 },
                 "role": {
                     "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 },
                 "wallet_address": {
@@ -362,7 +365,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "industry": {
                     "type": "string"

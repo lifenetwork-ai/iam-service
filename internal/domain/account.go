@@ -7,8 +7,9 @@ import (
 )
 
 type Account struct {
-	ID            uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
+	ID            string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"` // UUID primary key
 	Email         string    `json:"email"`
+	Username      string    `json:"username" gorm:"unique;not null"`
 	PasswordHash  *string   `json:"password_hash,omitempty"`         // Nullable for OAuth or API Key accounts
 	APIKey        *string   `json:"api_key,omitempty" gorm:"unique"` // Nullable, used for API-based roles
 	Role          string    `json:"role"`
@@ -26,6 +27,7 @@ func (m *Account) ToDTO() *dto.AccountDTO {
 	return &dto.AccountDTO{
 		ID:            m.ID,
 		Email:         m.Email,
+		Username:      m.Username,
 		Role:          m.Role,
 		APIKey:        m.APIKey,
 		OAuthProvider: m.OAuthProvider,

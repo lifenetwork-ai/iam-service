@@ -315,7 +315,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "oauth_id": {
                     "description": "Nullable",
@@ -327,6 +327,9 @@
                 },
                 "role": {
                     "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 },
                 "wallet_address": {
@@ -351,7 +354,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "industry": {
                     "type": "string"

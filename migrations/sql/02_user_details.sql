@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS user_details (
-    id SERIAL PRIMARY KEY,
-    account_id INT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- Use UUID as primary key
+    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, -- Match accounts UUID
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     date_of_birth DATE,

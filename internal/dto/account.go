@@ -1,8 +1,9 @@
 package dto
 
 type AccountDTO struct {
-	ID            uint64  `json:"id"`
+	ID            string  `json:"id"`
 	Email         string  `json:"email"`
+	Username      string  `json:"username"`
 	Role          string  `json:"role"`                     // USER, PARTNER, CUSTOMER, VALIDATOR
 	WalletAddress *string `json:"wallet_address,omitempty"` // Nullable
 	APIKey        *string `json:"api_key,omitempty"`        // Nullable
@@ -11,7 +12,7 @@ type AccountDTO struct {
 }
 
 type AccountDetailDTO struct {
-	ID                     uint64     `json:"id"`
+	ID                     string     `json:"id"`
 	Account                AccountDTO `json:"account"`
 	ValidationOrganization *string    `json:"validation_organization,omitempty"`
 	CompanyName            *string    `json:"company_name,omitempty"`

@@ -1,5 +1,8 @@
 SET TIMEZONE TO 'UTC';
 
+-- Enable the uuid-ossp extension for generating UUIDs
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Check if the enum type exists, and create it if it doesn't
 DO $$
 BEGIN
@@ -10,8 +13,9 @@ END;
 $$;
 
 CREATE TABLE IF NOT EXISTS accounts (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- Use UUID as primary key
     email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
     password_hash TEXT, -- NULL if OAuth or API key is used
     api_key VARCHAR(255) UNIQUE, -- Only for API-based roles (partner, validator)
     role account_role NOT NULL, -- Enum: USER, PARTNER, CUSTOMER, VALIDATOR
@@ -23,6 +27,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 -- Create indexes if they do not exist
 CREATE INDEX IF NOT EXISTS accounts_email_idx ON accounts (email);
+CREATE INDEX IF NOT EXISTS accounts_username_idx ON accounts (username);
 CREATE INDEX IF NOT EXISTS accounts_api_key_idx ON accounts (api_key);
 
 -- Create a trigger function to update 'updated_at' column on update

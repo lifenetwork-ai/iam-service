@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS validator_details (
-    id SERIAL PRIMARY KEY,
-    account_id INT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- Use UUID as primary key
+    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, -- Match UUID from accounts table
     validation_organization VARCHAR(255) NOT NULL,
     contact_person VARCHAR(100),
     phone_number VARCHAR(20),
