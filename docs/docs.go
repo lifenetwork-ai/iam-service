@@ -61,7 +61,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/login": {
             "post": {
-                "description": "This endpoint authenticates the user by email and password, and returns an access token and refresh token.",
+                "description": "This endpoint authenticates the user by email, username, or phone number, and returns an access token and refresh token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -74,7 +74,7 @@ const docTemplate = `{
                 "summary": "Authenticate user",
                 "parameters": [
                     {
-                        "description": "User credentials (email and password)",
+                        "description": "User credentials (identifier, password, and identifierType)",
                         "name": "payload",
                         "in": "body",
                         "required": true,
@@ -387,12 +387,17 @@ const docTemplate = `{
         "dto.LoginPayloadDTO": {
             "type": "object",
             "required": [
-                "email",
+                "identifier",
+                "identifier_type",
                 "password"
             ],
             "properties": {
-                "email": {
-                    "description": "User email",
+                "identifier": {
+                    "description": "Email, Username, or Phone",
+                    "type": "string"
+                },
+                "identifier_type": {
+                    "description": "\"email\", \"username\", or \"phone\"",
                     "type": "string"
                 },
                 "password": {

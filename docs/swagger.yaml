@@ -48,14 +48,18 @@ definitions:
     type: object
   dto.LoginPayloadDTO:
     properties:
-      email:
-        description: User email
+      identifier:
+        description: Email, Username, or Phone
+        type: string
+      identifier_type:
+        description: '"email", "username", or "phone"'
         type: string
       password:
         description: User password
         type: string
     required:
-    - email
+    - identifier
+    - identifier_type
     - password
     type: object
   dto.LogoutPayloadDTO:
@@ -162,10 +166,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint authenticates the user by email and password, and
-        returns an access token and refresh token.
+      description: This endpoint authenticates the user by email, username, or phone
+        number, and returns an access token and refresh token.
       parameters:
-      - description: User credentials (email and password)
+      - description: User credentials (identifier, password, and identifierType)
         in: body
         name: payload
         required: true

@@ -2,8 +2,9 @@ package dto
 
 // LoginPayloadDTO defines the payload for the login request
 type LoginPayloadDTO struct {
-	Email    string `json:"email" validate:"required,email"` // User email
-	Password string `json:"password" validate:"required"`    // User password
+	Identifier     string `json:"identifier" validate:"required"`      // Email, Username, or Phone
+	IdentifierType string `json:"identifier_type" validate:"required"` // "email", "username", or "phone"
+	Password       string `json:"password" validate:"required"`        // User password
 }
 
 // RegisterPayloadtDTO defines the payload for the register request

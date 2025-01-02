@@ -73,11 +73,11 @@ func (h *authHandler) Register(ctx *gin.Context) {
 
 // Login authenticates the user and returns a token pair (Access + Refresh).
 // @Summary Authenticate user
-// @Description This endpoint authenticates the user by email and password, and returns an access token and refresh token.
+// @Description This endpoint authenticates the user by email, username, or phone number, and returns an access token and refresh token.
 // @Tags authentication
 // @Accept json
 // @Produce json
-// @Param payload body dto.LoginPayloadDTO true "User credentials (email and password)"
+// @Param payload body dto.LoginPayloadDTO true "User credentials (identifier, password, and identifierType)"
 // @Success 200 {object} dto.TokenPairDTO "Login successful: {\"access_token\": \"...\", \"refresh_token\": \"...\"}"
 // @Failure 400 {object} response.GeneralError "Invalid payload"
 // @Failure 401 {object} response.GeneralError "Invalid credentials"
@@ -94,9 +94,9 @@ func (h *authHandler) Login(ctx *gin.Context) {
 	}
 
 	// Authenticate the user using the use case
-	tokenPair, err := h.ucase.Login(req.Email, req.Password)
+	tokenPair, err := h.ucase.Login(req.Identifier, req.Password, req.IdentifierType)
 	if err != nil {
-		logger.GetLogger().Errorf("Failed to login for email %s: %v", req.Email, err)
+		logger.GetLogger().Errorf("Failed to login for identifier %s (type: %s): %v", req.Identifier, req.IdentifierType, err)
 		if errors.Is(err, domain.ErrInvalidCredentials) {
 			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid credentials", err)
 		} else {
@@ -106,9 +106,9 @@ func (h *authHandler) Login(ctx *gin.Context) {
 	}
 
 	// Respond with success and token pair
-	ctx.JSON(http.StatusOK, gin.H{
-		"access_token":  tokenPair.AccessToken,
-		"refresh_token": tokenPair.RefreshToken,
+	ctx.JSON(http.StatusOK, dto.TokenPairDTO{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
 	})
 }
 

@@ -2,6 +2,7 @@ package ucases
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -133,16 +134,33 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 }
 
 // Login authenticates the user and returns a token pair (Access + Refresh)
-func (u *authUCase) Login(email, password string) (*dto.TokenPairDTO, error) {
+func (u *authUCase) Login(identifier, password, identifierType string) (*dto.TokenPairDTO, error) {
 	// Validate input
-	if strings.TrimSpace(email) == "" || strings.TrimSpace(password) == "" {
-		return nil, errors.New("email and password are required")
+	if strings.TrimSpace(identifier) == "" || strings.TrimSpace(password) == "" {
+		return nil, errors.New("identifier and password are required")
 	}
 
-	// Find account by email
-	account, err := u.accountRepository.FindAccountByEmail(email)
+	// Find the account based on the identifier type
+	var account *domain.Account
+	var err error
+
+	// Define a mapping of identifier types to repository methods
+	lookupMethods := map[string]func(string) (*domain.Account, error){
+		"email":    u.accountRepository.FindAccountByEmail,
+		"username": u.accountRepository.FindAccountByUsername,
+		"phone":    u.accountRepository.FindAccountByPhoneNumber,
+	}
+
+	// Check if the identifierType is supported
+	lookupMethod, exists := lookupMethods[identifierType]
+	if !exists {
+		return nil, fmt.Errorf("unsupported identifier type: %s", identifierType)
+	}
+
+	// Fetch the account using the appropriate lookup method
+	account, err = lookupMethod(identifier)
 	if err != nil {
-		return nil, errors.New("failed to fetch account")
+		return nil, fmt.Errorf("failed to fetch account: %w", err)
 	}
 	if account == nil {
 		return nil, domain.ErrInvalidCredentials

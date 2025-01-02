@@ -40,6 +40,17 @@ func (r *accountRepository) FindAccountByEmail(email string) (*domain.Account, e
 	return &account, nil
 }
 
+func (r *accountRepository) FindAccountByPhoneNumber(phone string) (*domain.Account, error) {
+	var account domain.Account
+	if err := r.db.Where("phone_number = ?", phone).First(&account).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &account, nil
+}
+
 func (r *accountRepository) FindAccountByID(id string) (*domain.Account, error) {
 	var account domain.Account
 	if err := r.db.First(&account, id).Error; err != nil {
