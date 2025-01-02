@@ -133,20 +133,17 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 	var account *domain.Account
 	var err error
 
-	// Define a mapping of identifier types to repository methods
 	lookupMethods := map[constants.IdentifierType]func(string) (*domain.Account, error){
 		constants.IdentifierEmail:    u.accountRepository.FindAccountByEmail,
 		constants.IdentifierUsername: u.accountRepository.FindAccountByUsername,
 		constants.IdentifierPhone:    u.accountRepository.FindAccountByPhoneNumber,
 	}
 
-	// Check if the identifierType is supported
 	lookupMethod, exists := lookupMethods[identifierType]
 	if !exists {
 		return nil, fmt.Errorf("unsupported identifier type: %s", identifierType)
 	}
 
-	// Fetch the account using the appropriate lookup method
 	account, err = lookupMethod(identifier)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch account: %w", err)
@@ -166,18 +163,9 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 		return nil, fmt.Errorf("failed to check active session: %w", err)
 	}
 
-	// If an active refresh token exists, avoid generating a new one
+	// If an active refresh token exists and is still valid, return an error
 	if activeToken != nil && activeToken.ExpiresAt.After(time.Now()) {
-		accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
-		if err != nil {
-			return nil, errors.New("failed to generate access token")
-		}
-
-		// Return the existing refresh token and a new access token
-		return &dto.TokenPairDTO{
-			AccessToken:  accessToken,
-			RefreshToken: activeToken.HashedToken, // return existing refresh token
-		}, nil
+		return nil, errors.New("user already logged in with an active session")
 	}
 
 	// Generate Access Token

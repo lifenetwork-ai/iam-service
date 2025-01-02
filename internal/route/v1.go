@@ -30,7 +30,7 @@ func RegisterRoutes(
 	appRouter.POST("/auth/login", authHandler.Login)
 	appRouter.POST("/auth/logout", authHandler.Logout)
 	appRouter.POST("/auth/refresh-tokens", authHandler.RefreshTokens)
-	appRouter.GET("/validate-token", middleware.ValidateBearerToken(), authHandler.ValidateToken)
+	appRouter.GET("/auth/validate-token", middleware.ValidateBearerToken(), authHandler.ValidateToken)
 
 	// SECTION: account
 	accountHandler := handlers.NewAccountHandler(accountUCase, authUCase)
