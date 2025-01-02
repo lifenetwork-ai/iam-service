@@ -230,22 +230,26 @@ func (u *authUCase) Logout(refreshToken string) error {
 
 // RefreshTokens generates a new token pair using the provided refresh token
 func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error) {
-	// Hash the incoming token
+	// Hash the incoming refresh token
 	hashedToken := utils.HashToken(refreshToken)
 
 	// Validate refresh token
 	storedToken, err := u.authRepository.FindRefreshToken(hashedToken)
 	if err != nil {
+		return nil, fmt.Errorf("failed to fetch refresh token: %w", domain.ErrInvalidToken)
+	}
+	if storedToken == nil {
 		return nil, domain.ErrInvalidToken
 	}
-	if storedToken == nil || storedToken.ExpiresAt.Before(time.Now()) {
+	if storedToken.ExpiresAt.Before(time.Now()) {
+		_ = u.authRepository.DeleteRefreshToken(hashedToken) // Ignoring error since token is expired anyway
 		return nil, domain.ErrExpiredToken
 	}
 
-	// Fetch the account associated with the token
+	// Fetch the associated account
 	account, err := u.accountRepository.FindAccountByID(storedToken.AccountID)
 	if err != nil || account == nil {
-		return nil, domain.ErrInvalidToken
+		return nil, fmt.Errorf("failed to fetch account: %w", domain.ErrInvalidToken)
 	}
 
 	// Generate a new Access Token
@@ -254,28 +258,31 @@ func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error
 		return nil, errors.New("failed to generate access token")
 	}
 
-	// Generate a new Refresh Token
-	newRefreshToken, err := utils.GenerateRefreshToken()
-	if err != nil {
-		return nil, errors.New("failed to generate refresh token")
-	}
-	newHashedToken := utils.HashToken(newRefreshToken)
+	// Generate a new Refresh Token only if close to expiration
+	newRefreshToken := refreshToken
+	if time.Until(storedToken.ExpiresAt) < constants.RefreshTokenRenewalThreshold {
+		newRefreshToken, err = utils.GenerateRefreshToken()
+		if err != nil {
+			return nil, errors.New("failed to generate refresh token")
+		}
 
-	// Replace the old refresh token in the repository
-	err = u.authRepository.DeleteRefreshToken(hashedToken)
-	if err != nil {
-		return nil, errors.New("failed to delete old refresh token")
-	}
-	err = u.authRepository.CreateRefreshToken(&domain.RefreshToken{
-		AccountID:   account.ID,
-		HashedToken: newHashedToken,
-		ExpiresAt:   time.Now().Add(constants.RefreshTokenExpiry),
-	})
-	if err != nil {
-		return nil, errors.New("failed to store new refresh token")
+		// Replace the old refresh token
+		newHashedToken := utils.HashToken(newRefreshToken)
+		err = u.authRepository.DeleteRefreshToken(hashedToken)
+		if err != nil {
+			return nil, errors.New("failed to delete old refresh token")
+		}
+		err = u.authRepository.CreateRefreshToken(&domain.RefreshToken{
+			AccountID:   account.ID,
+			HashedToken: newHashedToken,
+			ExpiresAt:   time.Now().Add(constants.RefreshTokenExpiry),
+		})
+		if err != nil {
+			return nil, errors.New("failed to store new refresh token")
+		}
 	}
 
-	// Return the new token pair
+	// Return the token pair
 	return &dto.TokenPairDTO{
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
