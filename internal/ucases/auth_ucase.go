@@ -163,9 +163,17 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 		return nil, fmt.Errorf("failed to check active session: %w", err)
 	}
 
-	// If an active refresh token exists and is still valid, return an error
-	if activeToken != nil && activeToken.ExpiresAt.After(time.Now()) {
-		return nil, errors.New("user already logged in with an active session")
+	// If an active refresh token exists
+	if activeToken != nil {
+		if activeToken.ExpiresAt.After(time.Now()) {
+			// Token is still valid, return an error indicating the user is already logged in
+			return nil, errors.New("user already logged in with an active session")
+		} else {
+			// Token is expired, delete it
+			if delErr := u.authRepository.DeleteRefreshToken(activeToken.HashedToken); delErr != nil {
+				return nil, fmt.Errorf("failed to delete expired refresh token: %w", delErr)
+			}
+		}
 	}
 
 	// Generate Access Token
