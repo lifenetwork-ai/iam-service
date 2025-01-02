@@ -35,21 +35,24 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			return nil, errors.New("user detail not found")
 		}
 
-		// Generate wallet address
-		account, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
+		// Generate public key
+		publicKey, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
-		walletAddress := account.Address.Hex()
+		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
 
 		// Map UserDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:            detail.Account.ID,
-				Email:         detail.Account.Email,
-				Role:          detail.Account.Role,
-				WalletAddress: &walletAddress,
+				ID:        detail.Account.ID,
+				Email:     detail.Account.Email,
+				Role:      detail.Account.Role,
+				PublicKey: &publicKeyHex,
 			},
 			FirstName:   detail.FirstName,
 			LastName:    detail.LastName,
@@ -65,21 +68,24 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			return nil, errors.New("partner detail not found")
 		}
 
-		// Generate wallet address
-		account, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.Partner), accountID)
+		// Generate public key
+		publicKey, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
-		walletAddress := account.Address.Hex()
+		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
 
 		// Map PartnerDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:            detail.Account.ID,
-				Email:         detail.Account.Email,
-				Role:          detail.Account.Role,
-				WalletAddress: &walletAddress,
+				ID:        detail.Account.ID,
+				Email:     detail.Account.Email,
+				Role:      detail.Account.Role,
+				PublicKey: &publicKeyHex,
 			},
 			CompanyName: detail.CompanyName,
 			ContactName: detail.ContactName,
@@ -95,21 +101,24 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			return nil, errors.New("customer detail not found")
 		}
 
-		// Generate wallet address
-		account, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.Customer), accountID)
+		// Generate public key
+		publicKey, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
-		walletAddress := account.Address.Hex()
+		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
 
 		// Map CustomerDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:            detail.Account.ID,
-				Email:         detail.Account.Email,
-				Role:          detail.Account.Role,
-				WalletAddress: &walletAddress,
+				ID:        detail.Account.ID,
+				Email:     detail.Account.Email,
+				Role:      detail.Account.Role,
+				PublicKey: &publicKeyHex,
 			},
 			OrganizationName: detail.OrganizationName,
 			Industry:         detail.Industry,
@@ -126,21 +135,24 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			return nil, errors.New("validator detail not found")
 		}
 
-		// Generate wallet address
-		account, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.Validator), accountID)
+		// Generate public key
+		publicKey, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
-		walletAddress := account.Address.Hex()
+		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
 
 		// Map ValidatorDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:            detail.Account.ID,
-				Email:         detail.Account.Email,
-				Role:          detail.Account.Role,
-				WalletAddress: &walletAddress,
+				ID:        detail.Account.ID,
+				Email:     detail.Account.Email,
+				Role:      detail.Account.Role,
+				PublicKey: &publicKeyHex,
 			},
 			ValidationOrganization: detail.ValidationOrganization,
 			ContactName:            detail.ContactPerson,

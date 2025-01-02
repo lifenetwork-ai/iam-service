@@ -53,7 +53,7 @@ func (r *accountRepository) FindAccountByPhoneNumber(phone string) (*domain.Acco
 
 func (r *accountRepository) FindAccountByID(id string) (*domain.Account, error) {
 	var account domain.Account
-	if err := r.db.First(&account, id).Error; err != nil {
+	if err := r.db.Where("id = ?", id).First(&account).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
