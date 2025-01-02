@@ -32,14 +32,24 @@ func NewAuthUCase(
 // Register handles the creation of a new account and its role-specific details
 func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.AccountRole) error {
 	// Validate input
-	if strings.TrimSpace(input.Email) == "" || strings.TrimSpace(input.Password) == "" || strings.TrimSpace(string(role)) == "" {
-		return errors.New("email, password, and role are required")
+	if strings.TrimSpace(input.Email) == "" || strings.TrimSpace(input.Password) == "" ||
+		strings.TrimSpace(input.Username) == "" || strings.TrimSpace(string(role)) == "" {
+		return errors.New("email, username, password, and role are required")
 	}
 
-	// Check if account already exists
+	// Check if username already exists
+	existingUsername, err := u.accountRepository.FindAccountByUsername(input.Username)
+	if err != nil {
+		return errors.New("failed to check if username exists")
+	}
+	if existingUsername != nil {
+		return errors.New("username already taken")
+	}
+
+	// Check if account already exists by email
 	existingAccount, err := u.accountRepository.FindAccountByEmail(input.Email)
 	if err != nil {
-		return errors.New("failed to check if account exists")
+		return errors.New("failed to check if email exists")
 	}
 	if existingAccount != nil {
 		return domain.ErrAccountAlreadyExists
@@ -55,6 +65,7 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 	password := string(hashedPassword)
 	domainAccount := &domain.Account{
 		Email:        input.Email,
+		Username:     input.Username,
 		Role:         string(role),
 		PasswordHash: &password,
 	}

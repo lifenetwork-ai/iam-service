@@ -428,7 +428,8 @@ const docTemplate = `{
             "required": [
                 "email",
                 "password",
-                "role"
+                "role",
+                "username"
             ],
             "properties": {
                 "company_name": {
@@ -460,6 +461,9 @@ const docTemplate = `{
                 },
                 "role": {
                     "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 },
                 "validation_organization": {

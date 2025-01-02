@@ -9,6 +9,7 @@ type LoginPayloadDTO struct {
 // RegisterPayloadtDTO defines the payload for the register request
 type RegisterPayloadDTO struct {
 	Email                  string `json:"email" validate:"required,email"`
+	Username               string `json:"username" validate:"required"`
 	Password               string `json:"password" validate:"required"`
 	Role                   string `json:"role" validate:"required"` // USER, PARTNER, CUSTOMER, VALIDATOR
 	FirstName              string `json:"first_name,omitempty"`

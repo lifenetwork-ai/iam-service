@@ -95,12 +95,15 @@ definitions:
       role:
         description: USER, PARTNER, CUSTOMER, VALIDATOR
         type: string
+      username:
+        type: string
       validation_organization:
         type: string
     required:
     - email
     - password
     - role
+    - username
     type: object
   dto.TokenPairDTO:
     properties:

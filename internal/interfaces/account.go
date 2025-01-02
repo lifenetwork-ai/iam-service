@@ -8,6 +8,7 @@ import (
 
 type AccountRepository interface {
 	// Accounts
+	FindAccountByUsername(username string) (*domain.Account, error)
 	FindAccountByEmail(email string) (*domain.Account, error)
 	FindAccountByID(id string) (*domain.Account, error)
 	CreateAccount(account *domain.Account) error

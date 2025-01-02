@@ -18,6 +18,17 @@ func NewAccountRepository(db *gorm.DB) interfaces.AccountRepository {
 }
 
 // Accounts
+func (r *accountRepository) FindAccountByUsername(username string) (*domain.Account, error) {
+	var account domain.Account
+	if err := r.db.Where("username = ?", username).First(&account).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &account, nil
+}
+
 func (r *accountRepository) FindAccountByEmail(email string) (*domain.Account, error) {
 	var account domain.Account
 	if err := r.db.Where("email = ?", email).First(&account).Error; err != nil {
