@@ -326,7 +326,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "oauth_id": {
                     "description": "Nullable",
@@ -362,7 +362,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "industry": {
                     "type": "string"

@@ -7,7 +7,7 @@ definitions:
       email:
         type: string
       id:
-        type: integer
+        type: string
       oauth_id:
         description: Nullable
         type: string
@@ -32,7 +32,7 @@ definitions:
       first_name:
         type: string
       id:
-        type: integer
+        type: string
       industry:
         type: string
       last_name:
