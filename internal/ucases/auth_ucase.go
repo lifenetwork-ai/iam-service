@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/domain"
@@ -157,6 +158,26 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 	// Compare password
 	if account.PasswordHash == nil || bcrypt.CompareHashAndPassword([]byte(*account.PasswordHash), []byte(password)) != nil {
 		return nil, domain.ErrInvalidCredentials
+	}
+
+	// Check if the user already has an active session
+	activeToken, err := u.authRepository.FindActiveRefreshToken(account.ID)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("failed to check active session: %w", err)
+	}
+
+	// If an active refresh token exists, avoid generating a new one
+	if activeToken != nil && activeToken.ExpiresAt.After(time.Now()) {
+		accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
+		if err != nil {
+			return nil, errors.New("failed to generate access token")
+		}
+
+		// Return the existing refresh token and a new access token
+		return &dto.TokenPairDTO{
+			AccessToken:  accessToken,
+			RefreshToken: activeToken.HashedToken, // return existing refresh token
+		}, nil
 	}
 
 	// Generate Access Token

@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 
 	"github.com/genefriendway/human-network-auth/internal/domain"
@@ -29,4 +31,13 @@ func (r *authRepository) FindRefreshToken(hashedToken string) (*domain.RefreshTo
 
 func (r *authRepository) DeleteRefreshToken(hashedToken string) error {
 	return r.db.Where("hashed_token = ?", hashedToken).Delete(&domain.RefreshToken{}).Error
+}
+
+func (r *authRepository) FindActiveRefreshToken(accountID string) (*domain.RefreshToken, error) {
+	var refreshToken domain.RefreshToken
+	err := r.db.Where("account_id = ? AND expires_at > ?", accountID, time.Now()).First(&refreshToken).Error
+	if err != nil {
+		return nil, err
+	}
+	return &refreshToken, nil
 }

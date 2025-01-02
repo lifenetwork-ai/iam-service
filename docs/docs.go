@@ -349,15 +349,15 @@ const docTemplate = `{
                     "description": "Nullable",
                     "type": "string"
                 },
+                "public_key": {
+                    "description": "Nullable",
+                    "type": "string"
+                },
                 "role": {
                     "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
                     "type": "string"
                 },
                 "username": {
-                    "type": "string"
-                },
-                "wallet_address": {
-                    "description": "Nullable",
                     "type": "string"
                 }
             }

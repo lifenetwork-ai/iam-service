@@ -10,6 +10,7 @@ type AuthRepository interface {
 	CreateRefreshToken(token *domain.RefreshToken) error
 	FindRefreshToken(hashedToken string) (*domain.RefreshToken, error)
 	DeleteRefreshToken(hashedToken string) error
+	FindActiveRefreshToken(accountID string) (*domain.RefreshToken, error)
 }
 
 type AuthUCase interface {
