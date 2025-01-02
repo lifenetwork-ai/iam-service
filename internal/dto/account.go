@@ -3,6 +3,7 @@ package dto
 type AccountDTO struct {
 	ID            string  `json:"id"`
 	Email         string  `json:"email"`
+	Username      string  `json:"username"`
 	Role          string  `json:"role"`                     // USER, PARTNER, CUSTOMER, VALIDATOR
 	WalletAddress *string `json:"wallet_address,omitempty"` // Nullable
 	APIKey        *string `json:"api_key,omitempty"`        // Nullable

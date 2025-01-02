@@ -340,6 +340,9 @@ const docTemplate = `{
                     "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
                     "type": "string"
                 },
+                "username": {
+                    "type": "string"
+                },
                 "wallet_address": {
                     "description": "Nullable",
                     "type": "string"
