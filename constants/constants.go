@@ -47,3 +47,12 @@ const (
 	AccessTokenExpiry  = 15 * time.Minute   // 15 minutes
 	RefreshTokenExpiry = 7 * 24 * time.Hour // 7 days
 )
+
+// IdentifierType represents the types of identifiers used for login
+type IdentifierType string
+
+const (
+	IdentifierEmail    IdentifierType = "email"
+	IdentifierUsername IdentifierType = "username"
+	IdentifierPhone    IdentifierType = "phone"
+)

@@ -1,4 +1,14 @@
 definitions:
+  constants.IdentifierType:
+    enum:
+    - email
+    - username
+    - phone
+    type: string
+    x-enum-varnames:
+    - IdentifierEmail
+    - IdentifierUsername
+    - IdentifierPhone
   dto.AccountDTO:
     properties:
       api_key:
@@ -49,11 +59,12 @@ definitions:
   dto.LoginPayloadDTO:
     properties:
       identifier:
-        description: Email, Username, or Phone
+        description: Identifier (email, username, or phone number)
         type: string
       identifier_type:
-        description: '"email", "username", or "phone"'
-        type: string
+        allOf:
+        - $ref: '#/definitions/constants.IdentifierType'
+        description: 'Type of identifier: "email", "username", or "phone"'
       password:
         description: User password
         type: string
@@ -169,7 +180,8 @@ paths:
       description: This endpoint authenticates the user by email, username, or phone
         number, and returns an access token and refresh token.
       parameters:
-      - description: User credentials (identifier, password, and identifierType)
+      - description: 'User credentials (identifier, password, and identifier_type
+          (e.g: email, username, phone))'
         in: body
         name: payload
         required: true

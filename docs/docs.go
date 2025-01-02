@@ -74,7 +74,7 @@ const docTemplate = `{
                 "summary": "Authenticate user",
                 "parameters": [
                     {
-                        "description": "User credentials (identifier, password, and identifierType)",
+                        "description": "User credentials (identifier, password, and identifier_type (e.g: email, username, phone))",
                         "name": "payload",
                         "in": "body",
                         "required": true,
@@ -315,6 +315,19 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "constants.IdentifierType": {
+            "type": "string",
+            "enum": [
+                "email",
+                "username",
+                "phone"
+            ],
+            "x-enum-varnames": [
+                "IdentifierEmail",
+                "IdentifierUsername",
+                "IdentifierPhone"
+            ]
+        },
         "dto.AccountDTO": {
             "type": "object",
             "properties": {
@@ -393,12 +406,16 @@ const docTemplate = `{
             ],
             "properties": {
                 "identifier": {
-                    "description": "Email, Username, or Phone",
+                    "description": "Identifier (email, username, or phone number)",
                     "type": "string"
                 },
                 "identifier_type": {
-                    "description": "\"email\", \"username\", or \"phone\"",
-                    "type": "string"
+                    "description": "Type of identifier: \"email\", \"username\", or \"phone\"",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/constants.IdentifierType"
+                        }
+                    ]
                 },
                 "password": {
                     "description": "User password",

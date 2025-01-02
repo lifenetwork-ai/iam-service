@@ -134,7 +134,7 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 }
 
 // Login authenticates the user and returns a token pair (Access + Refresh)
-func (u *authUCase) Login(identifier, password, identifierType string) (*dto.TokenPairDTO, error) {
+func (u *authUCase) Login(identifier, password string, identifierType constants.IdentifierType) (*dto.TokenPairDTO, error) {
 	// Validate input
 	if strings.TrimSpace(identifier) == "" || strings.TrimSpace(password) == "" {
 		return nil, errors.New("identifier and password are required")
@@ -145,10 +145,10 @@ func (u *authUCase) Login(identifier, password, identifierType string) (*dto.Tok
 	var err error
 
 	// Define a mapping of identifier types to repository methods
-	lookupMethods := map[string]func(string) (*domain.Account, error){
-		"email":    u.accountRepository.FindAccountByEmail,
-		"username": u.accountRepository.FindAccountByUsername,
-		"phone":    u.accountRepository.FindAccountByPhoneNumber,
+	lookupMethods := map[constants.IdentifierType]func(string) (*domain.Account, error){
+		constants.IdentifierEmail:    u.accountRepository.FindAccountByEmail,
+		constants.IdentifierUsername: u.accountRepository.FindAccountByUsername,
+		constants.IdentifierPhone:    u.accountRepository.FindAccountByPhoneNumber,
 	}
 
 	// Check if the identifierType is supported

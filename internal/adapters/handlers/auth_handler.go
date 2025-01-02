@@ -77,7 +77,7 @@ func (h *authHandler) Register(ctx *gin.Context) {
 // @Tags authentication
 // @Accept json
 // @Produce json
-// @Param payload body dto.LoginPayloadDTO true "User credentials (identifier, password, and identifierType)"
+// @Param payload body dto.LoginPayloadDTO true "User credentials (identifier, password, and identifier_type (e.g: email, username, phone))"
 // @Success 200 {object} dto.TokenPairDTO "Login successful: {\"access_token\": \"...\", \"refresh_token\": \"...\"}"
 // @Failure 400 {object} response.GeneralError "Invalid payload"
 // @Failure 401 {object} response.GeneralError "Invalid credentials"
