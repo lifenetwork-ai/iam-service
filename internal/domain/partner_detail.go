@@ -5,8 +5,8 @@ import (
 )
 
 type PartnerDetail struct {
-	ID          uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
-	AccountID   uint64    `json:"account_id"`
+	ID          string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"` // UUID primary key
+	AccountID   string    `json:"account_id"`
 	Account     Account   `json:"account" gorm:"foreignKey:AccountID;references:ID"`
 	CompanyName string    `json:"company_name"`
 	ContactName string    `json:"contact_name"`

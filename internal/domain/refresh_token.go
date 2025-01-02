@@ -4,8 +4,8 @@ import "time"
 
 // RefreshToken represents the structure of a refresh token in the system
 type RefreshToken struct {
-	ID          uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
-	AccountID   uint64    `json:"account_id"`
+	ID          string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"` // UUID primary key
+	AccountID   string    `json:"account_id"`
 	HashedToken string    `json:"hashed_token"`
 	ExpiresAt   time.Time `json:"expires_at"`
 	CreatedAt   time.Time `json:"created_at"`

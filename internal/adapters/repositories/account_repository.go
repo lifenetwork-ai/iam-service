@@ -29,7 +29,7 @@ func (r *accountRepository) FindAccountByEmail(email string) (*domain.Account, e
 	return &account, nil
 }
 
-func (r *accountRepository) FindAccountByID(id uint64) (*domain.Account, error) {
+func (r *accountRepository) FindAccountByID(id string) (*domain.Account, error) {
 	var account domain.Account
 	if err := r.db.First(&account, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -45,7 +45,7 @@ func (r *accountRepository) CreateAccount(account *domain.Account) error {
 }
 
 // User detail
-func (r *accountRepository) FindUserDetailByAccountID(accountID uint64) (*domain.UserDetail, error) {
+func (r *accountRepository) FindUserDetailByAccountID(accountID string) (*domain.UserDetail, error) {
 	var details domain.UserDetail
 	// Use Preload to eagerly load the Account relationship
 	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
@@ -62,7 +62,7 @@ func (r *accountRepository) CreateUserDetail(detail *domain.UserDetail) error {
 }
 
 // Partner detail
-func (r *accountRepository) FindPartnerDetailByAccountID(accountID uint64) (*domain.PartnerDetail, error) {
+func (r *accountRepository) FindPartnerDetailByAccountID(accountID string) (*domain.PartnerDetail, error) {
 	var details domain.PartnerDetail
 	// Use Preload to eagerly load the Account relationship
 	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
@@ -79,7 +79,7 @@ func (r *accountRepository) CreatePartnerDetail(detail *domain.PartnerDetail) er
 }
 
 // Customer detail
-func (r *accountRepository) FindCustomerDetailByAccountID(accountID uint64) (*domain.CustomerDetail, error) {
+func (r *accountRepository) FindCustomerDetailByAccountID(accountID string) (*domain.CustomerDetail, error) {
 	var details domain.CustomerDetail
 	// Use Preload to eagerly load the Account relationship
 	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
@@ -96,7 +96,7 @@ func (r *accountRepository) CreateCustomerDetail(detail *domain.CustomerDetail) 
 }
 
 // Validator detail
-func (r *accountRepository) FindValidatorDetailByAccountID(accountID uint64) (*domain.ValidatorDetail, error) {
+func (r *accountRepository) FindValidatorDetailByAccountID(accountID string) (*domain.ValidatorDetail, error) {
 	var details domain.ValidatorDetail
 	// Use Preload to eagerly load the Account relationship
 	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {

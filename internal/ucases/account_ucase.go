@@ -24,7 +24,7 @@ func (u *accountUCase) FindAccountByEmail(email string) (*dto.AccountDTO, error)
 }
 
 // FindDetailByAccountID retrieves role-specific details by account ID
-func (u *accountUCase) FindDetailByAccountID(accountID uint64, role constants.AccountRole) (*dto.AccountDetailDTO, error) {
+func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.AccountRole) (*dto.AccountDetailDTO, error) {
 	switch role {
 	case constants.User:
 		detail, err := u.accountRepository.FindUserDetailByAccountID(accountID)

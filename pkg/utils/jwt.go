@@ -15,14 +15,14 @@ import (
 var jwtSecret = []byte("your_secret_key") // TODO: Replace with a secure secret key
 
 type Claims struct {
-	AccountID uint64 `json:"account_id"`
+	AccountID string `json:"account_id"`
 	Email     string `json:"email"`
 	Role      string `json:"role"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken generates a JWT access token for the user
-func GenerateToken(accountID uint64, email, role string) (string, error) {
+func GenerateToken(accountID, email, role string) (string, error) {
 	claims := &Claims{
 		AccountID: accountID,
 		Email:     email,
