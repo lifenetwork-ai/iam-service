@@ -80,9 +80,6 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 	// Save role-specific details
 	switch role {
 	case constants.User:
-		if input.FirstName == "" || input.LastName == "" || input.PhoneNumber == "" {
-			return errors.New("first_name, last_name, and phone_number are required for USER role")
-		}
 		domainDetail := &domain.UserDetail{
 			AccountID:   domainAccount.ID,
 			FirstName:   &input.FirstName,
@@ -92,9 +89,6 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 		return u.accountRepository.CreateUserDetail(domainDetail)
 
 	case constants.Partner:
-		if input.CompanyName == "" || input.PhoneNumber == "" {
-			return errors.New("company_name and phone_number are required for PARTNER role")
-		}
 		domainDetail := &domain.PartnerDetail{
 			AccountID:   domainAccount.ID,
 			CompanyName: &input.CompanyName,
@@ -104,9 +98,6 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 		return u.accountRepository.CreatePartnerDetail(domainDetail)
 
 	case constants.Customer:
-		if input.OrganizationName == "" || input.PhoneNumber == "" {
-			return errors.New("organization_name and phone_number are required for CUSTOMER role")
-		}
 		domainDetail := &domain.CustomerDetail{
 			AccountID:        domainAccount.ID,
 			OrganizationName: &input.OrganizationName,
@@ -117,9 +108,6 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 		return u.accountRepository.CreateCustomerDetail(domainDetail)
 
 	case constants.Validator:
-		if input.ValidationOrganization == "" || input.PhoneNumber == "" {
-			return errors.New("validation_organization and phone_number are required for VALIDATOR role")
-		}
 		domainDetail := &domain.ValidatorDetail{
 			AccountID:              domainAccount.ID,
 			ValidationOrganization: &input.ValidationOrganization,

@@ -13,6 +13,7 @@ import (
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
 	"github.com/genefriendway/human-network-auth/pkg/logger"
+	"github.com/genefriendway/human-network-auth/pkg/utils"
 )
 
 type authHandler struct {
@@ -48,6 +49,9 @@ func (h *authHandler) Register(ctx *gin.Context) {
 		httpresponse.Error(ctx, http.StatusBadRequest, "Failed to register, invalid payload", err)
 		return
 	}
+
+	// Normalize empty fields in the payload
+	utils.NormalizeFields(&req)
 
 	// Validate the required fields in request payload
 	validate := validator.New()
