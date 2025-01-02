@@ -347,4 +347,25 @@ paths:
       summary: Validate access token
       tags:
       - authentication
+  /api/v1/validators/active:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a list of active validators.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of active validators
+          schema:
+            items:
+              $ref: '#/definitions/dto.AccountDetailDTO'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Get Active Validators
+      tags:
+      - validators
 swagger: "2.0"

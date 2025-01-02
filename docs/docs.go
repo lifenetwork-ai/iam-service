@@ -312,6 +312,38 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/validators/active": {
+            "get": {
+                "description": "Fetches a list of active validators.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "validators"
+                ],
+                "summary": "Get Active Validators",
+                "responses": {
+                    "200": {
+                        "description": "List of active validators",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.AccountDetailDTO"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {

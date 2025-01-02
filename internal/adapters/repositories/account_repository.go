@@ -133,3 +133,12 @@ func (r *accountRepository) FindValidatorDetailByAccountID(accountID string) (*d
 func (r *accountRepository) CreateValidatorDetail(detail *domain.ValidatorDetail) error {
 	return r.db.Create(detail).Error
 }
+
+func (r *accountRepository) FindActiveValidators() ([]domain.ValidatorDetail, error) {
+	var validators []domain.ValidatorDetail
+	err := r.db.Where("is_active = ?", true).Find(&validators).Error
+	if err != nil {
+		return nil, err
+	}
+	return validators, nil
+}

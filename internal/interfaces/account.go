@@ -29,9 +29,12 @@ type AccountRepository interface {
 	// ValidatorDetails
 	FindValidatorDetailByAccountID(accountID string) (*domain.ValidatorDetail, error)
 	CreateValidatorDetail(detail *domain.ValidatorDetail) error
+
+	FindActiveValidators() ([]domain.ValidatorDetail, error)
 }
 
 type AccountUCase interface {
 	FindAccountByEmail(email string) (*dto.AccountDTO, error)
 	FindDetailByAccountID(accountID string, role constants.AccountRole) (*dto.AccountDetailDTO, error)
+	GetActiveValidators() ([]dto.AccountDetailDTO, error)
 }

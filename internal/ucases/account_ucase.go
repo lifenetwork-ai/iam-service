@@ -2,6 +2,7 @@ package ucases
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/constants"
@@ -175,4 +176,24 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 	default:
 		return nil, errors.New("invalid role provided")
 	}
+}
+
+func (u *accountUCase) GetActiveValidators() ([]dto.AccountDetailDTO, error) {
+	validators, err := u.accountRepository.FindActiveValidators()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch active validators: %w", err)
+	}
+
+	var result []dto.AccountDetailDTO
+	for _, v := range validators {
+		result = append(result, dto.AccountDetailDTO{
+			ID:                     v.ID,
+			Account:                *v.Account.ToDTO(),
+			ValidationOrganization: v.ValidationOrganization,
+			ContactName:            v.ContactPerson,
+			PhoneNumber:            v.PhoneNumber,
+		})
+	}
+
+	return result, nil
 }

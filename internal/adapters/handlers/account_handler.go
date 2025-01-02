@@ -64,3 +64,25 @@ func (h *accountHandler) GetCurrentUser(ctx *gin.Context) {
 	// Respond with user details
 	ctx.JSON(http.StatusOK, detail)
 }
+
+// GetActiveValidators retrieves the list of active validators.
+// @Summary Get Active Validators
+// @Description Fetches a list of active validators.
+// @Tags validators
+// @Accept json
+// @Produce json
+// @Success 200 {array} dto.AccountDetailDTO "List of active validators"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/validators/active [get]
+func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
+	// Fetch active validators using the use case
+	validators, err := h.accountUCase.GetActiveValidators()
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to fetch active validators: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch active validators", err)
+		return
+	}
+
+	// Respond with the list of active validators
+	ctx.JSON(http.StatusOK, gin.H{"validators": validators})
+}

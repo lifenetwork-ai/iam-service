@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS validator_details (
     validation_organization VARCHAR(255) NOT NULL,
     contact_person VARCHAR(100),
     phone_number VARCHAR(20),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE, -- Field to indicate if the validator is active
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
