@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/domain"
@@ -45,6 +46,14 @@ func (h *authHandler) Register(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		logger.GetLogger().Errorf("Invalid registration payload: %v", err)
 		httpresponse.Error(ctx, http.StatusBadRequest, "Failed to register, invalid payload", err)
+		return
+	}
+
+	// Validate the required fields in request payload
+	validate := validator.New()
+	if err := validate.Struct(req); err != nil {
+		logger.GetLogger().Errorf("Validation failed: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Validation failed", err)
 		return
 	}
 
