@@ -4,10 +4,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 
 	"github.com/cosmos/go-bip39"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tyler-smith/go-bip32"
 )
@@ -63,21 +63,5 @@ func PublicKeyToHex(publicKey *ecdsa.PublicKey) (string, error) {
 	if publicKey == nil {
 		return "", errors.New("public key is nil")
 	}
-
-	// Uncompressed format: 0x04 || X || Y
-	// 0x04 is the prefix for uncompressed keys
-	xBytes := publicKey.X.Bytes()
-	yBytes := publicKey.Y.Bytes()
-
-	// Ensure fixed-length encoding (pad to 32 bytes if needed)
-	xBytesPadded := make([]byte, 32)
-	yBytesPadded := make([]byte, 32)
-	copy(xBytesPadded[32-len(xBytes):], xBytes)
-	copy(yBytesPadded[32-len(yBytes):], yBytes)
-
-	// Combine the prefix (0x04), X, and Y
-	uncompressed := append([]byte{0x04}, append(xBytesPadded, yBytesPadded...)...)
-
-	// Convert to hex string
-	return hex.EncodeToString(uncompressed), nil
+	return hexutil.Encode(crypto.FromECDSAPub(publicKey)), nil
 }
