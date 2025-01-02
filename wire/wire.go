@@ -3,6 +3,7 @@
 package wire
 
 import (
+	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/internal/adapters/repositories"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	"github.com/genefriendway/human-network-auth/internal/ucases"
@@ -28,7 +29,7 @@ func InitializeAuthUCase(db *gorm.DB) interfaces.AuthUCase {
 	return nil
 }
 
-func InitializeAccountUCase(db *gorm.DB) interfaces.AccountUCase {
+func InitializeAccountUCase(db *gorm.DB, config *conf.Configuration) interfaces.AccountUCase {
 	wire.Build(accountUCaseSet)
 	return nil
 }

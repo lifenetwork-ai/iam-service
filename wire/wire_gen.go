@@ -7,6 +7,7 @@
 package wire
 
 import (
+	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/internal/adapters/repositories"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	"github.com/genefriendway/human-network-auth/internal/ucases"
@@ -24,9 +25,9 @@ func InitializeAuthUCase(db *gorm.DB) interfaces.AuthUCase {
 	return authUCase
 }
 
-func InitializeAccountUCase(db *gorm.DB) interfaces.AccountUCase {
+func InitializeAccountUCase(db *gorm.DB, config *conf.Configuration) interfaces.AccountUCase {
 	accountRepository := repositories.NewAccountRepository(db)
-	accountUCase := ucases.NewAccountUCase(accountRepository)
+	accountUCase := ucases.NewAccountUCase(config, accountRepository)
 	return accountUCase
 }
 

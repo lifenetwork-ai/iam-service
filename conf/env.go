@@ -22,9 +22,16 @@ type DatabaseConfiguration struct {
 	DbName     string `mapstructure:"DB_NAME"`
 }
 
+type SecretConfiguration struct {
+	Mnemonic   string `mapstructure:"MNEMONIC"`
+	Passphrase string `mapstructure:"PASSPHRASE"`
+	Salt       string `mapstructure:"SALT"`
+}
+
 type Configuration struct {
 	Database DatabaseConfiguration `mapstructure:",squash"`
 	Redis    RedisConfiguration    `mapstructure:",squash"`
+	Secret   SecretConfiguration   `mapstructure:",squash"`
 	AppName  string                `mapstructure:"APP_NAME"`
 	AppPort  uint32                `mapstructure:"APP_PORT"`
 	Env      string                `mapstructure:"ENV"`
@@ -45,6 +52,9 @@ var defaultConfigurations = map[string]any{
 	"DB_HOST":       "",
 	"DB_PORT":       "",
 	"DB_NAME":       "",
+	"MNEMONIC":      "",
+	"PASSPHRASE":    "",
+	"SALT":          "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations

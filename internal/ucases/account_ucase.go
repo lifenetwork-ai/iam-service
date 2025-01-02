@@ -3,6 +3,7 @@ package ucases
 import (
 	"errors"
 
+	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
@@ -10,11 +11,18 @@ import (
 )
 
 type accountUCase struct {
+	config            *conf.Configuration
 	accountRepository interfaces.AccountRepository
 }
 
-func NewAccountUCase(accountRepository interfaces.AccountRepository) interfaces.AccountUCase {
-	return &accountUCase{accountRepository: accountRepository}
+func NewAccountUCase(
+	config *conf.Configuration,
+	accountRepository interfaces.AccountRepository,
+) interfaces.AccountUCase {
+	return &accountUCase{
+		config:            config,
+		accountRepository: accountRepository,
+	}
 }
 
 // FindAccountByEmail retrieves an account by email
@@ -25,6 +33,11 @@ func (u *accountUCase) FindAccountByEmail(email string) (*dto.AccountDTO, error)
 
 // FindDetailByAccountID retrieves role-specific details by account ID
 func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.AccountRole) (*dto.AccountDetailDTO, error) {
+	// Retrieve secret values
+	mnemonic := u.config.Secret.Mnemonic
+	passphrase := u.config.Secret.Passphrase
+	salt := u.config.Secret.Salt
+
 	switch role {
 	case constants.User:
 		detail, err := u.accountRepository.FindUserDetailByAccountID(accountID)
@@ -36,7 +49,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
+		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +82,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
+		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +115,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
+		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +149,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, _, err := crypto.GenerateAccount("mnemonic", "passphrase", "salt", string(constants.User), accountID)
+		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
