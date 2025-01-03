@@ -59,6 +59,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/account/{account_id}/role": {
+            "put": {
+                "description": "Update the role of an account and save associated role-specific details.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Update account role and role-specific details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload containing role and role-specific details",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateRolePayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account role updated successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "404": {
+                        "description": "Account not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "description": "This endpoint authenticates the user by email, username, or phone number, and returns an access token and refresh token.",
@@ -496,6 +556,39 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.RoleDetailsPayloadDTO": {
+            "type": "object",
+            "properties": {
+                "company_name": {
+                    "description": "Partner fields",
+                    "type": "string"
+                },
+                "contact_name": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "description": "Common fields",
+                    "type": "string"
+                },
+                "industry": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "organization_name": {
+                    "description": "Customer fields",
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "validation_organization": {
+                    "description": "Validator fields",
+                    "type": "string"
+                }
+            }
+        },
         "dto.TokenPairDTO": {
             "type": "object",
             "properties": {
@@ -506,6 +599,26 @@ const docTemplate = `{
                 "refresh_token": {
                     "description": "The plain Refresh Token",
                     "type": "string"
+                }
+            }
+        },
+        "dto.UpdateRolePayloadDTO": {
+            "type": "object",
+            "required": [
+                "role"
+            ],
+            "properties": {
+                "role": {
+                    "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
+                    "type": "string"
+                },
+                "role_details": {
+                    "description": "Role-specific details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.RoleDetailsPayloadDTO"
+                        }
+                    ]
                 }
             }
         },

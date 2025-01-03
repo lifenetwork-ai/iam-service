@@ -79,8 +79,16 @@ func (r *accountRepository) FindUserDetailByAccountID(accountID string) (*domain
 	return &details, nil
 }
 
-func (r *accountRepository) CreateUserDetail(detail *domain.UserDetail) error {
-	return r.db.Create(detail).Error
+func (r *accountRepository) CreateOrUpdateUserDetail(detail *domain.UserDetail) error {
+	existingDetail, err := r.FindUserDetailByAccountID(detail.AccountID)
+	if err != nil {
+		return err
+	}
+
+	if existingDetail != nil {
+		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	}
+	return r.db.Save(detail).Error
 }
 
 // Partner detail
@@ -96,8 +104,16 @@ func (r *accountRepository) FindPartnerDetailByAccountID(accountID string) (*dom
 	return &details, nil
 }
 
-func (r *accountRepository) CreatePartnerDetail(detail *domain.PartnerDetail) error {
-	return r.db.Create(detail).Error
+func (r *accountRepository) CreateOrUpdatePartnerDetail(detail *domain.PartnerDetail) error {
+	existingDetail, err := r.FindPartnerDetailByAccountID(detail.AccountID)
+	if err != nil {
+		return err
+	}
+
+	if existingDetail != nil {
+		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	}
+	return r.db.Save(detail).Error
 }
 
 // Customer detail
@@ -113,8 +129,16 @@ func (r *accountRepository) FindCustomerDetailByAccountID(accountID string) (*do
 	return &details, nil
 }
 
-func (r *accountRepository) CreateCustomerDetail(detail *domain.CustomerDetail) error {
-	return r.db.Create(detail).Error
+func (r *accountRepository) CreateOrUpdateCustomerDetail(detail *domain.CustomerDetail) error {
+	existingDetail, err := r.FindCustomerDetailByAccountID(detail.AccountID)
+	if err != nil {
+		return err
+	}
+
+	if existingDetail != nil {
+		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	}
+	return r.db.Save(detail).Error
 }
 
 // Validator detail
@@ -130,8 +154,16 @@ func (r *accountRepository) FindValidatorDetailByAccountID(accountID string) (*d
 	return &details, nil
 }
 
-func (r *accountRepository) CreateValidatorDetail(detail *domain.ValidatorDetail) error {
-	return r.db.Create(detail).Error
+func (r *accountRepository) CreateOrUpdateValidatorDetail(detail *domain.ValidatorDetail) error {
+	existingDetail, err := r.FindValidatorDetailByAccountID(detail.AccountID)
+	if err != nil {
+		return err
+	}
+
+	if existingDetail != nil {
+		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	}
+	return r.db.Save(detail).Error
 }
 
 func (r *accountRepository) FindActiveValidators() ([]domain.ValidatorDetail, error) {
@@ -141,4 +173,13 @@ func (r *accountRepository) FindActiveValidators() ([]domain.ValidatorDetail, er
 		return nil, err
 	}
 	return validators, nil
+}
+
+// UpdateAccount updates the details of an existing account.
+func (r *accountRepository) UpdateAccount(account *domain.Account) error {
+	// Use Save to update the account, it will update all fields of the account struct.
+	if err := r.db.Save(account).Error; err != nil {
+		return err
+	}
+	return nil
 }

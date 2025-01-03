@@ -13,28 +13,31 @@ type AccountRepository interface {
 	FindAccountByPhoneNumber(phone string) (*domain.Account, error)
 	FindAccountByID(id string) (*domain.Account, error)
 	CreateAccount(account *domain.Account) error
+	UpdateAccount(account *domain.Account) error
 
 	// UserDetails
 	FindUserDetailByAccountID(accountID string) (*domain.UserDetail, error)
-	CreateUserDetail(detail *domain.UserDetail) error
+	CreateOrUpdateUserDetail(detail *domain.UserDetail) error
 
 	// PartnerDetails
 	FindPartnerDetailByAccountID(accountID string) (*domain.PartnerDetail, error)
-	CreatePartnerDetail(detail *domain.PartnerDetail) error
+	CreateOrUpdatePartnerDetail(detail *domain.PartnerDetail) error
 
 	// CustomerDetails
 	FindCustomerDetailByAccountID(accountID string) (*domain.CustomerDetail, error)
-	CreateCustomerDetail(detail *domain.CustomerDetail) error
+	CreateOrUpdateCustomerDetail(detail *domain.CustomerDetail) error
 
 	// ValidatorDetails
 	FindValidatorDetailByAccountID(accountID string) (*domain.ValidatorDetail, error)
-	CreateValidatorDetail(detail *domain.ValidatorDetail) error
+	CreateOrUpdateValidatorDetail(detail *domain.ValidatorDetail) error
 
 	FindActiveValidators() ([]domain.ValidatorDetail, error)
 }
 
 type AccountUCase interface {
 	FindAccountByEmail(email string) (*dto.AccountDTO, error)
+	FindAccountByID(id string) (*dto.AccountDTO, error)
 	FindDetailByAccountID(accountID string, role constants.AccountRole) (*dto.AccountDetailDTO, error)
 	GetActiveValidators() ([]dto.AccountDetailDTO, error)
+	UpdateAccount(accountDTO *dto.AccountDTO) error
 }

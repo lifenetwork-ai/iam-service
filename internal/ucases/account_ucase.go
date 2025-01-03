@@ -197,3 +197,43 @@ func (u *accountUCase) GetActiveValidators() ([]dto.AccountDetailDTO, error) {
 
 	return result, nil
 }
+
+func (u *accountUCase) FindAccountByID(id string) (*dto.AccountDTO, error) {
+	account, err := u.accountRepository.FindAccountByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch account by ID: %w", err)
+	}
+
+	if account == nil {
+		return nil, errors.New("account not found")
+	}
+
+	return account.ToDTO(), nil
+}
+
+// UpdateAccount updates an existing account's details.
+func (u *accountUCase) UpdateAccount(accountDTO *dto.AccountDTO) error {
+	// Fetch the existing account to ensure it exists
+	existingAccount, err := u.accountRepository.FindAccountByID(accountDTO.ID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch account: %w", err)
+	}
+	if existingAccount == nil {
+		return errors.New("account not found")
+	}
+
+	// Map DTO data to the domain model
+	existingAccount.Email = accountDTO.Email
+	existingAccount.Username = accountDTO.Username
+	existingAccount.Role = accountDTO.Role
+	existingAccount.APIKey = accountDTO.APIKey
+	existingAccount.OAuthProvider = accountDTO.OAuthProvider
+	existingAccount.OAuthID = accountDTO.OAuthID
+
+	// Update the account in the repository
+	if err := u.accountRepository.UpdateAccount(existingAccount); err != nil {
+		return fmt.Errorf("failed to update account: %w", err)
+	}
+
+	return nil
+}

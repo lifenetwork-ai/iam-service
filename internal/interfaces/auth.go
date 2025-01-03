@@ -19,4 +19,5 @@ type AuthUCase interface {
 	Logout(refreshToken string) error
 	RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error)
 	ValidateToken(token string) (*dto.AccountDTO, error)
+	UpdateRoleDetail(accountID string, role constants.AccountRole, input *dto.RoleDetailsPayloadDTO) error
 }

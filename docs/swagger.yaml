@@ -100,6 +100,29 @@ definitions:
     - password
     - username
     type: object
+  dto.RoleDetailsPayloadDTO:
+    properties:
+      company_name:
+        description: Partner fields
+        type: string
+      contact_name:
+        type: string
+      first_name:
+        description: Common fields
+        type: string
+      industry:
+        type: string
+      last_name:
+        type: string
+      organization_name:
+        description: Customer fields
+        type: string
+      phone_number:
+        type: string
+      validation_organization:
+        description: Validator fields
+        type: string
+    type: object
   dto.TokenPairDTO:
     properties:
       access_token:
@@ -108,6 +131,18 @@ definitions:
       refresh_token:
         description: The plain Refresh Token
         type: string
+    type: object
+  dto.UpdateRolePayloadDTO:
+    properties:
+      role:
+        description: USER, PARTNER, CUSTOMER, VALIDATOR
+        type: string
+      role_details:
+        allOf:
+        - $ref: '#/definitions/dto.RoleDetailsPayloadDTO'
+        description: Role-specific details
+    required:
+    - role
     type: object
   response.GeneralError:
     properties:
@@ -123,6 +158,47 @@ definitions:
 info:
   contact: {}
 paths:
+  /api/v1/account/{account_id}/role:
+    put:
+      consumes:
+      - application/json
+      description: Update the role of an account and save associated role-specific
+        details.
+      parameters:
+      - description: Account ID
+        in: path
+        name: account_id
+        required: true
+        type: string
+      - description: Payload containing role and role-specific details
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateRolePayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account role updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: Account not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Update account role and role-specific details
+      tags:
+      - account
   /api/v1/account/me:
     get:
       consumes:
