@@ -54,7 +54,7 @@ func (r AccountRole) IsValid() bool {
 
 // Token expiry
 const (
-	AccessTokenExpiry  = 15 * time.Minute   // 15 minutes
+	AccessTokenExpiry  = 24 * time.Hour     // 15 minutes
 	RefreshTokenExpiry = 7 * 24 * time.Hour // 7 days
 )
 
