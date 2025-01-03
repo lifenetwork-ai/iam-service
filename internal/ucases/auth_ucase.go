@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/domain"
@@ -69,6 +68,7 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO) error {
 		Email:        input.Email,
 		Username:     input.Username,
 		PasswordHash: &password,
+		Role:         string(constants.User), // Default role
 	}
 
 	// Save account
@@ -114,25 +114,6 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 		return nil, domain.ErrInvalidCredentials
 	}
 
-	// Check if the user already has an active session
-	activeToken, err := u.authRepository.FindActiveRefreshToken(account.ID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("failed to check active session: %w", err)
-	}
-
-	// If an active refresh token exists
-	if activeToken != nil {
-		if activeToken.ExpiresAt.After(time.Now()) {
-			// Token is still valid, return an error indicating the user is already logged in
-			return nil, errors.New("user already logged in with an active session")
-		} else {
-			// Token is expired, delete it
-			if delErr := u.authRepository.DeleteRefreshToken(activeToken.HashedToken); delErr != nil {
-				return nil, fmt.Errorf("failed to delete expired refresh token: %w", delErr)
-			}
-		}
-	}
-
 	// Generate Access Token
 	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
 	if err != nil {
@@ -145,7 +126,7 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 		return nil, errors.New("failed to generate refresh token")
 	}
 
-	// Save hashed refresh token
+	// Save the new refresh token
 	hashedToken := utils.HashToken(refreshToken)
 	if err := u.authRepository.CreateRefreshToken(&domain.RefreshToken{
 		AccountID:   account.ID,
@@ -155,7 +136,7 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 		return nil, errors.New("failed to store refresh token")
 	}
 
-	// Return Token Pair
+	// Return the new token pair
 	return &dto.TokenPairDTO{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
