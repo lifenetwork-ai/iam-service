@@ -168,7 +168,7 @@ func (r *accountRepository) CreateOrUpdateValidatorDetail(detail *domain.Validat
 
 func (r *accountRepository) FindActiveValidators() ([]domain.ValidatorDetail, error) {
 	var validators []domain.ValidatorDetail
-	err := r.db.Where("is_active = ?", true).Find(&validators).Error
+	err := r.db.Preload("Account").Where("is_active = ?", true).Find(&validators).Error
 	if err != nil {
 		return nil, err
 	}
