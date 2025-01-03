@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
@@ -61,15 +60,8 @@ func (h *authHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	// Validate the role
-	role, err := h.validateAccountRole(req.Role)
-	if err != nil {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid role provided", err)
-		return
-	}
-
 	// Register the user using the use case
-	err = h.ucase.Register(&req, role)
+	err := h.ucase.Register(&req)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to register user: %v", err)
 		if errors.Is(err, domain.ErrAccountAlreadyExists) {
@@ -123,16 +115,6 @@ func (h *authHandler) Login(ctx *gin.Context) {
 		AccessToken:  tokenPair.AccessToken,
 		RefreshToken: tokenPair.RefreshToken,
 	})
-}
-
-// ValidateAccountRole validates if the role is one of the predefined roles
-func (h *authHandler) validateAccountRole(role string) (constants.AccountRole, error) {
-	switch constants.AccountRole(role) {
-	case constants.User, constants.Partner, constants.Customer, constants.Validator:
-		return constants.AccountRole(role), nil
-	default:
-		return "", errors.New("invalid role provided")
-	}
 }
 
 // Logout invalidates the refresh token.

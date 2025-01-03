@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash TEXT, -- NULL if OAuth or API key is used
     api_key VARCHAR(255) UNIQUE, -- Only for API-based roles (partner, validator)
-    role account_role NOT NULL, -- Enum: USER, PARTNER, CUSTOMER, VALIDATOR
+    role account_role NOT NULL DEFAULT 'USER', -- Enum: USER, PARTNER, CUSTOMER, VALIDATOR
     oauth_provider VARCHAR(50), -- Google, Facebook, etc. (nullable)
     oauth_id VARCHAR(255), -- ID from OAuth provider (nullable)
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -13,18 +13,9 @@ type LoginPayloadDTO struct {
 
 // RegisterPayloadtDTO defines the payload for the register request
 type RegisterPayloadDTO struct {
-	Email                  string `json:"email" validate:"required,email"`
-	Username               string `json:"username" validate:"required"`
-	Password               string `json:"password" validate:"required"`
-	Role                   string `json:"role" validate:"required"` // USER, PARTNER, CUSTOMER, VALIDATOR
-	FirstName              string `json:"first_name,omitempty"`
-	LastName               string `json:"last_name,omitempty"`
-	PhoneNumber            string `json:"phone_number,omitempty"`
-	CompanyName            string `json:"company_name,omitempty"`
-	ContactName            string `json:"contact_name,omitempty"`
-	OrganizationName       string `json:"organization_name,omitempty"`
-	Industry               string `json:"industry,omitempty"`
-	ValidationOrganization string `json:"validation_organization,omitempty"`
+	Email    string `json:"email" validate:"required,email"`
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 // RefreshTokenPayloadDTO defines the payload for refreshing tokens request

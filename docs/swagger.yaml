@@ -89,35 +89,15 @@ definitions:
     type: object
   dto.RegisterPayloadDTO:
     properties:
-      company_name:
-        type: string
-      contact_name:
-        type: string
       email:
-        type: string
-      first_name:
-        type: string
-      industry:
-        type: string
-      last_name:
-        type: string
-      organization_name:
         type: string
       password:
         type: string
-      phone_number:
-        type: string
-      role:
-        description: USER, PARTNER, CUSTOMER, VALIDATOR
-        type: string
       username:
-        type: string
-      validation_organization:
         type: string
     required:
     - email
     - password
-    - role
     - username
     type: object
   dto.TokenPairDTO:

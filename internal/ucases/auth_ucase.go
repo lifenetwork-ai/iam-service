@@ -32,11 +32,11 @@ func NewAuthUCase(
 }
 
 // Register handles the creation of a new account and its role-specific details
-func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.AccountRole) error {
+func (u *authUCase) Register(input *dto.RegisterPayloadDTO) error {
 	// Validate input
 	if strings.TrimSpace(input.Email) == "" || strings.TrimSpace(input.Password) == "" ||
-		strings.TrimSpace(input.Username) == "" || strings.TrimSpace(string(role)) == "" {
-		return errors.New("email, username, password, and role are required")
+		strings.TrimSpace(input.Username) == "" {
+		return errors.New("email, username, and password are required")
 	}
 
 	// Check if username already exists
@@ -68,7 +68,6 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 	domainAccount := &domain.Account{
 		Email:        input.Email,
 		Username:     input.Username,
-		Role:         string(role),
 		PasswordHash: &password,
 	}
 
@@ -77,49 +76,7 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO, role constants.Accou
 	if err != nil {
 		return err
 	}
-
-	// Save role-specific details
-	switch role {
-	case constants.User:
-		domainDetail := &domain.UserDetail{
-			AccountID:   domainAccount.ID,
-			FirstName:   &input.FirstName,
-			LastName:    &input.LastName,
-			PhoneNumber: &input.PhoneNumber,
-		}
-		return u.accountRepository.CreateUserDetail(domainDetail)
-
-	case constants.Partner:
-		domainDetail := &domain.PartnerDetail{
-			AccountID:   domainAccount.ID,
-			CompanyName: &input.CompanyName,
-			ContactName: &input.ContactName,
-			PhoneNumber: &input.PhoneNumber,
-		}
-		return u.accountRepository.CreatePartnerDetail(domainDetail)
-
-	case constants.Customer:
-		domainDetail := &domain.CustomerDetail{
-			AccountID:        domainAccount.ID,
-			OrganizationName: &input.OrganizationName,
-			Industry:         &input.Industry,
-			ContactName:      &input.ContactName,
-			PhoneNumber:      &input.PhoneNumber,
-		}
-		return u.accountRepository.CreateCustomerDetail(domainDetail)
-
-	case constants.Validator:
-		domainDetail := &domain.ValidatorDetail{
-			AccountID:              domainAccount.ID,
-			ValidationOrganization: &input.ValidationOrganization,
-			ContactPerson:          &input.ContactName,
-			PhoneNumber:            &input.PhoneNumber,
-		}
-		return u.accountRepository.CreateValidatorDetail(domainDetail)
-
-	default:
-		return errors.New("invalid role")
-	}
+	return nil
 }
 
 // Login authenticates the user and returns a token pair (Access + Refresh)
