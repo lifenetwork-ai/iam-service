@@ -179,16 +179,45 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 }
 
 func (u *accountUCase) GetActiveValidators() ([]dto.AccountDetailDTO, error) {
+	// Fetch active validators with preloaded account details
 	validators, err := u.accountRepository.FindActiveValidators()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch active validators: %w", err)
 	}
 
+	// Retrieve secret values for public key generation
+	mnemonic := u.config.Secret.Mnemonic
+	passphrase := u.config.Secret.Passphrase
+	salt := u.config.Secret.Salt
+
 	var result []dto.AccountDetailDTO
 	for _, v := range validators {
+		// Ensure the Account field is not nil
+		if v.Account.ID == "" {
+			return nil, fmt.Errorf("validator with ID %s has no associated account", v.ID)
+		}
+
+		// Generate public key
+		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, v.Account.Role, v.Account.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate public key for account %s: %w", v.Account.ID, err)
+		}
+
+		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert public key to hex for account %s: %w", v.Account.ID, err)
+		}
+
+		// Map ValidatorDetail to AccountDetailDTO
 		result = append(result, dto.AccountDetailDTO{
-			ID:                     v.ID,
-			Account:                *v.Account.ToDTO(),
+			ID: v.ID,
+			Account: dto.AccountDTO{
+				ID:        v.Account.ID,
+				Username:  v.Account.Username,
+				Email:     v.Account.Email,
+				Role:      v.Account.Role,
+				PublicKey: &publicKeyHex,
+			},
 			ValidationOrganization: v.ValidationOrganization,
 			ContactName:            v.ContactPerson,
 			PhoneNumber:            v.PhoneNumber,
@@ -196,4 +225,44 @@ func (u *accountUCase) GetActiveValidators() ([]dto.AccountDetailDTO, error) {
 	}
 
 	return result, nil
+}
+
+func (u *accountUCase) FindAccountByID(id string) (*dto.AccountDTO, error) {
+	account, err := u.accountRepository.FindAccountByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch account by ID: %w", err)
+	}
+
+	if account == nil {
+		return nil, errors.New("account not found")
+	}
+
+	return account.ToDTO(), nil
+}
+
+// UpdateAccount updates an existing account's details.
+func (u *accountUCase) UpdateAccount(accountDTO *dto.AccountDTO) error {
+	// Fetch the existing account to ensure it exists
+	existingAccount, err := u.accountRepository.FindAccountByID(accountDTO.ID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch account: %w", err)
+	}
+	if existingAccount == nil {
+		return errors.New("account not found")
+	}
+
+	// Map DTO data to the domain model
+	existingAccount.Email = accountDTO.Email
+	existingAccount.Username = accountDTO.Username
+	existingAccount.Role = accountDTO.Role
+	existingAccount.APIKey = accountDTO.APIKey
+	existingAccount.OAuthProvider = accountDTO.OAuthProvider
+	existingAccount.OAuthID = accountDTO.OAuthID
+
+	// Update the account in the repository
+	if err := u.accountRepository.UpdateAccount(existingAccount); err != nil {
+		return fmt.Errorf("failed to update account: %w", err)
+	}
+
+	return nil
 }

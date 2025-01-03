@@ -42,6 +42,16 @@ const (
 	Validator AccountRole = "VALIDATOR"
 )
 
+// IsValid checks if the AccountRole is one of the predefined roles.
+func (r AccountRole) IsValid() bool {
+	switch r {
+	case User, Partner, Customer, Validator:
+		return true
+	default:
+		return false
+	}
+}
+
 // Token expiry
 const (
 	AccessTokenExpiry  = 15 * time.Minute   // 15 minutes

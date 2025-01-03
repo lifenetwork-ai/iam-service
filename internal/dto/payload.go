@@ -27,3 +27,28 @@ type RefreshTokenPayloadDTO struct {
 type LogoutPayloadDTO struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
+
+// UpdateRolePayloadDTO defines the payload for updating the role of an account
+type UpdateRolePayloadDTO struct {
+	Role        string                `json:"role" validate:"required"` // USER, PARTNER, CUSTOMER, VALIDATOR
+	RoleDetails RoleDetailsPayloadDTO `json:"role_details,omitempty"`   // Role-specific details
+}
+
+// RoleDetailsPayloadDTO defines the payload for the role-specific details
+type RoleDetailsPayloadDTO struct {
+	// Common fields
+	FirstName   string `json:"first_name,omitempty"`
+	LastName    string `json:"last_name,omitempty"`
+	PhoneNumber string `json:"phone_number,omitempty"`
+
+	// Partner fields
+	CompanyName string `json:"company_name,omitempty"`
+	ContactName string `json:"contact_name,omitempty"`
+
+	// Customer fields
+	OrganizationName string `json:"organization_name,omitempty"`
+	Industry         string `json:"industry,omitempty"`
+
+	// Validator fields
+	ValidationOrganization string `json:"validation_organization,omitempty"`
+}

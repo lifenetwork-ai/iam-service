@@ -242,3 +242,92 @@ func (u *authUCase) ValidateToken(token string) (*dto.AccountDTO, error) {
 
 	return account.ToDTO(), nil
 }
+
+// UpdateRoleDetail updates the user's role and saves role-specific details.
+func (u *authUCase) UpdateRoleDetail(accountID string, role constants.AccountRole, input *dto.RoleDetailsPayloadDTO) error {
+	// Validate role input
+	if strings.TrimSpace(string(role)) == "" {
+		return errors.New("role is required")
+	}
+
+	// Fetch the account
+	account, err := u.accountRepository.FindAccountByID(accountID)
+	if err != nil || account == nil {
+		return errors.New("account not found")
+	}
+
+	// Update the role
+	account.Role = string(role)
+	if err := u.accountRepository.UpdateAccount(account); err != nil {
+		return fmt.Errorf("failed to update role: %w", err)
+	}
+
+	// Save role-specific details
+	if err := u.saveRoleSpecificDetails(accountID, role, input); err != nil {
+		return fmt.Errorf("failed to save role-specific details: %w", err)
+	}
+
+	return nil
+}
+
+// saveRoleSpecificDetails handles role-specific details creation or update.
+func (u *authUCase) saveRoleSpecificDetails(accountID string, role constants.AccountRole, input *dto.RoleDetailsPayloadDTO) error {
+	switch role {
+	case constants.User:
+		domainDetail := &domain.UserDetail{
+			AccountID:   accountID,
+			FirstName:   &input.FirstName,
+			LastName:    &input.LastName,
+			PhoneNumber: &input.PhoneNumber,
+		}
+		return u.accountRepository.CreateOrUpdateUserDetail(domainDetail)
+
+	case constants.Partner:
+		domainDetail := &domain.PartnerDetail{
+			AccountID:   accountID,
+			CompanyName: &input.CompanyName,
+			ContactName: &input.ContactName,
+			PhoneNumber: &input.PhoneNumber,
+		}
+		return u.accountRepository.CreateOrUpdatePartnerDetail(domainDetail)
+
+	case constants.Customer:
+		domainDetail := &domain.CustomerDetail{
+			AccountID:        accountID,
+			OrganizationName: &input.OrganizationName,
+			Industry:         &input.Industry,
+			ContactName:      &input.ContactName,
+			PhoneNumber:      &input.PhoneNumber,
+		}
+		return u.accountRepository.CreateOrUpdateCustomerDetail(domainDetail)
+
+	case constants.Validator:
+		domainDetail := &domain.ValidatorDetail{
+			AccountID:              accountID,
+			ValidationOrganization: &input.ValidationOrganization,
+			ContactPerson:          &input.ContactName,
+			PhoneNumber:            &input.PhoneNumber,
+		}
+		return u.accountRepository.CreateOrUpdateValidatorDetail(domainDetail)
+
+	default:
+		return errors.New("invalid role")
+	}
+}
+
+// FindAccountByID retrieves account details by account ID.
+func (u *authUCase) FindAccountByID(id string) (*dto.AccountDTO, error) {
+	// Fetch account from the repository
+	account, err := u.accountRepository.FindAccountByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch account by ID: %w", err)
+	}
+
+	// Check if the account exists
+	if account == nil {
+		return nil, errors.New("account not found")
+	}
+
+	// Convert the account domain object to DTO and return it
+	return account.ToDTO(), nil
+}

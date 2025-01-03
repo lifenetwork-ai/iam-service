@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
 	"github.com/genefriendway/human-network-auth/pkg/logger"
@@ -85,4 +86,68 @@ func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
 
 	// Respond with the list of active validators
 	ctx.JSON(http.StatusOK, gin.H{"validators": validators})
+}
+
+// UpdateAccountRole updates the role of an account and saves associated role-specific details.
+// @Summary Update account role and role-specific details
+// @Description Update the role of an account and save associated role-specific details.
+// @Tags account
+// @Accept json
+// @Produce json
+// @Param account_id path string true "Account ID"
+// @Param payload body dto.UpdateRolePayloadDTO true "Payload containing role and role-specific details"
+// @Success 200 {object} map[string]interface{} "Account role updated successfully"
+// @Failure 400 {object} response.GeneralError "Invalid payload"
+// @Failure 404 {object} response.GeneralError "Account not found"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/account/{account_id}/role [put]
+func (h *accountHandler) UpdateAccountRole(ctx *gin.Context) {
+	accountID := ctx.Param("account_id")
+	if accountID == "" {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Account ID is required", nil)
+		return
+	}
+
+	var req dto.UpdateRolePayloadDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
+		return
+	}
+
+	// Validate the role
+	role := constants.AccountRole(req.Role)
+	if !role.IsValid() {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid role provided", nil)
+		return
+	}
+
+	// Fetch the account by ID
+	account, err := h.accountUCase.FindAccountByID(accountID)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to fetch account: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch account", err)
+		return
+	}
+	if account == nil {
+		httpresponse.Error(ctx, http.StatusNotFound, "Account not found", nil)
+		return
+	}
+
+	// Update the role
+	account.Role = req.Role
+	if err := h.accountUCase.UpdateAccount(account); err != nil {
+		logger.GetLogger().Errorf("Failed to update account role: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to update account role", err)
+		return
+	}
+
+	// Save role-specific details
+	if err := h.authUCase.UpdateRoleDetail(accountID, role, &req.RoleDetails); err != nil {
+		logger.GetLogger().Errorf("Failed to save role-specific details: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to save role-specific details", err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Account role updated successfully"})
 }
