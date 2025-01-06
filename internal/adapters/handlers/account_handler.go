@@ -36,7 +36,8 @@ func NewAccountHandler(
 // @Produce json
 // @Param Authorization header string true "Bearer access token"
 // @Success 200 {object} dto.AccountDetailDTO "User details"
-// @Failure 401 {object} response.GeneralError "Invalid or expired token"
+// @Failure 401 {object} response.GeneralError "Unauthorized"
+// @Failure 403 {object} response.GeneralError "Forbidden"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/account/me [get]
 func (h *accountHandler) GetCurrentUser(ctx *gin.Context) {
@@ -51,7 +52,7 @@ func (h *accountHandler) GetCurrentUser(ctx *gin.Context) {
 	account, err := h.authUCase.ValidateToken(token.(string))
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to validate token: %v", err)
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid or expired token", err)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
 		return
 	}
 
@@ -91,7 +92,7 @@ func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
 	account, err := h.authUCase.ValidateToken(token.(string))
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to validate token: %v", err)
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid or expired token", err)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
 		return
 	}
 
