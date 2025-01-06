@@ -380,36 +380,6 @@ paths:
       summary: Register a new account
       tags:
       - authentication
-  /api/v1/auth/validate-token:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint validates an access token and retrieves the corresponding
-        user's details.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 'Token is valid: User details'
-          schema:
-            $ref: '#/definitions/dto.AccountDTO'
-        "401":
-          description: Invalid or expired token
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Validate access token
-      tags:
-      - authentication
   /api/v1/validators/active:
     get:
       consumes:
