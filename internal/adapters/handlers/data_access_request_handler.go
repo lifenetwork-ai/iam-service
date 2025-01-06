@@ -159,7 +159,6 @@ func (h *dataAccessHandler) isValidDataAccessRequestStatus(status string) bool {
 // @Param requesterAccountID path string true "ID of the account making the request"
 // @Success 200 {object} map[string]interface{} "Request approved successfully"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
-// @Failure 404 {object} response.GeneralError "Request not found"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/data-access/{requesterAccountID}/approve [put]
 func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
@@ -193,12 +192,8 @@ func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 		nil, // No rejection reason needed for approval
 	)
 	if err != nil {
-		if err.Error() == "request not found" {
-			httpresponse.Error(ctx, http.StatusNotFound, "Request not found", nil)
-		} else {
-			logger.GetLogger().Errorf("Failed to approve request: %v", err)
-			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to approve request", err)
-		}
+		logger.GetLogger().Errorf("Failed to approve request: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to approve request", err)
 		return
 	}
 
@@ -218,7 +213,6 @@ func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 // @Success 200 {object} map[string]interface{} "Request rejected successfully"
 // @Failure 400 {object} response.GeneralError "Invalid payload"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
-// @Failure 404 {object} response.GeneralError "Request not found"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/data-access/{requesterAccountID}/reject [put]
 func (h *dataAccessHandler) RejectRequest(ctx *gin.Context) {
@@ -266,15 +260,71 @@ func (h *dataAccessHandler) RejectRequest(ctx *gin.Context) {
 		&reasonForRejection,
 	)
 	if err != nil {
-		if err.Error() == "request not found" {
-			httpresponse.Error(ctx, http.StatusNotFound, "Request not found", nil)
-		} else {
-			logger.GetLogger().Errorf("Failed to reject request: %v", err)
-			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to reject request", err)
-		}
+		logger.GetLogger().Errorf("Failed to reject request: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to reject request", err)
 		return
 	}
 
 	// Respond with success
 	ctx.JSON(http.StatusOK, gin.H{"message": "Request rejected successfully"})
+}
+
+// GetAccessRequest retrieves the data access request for a specific requester, focusing on approved requests.
+// @Summary Get a data access request
+// @Description Fetches the data access request for a specific requester and authenticated user, prioritizing approved requests.
+// @Tags data-access
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
+// @Param requesterAccountID path string true "ID of the account making the request"
+// @Success 200 {object} dto.DataAccessRequestDTO "Data access request details"
+// @Failure 400 {object} response.GeneralError "Bad request"
+// @Failure 401 {object} response.GeneralError "Unauthorized"
+// @Failure 403 {object} response.GeneralError "Forbidden"
+// @Failure 404 {object} response.GeneralError "Request not found"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/data-access/{requesterAccountID} [get]
+func (h *dataAccessHandler) GetAccessRequest(ctx *gin.Context) {
+	// Retrieve the token from the context
+	token, exists := ctx.Get("token")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", nil)
+		return
+	}
+
+	// Validate the token and fetch user details
+	accountDTO, err := h.authUCase.ValidateToken(token.(string))
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to validate token: %v", err)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
+		return
+	}
+
+	// Check if the authenticated user has the "User" role
+	if accountDTO.Role != string(constants.User) {
+		httpresponse.Error(ctx, http.StatusForbidden, "Access restricted to users only", nil)
+		return
+	}
+
+	// Get the requesterAccountID from the path
+	requesterAccountID := ctx.Param("requesterAccountID")
+	if requesterAccountID == "" {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Requester account ID is required", nil)
+		return
+	}
+
+	// Fetch the data access request using the use case
+	accessRequest, err := h.dataAccessUCase.GetAccessRequest(accountDTO.ID, requesterAccountID)
+	if err != nil {
+		if err.Error() == "request not found" {
+			httpresponse.Error(ctx, http.StatusNotFound, "Request not found", nil)
+		} else {
+			logger.GetLogger().Errorf("Failed to fetch access request: %v", err)
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch access request", err)
+		}
+		return
+	}
+
+	// Return the access request details
+	ctx.JSON(http.StatusOK, gin.H{"access_request": accessRequest})
 }
