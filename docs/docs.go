@@ -740,13 +740,13 @@ const docTemplate = `{
                     "description": "ID of the account being accessed",
                     "type": "string"
                 },
-                "requester_account_id": {
-                    "description": "ID of the account making the request",
-                    "type": "string"
-                },
-                "requester_role": {
-                    "description": "Role of the requester",
-                    "type": "string"
+                "requester_account": {
+                    "description": "Details of the account making the request",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.AccountDTO"
+                        }
+                    ]
                 },
                 "status": {
                     "description": "Status of the request (PENDING, APPROVED, REJECTED)",

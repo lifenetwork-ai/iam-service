@@ -29,8 +29,9 @@ func (r *dataAccessRepository) CreateDataAccessRequest(request *domain.DataAcces
 func (r *dataAccessRepository) GetPendingRequests(requestAccountID string) ([]domain.DataAccessRequest, error) {
 	var requests []domain.DataAccessRequest
 
-	// Query the database for pending requests where the user is the recipient
-	err := r.db.Where("request_account_id = ? AND status = ?", requestAccountID, string(constants.DataAccessRequestPending)).
+	// Query the database for pending requests where the user is the recipient and preload the RequesterAccount relationship
+	err := r.db.Preload("RequesterAccount").
+		Where("request_account_id = ? AND status = ?", requestAccountID, string(constants.DataAccessRequestPending)).
 		Find(&requests).Error
 	if err != nil {
 		return nil, err
