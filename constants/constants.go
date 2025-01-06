@@ -69,3 +69,12 @@ const (
 
 // Refresh token renewal threshold
 const RefreshTokenRenewalThreshold = 24 * time.Hour
+
+// DataAccessRequestStatus represents the status of a data access request
+type DataAccessRequestStatus string
+
+const (
+	DataAccessRequestPending  DataAccessRequestStatus = "PENDING"
+	DataAccessRequestApproved DataAccessRequestStatus = "APPROVED"
+	DataAccessRequestRejected DataAccessRequestStatus = "REJECTED"
+)

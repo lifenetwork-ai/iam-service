@@ -52,3 +52,10 @@ type RoleDetailsPayloadDTO struct {
 	// Validator fields
 	ValidationOrganization string `json:"validation_organization,omitempty"`
 }
+
+// DataAccessRequestPayloadDTO defines the payload for creating a data access request
+type DataAccessRequestPayloadDTO struct {
+	RequestAccountID string `json:"request_account_id" validate:"required,uuid"` // Account whose data is being requested
+	ReasonForRequest string `json:"reason_for_request" validate:"required"`      // Reason for the data access request
+	FileID           string `json:"file_id" validate:"required,uuid"`            // File ID
+}

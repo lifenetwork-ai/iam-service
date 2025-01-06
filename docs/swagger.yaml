@@ -59,6 +59,50 @@ definitions:
       validation_organization:
         type: string
     type: object
+  dto.DataAccessRequestDTO:
+    properties:
+      created_at:
+        description: Timestamp of when the request was created
+        type: string
+      id:
+        description: Unique ID of the request
+        type: string
+      reason_for_rejection:
+        description: Optional reason for rejection
+        type: string
+      reason_for_request:
+        description: Reason for the request
+        type: string
+      request_account_id:
+        description: ID of the account being accessed
+        type: string
+      requester_account:
+        allOf:
+        - $ref: '#/definitions/dto.AccountDTO'
+        description: Details of the account making the request
+      status:
+        description: Status of the request (PENDING, APPROVED, REJECTED)
+        type: string
+      updated_at:
+        description: Timestamp of when the request was last updated
+        type: string
+    type: object
+  dto.DataAccessRequestPayloadDTO:
+    properties:
+      file_id:
+        description: File ID
+        type: string
+      reason_for_request:
+        description: Reason for the data access request
+        type: string
+      request_account_id:
+        description: Account whose data is being requested
+        type: string
+    required:
+    - file_id
+    - reason_for_request
+    - request_account_id
+    type: object
   dto.LoginPayloadDTO:
     properties:
       identifier:
@@ -380,6 +424,169 @@ paths:
       summary: Register a new account
       tags:
       - authentication
+  /api/v1/data-access:
+    post:
+      consumes:
+      - application/json
+      description: Allows a requester to create a new data access request for a specific
+        user.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Payload containing user ID and reason for request
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DataAccessRequestPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Data access request created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: Requested user not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Create a data access request
+      tags:
+      - data-access
+  /api/v1/data-access/{requesterAccountID}/approve:
+    put:
+      consumes:
+      - application/json
+      description: Approves a pending data access request for the authenticated user.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID of the account making the request
+        in: path
+        name: requesterAccountID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request approved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: Request not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Approve a data access request
+      tags:
+      - data-access
+  /api/v1/data-access/{requesterAccountID}/reject:
+    put:
+      consumes:
+      - application/json
+      description: Rejects a pending data access request for the authenticated user.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID of the account making the request
+        in: path
+        name: requesterAccountID
+        required: true
+        type: string
+      - description: Payload containing the reason for rejection
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request rejected successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: Request not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Reject a data access request
+      tags:
+      - data-access
+  /api/v1/data-access/pending:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a list of pending data access requests for the authenticated
+        user.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of pending data access requests
+          schema:
+            items:
+              $ref: '#/definitions/dto.DataAccessRequestDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Get pending data access requests
+      tags:
+      - data-access
   /api/v1/validators/active:
     get:
       consumes:
