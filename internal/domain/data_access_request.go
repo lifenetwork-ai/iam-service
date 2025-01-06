@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/genefriendway/human-network-auth/internal/dto"
+)
 
 type DataAccessRequest struct {
 	ID                 string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
@@ -17,4 +21,19 @@ type DataAccessRequest struct {
 // TableName overrides the default table name for GORM
 func (m *DataAccessRequest) TableName() string {
 	return "data_access_requests"
+}
+
+// ToDTO converts a DataAccessRequest domain model to a DataAccessRequestDTO.
+func (m *DataAccessRequest) ToDTO() *dto.DataAccessRequestDTO {
+	return &dto.DataAccessRequestDTO{
+		ID:                 m.ID,
+		RequestAccountID:   m.RequestAccountID,
+		RequesterAccountID: m.RequesterAccountID,
+		RequesterRole:      m.RequesterRole,
+		ReasonForRequest:   m.ReasonForRequest,
+		Status:             m.Status,
+		ReasonForRejection: m.ReasonForRejection,
+		CreatedAt:          m.CreatedAt,
+		UpdatedAt:          m.UpdatedAt,
+	}
 }

@@ -59,6 +59,36 @@ definitions:
       validation_organization:
         type: string
     type: object
+  dto.DataAccessRequestDTO:
+    properties:
+      created_at:
+        description: Timestamp of when the request was created
+        type: string
+      id:
+        description: Unique ID of the request
+        type: string
+      reason_for_rejection:
+        description: Optional reason for rejection
+        type: string
+      reason_for_request:
+        description: Reason for the request
+        type: string
+      request_account_id:
+        description: ID of the account being accessed
+        type: string
+      requester_account_id:
+        description: ID of the account making the request
+        type: string
+      requester_role:
+        description: Role of the requester
+        type: string
+      status:
+        description: Status of the request (PENDING, APPROVED, REJECTED)
+        type: string
+      updated_at:
+        description: Timestamp of when the request was last updated
+        type: string
+    type: object
   dto.DataAccessRequestPayloadDTO:
     properties:
       reason_for_request:
@@ -431,6 +461,38 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
       summary: Create a data access request
+      tags:
+      - data-access
+  /api/v1/data-requests/pending:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a list of pending data access requests for the authenticated
+        user.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of pending data access requests
+          schema:
+            items:
+              $ref: '#/definitions/dto.DataAccessRequestDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Get pending data access requests
       tags:
       - data-access
   /api/v1/validators/active:

@@ -2,6 +2,7 @@ package ucases
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/domain"
@@ -52,4 +53,20 @@ func (u *dataAccessUCase) CreateRequest(
 	}
 
 	return nil
+}
+
+func (u *dataAccessUCase) GetPendingRequests(userID string) ([]dto.DataAccessRequestDTO, error) {
+	// Fetch pending requests from the repository
+	requests, err := u.dataAccessRepository.GetPendingRequests(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch pending requests: %w", err)
+	}
+
+	// Convert domain models to DTOs
+	requestDTOs := make([]dto.DataAccessRequestDTO, len(requests))
+	for i, req := range requests {
+		requestDTOs[i] = *req.ToDTO()
+	}
+
+	return requestDTOs, nil
 }

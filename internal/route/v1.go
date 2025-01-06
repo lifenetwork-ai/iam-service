@@ -43,4 +43,5 @@ func RegisterRoutes(
 	// SECTION: data access
 	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase)
 	appRouter.POST("/data-access", middleware.ValidateBearerToken(), dataAccessHandler.CreateDataAccessRequest)
+	appRouter.GET("/data-access/pending", middleware.ValidateBearerToken(), dataAccessHandler.GetPendingDataAccessRequests)
 }

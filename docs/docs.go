@@ -395,6 +395,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/data-requests/pending": {
+            "get": {
+                "description": "Fetches a list of pending data access requests for the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-access"
+                ],
+                "summary": "Get pending data access requests",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of pending data access requests",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.DataAccessRequestDTO"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/validators/active": {
             "get": {
                 "description": "Fetches a list of active validators.",
@@ -532,6 +579,47 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "validation_organization": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DataAccessRequestDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp of when the request was created",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Unique ID of the request",
+                    "type": "string"
+                },
+                "reason_for_rejection": {
+                    "description": "Optional reason for rejection",
+                    "type": "string"
+                },
+                "reason_for_request": {
+                    "description": "Reason for the request",
+                    "type": "string"
+                },
+                "request_account_id": {
+                    "description": "ID of the account being accessed",
+                    "type": "string"
+                },
+                "requester_account_id": {
+                    "description": "ID of the account making the request",
+                    "type": "string"
+                },
+                "requester_role": {
+                    "description": "Role of the requester",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status of the request (PENDING, APPROVED, REJECTED)",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "Timestamp of when the request was last updated",
                     "type": "string"
                 }
             }
