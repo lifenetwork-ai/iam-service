@@ -324,6 +324,113 @@
                 }
             }
         },
+        "/api/v1/data-access": {
+            "post": {
+                "description": "Allows a requester to create a new data access request for a specific user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-access"
+                ],
+                "summary": "Create a data access request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload containing user ID and reason for request",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.DataAccessRequestPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Data access request created successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "404": {
+                        "description": "Requested user not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/data-access/pending": {
+            "get": {
+                "description": "Fetches a list of pending data access requests for the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-access"
+                ],
+                "summary": "Get pending data access requests",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of pending data access requests",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.DataAccessRequestDTO"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/data-access/{requesterAccountID}/approve": {
             "put": {
                 "description": "Approves a pending data access request for the authenticated user.",
@@ -445,113 +552,6 @@
                     },
                     "404": {
                         "description": "Request not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/data-requests": {
-            "post": {
-                "description": "Allows a requester to create a new data access request for a specific user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "data-access"
-                ],
-                "summary": "Create a data access request",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Payload containing user ID and reason for request",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.DataAccessRequestPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Data access request created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "404": {
-                        "description": "Requested user not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/data-requests/pending": {
-            "get": {
-                "description": "Fetches a list of pending data access requests for the authenticated user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "data-access"
-                ],
-                "summary": "Get pending data access requests",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of pending data access requests",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.DataAccessRequestDTO"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.GeneralError"
                         }

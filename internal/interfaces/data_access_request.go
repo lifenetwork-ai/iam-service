@@ -8,7 +8,7 @@ import (
 
 type DataAccessRepository interface {
 	CreateDataAccessRequest(request *domain.DataAccessRequest) error
-	GetPendingRequests(userID string) ([]domain.DataAccessRequest, error)
+	GetPendingRequests(requestAccountID string) ([]domain.DataAccessRequest, error)
 	UpdateRequestStatus(
 		requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 	) error
@@ -16,7 +16,7 @@ type DataAccessRepository interface {
 
 type DataAccessUCase interface {
 	CreateRequest(payload dto.DataAccessRequestPayloadDTO, requesterAccountID, requesterAccountRole string) error
-	GetPendingRequests(userID string) ([]dto.DataAccessRequestDTO, error)
+	GetPendingRequests(requestAccountID string) ([]dto.DataAccessRequestDTO, error)
 	ApproveOrRejectRequest(
 		requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 	) error

@@ -426,6 +426,47 @@ paths:
       summary: Register a new account
       tags:
       - authentication
+  /api/v1/data-access:
+    post:
+      consumes:
+      - application/json
+      description: Allows a requester to create a new data access request for a specific
+        user.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Payload containing user ID and reason for request
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DataAccessRequestPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Data access request created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: Requested user not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Create a data access request
+      tags:
+      - data-access
   /api/v1/data-access/{requesterAccountID}/approve:
     put:
       consumes:
@@ -516,48 +557,7 @@ paths:
       summary: Reject a data access request
       tags:
       - data-access
-  /api/v1/data-requests:
-    post:
-      consumes:
-      - application/json
-      description: Allows a requester to create a new data access request for a specific
-        user.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Payload containing user ID and reason for request
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.DataAccessRequestPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Data access request created successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "404":
-          description: Requested user not found
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Create a data access request
-      tags:
-      - data-access
-  /api/v1/data-requests/pending:
+  /api/v1/data-access/pending:
     get:
       consumes:
       - application/json

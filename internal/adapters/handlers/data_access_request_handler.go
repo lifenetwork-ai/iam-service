@@ -39,7 +39,7 @@ func NewDataAccessHandler(
 // @Failure 400 {object} response.GeneralError "Invalid payload"
 // @Failure 404 {object} response.GeneralError "Requested user not found"
 // @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/data-requests [post]
+// @Router /api/v1/data-access [post]
 func (h *dataAccessHandler) CreateDataAccessRequest(ctx *gin.Context) {
 	// Retrieve the token from the context
 	token, exists := ctx.Get("token")
@@ -61,6 +61,12 @@ func (h *dataAccessHandler) CreateDataAccessRequest(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
 		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
+		return
+	}
+
+	// Validate the payload
+	if accountDTO.ID == payload.RequestAccountID {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Cannot request access to own account", nil)
 		return
 	}
 
@@ -94,7 +100,7 @@ func (h *dataAccessHandler) CreateDataAccessRequest(ctx *gin.Context) {
 // @Success 200 {array} dto.DataAccessRequestDTO "List of pending data access requests"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
 // @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/data-requests/pending [get]
+// @Router /api/v1/data-access/pending [get]
 func (h *dataAccessHandler) GetPendingDataAccessRequests(ctx *gin.Context) {
 	// Retrieve the token from the context
 	token, exists := ctx.Get("token")

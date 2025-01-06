@@ -55,9 +55,9 @@ func (u *dataAccessUCase) CreateRequest(
 	return nil
 }
 
-func (u *dataAccessUCase) GetPendingRequests(userID string) ([]dto.DataAccessRequestDTO, error) {
+func (u *dataAccessUCase) GetPendingRequests(requestAccountID string) ([]dto.DataAccessRequestDTO, error) {
 	// Fetch pending requests from the repository
-	requests, err := u.dataAccessRepository.GetPendingRequests(userID)
+	requests, err := u.dataAccessRepository.GetPendingRequests(requestAccountID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch pending requests: %w", err)
 	}
