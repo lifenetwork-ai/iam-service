@@ -335,6 +335,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/data-requests": {
+            "post": {
+                "description": "Allows a requester to create a new data access request for a specific user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-access"
+                ],
+                "summary": "Create a data access request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload containing user ID and reason for request",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.DataAccessRequestPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Data access request created successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "404": {
+                        "description": "Requested user not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/validators/active": {
             "get": {
                 "description": "Fetches a list of active validators.",
@@ -472,6 +532,23 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "validation_organization": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DataAccessRequestPayloadDTO": {
+            "type": "object",
+            "required": [
+                "reason_for_request",
+                "request_account_id"
+            ],
+            "properties": {
+                "reason_for_request": {
+                    "description": "Reason for the data access request",
+                    "type": "string"
+                },
+                "request_account_id": {
+                    "description": "Account whose data is being requested",
                     "type": "string"
                 }
             }

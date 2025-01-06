@@ -5,10 +5,10 @@ import (
 	"github.com/genefriendway/human-network-auth/internal/dto"
 )
 
-type DataAccessRequestRepository interface {
+type DataAccessRepository interface {
 	CreateDataAccessRequest(request *domain.DataAccessRequest) error
 }
 
-type DataAccessRequestUCase interface {
+type DataAccessUCase interface {
 	CreateRequest(payload dto.DataAccessRequestPayloadDTO, requesterAccountID, requesterAccountRole string) error
 }

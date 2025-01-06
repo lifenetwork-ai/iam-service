@@ -20,6 +20,7 @@ func RegisterRoutes(
 	db *gorm.DB,
 	authUCase interfaces.AuthUCase,
 	accountUCase interfaces.AccountUCase,
+	dataAccessUCase interfaces.DataAccessUCase,
 ) {
 	v1 := r.Group("/api/v1")
 	appRouter := v1.Group("")
@@ -38,4 +39,8 @@ func RegisterRoutes(
 
 	// SECTION: validator
 	appRouter.GET("validators/active", middleware.ValidateBearerToken(), accountHandler.GetActiveValidators)
+
+	// SECTION: data access
+	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase)
+	appRouter.POST("/data-access", middleware.ValidateBearerToken(), dataAccessHandler.CreateDataAccessRequest)
 }

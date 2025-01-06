@@ -10,17 +10,17 @@ import (
 )
 
 type dataAccessUCase struct {
-	dataAccessRequestRepository interfaces.DataAccessRequestRepository
-	accountRepository           interfaces.AccountRepository
+	dataAccessRepository interfaces.DataAccessRepository
+	accountRepository    interfaces.AccountRepository
 }
 
 func NewDataAccessUCase(
-	dataAccessRequestRepository interfaces.DataAccessRequestRepository,
+	dataAccessRepository interfaces.DataAccessRepository,
 	accountRepository interfaces.AccountRepository,
-) interfaces.DataAccessRequestUCase {
+) interfaces.DataAccessUCase {
 	return &dataAccessUCase{
-		dataAccessRequestRepository: dataAccessRequestRepository,
-		accountRepository:           accountRepository,
+		dataAccessRepository: dataAccessRepository,
+		accountRepository:    accountRepository,
 	}
 }
 
@@ -47,7 +47,7 @@ func (u *dataAccessUCase) CreateRequest(
 	}
 
 	// Save the request in the database using the repository
-	if err := u.dataAccessRequestRepository.CreateDataAccessRequest(dataAccessRequest); err != nil {
+	if err := u.dataAccessRepository.CreateDataAccessRequest(dataAccessRequest); err != nil {
 		return err
 	}
 

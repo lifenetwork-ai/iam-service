@@ -23,6 +23,12 @@ var accountUCaseSet = wire.NewSet(
 	ucases.NewAccountUCase,
 )
 
+var dataAccessUCaseSet = wire.NewSet(
+	repositories.NewDataAccessRepository,
+	repositories.NewAccountRepository,
+	ucases.NewDataAccessUCase,
+)
+
 // Init ucase
 func InitializeAuthUCase(db *gorm.DB) interfaces.AuthUCase {
 	wire.Build(authUCaseSet)
@@ -31,5 +37,10 @@ func InitializeAuthUCase(db *gorm.DB) interfaces.AuthUCase {
 
 func InitializeAccountUCase(db *gorm.DB, config *conf.Configuration) interfaces.AccountUCase {
 	wire.Build(accountUCaseSet)
+	return nil
+}
+
+func InitializeDataAccessUCase(db *gorm.DB, config *conf.Configuration) interfaces.DataAccessUCase {
+	wire.Build(dataAccessUCaseSet)
 	return nil
 }
