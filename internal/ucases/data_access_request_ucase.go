@@ -60,38 +60,42 @@ func (u *dataAccessUCase) CreateRequest(
 	return nil
 }
 
-func (u *dataAccessUCase) GetPendingRequests(requestAccountID string) ([]dto.DataAccessRequestDTO, error) {
+func (u *dataAccessUCase) GetRequestsByStatus(
+	requestAccountID string, status constants.DataAccessRequestStatus,
+) ([]dto.DataAccessRequestDTO, error) {
 	// Retrieve secret values
 	mnemonic := u.config.Secret.Mnemonic
 	passphrase := u.config.Secret.Passphrase
 	salt := u.config.Secret.Salt
 
-	// Fetch pending requests from the repository
-	requests, err := u.dataAccessRepository.GetPendingRequests(requestAccountID)
+	// Fetch requests by status from the repository
+	requests, err := u.dataAccessRepository.GetRequestsByStatus(requestAccountID, string(status))
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch pending requests: %w", err)
+		return nil, fmt.Errorf("failed to fetch requests with status %s: %w", status, err)
 	}
 
 	// Convert domain models to DTOs
 	requestDTOs := make([]dto.DataAccessRequestDTO, len(requests))
 	for i, req := range requests {
-		requestDTOs[i] = *req.ToDTO()
+		dto := req.ToDTO()
 
-		requester := requestDTOs[i].RequesterAccount
+		requester := dto.RequesterAccount
 		// Generate public key
 		publicKey, _, err := crypto.GenerateAccount(
 			mnemonic, passphrase, salt, requester.Role, requester.ID,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to generate public key for requester %s: %w", requester.ID, err)
 		}
 
-		// Convert public and private keys to hexadecimal strings
+		// Convert public key to hexadecimal string
 		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to convert public key to hex for requester %s: %w", requester.ID, err)
 		}
-		requestDTOs[i].RequesterAccount.PublicKey = &publicKeyHex
+		dto.RequesterAccount.PublicKey = &publicKeyHex
+
+		requestDTOs[i] = *dto
 	}
 
 	return requestDTOs, nil

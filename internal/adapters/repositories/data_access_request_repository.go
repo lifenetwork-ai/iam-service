@@ -25,13 +25,13 @@ func (r *dataAccessRepository) CreateDataAccessRequest(request *domain.DataAcces
 	return nil
 }
 
-// GetPendingRequests retrieves a list of pending data access requests for a specific user.
-func (r *dataAccessRepository) GetPendingRequests(requestAccountID string) ([]domain.DataAccessRequest, error) {
+// GetRequestsByRequester retrieves all data access requests made by a specific requester.
+func (r *dataAccessRepository) GetRequestsByStatus(requestAccountID, status string) ([]domain.DataAccessRequest, error) {
 	var requests []domain.DataAccessRequest
 
-	// Query the database for pending requests where the user is the recipient and preload the RequesterAccount relationship
+	// Query the database for requests filtered by status
 	err := r.db.Preload("RequesterAccount").
-		Where("request_account_id = ? AND status = ?", requestAccountID, string(constants.DataAccessRequestPending)).
+		Where("request_account_id = ? AND status = ?", requestAccountID, status).
 		Find(&requests).Error
 	if err != nil {
 		return nil, err

@@ -90,18 +90,20 @@ func (h *dataAccessHandler) CreateDataAccessRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Data access request created successfully"})
 }
 
-// GetPendingDataAccessRequests retrieves a list of pending data access requests.
-// @Summary Get pending data access requests
-// @Description Fetches a list of pending data access requests for the authenticated user.
+// GetDataAccessRequests retrieves a list of data access requests filtered by status.
+// @Summary Get data access requests by status
+// @Description Fetches a list of data access requests for the authenticated user filtered by status.
 // @Tags data-access
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
-// @Success 200 {array} dto.DataAccessRequestDTO "List of pending data access requests"
+// @Param status query string false "Request status to filter by (e.g., 'PENDING', 'APPROVED', 'REJECTED')"
+// @Success 200 {array} dto.DataAccessRequestDTO "List of data access requests"
+// @Failure 400 {object} response.GeneralError "Invalid status"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
 // @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/data-access/pending [get]
-func (h *dataAccessHandler) GetPendingDataAccessRequests(ctx *gin.Context) {
+// @Router /api/v1/data-access [get]
+func (h *dataAccessHandler) GetDataAccessRequests(ctx *gin.Context) {
 	// Retrieve the token from the context
 	token, exists := ctx.Get("token")
 	if !exists {
@@ -117,16 +119,37 @@ func (h *dataAccessHandler) GetPendingDataAccessRequests(ctx *gin.Context) {
 		return
 	}
 
-	// Fetch the pending requests
-	requests, err := h.dataAccessUCase.GetPendingRequests(accountDTO.ID)
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to fetch pending data access requests: %v", err)
-		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch pending data access requests", err)
+	// Get the status from query parameters (default to 'PENDING' if not provided)
+	status := ctx.DefaultQuery("status", string(constants.DataAccessRequestPending))
+
+	// Validate the status
+	if !h.isValidDataAccessRequestStatus(status) {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid status", nil)
 		return
 	}
 
-	// Return the list of pending requests
+	// Fetch the requests by status
+	requests, err := h.dataAccessUCase.GetRequestsByStatus(accountDTO.ID, constants.DataAccessRequestStatus(status))
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to fetch data access requests: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch data access requests", err)
+		return
+	}
+
+	// Return the list of requests
 	ctx.JSON(http.StatusOK, gin.H{"requests": requests})
+}
+
+// isValidDataAccessRequestStatus validates if a given status is valid.
+func (h *dataAccessHandler) isValidDataAccessRequestStatus(status string) bool {
+	switch constants.DataAccessRequestStatus(status) {
+	case constants.DataAccessRequestPending,
+		constants.DataAccessRequestApproved,
+		constants.DataAccessRequestRejected:
+		return true
+	default:
+		return false
+	}
 }
 
 // ApproveRequest handles approving a data access request.

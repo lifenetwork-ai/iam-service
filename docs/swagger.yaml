@@ -425,6 +425,46 @@ paths:
       tags:
       - authentication
   /api/v1/data-access:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a list of data access requests for the authenticated user
+        filtered by status.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - default: PENDING
+        description: Request status to filter by (e.g., 'PENDING', 'APPROVED', 'REJECTED')
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of data access requests
+          schema:
+            items:
+              $ref: '#/definitions/dto.DataAccessRequestDTO'
+            type: array
+        "400":
+          description: Invalid status
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Get data access requests by status
+      tags:
+      - data-access
     post:
       consumes:
       - application/json
@@ -553,38 +593,6 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
       summary: Reject a data access request
-      tags:
-      - data-access
-  /api/v1/data-access/pending:
-    get:
-      consumes:
-      - application/json
-      description: Fetches a list of pending data access requests for the authenticated
-        user.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of pending data access requests
-          schema:
-            items:
-              $ref: '#/definitions/dto.DataAccessRequestDTO'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get pending data access requests
       tags:
       - data-access
   /api/v1/validators/active:
