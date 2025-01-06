@@ -5,7 +5,7 @@ import (
 )
 
 type ValidatorDetail struct {
-	ID                     string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"` // UUID primary keyID                     uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
+	ID                     *string   `json:"id,omitempty" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"` // UUID primary keyID                     uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
 	AccountID              string    `json:"account_id"`
 	Account                Account   `json:"account" gorm:"foreignKey:AccountID;references:ID"`
 	ValidationOrganization *string   `json:"validation_organization,omitempty"`

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 
@@ -53,11 +54,13 @@ func (r *accountRepository) FindAccountByPhoneNumber(phone string) (*domain.Acco
 
 func (r *accountRepository) FindAccountByID(id string) (*domain.Account, error) {
 	var account domain.Account
-	if err := r.db.Where("id = ?", id).First(&account).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
+	err := r.db.Where("id = ?", id).First(&account).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// Return nil without an error if the account is not found
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("database error occurred while fetching account by ID: %w", err)
 	}
 	return &account, nil
 }
@@ -69,14 +72,34 @@ func (r *accountRepository) CreateAccount(account *domain.Account) error {
 // User detail
 func (r *accountRepository) FindUserDetailByAccountID(accountID string) (*domain.UserDetail, error) {
 	var details domain.UserDetail
-	// Use Preload to eagerly load the Account relationship
-	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
+
+	// Attempt to preload the user detail and associated account
+	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error
+	if err == nil {
+		return &details, nil
 	}
-	return &details, nil
+
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// Return the error if it's not a "record not found" error
+		return nil, fmt.Errorf("failed to fetch user detail: %w", err)
+	}
+
+	// Use FindAccountByID to handle account fetching
+	account, accErr := r.FindAccountByID(accountID)
+	if accErr != nil {
+		return nil, fmt.Errorf("failed to fetch account: %w", accErr)
+	}
+
+	if account == nil {
+		// Return nil if the account is also not found
+		return nil, nil
+	}
+
+	// Return an empty UserDetail with the account preloaded
+	return &domain.UserDetail{
+		AccountID: account.ID,
+		Account:   *account,
+	}, nil
 }
 
 func (r *accountRepository) CreateOrUpdateUserDetail(detail *domain.UserDetail) error {
@@ -94,14 +117,34 @@ func (r *accountRepository) CreateOrUpdateUserDetail(detail *domain.UserDetail) 
 // Partner detail
 func (r *accountRepository) FindPartnerDetailByAccountID(accountID string) (*domain.PartnerDetail, error) {
 	var details domain.PartnerDetail
-	// Use Preload to eagerly load the Account relationship
-	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
+
+	// Attempt to preload partner detail and associated account
+	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error
+	if err == nil {
+		return &details, nil
 	}
-	return &details, nil
+
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// Return the error if it's not a "record not found" error
+		return nil, fmt.Errorf("failed to fetch partner detail: %w", err)
+	}
+
+	// Use FindAccountByID to handle account fetching
+	account, accErr := r.FindAccountByID(accountID)
+	if accErr != nil {
+		return nil, fmt.Errorf("failed to fetch account: %w", accErr)
+	}
+
+	if account == nil {
+		// Return nil if the account is also not found
+		return nil, nil
+	}
+
+	// Return an empty PartnerDetail with the account preloaded
+	return &domain.PartnerDetail{
+		AccountID: account.ID,
+		Account:   *account,
+	}, nil
 }
 
 func (r *accountRepository) CreateOrUpdatePartnerDetail(detail *domain.PartnerDetail) error {
@@ -119,14 +162,34 @@ func (r *accountRepository) CreateOrUpdatePartnerDetail(detail *domain.PartnerDe
 // Customer detail
 func (r *accountRepository) FindCustomerDetailByAccountID(accountID string) (*domain.CustomerDetail, error) {
 	var details domain.CustomerDetail
-	// Use Preload to eagerly load the Account relationship
-	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
+
+	// Attempt to preload customer detail and associated account
+	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error
+	if err == nil {
+		return &details, nil
 	}
-	return &details, nil
+
+	// If the error is not "record not found," return it immediately
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("failed to fetch customer detail: %w", err)
+	}
+
+	// Use FindAccountByID to check if the account exists
+	account, accErr := r.FindAccountByID(accountID)
+	if accErr != nil {
+		return nil, fmt.Errorf("failed to fetch account: %w", accErr)
+	}
+
+	if account == nil {
+		// Return nil if both the customer detail and account are not found
+		return nil, nil
+	}
+
+	// Return an empty CustomerDetail with the associated account preloaded
+	return &domain.CustomerDetail{
+		AccountID: account.ID,
+		Account:   *account,
+	}, nil
 }
 
 func (r *accountRepository) CreateOrUpdateCustomerDetail(detail *domain.CustomerDetail) error {
@@ -144,13 +207,32 @@ func (r *accountRepository) CreateOrUpdateCustomerDetail(detail *domain.Customer
 // Validator detail
 func (r *accountRepository) FindValidatorDetailByAccountID(accountID string) (*domain.ValidatorDetail, error) {
 	var details domain.ValidatorDetail
-	// Use Preload to eagerly load the Account relationship
+
+	// Attempt to find validator-specific details
 	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		// If error is not "record not found," return the error immediately
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("failed to fetch validator detail: %w", err)
+		}
+
+		// Handle the case where validator detail is not found
+		account, accErr := r.FindAccountByID(accountID)
+		if accErr != nil {
+			return nil, fmt.Errorf("failed to fetch associated account: %w", accErr)
+		}
+		if account == nil {
+			// Return nil if both validator detail and account are not found
 			return nil, nil
 		}
-		return nil, err
+
+		// Return an empty ValidatorDetail with the associated account preloaded
+		return &domain.ValidatorDetail{
+			AccountID: account.ID,
+			Account:   *account,
+		}, nil
 	}
+
+	// Return the found details
 	return &details, nil
 }
 

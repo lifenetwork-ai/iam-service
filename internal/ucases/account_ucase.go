@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"gorm.io/gorm"
+
 	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/dto"
@@ -161,7 +163,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 
 		// Map ValidatorDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID: detail.ID,
+			ID: *detail.ID,
 			Account: dto.AccountDTO{
 				ID:        detail.Account.ID,
 				Email:     detail.Account.Email,
@@ -194,7 +196,7 @@ func (u *accountUCase) GetActiveValidators() ([]dto.AccountDetailDTO, error) {
 	for _, v := range validators {
 		// Ensure the Account field is not nil
 		if v.Account.ID == "" {
-			return nil, fmt.Errorf("validator with ID %s has no associated account", v.ID)
+			return nil, fmt.Errorf("validator with ID %s has no associated account", *v.ID)
 		}
 
 		// Generate public key
@@ -210,7 +212,7 @@ func (u *accountUCase) GetActiveValidators() ([]dto.AccountDetailDTO, error) {
 
 		// Map ValidatorDetail to AccountDetailDTO
 		result = append(result, dto.AccountDetailDTO{
-			ID: v.ID,
+			ID: *v.ID,
 			Account: dto.AccountDTO{
 				ID:        v.Account.ID,
 				Username:  v.Account.Username,
@@ -233,7 +235,7 @@ func (u *accountUCase) FindAccountByID(id string) (*dto.AccountDTO, error) {
 		return nil, fmt.Errorf("failed to fetch account by ID: %w", err)
 	}
 
-	if account == nil {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors.New("account not found")
 	}
 
