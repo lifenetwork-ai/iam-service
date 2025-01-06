@@ -761,10 +761,15 @@ const docTemplate = `{
         "dto.DataAccessRequestPayloadDTO": {
             "type": "object",
             "required": [
+                "file_id",
                 "reason_for_request",
                 "request_account_id"
             ],
             "properties": {
+                "file_id": {
+                    "description": "File ID",
+                    "type": "string"
+                },
                 "reason_for_request": {
                     "description": "Reason for the data access request",
                     "type": "string"
