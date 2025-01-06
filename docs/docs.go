@@ -791,10 +791,6 @@ const docTemplate = `{
                     "description": "Timestamp of when the request was created",
                     "type": "string"
                 },
-                "id": {
-                    "description": "Unique ID of the request",
-                    "type": "string"
-                },
                 "reason_for_rejection": {
                     "description": "Optional reason for rejection",
                     "type": "string"

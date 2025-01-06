@@ -119,8 +119,8 @@ func (h *dataAccessHandler) GetDataAccessRequests(ctx *gin.Context) {
 	}
 
 	// Retrieve the status query parameter
-	status := ctx.DefaultQuery("status", string(constants.DataAccessRequestPending))
-	if !h.isValidDataAccessRequestStatus(status) {
+	status := ctx.DefaultQuery("status", "")
+	if status != "" && !h.isValidDataAccessRequestStatus(status) {
 		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid status provided", nil)
 		return
 	}
@@ -184,6 +184,11 @@ func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 		return
 	}
 
+	if accountDTO.ID == requesterAccountID {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Cannot approve own request", nil)
+		return
+	}
+
 	// Approve the request
 	err = h.dataAccessUCase.ApproveOrRejectRequest(
 		accountDTO.ID,
@@ -235,6 +240,11 @@ func (h *dataAccessHandler) RejectRequest(ctx *gin.Context) {
 	requesterAccountID := ctx.Param("requesterAccountID")
 	if requesterAccountID == "" {
 		httpresponse.Error(ctx, http.StatusBadRequest, "Requester account ID is required", nil)
+		return
+	}
+
+	if accountDTO.ID == requesterAccountID {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Cannot reject own request", nil)
 		return
 	}
 

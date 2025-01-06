@@ -27,7 +27,6 @@ func (m *DataAccessRequest) TableName() string {
 // ToDTO converts a DataAccessRequest domain model to a DataAccessRequestDTO.
 func (m *DataAccessRequest) ToDTO() *dto.DataAccessRequestDTO {
 	return &dto.DataAccessRequestDTO{
-		ID:                 m.ID,
 		RequestAccountID:   m.RequestAccountID,
 		RequesterAccount:   *m.RequesterAccount.ToDTO(),
 		ReasonForRequest:   m.ReasonForRequest,

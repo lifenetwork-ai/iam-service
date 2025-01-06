@@ -4,7 +4,6 @@ import "time"
 
 // DataAccessRequestDTO represents the structure for returning data access request information.
 type DataAccessRequestDTO struct {
-	ID                 string     `json:"id"`                             // Unique ID of the request
 	RequestAccountID   string     `json:"request_account_id"`             // ID of the account being accessed
 	RequesterAccount   AccountDTO `json:"requester_account"`              // Details of the account making the request
 	ReasonForRequest   string     `json:"reason_for_request"`             // Reason for the request
