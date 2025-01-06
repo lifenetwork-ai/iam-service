@@ -35,7 +35,7 @@ func RegisterRoutes(
 	// SECTION: account
 	accountHandler := handlers.NewAccountHandler(accountUCase, authUCase)
 	appRouter.GET("/account/me", middleware.ValidateBearerToken(), accountHandler.GetCurrentUser)
-	appRouter.PUT("/account/:account_id/role", accountHandler.UpdateAccountRole)
+	appRouter.PUT("/account/role", middleware.ValidateBearerToken(), accountHandler.UpdateAccountRole)
 
 	// SECTION: validator
 	appRouter.GET("validators/active", middleware.ValidateBearerToken(), accountHandler.GetActiveValidators)

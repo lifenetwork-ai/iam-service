@@ -20,7 +20,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer access token",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -54,7 +54,7 @@
                 }
             }
         },
-        "/api/v1/account/{account_id}/role": {
+        "/api/v1/account/role": {
             "put": {
                 "description": "Update the role of an account and save associated role-specific details.",
                 "consumes": [
@@ -70,9 +70,9 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Account ID",
-                        "name": "account_id",
-                        "in": "path",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
                         "required": true
                     },
                     {
@@ -384,7 +384,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer access token",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
                         "name": "Authorization",
                         "in": "header",
                         "required": true

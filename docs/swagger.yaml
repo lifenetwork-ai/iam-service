@@ -161,16 +161,50 @@ definitions:
 info:
   contact: {}
 paths:
-  /api/v1/account/{account_id}/role:
+  /api/v1/account/me:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint retrieves the details of the currently authenticated
+        user using the provided access token.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User details
+          schema:
+            $ref: '#/definitions/dto.AccountDetailDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Get current user details
+      tags:
+      - account
+  /api/v1/account/role:
     put:
       consumes:
       - application/json
       description: Update the role of an account and save associated role-specific
         details.
       parameters:
-      - description: Account ID
-        in: path
-        name: account_id
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
         required: true
         type: string
       - description: Payload containing role and role-specific details
@@ -200,40 +234,6 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
       summary: Update account role and role-specific details
-      tags:
-      - account
-  /api/v1/account/me:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint retrieves the details of the currently authenticated
-        user using the provided access token.
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User details
-          schema:
-            $ref: '#/definitions/dto.AccountDetailDTO'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get current user details
       tags:
       - account
   /api/v1/auth/login:
@@ -416,7 +416,7 @@ paths:
       - application/json
       description: Fetches a list of active validators.
       parameters:
-      - description: Bearer access token
+      - description: Bearer access token (e.g., 'Bearer <token>')
         in: header
         name: Authorization
         required: true
