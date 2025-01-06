@@ -4,22 +4,27 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
+	"github.com/genefriendway/human-network-auth/pkg/crypto"
 )
 
 type dataAccessUCase struct {
+	config               *conf.Configuration
 	dataAccessRepository interfaces.DataAccessRepository
 	accountRepository    interfaces.AccountRepository
 }
 
 func NewDataAccessUCase(
+	config *conf.Configuration,
 	dataAccessRepository interfaces.DataAccessRepository,
 	accountRepository interfaces.AccountRepository,
 ) interfaces.DataAccessUCase {
 	return &dataAccessUCase{
+		config:               config,
 		dataAccessRepository: dataAccessRepository,
 		accountRepository:    accountRepository,
 	}
@@ -56,6 +61,11 @@ func (u *dataAccessUCase) CreateRequest(
 }
 
 func (u *dataAccessUCase) GetPendingRequests(requestAccountID string) ([]dto.DataAccessRequestDTO, error) {
+	// Retrieve secret values
+	mnemonic := u.config.Secret.Mnemonic
+	passphrase := u.config.Secret.Passphrase
+	salt := u.config.Secret.Salt
+
 	// Fetch pending requests from the repository
 	requests, err := u.dataAccessRepository.GetPendingRequests(requestAccountID)
 	if err != nil {
@@ -66,6 +76,22 @@ func (u *dataAccessUCase) GetPendingRequests(requestAccountID string) ([]dto.Dat
 	requestDTOs := make([]dto.DataAccessRequestDTO, len(requests))
 	for i, req := range requests {
 		requestDTOs[i] = *req.ToDTO()
+
+		requester := requestDTOs[i].RequesterAccount
+		// Generate public key
+		publicKey, _, err := crypto.GenerateAccount(
+			mnemonic, passphrase, salt, requester.Role, requester.ID,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Convert public and private keys to hexadecimal strings
+		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		requestDTOs[i].RequesterAccount.PublicKey = &publicKeyHex
 	}
 
 	return requestDTOs, nil

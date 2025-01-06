@@ -34,7 +34,7 @@ func InitializeAccountUCase(db *gorm.DB, config *conf.Configuration) interfaces.
 func InitializeDataAccessUCase(db *gorm.DB, config *conf.Configuration) interfaces.DataAccessUCase {
 	dataAccessRepository := repositories.NewDataAccessRepository(db)
 	accountRepository := repositories.NewAccountRepository(db)
-	dataAccessUCase := ucases.NewDataAccessUCase(dataAccessRepository, accountRepository)
+	dataAccessUCase := ucases.NewDataAccessUCase(config, dataAccessRepository, accountRepository)
 	return dataAccessUCase
 }
 
