@@ -408,6 +408,12 @@ paths:
       consumes:
       - application/json
       description: Fetches a list of active validators.
+      parameters:
+      - description: Bearer access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -417,6 +423,14 @@ paths:
             items:
               $ref: '#/definitions/dto.AccountDetailDTO'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.GeneralError'
         "500":
           description: Internal server error
           schema:

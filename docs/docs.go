@@ -386,6 +386,15 @@ const docTemplate = `{
                     "validators"
                 ],
                 "summary": "Get Active Validators",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of active validators",
@@ -394,6 +403,18 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/dto.AccountDetailDTO"
                             }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
                         }
                     },
                     "500": {

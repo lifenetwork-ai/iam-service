@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
@@ -42,7 +43,7 @@ func (h *accountHandler) GetCurrentUser(ctx *gin.Context) {
 	// Retrieve the token from the context
 	token, exists := ctx.Get("token")
 	if !exists {
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", nil)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", domain.ErrTokenNotFound)
 		return
 	}
 
@@ -72,11 +73,35 @@ func (h *accountHandler) GetCurrentUser(ctx *gin.Context) {
 // @Tags validators
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer access token"
 // @Success 200 {array} dto.AccountDetailDTO "List of active validators"
+// @Failure 401 {object} response.GeneralError "Unauthorized"
+// @Failure 403 {object} response.GeneralError "Forbidden"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/validators/active [get]
 func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
-	// Fetch active validators using the use case
+	// Retrieve the token from the context
+	token, exists := ctx.Get("token")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", domain.ErrTokenNotFound)
+		return
+	}
+
+	// Validate the token and fetch user details
+	account, err := h.authUCase.ValidateToken(token.(string))
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to validate token: %v", err)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid or expired token", err)
+		return
+	}
+
+	// Ensure the user has the required permissions
+	if account.Role != string(constants.User) {
+		httpresponse.Error(ctx, http.StatusForbidden, "Insufficient permissions", domain.ErrInsufficientPermissions)
+		return
+	}
+
+	// Fetch active validators
 	validators, err := h.accountUCase.GetActiveValidators()
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to fetch active validators: %v", err)
@@ -84,7 +109,7 @@ func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
 		return
 	}
 
-	// Respond with the list of active validators
+	// Return the list of active validators
 	ctx.JSON(http.StatusOK, gin.H{"validators": validators})
 }
 
