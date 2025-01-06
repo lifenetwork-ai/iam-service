@@ -67,6 +67,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			Account: dto.AccountDTO{
 				ID:        detail.Account.ID,
 				Email:     detail.Account.Email,
+				Username:  detail.Account.Username,
 				Role:      detail.Account.Role,
 				PublicKey: &publicKeyHex,
 			},
@@ -100,6 +101,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			Account: dto.AccountDTO{
 				ID:        detail.Account.ID,
 				Email:     detail.Account.Email,
+				Username:  detail.Account.Username,
 				Role:      detail.Account.Role,
 				PublicKey: &publicKeyHex,
 			},
@@ -133,6 +135,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			Account: dto.AccountDTO{
 				ID:        detail.Account.ID,
 				Email:     detail.Account.Email,
+				Username:  detail.Account.Username,
 				Role:      detail.Account.Role,
 				PublicKey: &publicKeyHex,
 			},
@@ -167,6 +170,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			Account: dto.AccountDTO{
 				ID:        detail.Account.ID,
 				Email:     detail.Account.Email,
+				Username:  detail.Account.Username,
 				Role:      detail.Account.Role,
 				PublicKey: &publicKeyHex,
 			},
