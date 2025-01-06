@@ -55,7 +55,6 @@ type RoleDetailsPayloadDTO struct {
 
 // DataAccessRequestPayloadDTO defines the payload for creating a data access request
 type DataAccessRequestPayloadDTO struct {
-	RequestAccountID   string `json:"request_account_id" validate:"required,uuid"`   // Account whose data is being requested
-	RequesterAccountID string `json:"requester_account_id" validate:"required,uuid"` // Account making the request
-	ReasonForRequest   string `json:"reason_for_request" validate:"required"`        // Reason for the data access request
+	RequestAccountID string `json:"request_account_id" validate:"required,uuid"` // Account whose data is being requested
+	ReasonForRequest string `json:"reason_for_request" validate:"required"`      // Reason for the data access request
 }
