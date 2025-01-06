@@ -11,6 +11,14 @@ CREATE TABLE IF NOT EXISTS data_access_requests (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Add composite index for request_account_id and status
+CREATE INDEX IF NOT EXISTS idx_request_account_status
+ON data_access_requests (request_account_id, status);
+
+-- Add index for requester_account_id
+CREATE INDEX IF NOT EXISTS idx_requester_account
+ON data_access_requests (requester_account_id);
+
 -- Add the updated_at trigger for the data_access_requests table
 DO $$
 BEGIN
