@@ -52,11 +52,17 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
+		publicKey, privateKey, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
+
+		// Convert public and private keys to hexadecimal strings
 		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		privateKeyHex, err := crypto.PrivateKeyToHex(privateKey)
 		if err != nil {
 			return nil, err
 		}
@@ -65,11 +71,12 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:        detail.Account.ID,
-				Email:     detail.Account.Email,
-				Username:  detail.Account.Username,
-				Role:      detail.Account.Role,
-				PublicKey: &publicKeyHex,
+				ID:         detail.Account.ID,
+				Email:      detail.Account.Email,
+				Username:   detail.Account.Username,
+				Role:       detail.Account.Role,
+				PublicKey:  &publicKeyHex,
+				PrivateKey: &privateKeyHex,
 			},
 			FirstName:   detail.FirstName,
 			LastName:    detail.LastName,
@@ -86,11 +93,17 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
+		publicKey, privateKey, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
+
+		// Convert public and private keys to hexadecimal strings
 		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		privateKeyHex, err := crypto.PrivateKeyToHex(privateKey)
 		if err != nil {
 			return nil, err
 		}
@@ -99,11 +112,12 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:        detail.Account.ID,
-				Email:     detail.Account.Email,
-				Username:  detail.Account.Username,
-				Role:      detail.Account.Role,
-				PublicKey: &publicKeyHex,
+				ID:         detail.Account.ID,
+				Email:      detail.Account.Email,
+				Username:   detail.Account.Username,
+				Role:       detail.Account.Role,
+				PublicKey:  &publicKeyHex,
+				PrivateKey: &privateKeyHex,
 			},
 			CompanyName: detail.CompanyName,
 			ContactName: detail.ContactName,
@@ -120,11 +134,17 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
+		publicKey, privateKey, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
+
+		// Convert public and private keys to hexadecimal strings
 		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		privateKeyHex, err := crypto.PrivateKeyToHex(privateKey)
 		if err != nil {
 			return nil, err
 		}
@@ -133,11 +153,12 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		return &dto.AccountDetailDTO{
 			ID: detail.ID,
 			Account: dto.AccountDTO{
-				ID:        detail.Account.ID,
-				Email:     detail.Account.Email,
-				Username:  detail.Account.Username,
-				Role:      detail.Account.Role,
-				PublicKey: &publicKeyHex,
+				ID:         detail.Account.ID,
+				Email:      detail.Account.Email,
+				Username:   detail.Account.Username,
+				Role:       detail.Account.Role,
+				PublicKey:  &publicKeyHex,
+				PrivateKey: &privateKeyHex,
 			},
 			OrganizationName: detail.OrganizationName,
 			Industry:         detail.Industry,
@@ -155,11 +176,17 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
+		publicKey, privateKey, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
 		if err != nil {
 			return nil, err
 		}
+
+		// Convert public and private keys to hexadecimal strings
 		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		privateKeyHex, err := crypto.PrivateKeyToHex(privateKey)
 		if err != nil {
 			return nil, err
 		}
@@ -168,11 +195,12 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		return &dto.AccountDetailDTO{
 			ID: *detail.ID,
 			Account: dto.AccountDTO{
-				ID:        detail.Account.ID,
-				Email:     detail.Account.Email,
-				Username:  detail.Account.Username,
-				Role:      detail.Account.Role,
-				PublicKey: &publicKeyHex,
+				ID:         detail.Account.ID,
+				Email:      detail.Account.Email,
+				Username:   detail.Account.Username,
+				Role:       detail.Account.Role,
+				PublicKey:  &publicKeyHex,
+				PrivateKey: &privateKeyHex,
 			},
 			ValidationOrganization: detail.ValidationOrganization,
 			ContactName:            detail.ContactPerson,

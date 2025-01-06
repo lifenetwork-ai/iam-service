@@ -468,6 +468,10 @@ const docTemplate = `{
                     "description": "Nullable",
                     "type": "string"
                 },
+                "private_key": {
+                    "description": "Nullable",
+                    "type": "string"
+                },
                 "public_key": {
                     "description": "Nullable",
                     "type": "string"

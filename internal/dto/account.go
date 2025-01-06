@@ -6,6 +6,7 @@ type AccountDTO struct {
 	Username      string  `json:"username"`
 	Role          string  `json:"role"`                     // USER, PARTNER, CUSTOMER, VALIDATOR
 	PublicKey     *string `json:"public_key,omitempty"`     // Nullable
+	PrivateKey    *string `json:"private_key,omitempty"`    // Nullable
 	APIKey        *string `json:"api_key,omitempty"`        // Nullable
 	OAuthProvider *string `json:"oauth_provider,omitempty"` // Nullable
 	OAuthID       *string `json:"oauth_id,omitempty"`       // Nullable

@@ -65,3 +65,12 @@ func PublicKeyToHex(publicKey *ecdsa.PublicKey) (string, error) {
 	}
 	return hexutil.Encode(crypto.FromECDSAPub(publicKey)), nil
 }
+
+// PrivateKeyToHex converts an ECDSA private key to a hexadecimal string.
+func PrivateKeyToHex(privateKey *ecdsa.PrivateKey) (string, error) {
+	if privateKey == nil {
+		return "", errors.New("private key is nil")
+	}
+	// Convert the private key to bytes and encode as hex
+	return hexutil.Encode(crypto.FromECDSA(privateKey)), nil
+}
