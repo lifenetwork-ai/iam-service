@@ -60,6 +60,7 @@ func (u *dataAccessUCase) CreateRequest(
 	return nil
 }
 
+// GetRequestsByStatus fetches data access requests by status
 func (u *dataAccessUCase) GetRequestsByStatus(
 	requestAccountID string, status constants.DataAccessRequestStatus,
 ) ([]dto.DataAccessRequestDTO, error) {
@@ -101,6 +102,7 @@ func (u *dataAccessUCase) GetRequestsByStatus(
 	return requestDTOs, nil
 }
 
+// ApproveOrRejectRequest updates the status of a data access request
 func (u *dataAccessUCase) ApproveOrRejectRequest(
 	requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 ) error {
@@ -117,4 +119,42 @@ func (u *dataAccessUCase) ApproveOrRejectRequest(
 	}
 
 	return nil
+}
+
+// GetAccessRequest fetches a single data access request by requestAccountID and requesterAccountID
+func (u *dataAccessUCase) GetAccessRequest(requestAccountID, requesterAccountID string) (*dto.DataAccessRequestDTO, error) {
+	// Fetch the approved or pending request from the repository
+	request, err := u.dataAccessRepository.GetAccessRequest(requestAccountID, requesterAccountID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch access request: %w", err)
+	}
+
+	// Handle no request found
+	if request == nil {
+		return nil, nil
+	}
+
+	// Convert the domain model to a DTO
+	requestDTO := request.ToDTO()
+
+	// Optionally, include generated public key for the requester
+	mnemonic := u.config.Secret.Mnemonic
+	passphrase := u.config.Secret.Passphrase
+	salt := u.config.Secret.Salt
+
+	publicKey, _, err := crypto.GenerateAccount(
+		mnemonic, passphrase, salt, request.RequesterAccount.Role, request.RequesterAccount.ID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate public key for requester: %w", err)
+	}
+
+	publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert public key to hex: %w", err)
+	}
+
+	requestDTO.RequesterAccount.PublicKey = &publicKeyHex
+
+	return requestDTO, nil
 }

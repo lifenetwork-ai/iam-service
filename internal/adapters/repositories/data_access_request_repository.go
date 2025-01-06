@@ -1,6 +1,9 @@
 package repositories
 
 import (
+	"errors"
+	"fmt"
+
 	"gorm.io/gorm"
 
 	"github.com/genefriendway/human-network-auth/constants"
@@ -67,4 +70,22 @@ func (r *dataAccessRepository) UpdateRequestStatus(
 	}
 
 	return nil
+}
+
+// GetAccessRequest fetches a single data access request by requestAccountID and requesterAccountID.
+func (r *dataAccessRepository) GetAccessRequest(requestAccountID, requesterAccountID string) (*domain.DataAccessRequest, error) {
+	var request domain.DataAccessRequest
+
+	err := r.db.Preload("RequesterAccount").
+		Where("request_account_id = ? AND requester_account_id = ?", requestAccountID, requesterAccountID).
+		First(&request).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil // Return nil if no matching record is found
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch approved request: %w", err)
+	}
+
+	return &request, nil
 }

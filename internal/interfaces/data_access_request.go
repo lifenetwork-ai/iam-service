@@ -12,6 +12,7 @@ type DataAccessRepository interface {
 	UpdateRequestStatus(
 		requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 	) error
+	GetAccessRequest(requestAccountID, requesterAccountID string) (*domain.DataAccessRequest, error)
 }
 
 type DataAccessUCase interface {
@@ -22,4 +23,5 @@ type DataAccessUCase interface {
 	ApproveOrRejectRequest(
 		requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 	) error
+	GetAccessRequest(requestAccountID, requesterAccountID string) (*dto.DataAccessRequestDTO, error)
 }
