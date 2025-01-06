@@ -38,3 +38,26 @@ func (r *dataAccessRepository) GetPendingRequests(userID string) ([]domain.DataA
 
 	return requests, nil
 }
+
+// UpdateRequestStatus updates the status of a data access request.
+// If the status is REJECTED, the reason for rejection can also be set.
+func (r *dataAccessRepository) UpdateRequestStatus(
+	requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
+) error {
+	// Prepare the update fields
+	updateData := map[string]interface{}{
+		"status": status,
+	}
+	if status == constants.DataAccessRequestRejected && reasonForRejection != nil {
+		updateData["reason_for_rejection"] = *reasonForRejection
+	}
+
+	// Update the database record with additional validation
+	if err := r.db.Model(&domain.DataAccessRequest{}).
+		Where("request_account_id = ? AND requester_account_id = ?", requestAccountID, requesterAccountID).
+		Updates(updateData).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

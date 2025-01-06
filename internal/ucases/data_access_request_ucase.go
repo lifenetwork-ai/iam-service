@@ -70,3 +70,21 @@ func (u *dataAccessUCase) GetPendingRequests(userID string) ([]dto.DataAccessReq
 
 	return requestDTOs, nil
 }
+
+func (u *dataAccessUCase) ApproveOrRejectRequest(
+	requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
+) error {
+	// Validate the status
+	if status != constants.DataAccessRequestApproved && status != constants.DataAccessRequestRejected {
+		return errors.New("invalid status: only APPROVED or REJECTED are allowed")
+	}
+
+	// Update the request status in the repository
+	if err := u.dataAccessRepository.UpdateRequestStatus(
+		requestAccountID, requesterAccountID, status, reasonForRejection,
+	); err != nil {
+		return fmt.Errorf("failed to update request status: %w", err)
+	}
+
+	return nil
+}
