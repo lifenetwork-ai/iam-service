@@ -12,3 +12,7 @@ type DataAccessRequest struct {
 	CreatedAt          time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt          time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+func (m *DataAccessRequest) TableName() string {
+	return "data_access_requests"
+}
