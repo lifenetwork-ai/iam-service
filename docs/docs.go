@@ -358,7 +358,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "default": "PENDING",
                         "description": "Request status to filter by (e.g., 'PENDING', 'APPROVED', 'REJECTED')",
                         "name": "status",
                         "in": "query"

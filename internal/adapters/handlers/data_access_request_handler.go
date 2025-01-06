@@ -104,14 +104,13 @@ func (h *dataAccessHandler) CreateDataAccessRequest(ctx *gin.Context) {
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/data-access [get]
 func (h *dataAccessHandler) GetDataAccessRequests(ctx *gin.Context) {
-	// Retrieve the token from the context
+	// Retrieve token and validate the user
 	token, exists := ctx.Get("token")
 	if !exists {
 		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", nil)
 		return
 	}
 
-	// Validate the token and fetch user details
 	accountDTO, err := h.authUCase.ValidateToken(token.(string))
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to validate token: %v", err)
@@ -119,16 +118,14 @@ func (h *dataAccessHandler) GetDataAccessRequests(ctx *gin.Context) {
 		return
 	}
 
-	// Get the status from query parameters (default to 'PENDING' if not provided)
+	// Retrieve the status query parameter
 	status := ctx.DefaultQuery("status", string(constants.DataAccessRequestPending))
-
-	// Validate the status
 	if !h.isValidDataAccessRequestStatus(status) {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid status", nil)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid status provided", nil)
 		return
 	}
 
-	// Fetch the requests by status
+	// Fetch requests by status
 	requests, err := h.dataAccessUCase.GetRequestsByStatus(accountDTO.ID, constants.DataAccessRequestStatus(status))
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to fetch data access requests: %v", err)
@@ -136,7 +133,7 @@ func (h *dataAccessHandler) GetDataAccessRequests(ctx *gin.Context) {
 		return
 	}
 
-	// Return the list of requests
+	// Respond with the data
 	ctx.JSON(http.StatusOK, gin.H{"requests": requests})
 }
 

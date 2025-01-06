@@ -436,8 +436,7 @@ paths:
         name: Authorization
         required: true
         type: string
-      - default: PENDING
-        description: Request status to filter by (e.g., 'PENDING', 'APPROVED', 'REJECTED')
+      - description: Request status to filter by (e.g., 'PENDING', 'APPROVED', 'REJECTED')
         in: query
         name: status
         type: string

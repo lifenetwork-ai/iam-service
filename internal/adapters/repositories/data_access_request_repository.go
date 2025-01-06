@@ -25,14 +25,20 @@ func (r *dataAccessRepository) CreateDataAccessRequest(request *domain.DataAcces
 	return nil
 }
 
-// GetRequestsByRequester retrieves all data access requests made by a specific requester.
+// GetRequestsByStatus retrieves data access requests by requestAccountID, optionally filtered by status.
 func (r *dataAccessRepository) GetRequestsByStatus(requestAccountID, status string) ([]domain.DataAccessRequest, error) {
 	var requests []domain.DataAccessRequest
 
-	// Query the database for requests filtered by status
-	err := r.db.Preload("RequesterAccount").
-		Where("request_account_id = ? AND status = ?", requestAccountID, status).
-		Find(&requests).Error
+	// Build the query
+	query := r.db.Preload("RequesterAccount").Where("request_account_id = ?", requestAccountID)
+
+	// Add the status condition if it is provided
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	// Execute the query
+	err := query.Find(&requests).Error
 	if err != nil {
 		return nil, err
 	}
