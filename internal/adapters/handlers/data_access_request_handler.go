@@ -135,7 +135,7 @@ func (h *dataAccessHandler) GetPendingDataAccessRequests(ctx *gin.Context) {
 // @Failure 401 {object} response.GeneralError "Unauthorized"
 // @Failure 404 {object} response.GeneralError "Request not found"
 // @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/data-requests/{requesterAccountID}/approve [put]
+// @Router /api/v1/data-access/{requesterAccountID}/approve [put]
 func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 	// Retrieve the token from the context
 	token, exists := ctx.Get("token")
@@ -194,7 +194,7 @@ func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 // @Failure 401 {object} response.GeneralError "Unauthorized"
 // @Failure 404 {object} response.GeneralError "Request not found"
 // @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/data-requests/{requesterAccountID}/reject [put]
+// @Router /api/v1/data-access/{requesterAccountID}/reject [put]
 func (h *dataAccessHandler) RejectRequest(ctx *gin.Context) {
 	// Retrieve the token from the context
 	token, exists := ctx.Get("token")
