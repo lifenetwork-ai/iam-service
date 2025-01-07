@@ -9,8 +9,8 @@ import (
 type DataAccessRepository interface {
 	CreateDataAccessRequest(request *domain.DataAccessRequest) error
 	GetRequestsByStatus(requestAccountID, status string) ([]domain.DataAccessRequest, error)
-	UpdateRequestStatus(
-		requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
+	UpdateRequestStatusByID(
+		requestAccountID, requestID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 	) error
 	GetAccessRequest(requestAccountID, requesterAccountID string) (*domain.DataAccessRequest, error)
 }
@@ -20,8 +20,8 @@ type DataAccessUCase interface {
 	GetRequestsByStatus(
 		requestAccountID string, status constants.DataAccessRequestStatus,
 	) ([]dto.DataAccessRequestDTO, error)
-	ApproveOrRejectRequest(
-		requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
+	ApproveOrRejectRequestByID(
+		requestAccountID, requestID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 	) error
 	GetAccessRequest(requestAccountID, requesterAccountID string) (*dto.DataAccessRequestDTO, error)
 }

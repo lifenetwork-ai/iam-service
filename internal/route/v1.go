@@ -44,7 +44,7 @@ func RegisterRoutes(
 	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase)
 	appRouter.POST("/data-access", middleware.ValidateBearerToken(), dataAccessHandler.CreateDataAccessRequest)
 	appRouter.GET("/data-access", middleware.ValidateBearerToken(), dataAccessHandler.GetDataAccessRequests)
-	appRouter.PUT("/data-access/:requesterAccountID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
-	appRouter.PUT("/data-access/:requesterAccountID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
+	appRouter.PUT("/data-access/:requestID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
+	appRouter.PUT("/data-access/:requestID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
 	appRouter.GET("/data-access/:requesterAccountID", middleware.ValidateBearerToken(), dataAccessHandler.GetAccessRequest)
 }

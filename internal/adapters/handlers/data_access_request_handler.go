@@ -156,11 +156,12 @@ func (h *dataAccessHandler) isValidDataAccessRequestStatus(status string) bool {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
-// @Param requesterAccountID path string true "ID of the account making the request"
+// @Param requestID path string true "ID of the request being approved"
 // @Success 200 {object} map[string]interface{} "Request approved successfully"
+// @Failure 400 {object} response.GeneralError "Bad request"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
 // @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/data-access/{requesterAccountID}/approve [put]
+// @Router /api/v1/data-access/{requestID}/approve [put]
 func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 	// Retrieve the token from the context
 	token, exists := ctx.Get("token")
@@ -177,22 +178,17 @@ func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 		return
 	}
 
-	// Get the requesterAccountID from the path
-	requesterAccountID := ctx.Param("requesterAccountID")
-	if requesterAccountID == "" {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Requester account ID is required", nil)
-		return
-	}
-
-	if accountDTO.ID == requesterAccountID {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Cannot approve own request", nil)
+	// Get the requestID from the path
+	requestID := ctx.Param("requestID")
+	if requestID == "" {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Request ID is required", nil)
 		return
 	}
 
 	// Approve the request
-	err = h.dataAccessUCase.ApproveOrRejectRequest(
+	err = h.dataAccessUCase.ApproveOrRejectRequestByID(
 		accountDTO.ID,
-		requesterAccountID,
+		requestID,
 		constants.DataAccessRequestApproved,
 		nil, // No rejection reason needed for approval
 	)
@@ -213,13 +209,13 @@ func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
-// @Param requesterAccountID path string true "ID of the account making the request"
-// @Param payload body map[string]string true "Payload containing the reason for rejection"
+// @Param requestID path string true "ID of the request being rejected"
+// @Param payload body dto.RejectRequestPayloadDTO true "Payload with rejection reason"
 // @Success 200 {object} map[string]interface{} "Request rejected successfully"
 // @Failure 400 {object} response.GeneralError "Invalid payload"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
 // @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/data-access/{requesterAccountID}/reject [put]
+// @Router /api/v1/data-access/{requestID}/reject [put]
 func (h *dataAccessHandler) RejectRequest(ctx *gin.Context) {
 	// Retrieve the token from the context
 	token, exists := ctx.Get("token")
@@ -236,38 +232,27 @@ func (h *dataAccessHandler) RejectRequest(ctx *gin.Context) {
 		return
 	}
 
-	// Get the requesterAccountID from the path
-	requesterAccountID := ctx.Param("requesterAccountID")
-	if requesterAccountID == "" {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Requester account ID is required", nil)
+	// Get the requestID from the path
+	requestID := ctx.Param("requestID")
+	if requestID == "" {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Request ID is required", nil)
 		return
 	}
 
-	if accountDTO.ID == requesterAccountID {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Cannot reject own request", nil)
-		return
-	}
-
-	// Parse the rejection reason from the request body
-	var payload map[string]string
+	// Parse the rejection payload
+	var payload dto.RejectRequestPayloadDTO
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
 		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
 		return
 	}
 
-	reasonForRejection, exists := payload["reason"]
-	if !exists || reasonForRejection == "" {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Reason for rejection is required", nil)
-		return
-	}
-
 	// Reject the request
-	err = h.dataAccessUCase.ApproveOrRejectRequest(
+	err = h.dataAccessUCase.ApproveOrRejectRequestByID(
 		accountDTO.ID,
-		requesterAccountID,
+		requestID,
 		constants.DataAccessRequestRejected,
-		&reasonForRejection,
+		&payload.Reason,
 	)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to reject request: %v", err)

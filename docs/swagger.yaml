@@ -64,6 +64,9 @@ definitions:
       created_at:
         description: Timestamp of when the request was created
         type: string
+      id:
+        description: Unique identifier for the request
+        type: string
       reason_for_rejection:
         description: Optional reason for rejection
         type: string
@@ -143,6 +146,14 @@ definitions:
     - email
     - password
     - username
+    type: object
+  dto.RejectRequestPayloadDTO:
+    properties:
+      reason:
+        description: Reason for rejecting the data access request
+        type: string
+    required:
+    - reason
     type: object
   dto.RoleDetailsPayloadDTO:
     properties:
@@ -501,6 +512,90 @@ paths:
       summary: Create a data access request
       tags:
       - data-access
+  /api/v1/data-access/{requestID}/approve:
+    put:
+      consumes:
+      - application/json
+      description: Approves a pending data access request for the authenticated user.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID of the request being approved
+        in: path
+        name: requestID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request approved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Approve a data access request
+      tags:
+      - data-access
+  /api/v1/data-access/{requestID}/reject:
+    put:
+      consumes:
+      - application/json
+      description: Rejects a pending data access request for the authenticated user.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID of the request being rejected
+        in: path
+        name: requestID
+        required: true
+        type: string
+      - description: Payload with rejection reason
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RejectRequestPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request rejected successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Reject a data access request
+      tags:
+      - data-access
   /api/v1/data-access/{requesterAccountID}:
     get:
       consumes:
@@ -546,88 +641,6 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
       summary: Get a data access request
-      tags:
-      - data-access
-  /api/v1/data-access/{requesterAccountID}/approve:
-    put:
-      consumes:
-      - application/json
-      description: Approves a pending data access request for the authenticated user.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: ID of the account making the request
-        in: path
-        name: requesterAccountID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Request approved successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Approve a data access request
-      tags:
-      - data-access
-  /api/v1/data-access/{requesterAccountID}/reject:
-    put:
-      consumes:
-      - application/json
-      description: Rejects a pending data access request for the authenticated user.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: ID of the account making the request
-        in: path
-        name: requesterAccountID
-        required: true
-        type: string
-      - description: Payload containing the reason for rejection
-        in: body
-        name: payload
-        required: true
-        schema:
-          additionalProperties:
-            type: string
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Request rejected successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Reject a data access request
       tags:
       - data-access
   /api/v1/validators/active:

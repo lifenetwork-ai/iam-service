@@ -59,3 +59,8 @@ type DataAccessRequestPayloadDTO struct {
 	ReasonForRequest string `json:"reason_for_request" validate:"required"`      // Reason for the data access request
 	FileID           string `json:"file_id" validate:"required,uuid"`            // File ID
 }
+
+// RejectRequestPayloadDTO defines the payload for rejecting a data access request
+type RejectRequestPayloadDTO struct {
+	Reason string `json:"reason" validate:"required"` // Reason for rejecting the data access request
+}

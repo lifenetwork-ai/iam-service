@@ -51,8 +51,8 @@ func (r *dataAccessRepository) GetRequestsByStatus(requestAccountID, status stri
 
 // UpdateRequestStatus updates the status of a data access request.
 // If the status is REJECTED, the reason for rejection can also be set.
-func (r *dataAccessRepository) UpdateRequestStatus(
-	requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
+func (r *dataAccessRepository) UpdateRequestStatusByID(
+	requestAccountID, requestID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 ) error {
 	// Prepare the update fields
 	updateData := map[string]interface{}{
@@ -62,11 +62,11 @@ func (r *dataAccessRepository) UpdateRequestStatus(
 		updateData["reason_for_rejection"] = *reasonForRejection
 	}
 
-	// Update the database record with additional validation
+	// Update the database record with validation by requestAccountID and requestID
 	if err := r.db.Model(&domain.DataAccessRequest{}).
-		Where("request_account_id = ? AND requester_account_id = ?", requestAccountID, requesterAccountID).
+		Where("request_account_id = ? AND id = ?", requestAccountID, requestID).
 		Updates(updateData).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to update request status: %w", err)
 	}
 
 	return nil

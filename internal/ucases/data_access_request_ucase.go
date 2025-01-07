@@ -103,8 +103,8 @@ func (u *dataAccessUCase) GetRequestsByStatus(
 }
 
 // ApproveOrRejectRequest updates the status of a data access request
-func (u *dataAccessUCase) ApproveOrRejectRequest(
-	requestAccountID, requesterAccountID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
+func (u *dataAccessUCase) ApproveOrRejectRequestByID(
+	requestAccountID, requestID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 ) error {
 	// Validate the status
 	if status != constants.DataAccessRequestApproved && status != constants.DataAccessRequestRejected {
@@ -112,8 +112,8 @@ func (u *dataAccessUCase) ApproveOrRejectRequest(
 	}
 
 	// Update the request status in the repository
-	if err := u.dataAccessRepository.UpdateRequestStatus(
-		requestAccountID, requesterAccountID, status, reasonForRejection,
+	if err := u.dataAccessRepository.UpdateRequestStatusByID(
+		requestAccountID, requestID, status, reasonForRejection,
 	); err != nil {
 		return fmt.Errorf("failed to update request status: %w", err)
 	}

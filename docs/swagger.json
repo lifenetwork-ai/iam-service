@@ -441,6 +441,131 @@
                 }
             }
         },
+        "/api/v1/data-access/{requestID}/approve": {
+            "put": {
+                "description": "Approves a pending data access request for the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-access"
+                ],
+                "summary": "Approve a data access request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID of the request being approved",
+                        "name": "requestID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request approved successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/data-access/{requestID}/reject": {
+            "put": {
+                "description": "Rejects a pending data access request for the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-access"
+                ],
+                "summary": "Reject a data access request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID of the request being rejected",
+                        "name": "requestID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload with rejection reason",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RejectRequestPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request rejected successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/data-access/{requesterAccountID}": {
             "get": {
                 "description": "Fetches the data access request for a specific requester and authenticated user, prioritizing approved requests.",
@@ -497,128 +622,6 @@
                     },
                     "404": {
                         "description": "Request not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/data-access/{requesterAccountID}/approve": {
-            "put": {
-                "description": "Approves a pending data access request for the authenticated user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "data-access"
-                ],
-                "summary": "Approve a data access request",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "ID of the account making the request",
-                        "name": "requesterAccountID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Request approved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/data-access/{requesterAccountID}/reject": {
-            "put": {
-                "description": "Rejects a pending data access request for the authenticated user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "data-access"
-                ],
-                "summary": "Reject a data access request",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "ID of the account making the request",
-                        "name": "requesterAccountID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Payload containing the reason for rejection",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Request rejected successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.GeneralError"
                         }
@@ -780,6 +783,10 @@
                     "description": "Timestamp of when the request was created",
                     "type": "string"
                 },
+                "id": {
+                    "description": "Unique identifier for the request",
+                    "type": "string"
+                },
                 "reason_for_rejection": {
                     "description": "Optional reason for rejection",
                     "type": "string"
@@ -895,6 +902,18 @@
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RejectRequestPayloadDTO": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "description": "Reason for rejecting the data access request",
                     "type": "string"
                 }
             }
