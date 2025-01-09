@@ -282,16 +282,15 @@ func (u *authUCase) saveRoleSpecificDetails(accountID string, role constants.Acc
 		}
 		return u.accountRepository.CreateOrUpdateDataOwner(dataOwner)
 
-	// TODO: should refactor here later
 	case constants.DataUtilizer:
-		domainDetail := &domain.CustomerDetail{
+		dataUtilizer := &domain.DataUtilizer{
 			AccountID:        accountID,
 			OrganizationName: &input.OrganizationName,
 			Industry:         &input.Industry,
 			ContactName:      &input.ContactName,
 			PhoneNumber:      &input.PhoneNumber,
 		}
-		return u.accountRepository.CreateOrUpdateCustomerDetail(domainDetail)
+		return u.accountRepository.CreateOrUpdateDataUtilizer(dataUtilizer)
 
 	case constants.Validator:
 		domainDetail := &domain.ValidatorDetail{

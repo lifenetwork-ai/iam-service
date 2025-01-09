@@ -69,7 +69,7 @@ func (r *accountRepository) CreateAccount(account *domain.Account) error {
 	return r.db.Create(account).Error
 }
 
-// User detail
+// Data owner
 func (r *accountRepository) FindDataOwnerByAccountID(accountID string) (*domain.DataOwner, error) {
 	var dataOwner domain.DataOwner
 
@@ -113,14 +113,14 @@ func (r *accountRepository) CreateOrUpdateDataOwner(dataOwner *domain.DataOwner)
 	return r.db.Save(dataOwner).Error
 }
 
-// Customer detail
-func (r *accountRepository) FindCustomerDetailByAccountID(accountID string) (*domain.CustomerDetail, error) {
-	var details domain.CustomerDetail
+// Data utilizer
+func (r *accountRepository) FindDataUtilizerByAccountID(accountID string) (*domain.DataUtilizer, error) {
+	var dataUtilizer domain.DataUtilizer
 
 	// Attempt to preload customer detail and associated account
-	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error
+	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&dataUtilizer).Error
 	if err == nil {
-		return &details, nil
+		return &dataUtilizer, nil
 	}
 
 	// If the error is not "record not found," return it immediately
@@ -140,22 +140,22 @@ func (r *accountRepository) FindCustomerDetailByAccountID(accountID string) (*do
 	}
 
 	// Return an empty CustomerDetail with the associated account preloaded
-	return &domain.CustomerDetail{
+	return &domain.DataUtilizer{
 		AccountID: account.ID,
 		Account:   *account,
 	}, nil
 }
 
-func (r *accountRepository) CreateOrUpdateCustomerDetail(detail *domain.CustomerDetail) error {
-	existingDetail, err := r.FindCustomerDetailByAccountID(detail.AccountID)
+func (r *accountRepository) CreateOrUpdateDataUtilizer(dataUtilizer *domain.DataUtilizer) error {
+	existingDataUtilizer, err := r.FindDataUtilizerByAccountID(dataUtilizer.AccountID)
 	if err != nil {
 		return err
 	}
 
-	if existingDetail != nil {
-		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	if existingDataUtilizer != nil {
+		dataUtilizer.ID = existingDataUtilizer.ID // Preserve the existing record's ID
 	}
-	return r.db.Save(detail).Error
+	return r.db.Save(dataUtilizer).Error
 }
 
 // Validator detail

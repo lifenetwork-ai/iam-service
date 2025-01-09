@@ -87,12 +87,12 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 
 	// TODO: refactor later
 	case constants.DataUtilizer:
-		detail, err := u.accountRepository.FindCustomerDetailByAccountID(accountID)
+		detail, err := u.accountRepository.FindDataUtilizerByAccountID(accountID)
 		if err != nil {
 			return nil, err
 		}
 		if detail == nil {
-			return nil, errors.New("customer detail not found")
+			return nil, errors.New("data utilizer not found")
 		}
 
 		// Generate public key

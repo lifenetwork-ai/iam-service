@@ -17,11 +17,11 @@ type AccountRepository interface {
 
 	// Data owner
 	FindDataOwnerByAccountID(accountID string) (*domain.DataOwner, error)
-	CreateOrUpdateDataOwner(detail *domain.DataOwner) error
+	CreateOrUpdateDataOwner(dataOwner *domain.DataOwner) error
 
-	// CustomerDetails
-	FindCustomerDetailByAccountID(accountID string) (*domain.CustomerDetail, error)
-	CreateOrUpdateCustomerDetail(detail *domain.CustomerDetail) error
+	// Data utilizer
+	FindDataUtilizerByAccountID(accountID string) (*domain.DataUtilizer, error)
+	CreateOrUpdateDataUtilizer(dataUtilizer *domain.DataUtilizer) error
 
 	// ValidatorDetails
 	FindValidatorDetailByAccountID(accountID string) (*domain.ValidatorDetail, error)
