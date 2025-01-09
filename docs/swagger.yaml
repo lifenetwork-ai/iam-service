@@ -237,7 +237,7 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
         "403":
-          description: Forbidden
+          description: Insufficient permissions
           schema:
             $ref: '#/definitions/response.GeneralError'
         "500":
@@ -275,6 +275,14 @@ paths:
             type: object
         "400":
           description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "403":
+          description: Insufficient permissions
           schema:
             $ref: '#/definitions/response.GeneralError'
         "404":
@@ -668,7 +676,7 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
         "403":
-          description: Forbidden
+          description: Insufficient permissions
           schema:
             $ref: '#/definitions/response.GeneralError'
         "500":
