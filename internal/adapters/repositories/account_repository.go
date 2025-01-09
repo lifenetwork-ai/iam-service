@@ -159,17 +159,17 @@ func (r *accountRepository) CreateOrUpdateDataUtilizer(dataUtilizer *domain.Data
 }
 
 // Validator detail
-func (r *accountRepository) FindValidatorDetailByAccountID(accountID string) (*domain.ValidatorDetail, error) {
-	var details domain.ValidatorDetail
+func (r *accountRepository) FindValidatorByAccountID(accountID string) (*domain.Validator, error) {
+	var validator domain.Validator
 
-	// Attempt to find validator-specific details
-	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
+	// Attempt to find validator-specific detail
+	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&validator).Error; err != nil {
 		// If error is not "record not found," return the error immediately
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("failed to fetch validator detail: %w", err)
+			return nil, fmt.Errorf("failed to fetch validator: %w", err)
 		}
 
-		// Handle the case where validator detail is not found
+		// Handle the case where validator is not found
 		account, accErr := r.FindAccountByID(accountID)
 		if accErr != nil {
 			return nil, fmt.Errorf("failed to fetch associated account: %w", accErr)
@@ -179,31 +179,31 @@ func (r *accountRepository) FindValidatorDetailByAccountID(accountID string) (*d
 			return nil, nil
 		}
 
-		// Return an empty ValidatorDetail with the associated account preloaded
-		return &domain.ValidatorDetail{
+		// Return an empty Validator with the associated account preloaded
+		return &domain.Validator{
 			AccountID: account.ID,
 			Account:   *account,
 		}, nil
 	}
 
 	// Return the found details
-	return &details, nil
+	return &validator, nil
 }
 
-func (r *accountRepository) CreateOrUpdateValidatorDetail(detail *domain.ValidatorDetail) error {
-	existingDetail, err := r.FindValidatorDetailByAccountID(detail.AccountID)
+func (r *accountRepository) CreateOrUpdateValidator(validator *domain.Validator) error {
+	existingValidator, err := r.FindValidatorByAccountID(validator.AccountID)
 	if err != nil {
 		return err
 	}
 
-	if existingDetail != nil {
-		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	if existingValidator != nil {
+		validator.ID = existingValidator.ID // Preserve the existing record's ID
 	}
-	return r.db.Save(detail).Error
+	return r.db.Save(validator).Error
 }
 
-func (r *accountRepository) FindActiveValidators() ([]domain.ValidatorDetail, error) {
-	var validators []domain.ValidatorDetail
+func (r *accountRepository) FindActiveValidators() ([]domain.Validator, error) {
+	var validators []domain.Validator
 	err := r.db.Preload("Account").Where("is_active = ?", true).Find(&validators).Error
 	if err != nil {
 		return nil, err

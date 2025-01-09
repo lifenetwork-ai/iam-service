@@ -131,7 +131,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}, nil
 
 	case constants.Validator:
-		detail, err := u.accountRepository.FindValidatorDetailByAccountID(accountID)
+		detail, err := u.accountRepository.FindValidatorByAccountID(accountID)
 		if err != nil {
 			return nil, err
 		}

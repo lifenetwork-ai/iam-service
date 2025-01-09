@@ -23,11 +23,10 @@ type AccountRepository interface {
 	FindDataUtilizerByAccountID(accountID string) (*domain.DataUtilizer, error)
 	CreateOrUpdateDataUtilizer(dataUtilizer *domain.DataUtilizer) error
 
-	// ValidatorDetails
-	FindValidatorDetailByAccountID(accountID string) (*domain.ValidatorDetail, error)
-	CreateOrUpdateValidatorDetail(detail *domain.ValidatorDetail) error
-
-	FindActiveValidators() ([]domain.ValidatorDetail, error)
+	// Validator
+	FindValidatorByAccountID(accountID string) (*domain.Validator, error)
+	CreateOrUpdateValidator(validator *domain.Validator) error
+	FindActiveValidators() ([]domain.Validator, error)
 }
 
 type AccountUCase interface {

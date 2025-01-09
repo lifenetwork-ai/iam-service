@@ -293,13 +293,13 @@ func (u *authUCase) saveRoleSpecificDetails(accountID string, role constants.Acc
 		return u.accountRepository.CreateOrUpdateDataUtilizer(dataUtilizer)
 
 	case constants.Validator:
-		domainDetail := &domain.ValidatorDetail{
+		domainDetail := &domain.Validator{
 			AccountID:              accountID,
 			ValidationOrganization: &input.ValidationOrganization,
 			ContactPerson:          &input.ContactName,
 			PhoneNumber:            &input.PhoneNumber,
 		}
-		return u.accountRepository.CreateOrUpdateValidatorDetail(domainDetail)
+		return u.accountRepository.CreateOrUpdateValidator(domainDetail)
 
 	default:
 		return errors.New("invalid role")
