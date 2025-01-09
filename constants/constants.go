@@ -39,6 +39,7 @@ const (
 	DataOwner    AccountRole = "DATA_OWNER"
 	DataUtilizer AccountRole = "DATA_UTILIZER"
 	Validator    AccountRole = "VALIDATOR"
+	Admin        AccountRole = "ADMIN"
 )
 
 // IsValid checks if the AccountRole is one of the predefined roles.
