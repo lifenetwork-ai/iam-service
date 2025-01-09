@@ -28,33 +28,43 @@ type SecretConfiguration struct {
 	Salt       string `mapstructure:"SALT"`
 }
 
+type AdminAccountConfiguration struct {
+	AdminEmail    string `mapstructure:"ADMIN_EMAIL"`
+	AdminUsername string `mapstructure:"ADMIN_USERNAME"`
+	AdminPassword string `mapstructure:"ADMIN_PASSWORD"`
+}
+
 type Configuration struct {
-	Database DatabaseConfiguration `mapstructure:",squash"`
-	Redis    RedisConfiguration    `mapstructure:",squash"`
-	Secret   SecretConfiguration   `mapstructure:",squash"`
-	AppName  string                `mapstructure:"APP_NAME"`
-	AppPort  uint32                `mapstructure:"APP_PORT"`
-	Env      string                `mapstructure:"ENV"`
-	LogLevel string                `mapstructure:"LOG_LEVEL"`
+	Database     DatabaseConfiguration     `mapstructure:",squash"`
+	Redis        RedisConfiguration        `mapstructure:",squash"`
+	Secret       SecretConfiguration       `mapstructure:",squash"`
+	AdminAccount AdminAccountConfiguration `mapstructure:",squash"`
+	AppName      string                    `mapstructure:"APP_NAME"`
+	AppPort      uint32                    `mapstructure:"APP_PORT"`
+	Env          string                    `mapstructure:"ENV"`
+	LogLevel     string                    `mapstructure:"LOG_LEVEL"`
 }
 
 var configuration Configuration
 
 var defaultConfigurations = map[string]any{
-	"REDIS_ADDRESS": "localhost:6379",
-	"REDIS_TTL":     "60",
-	"APP_PORT":      "8080",
-	"ENV_FILE":      ".env",
-	"ENV":           "DEV",
-	"LOG_LEVEL":     "debug",
-	"DB_USER":       "",
-	"DB_PASSWORD":   "",
-	"DB_HOST":       "",
-	"DB_PORT":       "",
-	"DB_NAME":       "",
-	"MNEMONIC":      "",
-	"PASSPHRASE":    "",
-	"SALT":          "",
+	"REDIS_ADDRESS":  "localhost:6379",
+	"REDIS_TTL":      "60",
+	"APP_PORT":       "8080",
+	"ENV_FILE":       ".env",
+	"ENV":            "DEV",
+	"LOG_LEVEL":      "debug",
+	"DB_USER":        "",
+	"DB_PASSWORD":    "",
+	"DB_HOST":        "",
+	"DB_PORT":        "",
+	"DB_NAME":        "",
+	"MNEMONIC":       "",
+	"PASSPHRASE":     "",
+	"SALT":           "",
+	"ADMIN_EMAIL":    "",
+	"ADMIN_USERNAME": "",
+	"ADMIN_PASSWORD": "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations
