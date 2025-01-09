@@ -41,9 +41,9 @@ func RunApp(config *conf.Configuration) {
 	}
 
 	// Initialize use cases and queue
-	authUCase := wire.InitializeAuthUCase(db)
-	accountUCase := wire.InitializeAccountUCase(db, config)
-	dataAccessUCase := wire.InitializeDataAccessUCase(db, config)
+	authUCase := wire.GetAuthUCase(db)
+	accountUCase := wire.GetAccountUCase(db, config)
+	dataAccessUCase := wire.GetDataAccessUCase(db, config)
 
 	// Register routes
 	routev1.RegisterRoutes(
