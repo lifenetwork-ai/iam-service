@@ -85,7 +85,6 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			PhoneNumber: detail.PhoneNumber,
 		}, nil
 
-	// TODO: refactor later
 	case constants.DataUtilizer:
 		detail, err := u.accountRepository.FindDataUtilizerByAccountID(accountID)
 		if err != nil {

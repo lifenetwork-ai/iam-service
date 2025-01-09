@@ -42,6 +42,7 @@ type Configuration struct {
 	AppPort      uint32                    `mapstructure:"APP_PORT"`
 	Env          string                    `mapstructure:"ENV"`
 	LogLevel     string                    `mapstructure:"LOG_LEVEL"`
+	JWTSecret    string                    `mapstructure:"JWT_SECRET"`
 }
 
 var configuration Configuration
@@ -63,6 +64,7 @@ var defaultConfigurations = map[string]any{
 	"SALT":           "",
 	"ADMIN_EMAIL":    "",
 	"ADMIN_PASSWORD": "",
+	"JWT_SECRET":     "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations

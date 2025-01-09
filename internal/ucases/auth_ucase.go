@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
@@ -16,6 +17,7 @@ import (
 )
 
 type authUCase struct {
+	config            *conf.Configuration
 	accountRepository interfaces.AccountRepository
 	authRepository    interfaces.AuthRepository
 }
@@ -115,7 +117,7 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 	}
 
 	// Generate Access Token
-	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
+	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role, u.config.JWTSecret)
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
@@ -191,7 +193,7 @@ func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error
 	}
 
 	// Generate a new Access Token
-	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
+	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role, u.config.JWTSecret)
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
@@ -229,7 +231,7 @@ func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error
 
 // ValidateToken validates an access token and retrieves account details
 func (u *authUCase) ValidateToken(token string) (*dto.AccountDTO, error) {
-	claims, err := utils.ParseToken(token)
+	claims, err := utils.ParseToken(token, u.config.JWTSecret)
 	if err != nil {
 		return nil, err
 	}

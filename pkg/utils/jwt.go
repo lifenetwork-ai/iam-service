@@ -12,8 +12,6 @@ import (
 	"github.com/genefriendway/human-network-auth/constants"
 )
 
-var jwtSecret = []byte("your_secret_key") // TODO: Replace with a secure secret key
-
 type Claims struct {
 	AccountID string `json:"account_id"`
 	Email     string `json:"email"`
@@ -22,7 +20,7 @@ type Claims struct {
 }
 
 // GenerateToken generates a JWT access token for the user
-func GenerateToken(accountID, email, role string) (string, error) {
+func GenerateToken(accountID, email, role, jwtSecret string) (string, error) {
 	claims := &Claims{
 		AccountID: accountID,
 		Email:     email,
@@ -53,7 +51,7 @@ func HashToken(token string) string {
 }
 
 // ParseToken validates a JWT token and extracts its claims
-func ParseToken(tokenStr string) (*Claims, error) {
+func ParseToken(tokenStr, jwtSecret string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
