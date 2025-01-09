@@ -30,7 +30,6 @@ type SecretConfiguration struct {
 
 type AdminAccountConfiguration struct {
 	AdminEmail    string `mapstructure:"ADMIN_EMAIL"`
-	AdminUsername string `mapstructure:"ADMIN_USERNAME"`
 	AdminPassword string `mapstructure:"ADMIN_PASSWORD"`
 }
 
@@ -63,7 +62,6 @@ var defaultConfigurations = map[string]any{
 	"PASSPHRASE":     "",
 	"SALT":           "",
 	"ADMIN_EMAIL":    "",
-	"ADMIN_USERNAME": "",
 	"ADMIN_PASSWORD": "",
 }
 

@@ -1,11 +1,18 @@
 package migrations
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	"github.com/genefriendway/human-network-auth/conf"
+	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-auth/internal/domain"
 )
 
 func applySQLScript(db *gorm.DB, filePath string) error {
@@ -22,7 +29,41 @@ func applySQLScript(db *gorm.DB, filePath string) error {
 	return nil
 }
 
-func RunMigrations(db *gorm.DB) error {
+func seedAdminAccount(db *gorm.DB, config *conf.Configuration) error {
+	var count int64
+	db.Model(&domain.Account{}).Where("role = ?", string(constants.Admin)).Count(&count)
+
+	if count == 0 {
+		adminEmail := config.AdminAccount.AdminEmail
+		adminPassword := config.AdminAccount.AdminPassword
+
+		if adminEmail == "" || adminPassword == "" {
+			return errors.New("missing ADMIN credentials in environment variables")
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("failed to hash password: %w", err)
+		}
+		hashedPasswordString := string(hashedPassword)
+
+		admin := &domain.Account{
+			Email:        adminEmail,
+			Username:     "admin",
+			PasswordHash: &hashedPasswordString,
+			Role:         string(constants.Admin),
+		}
+
+		if err := db.Create(admin).Error; err != nil {
+			return fmt.Errorf("failed to create ADMIN: %w", err)
+		}
+		fmt.Println("ADMIN account created successfully.")
+	}
+
+	return nil
+}
+
+func RunMigrations(db *gorm.DB, config *conf.Configuration) error {
 	log.Println("Running migrations...")
 
 	sqlScripts := []string{
@@ -41,6 +82,11 @@ func RunMigrations(db *gorm.DB) error {
 		if err := applySQLScript(db, script); err != nil {
 			return err
 		}
+	}
+
+	// Seed admin account
+	if err := seedAdminAccount(db, config); err != nil {
+		return err
 	}
 
 	log.Println("Migrations completed.")
