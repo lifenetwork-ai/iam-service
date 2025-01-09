@@ -36,16 +36,15 @@ const (
 type AccountRole string
 
 const (
-	User      AccountRole = "USER"
-	Partner   AccountRole = "PARTNER"
-	Customer  AccountRole = "CUSTOMER"
-	Validator AccountRole = "VALIDATOR"
+	DataOwner    AccountRole = "DATA_OWNER"
+	DataUtilizer AccountRole = "DATA_UTILIZER"
+	Validator    AccountRole = "VALIDATOR"
 )
 
 // IsValid checks if the AccountRole is one of the predefined roles.
 func (r AccountRole) IsValid() bool {
 	switch r {
-	case User, Partner, Customer, Validator:
+	case DataOwner, DataUtilizer, Validator:
 		return true
 	default:
 		return false

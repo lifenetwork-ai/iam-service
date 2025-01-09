@@ -42,17 +42,19 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 	salt := u.config.Secret.Salt
 
 	switch role {
-	case constants.User:
-		detail, err := u.accountRepository.FindUserDetailByAccountID(accountID)
+	case constants.DataOwner:
+		detail, err := u.accountRepository.FindDataOwnerByAccountID(accountID)
 		if err != nil {
 			return nil, err
 		}
 		if detail == nil {
-			return nil, errors.New("user detail not found")
+			return nil, errors.New("data owner not found")
 		}
 
 		// Generate public key
-		publicKey, privateKey, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
+		publicKey, privateKey, err := crypto.GenerateAccount(
+			mnemonic, passphrase, salt, string(constants.DataOwner), accountID,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +71,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 
 		// Map UserDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID: detail.ID,
+			ID: &detail.ID,
 			Account: dto.AccountDTO{
 				ID:         detail.Account.ID,
 				Email:      detail.Account.Email,
@@ -83,48 +85,8 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			PhoneNumber: detail.PhoneNumber,
 		}, nil
 
-	case constants.Partner:
-		detail, err := u.accountRepository.FindPartnerDetailByAccountID(accountID)
-		if err != nil {
-			return nil, err
-		}
-		if detail == nil {
-			return nil, errors.New("partner detail not found")
-		}
-
-		// Generate public key
-		publicKey, privateKey, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
-		if err != nil {
-			return nil, err
-		}
-
-		// Convert public and private keys to hexadecimal strings
-		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
-		if err != nil {
-			return nil, err
-		}
-		privateKeyHex, err := crypto.PrivateKeyToHex(privateKey)
-		if err != nil {
-			return nil, err
-		}
-
-		// Map PartnerDetail to AccountDetailDTO
-		return &dto.AccountDetailDTO{
-			ID: detail.ID,
-			Account: dto.AccountDTO{
-				ID:         detail.Account.ID,
-				Email:      detail.Account.Email,
-				Username:   detail.Account.Username,
-				Role:       detail.Account.Role,
-				PublicKey:  &publicKeyHex,
-				PrivateKey: &privateKeyHex,
-			},
-			CompanyName: detail.CompanyName,
-			ContactName: detail.ContactName,
-			PhoneNumber: detail.PhoneNumber,
-		}, nil
-
-	case constants.Customer:
+	// TODO: refactor later
+	case constants.DataUtilizer:
 		detail, err := u.accountRepository.FindCustomerDetailByAccountID(accountID)
 		if err != nil {
 			return nil, err
@@ -134,7 +96,9 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, privateKey, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
+		publicKey, privateKey, err := crypto.GenerateAccount(
+			mnemonic, passphrase, salt, string(constants.DataUtilizer), accountID,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -151,7 +115,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 
 		// Map CustomerDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID: detail.ID,
+			ID: &detail.ID,
 			Account: dto.AccountDTO{
 				ID:         detail.Account.ID,
 				Email:      detail.Account.Email,
@@ -176,7 +140,9 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}
 
 		// Generate public key
-		publicKey, privateKey, err := crypto.GenerateAccount(mnemonic, passphrase, salt, string(constants.User), accountID)
+		publicKey, privateKey, err := crypto.GenerateAccount(
+			mnemonic, passphrase, salt, string(constants.Validator), accountID,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -193,7 +159,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 
 		// Map ValidatorDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID: *detail.ID,
+			ID: detail.ID,
 			Account: dto.AccountDTO{
 				ID:         detail.Account.ID,
 				Email:      detail.Account.Email,
@@ -244,7 +210,7 @@ func (u *accountUCase) GetActiveValidators() ([]dto.AccountDetailDTO, error) {
 
 		// Map ValidatorDetail to AccountDetailDTO
 		result = append(result, dto.AccountDetailDTO{
-			ID: *v.ID,
+			ID: v.ID,
 			Account: dto.AccountDTO{
 				ID:        v.Account.ID,
 				Username:  v.Account.Username,

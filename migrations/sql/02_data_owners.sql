@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS user_details (
+CREATE TABLE IF NOT EXISTS data_owners (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- Use UUID as primary key
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, -- Match accounts UUID
     first_name VARCHAR(100),
@@ -9,20 +9,20 @@ CREATE TABLE IF NOT EXISTS user_details (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Add the updated_at trigger for the user_details table
+-- Add the updated_at trigger for the data_owners table
 DO $$
 BEGIN
     IF EXISTS (
         SELECT 1
         FROM pg_trigger
-        WHERE tgname = 'update_user_details_updated_at'
-          AND tgrelid = 'user_details'::regclass
+        WHERE tgname = 'update_data_owners_updated_at'
+          AND tgrelid = 'data_owners'::regclass
     ) THEN
-        DROP TRIGGER update_user_details_updated_at ON user_details;
+        DROP TRIGGER update_data_owners_updated_at ON data_owners;
     END IF;
 
-    CREATE TRIGGER update_user_details_updated_at
-    BEFORE UPDATE ON user_details
+    CREATE TRIGGER update_data_owners_updated_at
+    BEFORE UPDATE ON data_owners
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 END;

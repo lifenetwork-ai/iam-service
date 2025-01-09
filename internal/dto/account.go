@@ -13,7 +13,7 @@ type AccountDTO struct {
 }
 
 type AccountDetailDTO struct {
-	ID                     string     `json:"id"`
+	ID                     *string    `json:"id,omitempty"`
 	Account                AccountDTO `json:"account"`
 	ValidationOrganization *string    `json:"validation_organization,omitempty"`
 	CompanyName            *string    `json:"company_name,omitempty"`

@@ -15,13 +15,9 @@ type AccountRepository interface {
 	CreateAccount(account *domain.Account) error
 	UpdateAccount(account *domain.Account) error
 
-	// UserDetails
-	FindUserDetailByAccountID(accountID string) (*domain.UserDetail, error)
-	CreateOrUpdateUserDetail(detail *domain.UserDetail) error
-
-	// PartnerDetails
-	FindPartnerDetailByAccountID(accountID string) (*domain.PartnerDetail, error)
-	CreateOrUpdatePartnerDetail(detail *domain.PartnerDetail) error
+	// Data owner
+	FindDataOwnerByAccountID(accountID string) (*domain.DataOwner, error)
+	CreateOrUpdateDataOwner(detail *domain.DataOwner) error
 
 	// CustomerDetails
 	FindCustomerDetailByAccountID(accountID string) (*domain.CustomerDetail, error)

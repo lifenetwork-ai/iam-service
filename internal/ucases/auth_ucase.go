@@ -68,7 +68,7 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO) error {
 		Email:        input.Email,
 		Username:     input.Username,
 		PasswordHash: &password,
-		Role:         string(constants.User), // Default role
+		Role:         string(constants.DataOwner), // Default role
 	}
 
 	// Save account
@@ -273,25 +273,17 @@ func (u *authUCase) UpdateRoleDetail(accountID string, role constants.AccountRol
 // saveRoleSpecificDetails handles role-specific details creation or update.
 func (u *authUCase) saveRoleSpecificDetails(accountID string, role constants.AccountRole, input *dto.RoleDetailsPayloadDTO) error {
 	switch role {
-	case constants.User:
-		domainDetail := &domain.UserDetail{
+	case constants.DataOwner:
+		dataOwner := &domain.DataOwner{
 			AccountID:   accountID,
 			FirstName:   &input.FirstName,
 			LastName:    &input.LastName,
 			PhoneNumber: &input.PhoneNumber,
 		}
-		return u.accountRepository.CreateOrUpdateUserDetail(domainDetail)
+		return u.accountRepository.CreateOrUpdateDataOwner(dataOwner)
 
-	case constants.Partner:
-		domainDetail := &domain.PartnerDetail{
-			AccountID:   accountID,
-			CompanyName: &input.CompanyName,
-			ContactName: &input.ContactName,
-			PhoneNumber: &input.PhoneNumber,
-		}
-		return u.accountRepository.CreateOrUpdatePartnerDetail(domainDetail)
-
-	case constants.Customer:
+	// TODO: should refactor here later
+	case constants.DataUtilizer:
 		domainDetail := &domain.CustomerDetail{
 			AccountID:        accountID,
 			OrganizationName: &input.OrganizationName,

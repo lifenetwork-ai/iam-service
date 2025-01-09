@@ -70,18 +70,18 @@ func (r *accountRepository) CreateAccount(account *domain.Account) error {
 }
 
 // User detail
-func (r *accountRepository) FindUserDetailByAccountID(accountID string) (*domain.UserDetail, error) {
-	var details domain.UserDetail
+func (r *accountRepository) FindDataOwnerByAccountID(accountID string) (*domain.DataOwner, error) {
+	var dataOwner domain.DataOwner
 
-	// Attempt to preload the user detail and associated account
-	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error
+	// Attempt to preload the data owner and associated account
+	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&dataOwner).Error
 	if err == nil {
-		return &details, nil
+		return &dataOwner, nil
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// Return the error if it's not a "record not found" error
-		return nil, fmt.Errorf("failed to fetch user detail: %w", err)
+		return nil, fmt.Errorf("failed to fetch data owner: %w", err)
 	}
 
 	// Use FindAccountByID to handle account fetching
@@ -95,68 +95,22 @@ func (r *accountRepository) FindUserDetailByAccountID(accountID string) (*domain
 		return nil, nil
 	}
 
-	// Return an empty UserDetail with the account preloaded
-	return &domain.UserDetail{
+	// Return an empty DataOwner with the account preloaded
+	return &domain.DataOwner{
 		AccountID: account.ID,
 		Account:   *account,
 	}, nil
 }
 
-func (r *accountRepository) CreateOrUpdateUserDetail(detail *domain.UserDetail) error {
-	existingDetail, err := r.FindUserDetailByAccountID(detail.AccountID)
+func (r *accountRepository) CreateOrUpdateDataOwner(dataOwner *domain.DataOwner) error {
+	existingDataOwner, err := r.FindDataOwnerByAccountID(dataOwner.AccountID)
 	if err != nil {
 		return err
 	}
-
-	if existingDetail != nil {
-		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	if existingDataOwner != nil {
+		dataOwner.ID = existingDataOwner.ID // Preserve the existing record's ID
 	}
-	return r.db.Save(detail).Error
-}
-
-// Partner detail
-func (r *accountRepository) FindPartnerDetailByAccountID(accountID string) (*domain.PartnerDetail, error) {
-	var details domain.PartnerDetail
-
-	// Attempt to preload partner detail and associated account
-	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error
-	if err == nil {
-		return &details, nil
-	}
-
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		// Return the error if it's not a "record not found" error
-		return nil, fmt.Errorf("failed to fetch partner detail: %w", err)
-	}
-
-	// Use FindAccountByID to handle account fetching
-	account, accErr := r.FindAccountByID(accountID)
-	if accErr != nil {
-		return nil, fmt.Errorf("failed to fetch account: %w", accErr)
-	}
-
-	if account == nil {
-		// Return nil if the account is also not found
-		return nil, nil
-	}
-
-	// Return an empty PartnerDetail with the account preloaded
-	return &domain.PartnerDetail{
-		AccountID: account.ID,
-		Account:   *account,
-	}, nil
-}
-
-func (r *accountRepository) CreateOrUpdatePartnerDetail(detail *domain.PartnerDetail) error {
-	existingDetail, err := r.FindPartnerDetailByAccountID(detail.AccountID)
-	if err != nil {
-		return err
-	}
-
-	if existingDetail != nil {
-		detail.ID = existingDetail.ID // Preserve the existing record's ID
-	}
-	return r.db.Save(detail).Error
+	return r.db.Save(dataOwner).Error
 }
 
 // Customer detail

@@ -97,7 +97,7 @@ func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
 	}
 
 	// Ensure the user has the required permissions
-	if account.Role != string(constants.User) {
+	if account.Role != string(constants.DataOwner) {
 		httpresponse.Error(ctx, http.StatusForbidden, "Insufficient permissions", domain.ErrInsufficientPermissions)
 		return
 	}
