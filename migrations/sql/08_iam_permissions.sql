@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS iam_permissions (
     UNIQUE(policy_id, resource, action) -- Ensure unique combinations of policy, resource, and action
 );
 
+-- Add composite index for resource, and action
+CREATE INDEX idx_iam_permissions_resource_action ON iam_permissions (resource, action);
+
 -- Add the updated_at trigger for the iam_permissions table
 DO $$
 BEGIN
