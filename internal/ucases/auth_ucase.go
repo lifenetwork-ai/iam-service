@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
@@ -16,15 +17,18 @@ import (
 )
 
 type authUCase struct {
+	config            *conf.Configuration
 	accountRepository interfaces.AccountRepository
 	authRepository    interfaces.AuthRepository
 }
 
 func NewAuthUCase(
+	config *conf.Configuration,
 	accountRepository interfaces.AccountRepository,
 	authRepository interfaces.AuthRepository,
 ) interfaces.AuthUCase {
 	return &authUCase{
+		config:            config,
 		accountRepository: accountRepository,
 		authRepository:    authRepository,
 	}
@@ -68,7 +72,7 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO) error {
 		Email:        input.Email,
 		Username:     input.Username,
 		PasswordHash: &password,
-		Role:         string(constants.User), // Default role
+		Role:         string(constants.DataOwner), // Default role
 	}
 
 	// Save account
@@ -115,7 +119,7 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 	}
 
 	// Generate Access Token
-	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
+	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role, []byte(u.config.JWTSecret))
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
@@ -191,7 +195,7 @@ func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error
 	}
 
 	// Generate a new Access Token
-	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role)
+	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role, []byte(u.config.JWTSecret))
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
@@ -229,7 +233,7 @@ func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error
 
 // ValidateToken validates an access token and retrieves account details
 func (u *authUCase) ValidateToken(token string) (*dto.AccountDTO, error) {
-	claims, err := utils.ParseToken(token)
+	claims, err := utils.ParseToken(token, []byte(u.config.JWTSecret))
 	if err != nil {
 		return nil, err
 	}
@@ -273,42 +277,33 @@ func (u *authUCase) UpdateRoleDetail(accountID string, role constants.AccountRol
 // saveRoleSpecificDetails handles role-specific details creation or update.
 func (u *authUCase) saveRoleSpecificDetails(accountID string, role constants.AccountRole, input *dto.RoleDetailsPayloadDTO) error {
 	switch role {
-	case constants.User:
-		domainDetail := &domain.UserDetail{
+	case constants.DataOwner:
+		dataOwner := &domain.DataOwner{
 			AccountID:   accountID,
 			FirstName:   &input.FirstName,
 			LastName:    &input.LastName,
 			PhoneNumber: &input.PhoneNumber,
 		}
-		return u.accountRepository.CreateOrUpdateUserDetail(domainDetail)
+		return u.accountRepository.CreateOrUpdateDataOwner(dataOwner)
 
-	case constants.Partner:
-		domainDetail := &domain.PartnerDetail{
-			AccountID:   accountID,
-			CompanyName: &input.CompanyName,
-			ContactName: &input.ContactName,
-			PhoneNumber: &input.PhoneNumber,
-		}
-		return u.accountRepository.CreateOrUpdatePartnerDetail(domainDetail)
-
-	case constants.Customer:
-		domainDetail := &domain.CustomerDetail{
+	case constants.DataUtilizer:
+		dataUtilizer := &domain.DataUtilizer{
 			AccountID:        accountID,
 			OrganizationName: &input.OrganizationName,
 			Industry:         &input.Industry,
 			ContactName:      &input.ContactName,
 			PhoneNumber:      &input.PhoneNumber,
 		}
-		return u.accountRepository.CreateOrUpdateCustomerDetail(domainDetail)
+		return u.accountRepository.CreateOrUpdateDataUtilizer(dataUtilizer)
 
 	case constants.Validator:
-		domainDetail := &domain.ValidatorDetail{
+		domainDetail := &domain.Validator{
 			AccountID:              accountID,
 			ValidationOrganization: &input.ValidationOrganization,
 			ContactPerson:          &input.ContactName,
 			PhoneNumber:            &input.PhoneNumber,
 		}
-		return u.accountRepository.CreateOrUpdateValidatorDetail(domainDetail)
+		return u.accountRepository.CreateOrUpdateValidator(domainDetail)
 
 	default:
 		return errors.New("invalid role")

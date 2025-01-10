@@ -36,14 +36,14 @@ func RunApp(config *conf.Configuration) {
 
 	// Initialize database connection
 	db := database.DBConnWithLoglevel(logger.Info)
-	if err := migrations.RunMigrations(db); err != nil {
+	if err := migrations.RunMigrations(db, config); err != nil {
 		pkglogger.GetLogger().Fatalf("Failed to migrate database: %v", err)
 	}
 
 	// Initialize use cases and queue
-	authUCase := wire.InitializeAuthUCase(db)
-	accountUCase := wire.InitializeAccountUCase(db, config)
-	dataAccessUCase := wire.InitializeDataAccessUCase(db, config)
+	authUCase := wire.GetAuthUCase(db, config)
+	accountUCase := wire.GetAccountUCase(db, config)
+	dataAccessUCase := wire.GetDataAccessUCase(db, config)
 
 	// Register routes
 	routev1.RegisterRoutes(

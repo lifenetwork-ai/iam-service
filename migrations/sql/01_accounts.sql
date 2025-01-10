@@ -3,24 +3,15 @@ SET TIMEZONE TO 'UTC';
 -- Enable the uuid-ossp extension for generating UUIDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Check if the enum type exists, and create it if it doesn't
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'account_role') THEN
-        CREATE TYPE account_role AS ENUM ('USER', 'PARTNER', 'CUSTOMER', 'VALIDATOR');
-    END IF;
-END;
-$$;
-
 CREATE TABLE IF NOT EXISTS accounts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- Use UUID as primary key
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash TEXT, -- NULL if OAuth or API key is used
-    api_key VARCHAR(255) UNIQUE, -- Only for API-based roles (partner, validator)
-    role account_role NOT NULL DEFAULT 'USER', -- Enum: USER, PARTNER, CUSTOMER, VALIDATOR
-    oauth_provider VARCHAR(50), -- Google, Facebook, etc. (nullable)
-    oauth_id VARCHAR(255), -- ID from OAuth provider (nullable)
+    password_hash TEXT,
+    api_key VARCHAR(255) UNIQUE,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('DATA_OWNER', 'DATA_UTILIZER', 'VALIDATOR', 'ADMIN')),
+    oauth_provider VARCHAR(50),
+    oauth_id VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

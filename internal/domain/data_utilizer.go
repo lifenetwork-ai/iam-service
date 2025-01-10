@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type CustomerDetail struct {
+type DataUtilizer struct {
 	ID               string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"` // UUID primary key
 	AccountID        string    `json:"account_id"`
 	Account          Account   `json:"account" gorm:"foreignKey:AccountID;references:ID"`
@@ -16,6 +16,6 @@ type CustomerDetail struct {
 	UpdatedAt        time.Time `json:"updated_at"`
 }
 
-func (m *CustomerDetail) TableName() string {
-	return "customer_details"
+func (m *DataUtilizer) TableName() string {
+	return "data_utilizers"
 }

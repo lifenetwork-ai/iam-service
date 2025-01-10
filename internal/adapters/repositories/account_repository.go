@@ -69,19 +69,19 @@ func (r *accountRepository) CreateAccount(account *domain.Account) error {
 	return r.db.Create(account).Error
 }
 
-// User detail
-func (r *accountRepository) FindUserDetailByAccountID(accountID string) (*domain.UserDetail, error) {
-	var details domain.UserDetail
+// Data owner
+func (r *accountRepository) FindDataOwnerByAccountID(accountID string) (*domain.DataOwner, error) {
+	var dataOwner domain.DataOwner
 
-	// Attempt to preload the user detail and associated account
-	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error
+	// Attempt to preload the data owner and associated account
+	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&dataOwner).Error
 	if err == nil {
-		return &details, nil
+		return &dataOwner, nil
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// Return the error if it's not a "record not found" error
-		return nil, fmt.Errorf("failed to fetch user detail: %w", err)
+		return nil, fmt.Errorf("failed to fetch data owner: %w", err)
 	}
 
 	// Use FindAccountByID to handle account fetching
@@ -95,78 +95,32 @@ func (r *accountRepository) FindUserDetailByAccountID(accountID string) (*domain
 		return nil, nil
 	}
 
-	// Return an empty UserDetail with the account preloaded
-	return &domain.UserDetail{
+	// Return an empty DataOwner with the account preloaded
+	return &domain.DataOwner{
 		AccountID: account.ID,
 		Account:   *account,
 	}, nil
 }
 
-func (r *accountRepository) CreateOrUpdateUserDetail(detail *domain.UserDetail) error {
-	existingDetail, err := r.FindUserDetailByAccountID(detail.AccountID)
+func (r *accountRepository) CreateOrUpdateDataOwner(dataOwner *domain.DataOwner) error {
+	existingDataOwner, err := r.FindDataOwnerByAccountID(dataOwner.AccountID)
 	if err != nil {
 		return err
 	}
-
-	if existingDetail != nil {
-		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	if existingDataOwner != nil {
+		dataOwner.ID = existingDataOwner.ID // Preserve the existing record's ID
 	}
-	return r.db.Save(detail).Error
+	return r.db.Save(dataOwner).Error
 }
 
-// Partner detail
-func (r *accountRepository) FindPartnerDetailByAccountID(accountID string) (*domain.PartnerDetail, error) {
-	var details domain.PartnerDetail
-
-	// Attempt to preload partner detail and associated account
-	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error
-	if err == nil {
-		return &details, nil
-	}
-
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		// Return the error if it's not a "record not found" error
-		return nil, fmt.Errorf("failed to fetch partner detail: %w", err)
-	}
-
-	// Use FindAccountByID to handle account fetching
-	account, accErr := r.FindAccountByID(accountID)
-	if accErr != nil {
-		return nil, fmt.Errorf("failed to fetch account: %w", accErr)
-	}
-
-	if account == nil {
-		// Return nil if the account is also not found
-		return nil, nil
-	}
-
-	// Return an empty PartnerDetail with the account preloaded
-	return &domain.PartnerDetail{
-		AccountID: account.ID,
-		Account:   *account,
-	}, nil
-}
-
-func (r *accountRepository) CreateOrUpdatePartnerDetail(detail *domain.PartnerDetail) error {
-	existingDetail, err := r.FindPartnerDetailByAccountID(detail.AccountID)
-	if err != nil {
-		return err
-	}
-
-	if existingDetail != nil {
-		detail.ID = existingDetail.ID // Preserve the existing record's ID
-	}
-	return r.db.Save(detail).Error
-}
-
-// Customer detail
-func (r *accountRepository) FindCustomerDetailByAccountID(accountID string) (*domain.CustomerDetail, error) {
-	var details domain.CustomerDetail
+// Data utilizer
+func (r *accountRepository) FindDataUtilizerByAccountID(accountID string) (*domain.DataUtilizer, error) {
+	var dataUtilizer domain.DataUtilizer
 
 	// Attempt to preload customer detail and associated account
-	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error
+	err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&dataUtilizer).Error
 	if err == nil {
-		return &details, nil
+		return &dataUtilizer, nil
 	}
 
 	// If the error is not "record not found," return it immediately
@@ -186,36 +140,36 @@ func (r *accountRepository) FindCustomerDetailByAccountID(accountID string) (*do
 	}
 
 	// Return an empty CustomerDetail with the associated account preloaded
-	return &domain.CustomerDetail{
+	return &domain.DataUtilizer{
 		AccountID: account.ID,
 		Account:   *account,
 	}, nil
 }
 
-func (r *accountRepository) CreateOrUpdateCustomerDetail(detail *domain.CustomerDetail) error {
-	existingDetail, err := r.FindCustomerDetailByAccountID(detail.AccountID)
+func (r *accountRepository) CreateOrUpdateDataUtilizer(dataUtilizer *domain.DataUtilizer) error {
+	existingDataUtilizer, err := r.FindDataUtilizerByAccountID(dataUtilizer.AccountID)
 	if err != nil {
 		return err
 	}
 
-	if existingDetail != nil {
-		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	if existingDataUtilizer != nil {
+		dataUtilizer.ID = existingDataUtilizer.ID // Preserve the existing record's ID
 	}
-	return r.db.Save(detail).Error
+	return r.db.Save(dataUtilizer).Error
 }
 
 // Validator detail
-func (r *accountRepository) FindValidatorDetailByAccountID(accountID string) (*domain.ValidatorDetail, error) {
-	var details domain.ValidatorDetail
+func (r *accountRepository) FindValidatorByAccountID(accountID string) (*domain.Validator, error) {
+	var validator domain.Validator
 
-	// Attempt to find validator-specific details
-	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&details).Error; err != nil {
+	// Attempt to find validator-specific detail
+	if err := r.db.Preload("Account").Where("account_id = ?", accountID).First(&validator).Error; err != nil {
 		// If error is not "record not found," return the error immediately
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("failed to fetch validator detail: %w", err)
+			return nil, fmt.Errorf("failed to fetch validator: %w", err)
 		}
 
-		// Handle the case where validator detail is not found
+		// Handle the case where validator is not found
 		account, accErr := r.FindAccountByID(accountID)
 		if accErr != nil {
 			return nil, fmt.Errorf("failed to fetch associated account: %w", accErr)
@@ -225,31 +179,31 @@ func (r *accountRepository) FindValidatorDetailByAccountID(accountID string) (*d
 			return nil, nil
 		}
 
-		// Return an empty ValidatorDetail with the associated account preloaded
-		return &domain.ValidatorDetail{
+		// Return an empty Validator with the associated account preloaded
+		return &domain.Validator{
 			AccountID: account.ID,
 			Account:   *account,
 		}, nil
 	}
 
 	// Return the found details
-	return &details, nil
+	return &validator, nil
 }
 
-func (r *accountRepository) CreateOrUpdateValidatorDetail(detail *domain.ValidatorDetail) error {
-	existingDetail, err := r.FindValidatorDetailByAccountID(detail.AccountID)
+func (r *accountRepository) CreateOrUpdateValidator(validator *domain.Validator) error {
+	existingValidator, err := r.FindValidatorByAccountID(validator.AccountID)
 	if err != nil {
 		return err
 	}
 
-	if existingDetail != nil {
-		detail.ID = existingDetail.ID // Preserve the existing record's ID
+	if existingValidator != nil {
+		validator.ID = existingValidator.ID // Preserve the existing record's ID
 	}
-	return r.db.Save(detail).Error
+	return r.db.Save(validator).Error
 }
 
-func (r *accountRepository) FindActiveValidators() ([]domain.ValidatorDetail, error) {
-	var validators []domain.ValidatorDetail
+func (r *accountRepository) FindActiveValidators() ([]domain.Validator, error) {
+	var validators []domain.Validator
 	err := r.db.Preload("Account").Where("is_active = ?", true).Find(&validators).Error
 	if err != nil {
 		return nil, err

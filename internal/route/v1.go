@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/genefriendway/human-network-auth/conf"
+	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/adapters/handlers"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	"github.com/genefriendway/human-network-auth/internal/middleware"
@@ -34,11 +35,32 @@ func RegisterRoutes(
 
 	// SECTION: account
 	accountHandler := handlers.NewAccountHandler(accountUCase, authUCase)
-	appRouter.GET("/account/me", middleware.ValidateBearerToken(), accountHandler.GetCurrentUser)
-	appRouter.PUT("/account/role", middleware.ValidateBearerToken(), accountHandler.UpdateAccountRole)
+	appRouter.GET(
+		"/account/me",
+		middleware.ValidateBearerToken(),
+		middleware.RequiredRoles(
+			authUCase,
+			string(constants.Admin),
+			string(constants.DataOwner),
+			string(constants.DataUtilizer),
+			string(constants.Validator),
+		),
+		accountHandler.GetCurrentUser,
+	)
+	appRouter.PUT(
+		"/account/role",
+		middleware.ValidateBearerToken(),
+		middleware.RequiredRoles(authUCase, string(constants.DataOwner)),
+		accountHandler.UpdateAccountRole,
+	)
 
 	// SECTION: validator
-	appRouter.GET("validators/active", middleware.ValidateBearerToken(), accountHandler.GetActiveValidators)
+	appRouter.GET(
+		"validators/active",
+		middleware.ValidateBearerToken(),
+		middleware.RequiredRoles(authUCase, string(constants.DataOwner)),
+		accountHandler.GetActiveValidators,
+	)
 
 	// SECTION: data access
 	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase)

@@ -51,7 +51,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Forbidden",
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/response.GeneralError"
                         }
@@ -106,6 +106,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/response.GeneralError"
                         }
@@ -685,7 +697,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Forbidden",
+                        "description": "Insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/response.GeneralError"
                         }
@@ -765,9 +777,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "first_name": {
-                    "type": "string"
-                },
-                "id": {
                     "type": "string"
                 },
                 "industry": {

@@ -15,29 +15,24 @@ type AccountRepository interface {
 	CreateAccount(account *domain.Account) error
 	UpdateAccount(account *domain.Account) error
 
-	// UserDetails
-	FindUserDetailByAccountID(accountID string) (*domain.UserDetail, error)
-	CreateOrUpdateUserDetail(detail *domain.UserDetail) error
+	// Data owner
+	FindDataOwnerByAccountID(accountID string) (*domain.DataOwner, error)
+	CreateOrUpdateDataOwner(dataOwner *domain.DataOwner) error
 
-	// PartnerDetails
-	FindPartnerDetailByAccountID(accountID string) (*domain.PartnerDetail, error)
-	CreateOrUpdatePartnerDetail(detail *domain.PartnerDetail) error
+	// Data utilizer
+	FindDataUtilizerByAccountID(accountID string) (*domain.DataUtilizer, error)
+	CreateOrUpdateDataUtilizer(dataUtilizer *domain.DataUtilizer) error
 
-	// CustomerDetails
-	FindCustomerDetailByAccountID(accountID string) (*domain.CustomerDetail, error)
-	CreateOrUpdateCustomerDetail(detail *domain.CustomerDetail) error
-
-	// ValidatorDetails
-	FindValidatorDetailByAccountID(accountID string) (*domain.ValidatorDetail, error)
-	CreateOrUpdateValidatorDetail(detail *domain.ValidatorDetail) error
-
-	FindActiveValidators() ([]domain.ValidatorDetail, error)
+	// Validator
+	FindValidatorByAccountID(accountID string) (*domain.Validator, error)
+	CreateOrUpdateValidator(validator *domain.Validator) error
+	FindActiveValidators() ([]domain.Validator, error)
 }
 
 type AccountUCase interface {
 	FindAccountByEmail(email string) (*dto.AccountDTO, error)
 	FindAccountByID(id string) (*dto.AccountDTO, error)
-	FindDetailByAccountID(accountID string, role constants.AccountRole) (*dto.AccountDetailDTO, error)
+	FindDetailByAccountID(account *dto.AccountDTO, role constants.AccountRole) (*dto.AccountDetailDTO, error)
 	GetActiveValidators() ([]dto.AccountDetailDTO, error)
 	UpdateAccount(accountDTO *dto.AccountDTO) error
 }

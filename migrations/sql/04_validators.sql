@@ -1,28 +1,28 @@
-CREATE TABLE IF NOT EXISTS customer_details (
+CREATE TABLE IF NOT EXISTS validators (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- Use UUID as primary key
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, -- Match UUID from accounts table
-    organization_name VARCHAR(255) NOT NULL,
-    industry VARCHAR(100),
-    contact_name VARCHAR(100),
+    validation_organization VARCHAR(255) NOT NULL,
+    contact_person VARCHAR(100),
     phone_number VARCHAR(20),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE, -- Field to indicate if the validator is active
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Add the updated_at trigger for the customer_details table
+-- Add the updated_at trigger for the validators table
 DO $$
 BEGIN
     IF EXISTS (
         SELECT 1
         FROM pg_trigger
-        WHERE tgname = 'update_customer_details_updated_at'
-          AND tgrelid = 'customer_details'::regclass
+        WHERE tgname = 'update_validators_updated_at'
+          AND tgrelid = 'validators'::regclass
     ) THEN
-        DROP TRIGGER update_customer_details_updated_at ON customer_details;
+        DROP TRIGGER update_validators_updated_at ON validators;
     END IF;
 
-    CREATE TRIGGER update_customer_details_updated_at
-    BEFORE UPDATE ON customer_details
+    CREATE TRIGGER update_validators_updated_at
+    BEFORE UPDATE ON validators
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 END;

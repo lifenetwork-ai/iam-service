@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/genefriendway/human-network-auth/constants"
-	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
@@ -37,29 +36,24 @@ func NewAccountHandler(
 // @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
 // @Success 200 {object} dto.AccountDetailDTO "User details"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
-// @Failure 403 {object} response.GeneralError "Forbidden"
+// @Failure 403 {object} response.GeneralError "Insufficient permissions"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/account/me [get]
 func (h *accountHandler) GetCurrentUser(ctx *gin.Context) {
-	// Retrieve the token from the context
-	token, exists := ctx.Get("token")
+	// Retrieve the authenticated account from the context
+	accountDTO, exists := ctx.Get("account")
 	if !exists {
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", domain.ErrTokenNotFound)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
 		return
 	}
 
-	// Validate the token and fetch user details
-	account, err := h.authUCase.ValidateToken(token.(string))
+	// Fetch role-specific details based on the authenticated account
+	detail, err := h.accountUCase.FindDetailByAccountID(
+		accountDTO.(*dto.AccountDTO),
+		constants.AccountRole(accountDTO.(*dto.AccountDTO).Role),
+	)
 	if err != nil {
-		logger.GetLogger().Errorf("Failed to validate token: %v", err)
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
-		return
-	}
-
-	// Fetch role-specific details
-	detail, err := h.accountUCase.FindDetailByAccountID(account.ID, constants.AccountRole(account.Role))
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to fetch user details: %v", err)
+		logger.GetLogger().Errorf("Failed to fetch user details for account ID [%s]: %v", accountDTO.(*dto.AccountDTO).ID, err)
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch user details", err)
 		return
 	}
@@ -77,28 +71,14 @@ func (h *accountHandler) GetCurrentUser(ctx *gin.Context) {
 // @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
 // @Success 200 {array} dto.AccountDetailDTO "List of active validators"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
-// @Failure 403 {object} response.GeneralError "Forbidden"
+// @Failure 403 {object} response.GeneralError "Insufficient permissions"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/validators/active [get]
 func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
-	// Retrieve the token from the context
-	token, exists := ctx.Get("token")
+	// Retrieve the authenticated account from the context
+	_, exists := ctx.Get("account")
 	if !exists {
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", domain.ErrTokenNotFound)
-		return
-	}
-
-	// Validate the token and fetch user details
-	account, err := h.authUCase.ValidateToken(token.(string))
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to validate token: %v", err)
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
-		return
-	}
-
-	// Ensure the user has the required permissions
-	if account.Role != string(constants.User) {
-		httpresponse.Error(ctx, http.StatusForbidden, "Insufficient permissions", domain.ErrInsufficientPermissions)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
 		return
 	}
 
@@ -124,44 +104,39 @@ func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
 // @Param payload body dto.UpdateRolePayloadDTO true "Payload containing role and role-specific details"
 // @Success 200 {object} map[string]interface{} "Account role updated successfully"
 // @Failure 400 {object} response.GeneralError "Invalid payload"
+// @Failure 401 {object} response.GeneralError "Unauthorized"
+// @Failure 403 {object} response.GeneralError "Insufficient permissions"
 // @Failure 404 {object} response.GeneralError "Account not found"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/account/role [put]
 func (h *accountHandler) UpdateAccountRole(ctx *gin.Context) {
-	// Retrieve the token from the context
-	token, exists := ctx.Get("token")
-	if !exists {
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", nil)
+	// Retrieve the authenticated account from context
+	accountDTO, ok := ctx.Get("account")
+	if !ok {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
 		return
 	}
 
-	// Validate the token and fetch user details
-	accountDTO, err := h.authUCase.ValidateToken(token.(string))
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to validate token: %v", err)
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
-		return
-	}
-
+	// Parse and validate the request payload
 	var req dto.UpdateRolePayloadDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		logger.GetLogger().Errorf("Invalid payload: %v", err)
-		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
+		logger.GetLogger().Errorf("Payload binding failed: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload format", err)
 		return
 	}
 
-	// Validate the role
+	// Validate the new role
 	role := constants.AccountRole(req.Role)
 	if !role.IsValid() {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid role provided", nil)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid role specified", nil)
 		return
 	}
 
 	// Fetch the account by ID
-	account, err := h.accountUCase.FindAccountByID(accountDTO.ID)
+	account, err := h.accountUCase.FindAccountByID(accountDTO.(*dto.AccountDTO).ID)
 	if err != nil {
-		logger.GetLogger().Errorf("Failed to fetch account: %v", err)
-		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch account", err)
+		logger.GetLogger().Errorf("Error fetching account [ID: %s]: %v", accountDTO.(*dto.AccountDTO).ID, err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Error fetching account", err)
 		return
 	}
 	if account == nil {
@@ -169,20 +144,24 @@ func (h *accountHandler) UpdateAccountRole(ctx *gin.Context) {
 		return
 	}
 
-	// Update the role
+	// Update the account's role
 	account.Role = req.Role
 	if err := h.accountUCase.UpdateAccount(account); err != nil {
-		logger.GetLogger().Errorf("Failed to update account role: %v", err)
+		logger.GetLogger().Errorf("Error updating account role [ID: %s, Role: %s]: %v", account.ID, req.Role, err)
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to update account role", err)
 		return
 	}
 
-	// Save role-specific details
-	if err := h.authUCase.UpdateRoleDetail(accountDTO.ID, role, &req.RoleDetails); err != nil {
-		logger.GetLogger().Errorf("Failed to save role-specific details: %v", err)
+	// Update role-specific details
+	if err := h.authUCase.UpdateRoleDetail(accountDTO.(*dto.AccountDTO).ID, role, &req.RoleDetails); err != nil {
+		logger.GetLogger().Errorf(
+			"Error updating role-specific details [ID: %s, Role: %s]: %v", accountDTO.(*dto.AccountDTO).ID, req.Role, err,
+		)
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to save role-specific details", err)
 		return
 	}
 
+	// Respond with success
+	logger.GetLogger().Infof("Successfully updated role [AccountID: %s, NewRole: %s]", account.ID, req.Role)
 	ctx.JSON(http.StatusOK, gin.H{"message": "Account role updated successfully"})
 }
