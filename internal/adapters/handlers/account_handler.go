@@ -49,7 +49,7 @@ func (h *accountHandler) GetCurrentUser(ctx *gin.Context) {
 
 	// Fetch role-specific details based on the authenticated account
 	detail, err := h.accountUCase.FindDetailByAccountID(
-		accountDTO.(*dto.AccountDTO).ID,
+		accountDTO.(*dto.AccountDTO),
 		constants.AccountRole(accountDTO.(*dto.AccountDTO).Role),
 	)
 	if err != nil {

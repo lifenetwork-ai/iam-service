@@ -40,6 +40,7 @@ func RegisterRoutes(
 		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(
 			authUCase,
+			string(constants.Admin),
 			string(constants.DataOwner),
 			string(constants.DataUtilizer),
 			string(constants.Validator),

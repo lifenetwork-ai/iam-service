@@ -35,7 +35,7 @@ func (u *accountUCase) FindAccountByEmail(email string) (*dto.AccountDTO, error)
 }
 
 // FindDetailByAccountID retrieves role-specific details by account ID
-func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.AccountRole) (*dto.AccountDetailDTO, error) {
+func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role constants.AccountRole) (*dto.AccountDetailDTO, error) {
 	// Retrieve secret values
 	mnemonic := u.config.Secret.Mnemonic
 	passphrase := u.config.Secret.Passphrase
@@ -43,7 +43,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 
 	switch role {
 	case constants.DataOwner:
-		detail, err := u.accountRepository.FindDataOwnerByAccountID(accountID)
+		detail, err := u.accountRepository.FindDataOwnerByAccountID(account.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -53,7 +53,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 
 		// Generate public key
 		publicKey, privateKey, err := crypto.GenerateAccount(
-			mnemonic, passphrase, salt, string(constants.DataOwner), accountID,
+			mnemonic, passphrase, salt, string(constants.DataOwner), account.ID,
 		)
 		if err != nil {
 			return nil, err
@@ -86,7 +86,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}, nil
 
 	case constants.DataUtilizer:
-		detail, err := u.accountRepository.FindDataUtilizerByAccountID(accountID)
+		detail, err := u.accountRepository.FindDataUtilizerByAccountID(account.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +96,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 
 		// Generate public key
 		publicKey, privateKey, err := crypto.GenerateAccount(
-			mnemonic, passphrase, salt, string(constants.DataUtilizer), accountID,
+			mnemonic, passphrase, salt, string(constants.DataUtilizer), account.ID,
 		)
 		if err != nil {
 			return nil, err
@@ -130,7 +130,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 		}, nil
 
 	case constants.Validator:
-		detail, err := u.accountRepository.FindValidatorByAccountID(accountID)
+		detail, err := u.accountRepository.FindValidatorByAccountID(account.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +140,7 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 
 		// Generate public key
 		publicKey, privateKey, err := crypto.GenerateAccount(
-			mnemonic, passphrase, salt, string(constants.Validator), accountID,
+			mnemonic, passphrase, salt, string(constants.Validator), account.ID,
 		)
 		if err != nil {
 			return nil, err
@@ -170,6 +170,36 @@ func (u *accountUCase) FindDetailByAccountID(accountID string, role constants.Ac
 			ValidationOrganization: detail.ValidationOrganization,
 			ContactName:            detail.ContactPerson,
 			PhoneNumber:            detail.PhoneNumber,
+		}, nil
+
+	case constants.Admin:
+		// Generate public key
+		publicKey, privateKey, err := crypto.GenerateAccount(
+			mnemonic, passphrase, salt, string(constants.Admin), account.ID,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Convert public and private keys to hexadecimal strings
+		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		privateKeyHex, err := crypto.PrivateKeyToHex(privateKey)
+		if err != nil {
+			return nil, err
+		}
+
+		return &dto.AccountDetailDTO{
+			Account: dto.AccountDTO{
+				ID:         account.ID,
+				Email:      account.Email,
+				Username:   account.Username,
+				Role:       account.Role,
+				PublicKey:  &publicKeyHex,
+				PrivateKey: &privateKeyHex,
+			},
 		}, nil
 
 	default:
