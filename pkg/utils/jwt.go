@@ -20,7 +20,7 @@ type Claims struct {
 }
 
 // GenerateToken generates a JWT access token for the user
-func GenerateToken(accountID, email, role, jwtSecret string) (string, error) {
+func GenerateToken(accountID, email, role string, jwtSecret []byte) (string, error) {
 	claims := &Claims{
 		AccountID: accountID,
 		Email:     email,

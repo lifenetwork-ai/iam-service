@@ -119,7 +119,7 @@ func (u *authUCase) Login(identifier, password string, identifierType constants.
 	}
 
 	// Generate Access Token
-	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role, u.config.JWTSecret)
+	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role, []byte(u.config.JWTSecret))
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
@@ -195,7 +195,7 @@ func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error
 	}
 
 	// Generate a new Access Token
-	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role, u.config.JWTSecret)
+	accessToken, err := utils.GenerateToken(account.ID, account.Email, account.Role, []byte(u.config.JWTSecret))
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
