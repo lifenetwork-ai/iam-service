@@ -51,7 +51,7 @@ func HashToken(token string) string {
 }
 
 // ParseToken validates a JWT token and extracts its claims
-func ParseToken(tokenStr, jwtSecret string) (*Claims, error) {
+func ParseToken(tokenStr string, jwtSecret []byte) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})

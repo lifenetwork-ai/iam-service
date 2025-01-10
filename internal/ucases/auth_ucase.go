@@ -233,7 +233,7 @@ func (u *authUCase) RefreshTokens(refreshToken string) (*dto.TokenPairDTO, error
 
 // ValidateToken validates an access token and retrieves account details
 func (u *authUCase) ValidateToken(token string) (*dto.AccountDTO, error) {
-	claims, err := utils.ParseToken(token, u.config.JWTSecret)
+	claims, err := utils.ParseToken(token, []byte(u.config.JWTSecret))
 	if err != nil {
 		return nil, err
 	}
