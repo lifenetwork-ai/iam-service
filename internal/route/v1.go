@@ -25,19 +25,20 @@ func RegisterRoutes(
 	policyUCase interfaces.PolicyUCase,
 ) {
 	v1 := r.Group("/api/v1")
-	appRouter := v1.Group("")
 
 	// SECTION: auth
+	appRouterAuth := v1.Group("auth")
 	authHandler := handlers.NewAuthHandler(authUCase)
-	appRouter.POST("/auth/register", authHandler.Register)
-	appRouter.POST("/auth/login", authHandler.Login)
-	appRouter.POST("/auth/logout", authHandler.Logout)
-	appRouter.POST("/auth/refresh-tokens", authHandler.RefreshTokens)
+	appRouterAuth.POST("/register", authHandler.Register)
+	appRouterAuth.POST("/login", authHandler.Login)
+	appRouterAuth.POST("/logout", authHandler.Logout)
+	appRouterAuth.POST("/refresh-tokens", authHandler.RefreshTokens)
 
 	// SECTION: account
+	appRouterAccount := v1.Group("account")
 	accountHandler := handlers.NewAccountHandler(accountUCase, authUCase)
-	appRouter.GET(
-		"/account/me",
+	appRouterAccount.GET(
+		"/me",
 		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(
 			authUCase,
@@ -48,24 +49,26 @@ func RegisterRoutes(
 		),
 		accountHandler.GetCurrentUser,
 	)
-	appRouter.PUT(
-		"/account/role",
+	appRouterAccount.PUT(
+		"/role",
 		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(authUCase, string(constants.DataOwner)),
 		accountHandler.UpdateAccountRole,
 	)
 
 	// SECTION: validator
-	appRouter.GET(
-		"validators/active",
+	appRouterValidator := v1.Group("validators")
+	appRouterValidator.GET(
+		"/active",
 		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(authUCase, string(constants.DataOwner)),
 		accountHandler.GetActiveValidators,
 	)
 
-	// SECTION: policies
-	policyHandler := handlers.NewPolicyHandler(policyUCase)
-	appRouter.POST(
+	// SECTION: IAM
+	appRouterIAM := v1.Group("iam")
+	policyHandler := handlers.NewIAMHandler(policyUCase)
+	appRouterIAM.POST(
 		"/policies",
 		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(authUCase, string(constants.Admin)),
@@ -73,10 +76,11 @@ func RegisterRoutes(
 	)
 
 	// SECTION: data access
+	appRouterDataAccess := v1.Group("data-access")
 	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase)
-	appRouter.POST("/data-access", middleware.ValidateBearerToken(), dataAccessHandler.CreateDataAccessRequest)
-	appRouter.GET("/data-access", middleware.ValidateBearerToken(), dataAccessHandler.GetDataAccessRequests)
-	appRouter.PUT("/data-access/:requestID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
-	appRouter.PUT("/data-access/:requestID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
-	appRouter.GET("/data-access/:requesterAccountID", middleware.ValidateBearerToken(), dataAccessHandler.GetAccessRequest)
+	appRouterDataAccess.POST("/", middleware.ValidateBearerToken(), dataAccessHandler.CreateDataAccessRequest)
+	appRouterDataAccess.GET("/", middleware.ValidateBearerToken(), dataAccessHandler.GetDataAccessRequests)
+	appRouterDataAccess.PUT("/:requestID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
+	appRouterDataAccess.PUT("/:requestID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
+	appRouterDataAccess.GET("/:requesterAccountID", middleware.ValidateBearerToken(), dataAccessHandler.GetAccessRequest)
 }

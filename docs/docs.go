@@ -658,7 +658,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/policies": {
+        "/api/v1/iam/policies": {
             "post": {
                 "description": "Adds a new IAM policy to the system. Only accessible to Admins.",
                 "consumes": [

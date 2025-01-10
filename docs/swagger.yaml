@@ -660,7 +660,7 @@ paths:
       summary: Get a data access request
       tags:
       - data-access
-  /api/v1/policies:
+  /api/v1/iam/policies:
     post:
       consumes:
       - application/json

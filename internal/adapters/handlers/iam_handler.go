@@ -11,12 +11,12 @@ import (
 	"github.com/genefriendway/human-network-auth/pkg/logger"
 )
 
-type policyHandler struct {
+type iamHandler struct {
 	policyUCase interfaces.PolicyUCase
 }
 
-func NewPolicyHandler(policyUCase interfaces.PolicyUCase) *policyHandler {
-	return &policyHandler{policyUCase: policyUCase}
+func NewIAMHandler(policyUCase interfaces.PolicyUCase) *iamHandler {
+	return &iamHandler{policyUCase: policyUCase}
 }
 
 // CreatePolicy creates a new policy.
@@ -32,8 +32,8 @@ func NewPolicyHandler(policyUCase interfaces.PolicyUCase) *policyHandler {
 // @Failure 401 {object} response.GeneralError "Unauthorized"
 // @Failure 403 {object} response.GeneralError "Forbidden"
 // @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/policies [post]
-func (h *policyHandler) CreatePolicy(ctx *gin.Context) {
+// @Router /api/v1/iam/policies [post]
+func (h *iamHandler) CreatePolicy(ctx *gin.Context) {
 	// Parse and validate the payload
 	var payload dto.PolicyPayloadDTO
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
