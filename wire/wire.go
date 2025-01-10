@@ -30,7 +30,7 @@ var dataAccessUCaseSet = wire.NewSet(
 )
 
 // Init ucase
-func GetAuthUCase(db *gorm.DB) interfaces.AuthUCase {
+func GetAuthUCase(db *gorm.DB, config *conf.Configuration) interfaces.AuthUCase {
 	wire.Build(authUCaseSet)
 	return nil
 }

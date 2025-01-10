@@ -41,7 +41,7 @@ func RunApp(config *conf.Configuration) {
 	}
 
 	// Initialize use cases and queue
-	authUCase := wire.GetAuthUCase(db)
+	authUCase := wire.GetAuthUCase(db, config)
 	accountUCase := wire.GetAccountUCase(db, config)
 	dataAccessUCase := wire.GetDataAccessUCase(db, config)
 

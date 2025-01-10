@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS iam_permissions (
 );
 
 -- Add composite index for resource, and action
-CREATE INDEX idx_iam_permissions_resource_action ON iam_permissions (resource, action);
+CREATE INDEX IF NOT EXISTS idx_iam_permissions_resource_action ON iam_permissions (resource, action);
 
 -- Add the updated_at trigger for the iam_permissions table
 DO $$

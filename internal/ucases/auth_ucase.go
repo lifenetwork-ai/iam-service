@@ -23,10 +23,12 @@ type authUCase struct {
 }
 
 func NewAuthUCase(
+	config *conf.Configuration,
 	accountRepository interfaces.AccountRepository,
 	authRepository interfaces.AuthRepository,
 ) interfaces.AuthUCase {
 	return &authUCase{
+		config:            config,
 		accountRepository: accountRepository,
 		authRepository:    authRepository,
 	}

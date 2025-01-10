@@ -18,10 +18,10 @@ import (
 // Injectors from wire.go:
 
 // Init ucase
-func GetAuthUCase(db *gorm.DB) interfaces.AuthUCase {
+func GetAuthUCase(db *gorm.DB, config *conf.Configuration) interfaces.AuthUCase {
 	accountRepository := repositories.NewAccountRepository(db)
 	authRepository := repositories.NewAuthRepository(db)
-	authUCase := ucases.NewAuthUCase(accountRepository, authRepository)
+	authUCase := ucases.NewAuthUCase(config, accountRepository, authRepository)
 	return authUCase
 }
 
