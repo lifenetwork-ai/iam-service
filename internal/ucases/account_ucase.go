@@ -71,7 +71,6 @@ func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role const
 
 		// Map UserDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID: &detail.ID,
 			Account: dto.AccountDTO{
 				ID:         detail.Account.ID,
 				Email:      detail.Account.Email,
@@ -114,7 +113,6 @@ func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role const
 
 		// Map CustomerDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID: &detail.ID,
 			Account: dto.AccountDTO{
 				ID:         detail.Account.ID,
 				Email:      detail.Account.Email,
@@ -158,7 +156,6 @@ func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role const
 
 		// Map ValidatorDetail to AccountDetailDTO
 		return &dto.AccountDetailDTO{
-			ID: detail.ID,
 			Account: dto.AccountDTO{
 				ID:         detail.Account.ID,
 				Email:      detail.Account.Email,
@@ -239,7 +236,6 @@ func (u *accountUCase) GetActiveValidators() ([]dto.AccountDetailDTO, error) {
 
 		// Map ValidatorDetail to AccountDetailDTO
 		result = append(result, dto.AccountDetailDTO{
-			ID: v.ID,
 			Account: dto.AccountDTO{
 				ID:        v.Account.ID,
 				Username:  v.Account.Username,

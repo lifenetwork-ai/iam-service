@@ -779,9 +779,6 @@ const docTemplate = `{
                 "first_name": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "string"
-                },
                 "industry": {
                     "type": "string"
                 },
