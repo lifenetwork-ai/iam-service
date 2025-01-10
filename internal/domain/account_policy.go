@@ -12,6 +12,6 @@ type AccountPolicy struct {
 }
 
 // TableName overrides the default table name for GORM.
-func (AccountPolicy) TableName() string {
+func (m *AccountPolicy) TableName() string {
 	return "account_policies"
 }

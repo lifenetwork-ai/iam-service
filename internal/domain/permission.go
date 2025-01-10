@@ -14,6 +14,6 @@ type Permission struct {
 }
 
 // TableName overrides the default table name for GORM.
-func (Permission) TableName() string {
+func (m *Permission) TableName() string {
 	return "iam_permissions"
 }

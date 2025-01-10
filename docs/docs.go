@@ -658,6 +658,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/policies": {
+            "post": {
+                "description": "Adds a new IAM policy to the system. Only accessible to Admins.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "policy"
+                ],
+                "summary": "Create a new policy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload for creating policy",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PolicyPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Policy created successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/validators/active": {
             "get": {
                 "description": "Fetches a list of active validators.",
@@ -892,6 +958,22 @@ const docTemplate = `{
             ],
             "properties": {
                 "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PolicyPayloadDTO": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "description": "Optional description",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the policy",
                     "type": "string"
                 }
             }

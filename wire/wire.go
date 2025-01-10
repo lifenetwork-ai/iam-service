@@ -29,6 +29,11 @@ var dataAccessUCaseSet = wire.NewSet(
 	ucases.NewDataAccessUCase,
 )
 
+var policyUCaseSet = wire.NewSet(
+	repositories.NewPolicyRepository,
+	ucases.NewPolicyUCase,
+)
+
 // Init ucase
 func GetAuthUCase(db *gorm.DB, config *conf.Configuration) interfaces.AuthUCase {
 	wire.Build(authUCaseSet)
@@ -42,5 +47,10 @@ func GetAccountUCase(db *gorm.DB, config *conf.Configuration) interfaces.Account
 
 func GetDataAccessUCase(db *gorm.DB, config *conf.Configuration) interfaces.DataAccessUCase {
 	wire.Build(dataAccessUCaseSet)
+	return nil
+}
+
+func GetPolicyUCase(db *gorm.DB) interfaces.PolicyUCase {
+	wire.Build(policyUCaseSet)
 	return nil
 }

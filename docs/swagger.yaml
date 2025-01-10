@@ -125,6 +125,17 @@ definitions:
     required:
     - refresh_token
     type: object
+  dto.PolicyPayloadDTO:
+    properties:
+      description:
+        description: Optional description
+        type: string
+      name:
+        description: Name of the policy
+        type: string
+    required:
+    - name
+    type: object
   dto.RefreshTokenPayloadDTO:
     properties:
       refresh_token:
@@ -649,6 +660,50 @@ paths:
       summary: Get a data access request
       tags:
       - data-access
+  /api/v1/policies:
+    post:
+      consumes:
+      - application/json
+      description: Adds a new IAM policy to the system. Only accessible to Admins.
+      parameters:
+      - description: Bearer access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Payload for creating policy
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PolicyPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Policy created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Create a new policy
+      tags:
+      - policy
   /api/v1/validators/active:
     get:
       consumes:

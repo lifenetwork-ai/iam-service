@@ -22,6 +22,7 @@ func RegisterRoutes(
 	authUCase interfaces.AuthUCase,
 	accountUCase interfaces.AccountUCase,
 	dataAccessUCase interfaces.DataAccessUCase,
+	policyUCase interfaces.PolicyUCase,
 ) {
 	v1 := r.Group("/api/v1")
 	appRouter := v1.Group("")
@@ -60,6 +61,15 @@ func RegisterRoutes(
 		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(authUCase, string(constants.DataOwner)),
 		accountHandler.GetActiveValidators,
+	)
+
+	// SECTION: policies
+	policyHandler := handlers.NewPolicyHandler(policyUCase)
+	appRouter.POST(
+		"/policies",
+		middleware.ValidateBearerToken(),
+		middleware.RequiredRoles(authUCase, string(constants.Admin)),
+		policyHandler.CreatePolicy,
 	)
 
 	// SECTION: data access

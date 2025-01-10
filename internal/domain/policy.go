@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/genefriendway/human-network-auth/internal/dto"
+)
 
 // Policy represents the structure of a policy in the IAM system.
 type Policy struct {
@@ -12,6 +16,16 @@ type Policy struct {
 }
 
 // TableName overrides the default table name for GORM.
-func (Policy) TableName() string {
+func (m *Policy) TableName() string {
 	return "iam_policies"
+}
+
+func (m *Policy) ToDTO() *dto.PolicyDTO {
+	return &dto.PolicyDTO{
+		ID:          m.ID,
+		Name:        m.Name,
+		Description: m.Description,
+		CreatedAt:   m.CreatedAt,
+		UpdatedAt:   m.UpdatedAt,
+	}
 }

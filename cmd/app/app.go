@@ -44,6 +44,7 @@ func RunApp(config *conf.Configuration) {
 	authUCase := wire.GetAuthUCase(db, config)
 	accountUCase := wire.GetAccountUCase(db, config)
 	dataAccessUCase := wire.GetDataAccessUCase(db, config)
+	policyUCase := wire.GetPolicyUCase(db)
 
 	// Register routes
 	routev1.RegisterRoutes(
@@ -54,6 +55,7 @@ func RunApp(config *conf.Configuration) {
 		authUCase,
 		accountUCase,
 		dataAccessUCase,
+		policyUCase,
 	)
 
 	// Start server
