@@ -64,3 +64,9 @@ type DataAccessRequestPayloadDTO struct {
 type RejectRequestPayloadDTO struct {
 	Reason string `json:"reason" validate:"required"` // Reason for rejecting the data access request
 }
+
+// PolicyPayloadDTO defines the payload for creating a policy
+type PolicyPayloadDTO struct {
+	Name        string `json:"name" validate:"required"` // Name of the policy
+	Description string `json:"description,omitempty"`    // Optional description
+}
