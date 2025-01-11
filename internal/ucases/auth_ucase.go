@@ -72,7 +72,7 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO) error {
 		Email:        input.Email,
 		Username:     input.Username,
 		PasswordHash: &password,
-		Role:         string(constants.DataOwner), // Default role
+		Role:         constants.DataOwner.String(), // Default role
 	}
 
 	// Save account

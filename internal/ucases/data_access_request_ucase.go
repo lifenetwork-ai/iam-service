@@ -49,7 +49,7 @@ func (u *dataAccessUCase) CreateRequest(
 		RequesterAccountID: requesterAccountID,
 		RequesterRole:      requesterAccountRole,
 		ReasonForRequest:   payload.ReasonForRequest,
-		Status:             string(constants.DataAccessRequestPending), // Default status
+		Status:             constants.DataAccessRequestPending.String(), // Default status
 	}
 
 	// Save the request in the database using the repository

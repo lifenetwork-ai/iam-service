@@ -42,17 +42,17 @@ func RegisterRoutes(
 		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(
 			authUCase,
-			string(constants.Admin),
-			string(constants.DataOwner),
-			string(constants.DataUtilizer),
-			string(constants.Validator),
+			constants.Admin.String(),
+			constants.DataOwner.String(),
+			constants.DataUtilizer.String(),
+			constants.Validator.String(),
 		),
 		accountHandler.GetCurrentUser,
 	)
 	appRouterAccount.PUT(
 		"/role",
 		middleware.ValidateBearerToken(),
-		middleware.RequiredRoles(authUCase, string(constants.DataOwner)),
+		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
 		accountHandler.UpdateAccountRole,
 	)
 
@@ -61,7 +61,7 @@ func RegisterRoutes(
 	appRouterValidator.GET(
 		"/active",
 		middleware.ValidateBearerToken(),
-		middleware.RequiredRoles(authUCase, string(constants.DataOwner)),
+		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
 		accountHandler.GetActiveValidators,
 	)
 
@@ -71,7 +71,7 @@ func RegisterRoutes(
 	appRouterIAM.POST(
 		"/policies",
 		middleware.ValidateBearerToken(),
-		middleware.RequiredRoles(authUCase, string(constants.Admin)),
+		middleware.RequiredRoles(authUCase, constants.Admin.String()),
 		policyHandler.CreatePolicy,
 	)
 
