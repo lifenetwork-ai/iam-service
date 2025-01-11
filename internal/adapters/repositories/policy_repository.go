@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"errors"
-	"strings"
 
 	"gorm.io/gorm"
 
@@ -37,21 +36,4 @@ func (r *policyRepository) CheckPolicyExistsByName(name string) (bool, error) {
 
 func (r *policyRepository) CreatePolicy(policy *domain.Policy) error {
 	return r.db.Create(policy).Error
-}
-
-func (r *policyRepository) AssignPolicyToAccount(accountID, policyID string) error {
-	accountPolicy := domain.AccountPolicy{
-		AccountID: accountID,
-		PolicyID:  policyID,
-	}
-
-	err := r.db.Create(&accountPolicy).Error
-	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			return domain.ErrAlreadyExists
-		}
-		return err
-	}
-
-	return nil
 }

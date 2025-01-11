@@ -9,15 +9,18 @@ import (
 )
 
 type iamUCase struct {
+	iamRepository     interfaces.IAMRepository
 	policyRepository  interfaces.PolicyRepository
 	accountRepository interfaces.AccountRepository
 }
 
 func NewIAMUCase(
+	iamRepository interfaces.IAMRepository,
 	policyRepository interfaces.PolicyRepository,
 	accountRepository interfaces.AccountRepository,
 ) interfaces.IAMUCase {
 	return &iamUCase{
+		iamRepository:     iamRepository,
 		policyRepository:  policyRepository,
 		accountRepository: accountRepository,
 	}
@@ -59,5 +62,21 @@ func (u *iamUCase) AssignPolicyToAccount(accountID, policyID string) error {
 		return domain.ErrDataNotFound
 	}
 
-	return u.policyRepository.AssignPolicyToAccount(accountID, policyID)
+	return u.iamRepository.AssignPolicyToAccount(accountID, policyID)
+}
+
+// CheckPermission checks if an account has permission to perform an action on a resource.
+func (u *iamUCase) CheckPermission(accountID, resource, action string) (bool, error) {
+	permissions, err := u.iamRepository.GetAccountPermissions(accountID)
+	if err != nil {
+		return false, err
+	}
+
+	for _, permission := range permissions {
+		if permission.Resource == resource && permission.Action == action {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

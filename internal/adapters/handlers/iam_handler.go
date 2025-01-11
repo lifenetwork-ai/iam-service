@@ -9,7 +9,7 @@ import (
 	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
-	"github.com/genefriendway/human-network-auth/pkg/http/response"
+	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
 	"github.com/genefriendway/human-network-auth/pkg/logger"
 )
 
@@ -40,7 +40,7 @@ func (h *iamHandler) CreatePolicy(ctx *gin.Context) {
 	var payload dto.PolicyPayloadDTO
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
-		response.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (h *iamHandler) CreatePolicy(ctx *gin.Context) {
 	policy, err := h.iamUCase.CreatePolicy(payload)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to create policy: %v", err)
-		response.Error(ctx, http.StatusInternalServerError, "Failed to create policy", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to create policy", err)
 		return
 	}
 
@@ -76,27 +76,71 @@ func (h *iamHandler) CreatePolicy(ctx *gin.Context) {
 func (h *iamHandler) AssignPolicyToAccount(ctx *gin.Context) {
 	accountID := ctx.Param("accountID")
 	if accountID == "" {
-		response.Error(ctx, http.StatusBadRequest, "Account ID is required", nil)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Account ID is required", nil)
 		return
 	}
 
 	var payload dto.AssignPolicyPayloadDTO
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
-		response.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
 		return
 	}
 
 	err := h.iamUCase.AssignPolicyToAccount(accountID, payload.PolicyID)
 	if err != nil {
 		if errors.Is(err, domain.ErrDataNotFound) {
-			response.Error(ctx, http.StatusNotFound, "Account or policy not found", nil)
+			httpresponse.Error(ctx, http.StatusNotFound, "Account or policy not found", nil)
 		} else {
 			logger.GetLogger().Errorf("Failed to assign policy: %v", err)
-			response.Error(ctx, http.StatusInternalServerError, "Failed to assign policy", err)
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to assign policy", err)
 		}
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Policy assigned successfully"})
+}
+
+// CheckPermission checks if the authenticated user has permission to perform an action on a resource.
+// @Summary Check user permissions
+// @Description Validates if the authenticated user has the required permission to access a resource.
+// @Tags IAM
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
+// @Param payload body dto.CheckPermissionPayloadDTO true "Payload containing resource and action"
+// @Success 200 {object} map[string]interface{} "Permission check result"
+// @Failure 400 {object} response.GeneralError "Invalid payload"
+// @Failure 401 {object} response.GeneralError "Unauthorized"
+// @Failure 403 {object} response.GeneralError "Forbidden"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/iam/check-permission [post]
+func (h *iamHandler) CheckPermission(ctx *gin.Context) {
+	// Retrieve the authenticated account from the context
+	accountDTO, exists := ctx.Get("account")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
+		return
+	}
+
+	var payload dto.CheckPermissionPayloadDTO
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
+		return
+	}
+
+	hasPermission, err := h.iamUCase.CheckPermission(accountDTO.(*dto.AccountDTO).ID, payload.Resource, payload.Action)
+	if err != nil {
+		logger.GetLogger().Errorf("Permission check failed: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to check permission", err)
+		return
+	}
+
+	if !hasPermission {
+		httpresponse.Error(ctx, http.StatusForbidden, "Permission denied", nil)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Permission granted"})
 }

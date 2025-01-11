@@ -75,3 +75,9 @@ type PolicyPayloadDTO struct {
 type AssignPolicyPayloadDTO struct {
 	PolicyID string `json:"policy_id" validate:"required,uuid"`
 }
+
+// CheckPermissionPayloadDTO defines the payload for checking if an account has permission to perform an action on a resource
+type CheckPermissionPayloadDTO struct {
+	Resource string `json:"resource" validate:"required"`
+	Action   string `json:"action" validate:"required"`
+}
