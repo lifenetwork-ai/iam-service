@@ -70,3 +70,8 @@ type PolicyPayloadDTO struct {
 	Name        string `json:"name" validate:"required"` // Name of the policy
 	Description string `json:"description,omitempty"`    // Optional description
 }
+
+// AssignPolicyPayloadDTO defines the payload for assigning a policy to an account
+type AssignPolicyPayloadDTO struct {
+	PolicyID string `json:"policy_id" validate:"required,uuid"`
+}

@@ -31,6 +31,7 @@ var dataAccessUCaseSet = wire.NewSet(
 
 var iamUCaseSet = wire.NewSet(
 	repositories.NewPolicyRepository,
+	repositories.NewAccountRepository,
 	ucases.NewIAMUCase,
 )
 

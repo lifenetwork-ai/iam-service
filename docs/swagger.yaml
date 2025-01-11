@@ -57,6 +57,13 @@ definitions:
       validation_organization:
         type: string
     type: object
+  dto.AssignPolicyPayloadDTO:
+    properties:
+      policy_id:
+        type: string
+    required:
+    - policy_id
+    type: object
   dto.DataAccessRequestDTO:
     properties:
       created_at:
@@ -660,6 +667,51 @@ paths:
       summary: Get a data access request
       tags:
       - data-access
+  /api/v1/iam/accounts/{accountID}/policies:
+    post:
+      consumes:
+      - application/json
+      description: Maps a specified policy to an account by accountID.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Account ID to assign the policy to
+        in: path
+        name: accountID
+        required: true
+        type: string
+      - description: Payload containing the policy ID
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AssignPolicyPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Policy assigned successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload or missing policy
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: Account or policy not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Assign a policy to an account
+      tags:
+      - IAM
   /api/v1/iam/policies:
     post:
       consumes:
@@ -703,7 +755,7 @@ paths:
             $ref: '#/definitions/response.GeneralError'
       summary: Create a new policy
       tags:
-      - policy
+      - IAM
   /api/v1/validators/active:
     get:
       consumes:

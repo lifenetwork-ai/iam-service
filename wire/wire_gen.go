@@ -40,7 +40,8 @@ func GetDataAccessUCase(db *gorm.DB, config *conf.Configuration) interfaces.Data
 
 func GetIAMUCase(db *gorm.DB) interfaces.IAMUCase {
 	policyRepository := repositories.NewPolicyRepository(db)
-	iamuCase := ucases.NewIAMUCase(policyRepository)
+	accountRepository := repositories.NewAccountRepository(db)
+	iamuCase := ucases.NewIAMUCase(policyRepository, accountRepository)
 	return iamuCase
 }
 
@@ -53,4 +54,4 @@ var accountUCaseSet = wire.NewSet(repositories.NewAccountRepository, ucases.NewA
 
 var dataAccessUCaseSet = wire.NewSet(repositories.NewDataAccessRepository, repositories.NewAccountRepository, ucases.NewDataAccessUCase)
 
-var iamUCaseSet = wire.NewSet(repositories.NewPolicyRepository, ucases.NewIAMUCase)
+var iamUCaseSet = wire.NewSet(repositories.NewPolicyRepository, repositories.NewAccountRepository, ucases.NewIAMUCase)

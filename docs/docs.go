@@ -658,6 +658,73 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/iam/accounts/{accountID}/policies": {
+            "post": {
+                "description": "Maps a specified policy to an account by accountID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IAM"
+                ],
+                "summary": "Assign a policy to an account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Account ID to assign the policy to",
+                        "name": "accountID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload containing the policy ID",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AssignPolicyPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Policy assigned successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload or missing policy",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "404": {
+                        "description": "Account or policy not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/iam/policies": {
             "post": {
                 "description": "Adds a new IAM policy to the system. Only accessible to Admins.",
@@ -668,7 +735,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "policy"
+                    "IAM"
                 ],
                 "summary": "Create a new policy",
                 "parameters": [
@@ -858,6 +925,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "validation_organization": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AssignPolicyPayloadDTO": {
+            "type": "object",
+            "required": [
+                "policy_id"
+            ],
+            "properties": {
+                "policy_id": {
                     "type": "string"
                 }
             }
