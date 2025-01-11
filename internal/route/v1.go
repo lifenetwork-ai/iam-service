@@ -36,10 +36,10 @@ func RegisterRoutes(
 
 	// SECTION: account
 	appRouterAccount := v1.Group("account")
+	appRouterAccount.Use(middleware.ValidateBearerToken())
 	accountHandler := handlers.NewAccountHandler(accountUCase, authUCase)
 	appRouterAccount.GET(
 		"/me",
-		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(
 			authUCase,
 			constants.Admin.String(),
@@ -51,7 +51,6 @@ func RegisterRoutes(
 	)
 	appRouterAccount.PUT(
 		"/role",
-		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
 		accountHandler.UpdateAccountRole,
 	)
@@ -60,19 +59,27 @@ func RegisterRoutes(
 	appRouterValidator := v1.Group("validators")
 	appRouterValidator.GET(
 		"/active",
-		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
 		accountHandler.GetActiveValidators,
 	)
 
 	// SECTION: IAM
 	appRouterIAM := v1.Group("iam")
-	iamHandler := handlers.NewIAMHandler(iamUCase)
+	appRouterIAM.Use(middleware.ValidateBearerToken())
+	iamHandler := handlers.NewIAMHandler(iamUCase, authUCase)
 	appRouterIAM.POST(
 		"/policies",
-		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(authUCase, constants.Admin.String()),
 		iamHandler.CreatePolicy,
+	)
+	appRouterIAM.POST(
+		"/accounts/:accountID/policies",
+		middleware.RequiredRoles(authUCase, constants.Admin.String()),
+		iamHandler.AssignPolicyToAccount,
+	)
+	appRouterIAM.POST(
+		"/check-permission",
+		iamHandler.CheckPermission,
 	)
 
 	// SECTION: data access

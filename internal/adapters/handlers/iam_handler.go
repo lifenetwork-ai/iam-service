@@ -14,11 +14,15 @@ import (
 )
 
 type iamHandler struct {
-	iamUCase interfaces.IAMUCase
+	iamUCase  interfaces.IAMUCase
+	authUCase interfaces.AuthUCase
 }
 
-func NewIAMHandler(iamUCase interfaces.IAMUCase) *iamHandler {
-	return &iamHandler{iamUCase: iamUCase}
+func NewIAMHandler(iamUCase interfaces.IAMUCase, authUCase interfaces.AuthUCase) *iamHandler {
+	return &iamHandler{
+		iamUCase:  iamUCase,
+		authUCase: authUCase,
+	}
 }
 
 // CreatePolicy creates a new policy.
@@ -116,10 +120,17 @@ func (h *iamHandler) AssignPolicyToAccount(ctx *gin.Context) {
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/iam/check-permission [post]
 func (h *iamHandler) CheckPermission(ctx *gin.Context) {
-	// Retrieve the authenticated account from the context
-	accountDTO, exists := ctx.Get("account")
+	// Retrieve the token from the context
+	token, exists := ctx.Get("token")
 	if !exists {
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", nil)
+		return
+	}
+
+	accountDTO, err := h.authUCase.ValidateToken(token.(string))
+	if err != nil {
+		logger.GetLogger().Errorf("Token validation failed: %v", err)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
 		return
 	}
 
@@ -130,7 +141,7 @@ func (h *iamHandler) CheckPermission(ctx *gin.Context) {
 		return
 	}
 
-	hasPermission, err := h.iamUCase.CheckPermission(accountDTO.(*dto.AccountDTO).ID, payload.Resource, payload.Action)
+	hasPermission, err := h.iamUCase.CheckPermission(accountDTO.ID, payload.Resource, payload.Action)
 	if err != nil {
 		logger.GetLogger().Errorf("Permission check failed: %v", err)
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to check permission", err)
