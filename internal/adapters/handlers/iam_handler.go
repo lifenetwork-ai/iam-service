@@ -12,11 +12,11 @@ import (
 )
 
 type iamHandler struct {
-	policyUCase interfaces.PolicyUCase
+	iamUCase interfaces.IAMUCase
 }
 
-func NewIAMHandler(policyUCase interfaces.PolicyUCase) *iamHandler {
-	return &iamHandler{policyUCase: policyUCase}
+func NewIAMHandler(iamUCase interfaces.IAMUCase) *iamHandler {
+	return &iamHandler{iamUCase: iamUCase}
 }
 
 // CreatePolicy creates a new policy.
@@ -43,7 +43,7 @@ func (h *iamHandler) CreatePolicy(ctx *gin.Context) {
 	}
 
 	// Call the use case to create the policy
-	policy, err := h.policyUCase.CreatePolicy(payload)
+	policy, err := h.iamUCase.CreatePolicy(payload)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to create policy: %v", err)
 		response.Error(ctx, http.StatusInternalServerError, "Failed to create policy", err)

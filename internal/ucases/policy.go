@@ -8,15 +8,15 @@ import (
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 )
 
-type PolicyUseCase struct {
+type IAMUCase struct {
 	policyRepository interfaces.PolicyRepository
 }
 
-func NewPolicyUCase(policyRepo interfaces.PolicyRepository) interfaces.PolicyUCase {
-	return &PolicyUseCase{policyRepository: policyRepo}
+func NewIAMUCase(policyRepo interfaces.PolicyRepository) interfaces.IAMUCase {
+	return &IAMUCase{policyRepository: policyRepo}
 }
 
-func (u *PolicyUseCase) CreatePolicy(payload dto.PolicyPayloadDTO) (*dto.PolicyDTO, error) {
+func (u *IAMUCase) CreatePolicy(payload dto.PolicyPayloadDTO) (*dto.PolicyDTO, error) {
 	// Check if the policy already exists
 	exists, err := u.policyRepository.CheckPolicyExistsByName(payload.Name)
 	if err != nil {

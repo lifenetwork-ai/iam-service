@@ -22,7 +22,7 @@ func RegisterRoutes(
 	authUCase interfaces.AuthUCase,
 	accountUCase interfaces.AccountUCase,
 	dataAccessUCase interfaces.DataAccessUCase,
-	policyUCase interfaces.PolicyUCase,
+	iamUCase interfaces.IAMUCase,
 ) {
 	v1 := r.Group("/api/v1")
 
@@ -67,12 +67,12 @@ func RegisterRoutes(
 
 	// SECTION: IAM
 	appRouterIAM := v1.Group("iam")
-	policyHandler := handlers.NewIAMHandler(policyUCase)
+	iamHandler := handlers.NewIAMHandler(iamUCase)
 	appRouterIAM.POST(
 		"/policies",
 		middleware.ValidateBearerToken(),
 		middleware.RequiredRoles(authUCase, constants.Admin.String()),
-		policyHandler.CreatePolicy,
+		iamHandler.CreatePolicy,
 	)
 
 	// SECTION: data access

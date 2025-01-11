@@ -29,9 +29,9 @@ var dataAccessUCaseSet = wire.NewSet(
 	ucases.NewDataAccessUCase,
 )
 
-var policyUCaseSet = wire.NewSet(
+var iamUCaseSet = wire.NewSet(
 	repositories.NewPolicyRepository,
-	ucases.NewPolicyUCase,
+	ucases.NewIAMUCase,
 )
 
 // Init ucase
@@ -50,7 +50,7 @@ func GetDataAccessUCase(db *gorm.DB, config *conf.Configuration) interfaces.Data
 	return nil
 }
 
-func GetPolicyUCase(db *gorm.DB) interfaces.PolicyUCase {
-	wire.Build(policyUCaseSet)
+func GetIAMUCase(db *gorm.DB) interfaces.IAMUCase {
+	wire.Build(iamUCaseSet)
 	return nil
 }
