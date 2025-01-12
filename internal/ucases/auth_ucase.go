@@ -57,7 +57,7 @@ func (u *authUCase) Register(input *dto.RegisterPayloadDTO) error {
 		return errors.New("failed to check if email exists")
 	}
 	if existingAccount != nil {
-		return domain.ErrAccountAlreadyExists
+		return domain.ErrAlreadyExists
 	}
 
 	// Hash password

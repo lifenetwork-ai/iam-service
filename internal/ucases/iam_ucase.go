@@ -1,8 +1,6 @@
 package ucases
 
 import (
-	"errors"
-
 	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
@@ -33,7 +31,7 @@ func (u *iamUCase) CreatePolicy(payload dto.PolicyPayloadDTO) (*dto.PolicyDTO, e
 		return nil, err
 	}
 	if exists {
-		return nil, errors.New("policy with this name already exists")
+		return nil, domain.ErrAlreadyExists
 	}
 
 	// Create the domain model

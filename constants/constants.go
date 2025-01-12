@@ -133,9 +133,9 @@ func (t IAMRolePolicy) String() string {
 }
 
 const (
-	AdminPolicy        IAMRolePolicy = "AdminPolicy"
-	UserPolicy         IAMRolePolicy = "UserPolicy"
-	ValidatorPolicy    IAMRolePolicy = "ValidatorPolicy"
-	DataOwnerPolicy    IAMRolePolicy = "DataOwnerPolicy"
-	DataUtilizerPolicy IAMRolePolicy = "DataUtilizerPolicy"
+	AdminPolicy        IAMRolePolicy = "Admin Policy"
+	UserPolicy         IAMRolePolicy = "User Policy"
+	ValidatorPolicy    IAMRolePolicy = "Validator Policy"
+	DataOwnerPolicy    IAMRolePolicy = "Data Owner Policy"
+	DataUtilizerPolicy IAMRolePolicy = "Data Utilizer Policy"
 )

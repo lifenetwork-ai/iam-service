@@ -8,12 +8,6 @@ var (
 	ErrInsufficientPermissions = errors.New("insufficient permissions") // Authorization failure
 )
 
-// Account Errors
-var (
-	ErrAccountAlreadyExists = errors.New("account already exists") // Account duplication
-	ErrAccountNotFound      = errors.New("account not found")      // Account lookup failure
-)
-
 // Token Errors
 var (
 	ErrInvalidToken  = errors.New("invalid token")   // Token format or content is invalid
