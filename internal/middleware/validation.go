@@ -6,11 +6,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
 	"github.com/genefriendway/human-network-auth/pkg/logger"
 )
 
+// ValidateBearerToken is a middleware that validates the Bearer token in the Authorization header.
 func ValidateBearerToken() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
@@ -35,6 +37,7 @@ func ValidateBearerToken() gin.HandlerFunc {
 	}
 }
 
+// RequiredRoles is a middleware that checks if the account has the required role.
 func RequiredRoles(authUCase interfaces.AuthUCase, allowedRoles ...string) gin.HandlerFunc {
 	roleSet := make(map[string]struct{})
 	for _, role := range allowedRoles {
@@ -42,25 +45,8 @@ func RequiredRoles(authUCase interfaces.AuthUCase, allowedRoles ...string) gin.H
 	}
 
 	return func(ctx *gin.Context) {
-		// Retrieve the token from the context
-		token, exists := ctx.Get("token")
-		if !exists {
-			httpresponse.Error(ctx, http.StatusUnauthorized, "Missing token in request", nil)
-			return
-		}
-
-		// Validate the token and fetch the account
-		accountDTO, err := authUCase.ValidateToken(token.(string))
-		if err != nil {
-			logger.GetLogger().Errorf("Token validation failed: %v", err)
-			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid or expired token", nil)
-			return
-		}
-
-		// Check if the account is missing
-		if accountDTO == nil {
-			logger.GetLogger().Error("Account information missing or invalid")
-			httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing or invalid", nil)
+		accountDTO, ok := getAuthenticatedAccount(ctx, authUCase)
+		if !ok {
 			return
 		}
 
@@ -75,4 +61,66 @@ func RequiredRoles(authUCase interfaces.AuthUCase, allowedRoles ...string) gin.H
 		ctx.Set("account", accountDTO)
 		ctx.Next()
 	}
+}
+
+// CheckPermission is a middleware that checks if the account has permission to perform an action on a resource.
+func CheckPermission(iamUCase interfaces.IAMUCase, authUCase interfaces.AuthUCase) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		accountDTO, ok := getAuthenticatedAccount(ctx, authUCase)
+		if !ok {
+			return
+		}
+
+		// Extract resource and action from the request
+		resource := ctx.Param("resource") // Assuming the resource is passed as a path parameter
+		action := ctx.Param("action")     // Assuming the action is passed as a path parameter
+
+		if resource == "" || action == "" {
+			httpresponse.Error(ctx, http.StatusBadRequest, "Resource or action not specified", nil)
+			return
+		}
+
+		// Check if the user has the required permission
+		hasPermission, err := iamUCase.CheckPermission(accountDTO.ID, resource, action)
+		if err != nil {
+			logger.GetLogger().Errorf("Permission check failed: %v", err)
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Error checking permissions", err)
+			return
+		}
+
+		if !hasPermission {
+			httpresponse.Error(ctx, http.StatusForbidden, "Permission denied", nil)
+			return
+		}
+
+		// Permission granted, continue to the next handler
+		ctx.Next()
+	}
+}
+
+// getAuthenticatedAccount is a helper function that retrieves the authenticated account from the context.
+func getAuthenticatedAccount(ctx *gin.Context, authUCase interfaces.AuthUCase) (*dto.AccountDTO, bool) {
+	// Retrieve the token from the context
+	token, exists := ctx.Get("token")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Missing token in request", nil)
+		return nil, false
+	}
+
+	// Validate the token and fetch the account
+	accountDTO, err := authUCase.ValidateToken(token.(string))
+	if err != nil {
+		logger.GetLogger().Errorf("Token validation failed: %v", err)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid or expired token", nil)
+		return nil, false
+	}
+
+	// Check if the account is missing
+	if accountDTO == nil {
+		logger.GetLogger().Error("Account information missing or invalid")
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing or invalid", nil)
+		return nil, false
+	}
+
+	return accountDTO, true
 }
