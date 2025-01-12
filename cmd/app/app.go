@@ -120,6 +120,10 @@ func initializePolicies(iamUCase interfaces.IAMUCase) {
 			Description: "Permissions for administrators",
 		},
 		{
+			Name:        constants.UserPolicy.String(),
+			Description: "Permissions for normal users",
+		},
+		{
 			Name:        constants.ValidatorPolicy.String(),
 			Description: "Permissions for validators",
 		},
@@ -174,6 +178,12 @@ func initializePermissions(iamUCase interfaces.IAMUCase) {
 		// ValidatorPolicy
 		{
 			PolicyName:  constants.ValidatorPolicy.String(),
+			Resource:    constants.ResourceAccounts.String(),
+			Action:      constants.ActionRead.String(),
+			Description: "Allows reading accounts",
+		},
+		{
+			PolicyName:  constants.ValidatorPolicy.String(),
 			Resource:    constants.ResourceDataRequests.String(),
 			Action:      constants.ActionWrite.String(),
 			Description: "Allows creating data requests",
@@ -185,6 +195,12 @@ func initializePermissions(iamUCase interfaces.IAMUCase) {
 			Description: "Allows reading data requests",
 		},
 		// DataOwnerPolicy
+		{
+			PolicyName:  constants.DataOwnerPolicy.String(),
+			Resource:    constants.ResourceAccounts.String(),
+			Action:      constants.ActionRead.String(),
+			Description: "Allows reading accounts",
+		},
 		{
 			PolicyName:  constants.DataOwnerPolicy.String(),
 			Resource:    constants.ResourceDataRequests.String(),
@@ -200,9 +216,22 @@ func initializePermissions(iamUCase interfaces.IAMUCase) {
 		// DataUtilizerPolicy
 		{
 			PolicyName:  constants.DataUtilizerPolicy.String(),
+			Resource:    constants.ResourceAccounts.String(),
+			Action:      constants.ActionRead.String(),
+			Description: "Allows reading accounts",
+		},
+		{
+			PolicyName:  constants.DataUtilizerPolicy.String(),
 			Resource:    constants.ResourceDataRequests.String(),
 			Action:      constants.ActionRead.String(),
 			Description: "Allows reading data requests",
+		},
+		// UserPolicy
+		{
+			PolicyName:  constants.UserPolicy.String(),
+			Resource:    constants.ResourceAccounts.String(),
+			Action:      constants.ActionRead.String(),
+			Description: "Allows reading accounts",
 		},
 	}
 
