@@ -44,6 +44,7 @@ func (t AccountRole) String() string {
 }
 
 const (
+	User         AccountRole = "USER"
 	DataOwner    AccountRole = "DATA_OWNER"
 	DataUtilizer AccountRole = "DATA_UTILIZER"
 	Validator    AccountRole = "VALIDATOR"

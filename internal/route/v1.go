@@ -43,6 +43,7 @@ func RegisterRoutes(
 		middleware.RequiredRoles(
 			authUCase,
 			constants.Admin.String(),
+			constants.User.String(),
 			constants.DataOwner.String(),
 			constants.DataUtilizer.String(),
 			constants.Validator.String(),
@@ -51,7 +52,7 @@ func RegisterRoutes(
 	)
 	appRouterAccount.PUT(
 		"/role",
-		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
+		middleware.RequiredRoles(authUCase, constants.User.String()),
 		accountHandler.UpdateAccountRole,
 	)
 
