@@ -103,7 +103,6 @@ func (t IAMResource) String() string {
 	return string(t)
 }
 
-// IAMResource Constants
 const (
 	ResourceAccounts     IAMResource = "accounts"
 	ResourceValidators   IAMResource = "validators"
@@ -117,7 +116,6 @@ func (t IAMAction) String() string {
 	return string(t)
 }
 
-// IAMAction Constants
 const (
 	ActionRead    IAMAction = "read"
 	ActionWrite   IAMAction = "write"
@@ -125,4 +123,19 @@ const (
 	ActionDelete  IAMAction = "delete"
 	ActionApprove IAMAction = "approve"
 	ActionReject  IAMAction = "reject"
+)
+
+// IAMRolePolicy represents a type for IAM role policies
+type IAMRolePolicy string
+
+func (t IAMRolePolicy) String() string {
+	return string(t)
+}
+
+const (
+	AdminPolicy        IAMRolePolicy = "AdminPolicy"
+	UserPolicy         IAMRolePolicy = "UserPolicy"
+	ValidatorPolicy    IAMRolePolicy = "ValidatorPolicy"
+	DataOwnerPolicy    IAMRolePolicy = "DataOwnerPolicy"
+	DataUtilizerPolicy IAMRolePolicy = "DataUtilizerPolicy"
 )
