@@ -33,6 +33,7 @@ var iamUCaseSet = wire.NewSet(
 	repositories.NewIAMRepository,
 	repositories.NewPolicyRepository,
 	repositories.NewAccountRepository,
+	repositories.NewPermissionRepository,
 	ucases.NewIAMUCase,
 )
 

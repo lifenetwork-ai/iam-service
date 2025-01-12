@@ -81,3 +81,11 @@ type CheckPermissionPayloadDTO struct {
 	Resource string `json:"resource" validate:"required"`
 	Action   string `json:"action" validate:"required"`
 }
+
+// PermissionPayloadDTO defines the payload for creating a permission
+type PermissionPayloadDTO struct {
+	PolicyName  string `json:"policy_name" validate:"required"`
+	Resource    string `json:"resource" validate:"required"`
+	Action      string `json:"action" validate:"required"`
+	Description string `json:"description,omitempty"`
+}

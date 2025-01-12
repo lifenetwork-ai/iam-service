@@ -7,20 +7,23 @@ import (
 )
 
 type iamUCase struct {
-	iamRepository     interfaces.IAMRepository
-	policyRepository  interfaces.PolicyRepository
-	accountRepository interfaces.AccountRepository
+	iamRepository        interfaces.IAMRepository
+	policyRepository     interfaces.PolicyRepository
+	accountRepository    interfaces.AccountRepository
+	permissionRepository interfaces.PermissionRepository
 }
 
 func NewIAMUCase(
 	iamRepository interfaces.IAMRepository,
 	policyRepository interfaces.PolicyRepository,
 	accountRepository interfaces.AccountRepository,
+	permissionRepository interfaces.PermissionRepository,
 ) interfaces.IAMUCase {
 	return &iamUCase{
-		iamRepository:     iamRepository,
-		policyRepository:  policyRepository,
-		accountRepository: accountRepository,
+		iamRepository:        iamRepository,
+		policyRepository:     policyRepository,
+		accountRepository:    accountRepository,
+		permissionRepository: permissionRepository,
 	}
 }
 
@@ -77,4 +80,40 @@ func (u *iamUCase) CheckPermission(accountID, resource, action string) (bool, er
 	}
 
 	return false, nil
+}
+
+// CreatePermission creates a new permission for a policy.
+func (u *iamUCase) CreatePermission(payload dto.PermissionPayloadDTO) error {
+	// Fetch the policy by name
+	policy, err := u.policyRepository.GetPolicyByName(payload.PolicyName)
+	if err != nil {
+		if err == domain.ErrDataNotFound {
+			return domain.ErrDataNotFound // Policy not found
+		}
+		return err // Other errors
+	}
+
+	// Check if the permission already exists
+	exists, err := u.permissionRepository.PermissionExists(policy.ID, payload.Resource, payload.Action)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return domain.ErrAlreadyExists
+	}
+
+	// Create the domain model for the permission
+	permission := &domain.Permission{
+		PolicyID:    policy.ID,
+		Resource:    payload.Resource,
+		Action:      payload.Action,
+		Description: payload.Description,
+	}
+
+	// Save the permission in the repository
+	if err := u.permissionRepository.CreatePermission(permission); err != nil {
+		return err
+	}
+
+	return nil
 }

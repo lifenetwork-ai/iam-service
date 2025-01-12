@@ -37,3 +37,15 @@ func (r *policyRepository) CheckPolicyExistsByName(name string) (bool, error) {
 func (r *policyRepository) CreatePolicy(policy *domain.Policy) error {
 	return r.db.Create(policy).Error
 }
+
+func (r *policyRepository) GetPolicyByName(name string) (*domain.Policy, error) {
+	var policy domain.Policy
+	err := r.db.Where("name = ?", name).First(&policy).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, domain.ErrDataNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &policy, nil
+}

@@ -53,6 +53,9 @@ func RunApp(config *conf.Configuration) {
 	// Initialize predefined policies
 	initializePolicies(iamUCase)
 
+	// Initialize predefined permissions
+	initializePermissions(iamUCase)
+
 	// Register routes
 	routev1.RegisterRoutes(
 		ctx,
@@ -140,6 +143,81 @@ func initializePolicies(iamUCase interfaces.IAMUCase) {
 			}
 		} else {
 			pkglogger.GetLogger().Infof("Policy '%s' created successfully.\n", policy.Name)
+		}
+	}
+}
+
+// Initialize permissions for predefined policies
+func initializePermissions(iamUCase interfaces.IAMUCase) {
+	// Predefined permissions
+	// TODO: Add more permissions as needed
+	permissions := []dto.PermissionPayloadDTO{
+		// AdminPolicy
+		{
+			PolicyName:  constants.AdminPolicy.String(),
+			Resource:    constants.ResourceAccounts.String(),
+			Action:      constants.ActionRead.String(),
+			Description: "Allows reading accounts",
+		},
+		{
+			PolicyName:  constants.AdminPolicy.String(),
+			Resource:    constants.ResourceAccounts.String(),
+			Action:      constants.ActionUpdate.String(),
+			Description: "Allows updating accounts",
+		},
+		{
+			PolicyName:  constants.AdminPolicy.String(),
+			Resource:    constants.ResourceAccounts.String(),
+			Action:      constants.ActionDelete.String(),
+			Description: "Allows deleting accounts",
+		},
+		// ValidatorPolicy
+		{
+			PolicyName:  constants.ValidatorPolicy.String(),
+			Resource:    constants.ResourceDataRequests.String(),
+			Action:      constants.ActionWrite.String(),
+			Description: "Allows creating data requests",
+		},
+		{
+			PolicyName:  constants.ValidatorPolicy.String(),
+			Resource:    constants.ResourceDataRequests.String(),
+			Action:      constants.ActionRead.String(),
+			Description: "Allows reading data requests",
+		},
+		// DataOwnerPolicy
+		{
+			PolicyName:  constants.DataOwnerPolicy.String(),
+			Resource:    constants.ResourceDataRequests.String(),
+			Action:      constants.ActionApprove.String(),
+			Description: "Allows approving data requests",
+		},
+		{
+			PolicyName:  constants.DataOwnerPolicy.String(),
+			Resource:    constants.ResourceValidators.String(),
+			Action:      constants.ActionRead.String(),
+			Description: "Allows reading validator details",
+		},
+		// DataUtilizerPolicy
+		{
+			PolicyName:  constants.DataUtilizerPolicy.String(),
+			Resource:    constants.ResourceDataRequests.String(),
+			Action:      constants.ActionRead.String(),
+			Description: "Allows reading data requests",
+		},
+	}
+
+	for _, permission := range permissions {
+		if err := iamUCase.CreatePermission(permission); err != nil {
+			if err.Error() == domain.ErrAlreadyExists.Error() {
+				pkglogger.GetLogger().Infof("Permission '%s:%s' already exists for policy '%s', skipping...\n",
+					permission.Resource, permission.Action, permission.PolicyName)
+			} else {
+				pkglogger.GetLogger().Fatalf("Failed to initialize permission '%s:%s' for policy '%s': %v\n",
+					permission.Resource, permission.Action, permission.PolicyName, err)
+			}
+		} else {
+			pkglogger.GetLogger().Infof("Permission '%s:%s' created successfully for policy '%s'.\n",
+				permission.Resource, permission.Action, permission.PolicyName)
 		}
 	}
 }

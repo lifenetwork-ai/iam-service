@@ -9,6 +9,7 @@ type IAMUCase interface {
 	CreatePolicy(payload dto.PolicyPayloadDTO) (*dto.PolicyDTO, error)
 	AssignPolicyToAccount(accountID, policyID string) error
 	CheckPermission(accountID, resource, action string) (bool, error)
+	CreatePermission(payload dto.PermissionPayloadDTO) error
 }
 
 type IAMRepository interface {
