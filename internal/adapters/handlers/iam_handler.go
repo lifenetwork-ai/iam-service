@@ -120,57 +120,6 @@ func (h *iamHandler) AssignPolicyToAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Policy assigned successfully"})
 }
 
-// CheckPermission checks if the authenticated user has permission to perform an action on a resource.
-// @Summary Check user permissions
-// @Description Validates if the authenticated user has the required permission to access a resource.
-// @Tags IAM
-// @Accept json
-// @Produce json
-// @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
-// @Param payload body dto.CheckPermissionPayloadDTO true "Payload containing resource and action"
-// @Success 200 {object} map[string]interface{} "Permission check result"
-// @Failure 400 {object} response.GeneralError "Invalid payload"
-// @Failure 401 {object} response.GeneralError "Unauthorized"
-// @Failure 403 {object} response.GeneralError "Forbidden"
-// @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/iam/check-permission [post]
-func (h *iamHandler) CheckPermission(ctx *gin.Context) {
-	// Retrieve the token from the context
-	token, exists := ctx.Get("token")
-	if !exists {
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", nil)
-		return
-	}
-
-	accountDTO, err := h.authUCase.ValidateToken(token.(string))
-	if err != nil {
-		logger.GetLogger().Errorf("Token validation failed: %v", err)
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
-		return
-	}
-
-	var payload dto.CheckPermissionPayloadDTO
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		logger.GetLogger().Errorf("Invalid payload: %v", err)
-		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
-		return
-	}
-
-	hasPermission, err := h.iamUCase.CheckPermission(accountDTO.ID, payload.Resource, payload.Action)
-	if err != nil {
-		logger.GetLogger().Errorf("Permission check failed: %v", err)
-		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to check permission", err)
-		return
-	}
-
-	if !hasPermission {
-		httpresponse.Error(ctx, http.StatusForbidden, "Permission denied", nil)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Permission granted"})
-}
-
 // GetPoliciesWithPermissions retrieves all policies and their associated permissions.
 // @Summary Get policies with permissions
 // @Description Fetches a list of IAM policies along with their associated permissions.

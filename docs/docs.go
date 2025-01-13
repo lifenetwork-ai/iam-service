@@ -725,72 +725,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/iam/check-permission": {
-            "post": {
-                "description": "Validates if the authenticated user has the required permission to access a resource.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "IAM"
-                ],
-                "summary": "Check user permissions",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Payload containing resource and action",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.CheckPermissionPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Permission check result",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/iam/policies": {
             "get": {
                 "description": "Fetches a list of IAM policies along with their associated permissions.",
@@ -1119,21 +1053,6 @@ const docTemplate = `{
             ],
             "properties": {
                 "policy_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.CheckPermissionPayloadDTO": {
-            "type": "object",
-            "required": [
-                "action",
-                "resource"
-            ],
-            "properties": {
-                "action": {
-                    "type": "string"
-                },
-                "resource": {
                     "type": "string"
                 }
             }

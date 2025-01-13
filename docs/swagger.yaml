@@ -64,16 +64,6 @@ definitions:
     required:
     - policy_id
     type: object
-  dto.CheckPermissionPayloadDTO:
-    properties:
-      action:
-        type: string
-      resource:
-        type: string
-    required:
-    - action
-    - resource
-    type: object
   dto.DataAccessRequestDTO:
     properties:
       created_at:
@@ -787,51 +777,6 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
       summary: Assign a policy to an account
-      tags:
-      - IAM
-  /api/v1/iam/check-permission:
-    post:
-      consumes:
-      - application/json
-      description: Validates if the authenticated user has the required permission
-        to access a resource.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Payload containing resource and action
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CheckPermissionPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Permission check result
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Check user permissions
       tags:
       - IAM
   /api/v1/iam/policies:

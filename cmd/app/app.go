@@ -154,7 +154,6 @@ func initializePolicies(iamUCase interfaces.IAMUCase) {
 // Initialize permissions for predefined policies
 func initializePermissions(iamUCase interfaces.IAMUCase) {
 	// Predefined permissions
-	// TODO: Add more permissions as needed
 	permissions := []dto.PermissionPayloadDTO{
 		// AdminPolicy
 		{

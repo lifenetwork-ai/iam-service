@@ -66,31 +66,26 @@ func RegisterRoutes(
 
 	// SECTION: IAM
 	appRouterIAM := v1.Group("iam")
-	appRouterIAM.Use(middleware.ValidateBearerToken())
+	appRouterIAM.Use(
+		middleware.ValidateBearerToken(),
+		middleware.RequiredRoles(authUCase, constants.Admin.String()),
+	)
 	iamHandler := handlers.NewIAMHandler(iamUCase, authUCase)
 	appRouterIAM.POST(
 		"/policies",
-		middleware.RequiredRoles(authUCase, constants.Admin.String()),
 		iamHandler.CreatePolicy,
 	)
 	appRouterIAM.GET(
 		"/policies",
-		middleware.RequiredRoles(authUCase, constants.Admin.String()),
 		iamHandler.GetPoliciesWithPermissions,
 	)
 	appRouterIAM.POST(
 		"/policies/permissions",
-		middleware.RequiredRoles(authUCase, constants.Admin.String()),
 		iamHandler.AssignPermissionToPolicy,
 	)
 	appRouterIAM.POST(
 		"/accounts/:accountID/policies",
-		middleware.RequiredRoles(authUCase, constants.Admin.String()),
 		iamHandler.AssignPolicyToAccount,
-	)
-	appRouterIAM.POST(
-		"/check-permission",
-		iamHandler.CheckPermission,
 	)
 
 	// SECTION: data access
