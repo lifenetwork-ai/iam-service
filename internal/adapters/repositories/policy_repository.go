@@ -55,3 +55,16 @@ func (r *policyRepository) GetAllPolicies() ([]domain.Policy, error) {
 	err := r.db.Find(&policies).Error
 	return policies, err
 }
+
+// GetPolicyByID retrieves a policy by its ID.
+func (r *policyRepository) GetPolicyByID(id string) (*domain.Policy, error) {
+	var policy domain.Policy
+	err := r.db.Where("id = ?", id).First(&policy).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, domain.ErrDataNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &policy, nil
+}

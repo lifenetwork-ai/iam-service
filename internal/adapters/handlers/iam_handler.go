@@ -202,3 +202,64 @@ func (h *iamHandler) GetPoliciesWithPermissions(ctx *gin.Context) {
 	// Respond with the data
 	ctx.JSON(http.StatusOK, policiesWithPermissions)
 }
+
+// AssignPermissionToPolicy assigns a permission to an existing policy.
+// @Summary Assign a permission to a policy
+// @Description Adds a new permission to an existing IAM policy.
+// @Tags IAM
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer access token"
+// @Param payload body dto.PermissionPayloadDTO true "Payload for assigning permission"
+// @Success 201 {object} map[string]interface{} "Permission assigned successfully"
+// @Failure 400 {object} response.GeneralError "Invalid payload or missing policy"
+// @Failure 404 {object} response.GeneralError "Policy not found"
+// @Failure 409 {object} response.GeneralError "Permission already exists"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/iam/policies/permissions [post]
+func (h *iamHandler) AssignPermissionToPolicy(ctx *gin.Context) {
+	// Retrieve the authenticated account from the context
+	_, exists := ctx.Get("account")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
+		return
+	}
+
+	// Parse and validate the payload
+	var payload dto.PermissionPayloadDTO
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload format", err)
+		return
+	}
+
+	// Validate resource and action
+	if payload.Resource == "" || payload.Action == "" {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Resource and action are required", nil)
+		return
+	}
+
+	// Add the permission to the policy
+	err := h.iamUCase.CreatePermission(dto.PermissionPayloadDTO{
+		PolicyID:    payload.PolicyID,
+		Resource:    payload.Resource,
+		Action:      payload.Action,
+		Description: payload.Description,
+	})
+	if err != nil {
+		if errors.Is(err, domain.ErrDataNotFound) {
+			httpresponse.Error(ctx, http.StatusNotFound, "Policy not found", nil)
+		} else if errors.Is(err, domain.ErrAlreadyExists) {
+			httpresponse.Error(ctx, http.StatusConflict, "Permission already exists for this policy", nil)
+		} else {
+			logger.GetLogger().Errorf("Failed to assign permission: %v", err)
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to assign permission", err)
+		}
+		return
+	}
+
+	// Respond with success
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "Permission assigned successfully",
+	})
+}

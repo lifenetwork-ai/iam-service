@@ -79,6 +79,11 @@ func RegisterRoutes(
 		iamHandler.GetPoliciesWithPermissions,
 	)
 	appRouterIAM.POST(
+		"/policies/permissions",
+		middleware.RequiredRoles(authUCase, constants.Admin.String()),
+		iamHandler.AssignPermissionToPolicy,
+	)
+	appRouterIAM.POST(
 		"/accounts/:accountID/policies",
 		middleware.RequiredRoles(authUCase, constants.Admin.String()),
 		iamHandler.AssignPolicyToAccount,

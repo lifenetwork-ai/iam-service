@@ -84,8 +84,18 @@ func (u *iamUCase) CheckPermission(accountID, resource, action string) (bool, er
 
 // CreatePermission creates a new permission for a policy.
 func (u *iamUCase) CreatePermission(payload dto.PermissionPayloadDTO) error {
-	// Fetch the policy by name
-	policy, err := u.policyRepository.GetPolicyByName(payload.PolicyName)
+	if payload.PolicyID != "" && payload.PolicyName != "" {
+		return domain.ErrInvalidParameters
+	}
+
+	// Fetch the policy by ID or Name
+	var policy *domain.Policy
+	var err error
+	if payload.PolicyID != "" {
+		policy, err = u.policyRepository.GetPolicyByID(payload.PolicyID)
+	} else {
+		policy, err = u.policyRepository.GetPolicyByName(payload.PolicyName)
+	}
 	if err != nil {
 		if err == domain.ErrDataNotFound {
 			return domain.ErrDataNotFound // Policy not found

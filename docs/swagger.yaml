@@ -166,6 +166,27 @@ definitions:
         description: Timestamp of last update
         type: string
     type: object
+  dto.PermissionPayloadDTO:
+    properties:
+      action:
+        description: The action the permission allows
+        type: string
+      description:
+        description: Optional description of the permission
+        type: string
+      policy_id:
+        description: Either PolicyID or PolicyName is required
+        type: string
+      policy_name:
+        description: Either PolicyID or PolicyName is required
+        type: string
+      resource:
+        description: The resource the permission applies to
+        type: string
+    required:
+    - action
+    - resource
+    type: object
   dto.PolicyDTO:
     properties:
       created_at:
@@ -889,6 +910,50 @@ paths:
           schema:
             $ref: '#/definitions/response.GeneralError'
       summary: Create a new policy
+      tags:
+      - IAM
+  /api/v1/iam/policies/permissions:
+    post:
+      consumes:
+      - application/json
+      description: Adds a new permission to an existing IAM policy.
+      parameters:
+      - description: Bearer access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Payload for assigning permission
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PermissionPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Permission assigned successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload or missing policy
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: Policy not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "409":
+          description: Permission already exists
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Assign a permission to a policy
       tags:
       - IAM
   /api/v1/validators/active:
