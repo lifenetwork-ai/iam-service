@@ -156,3 +156,56 @@ func RequiredAPIKey(accountUCase interfaces.AccountUCase) gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+// APIKeyWithPermission is a middleware that validates the API key and checks if the account has the required permission.
+func APIKeyWithPermission(
+	accountUCase interfaces.AccountUCase,
+	iamUCase interfaces.IAMUCase,
+	resource string,
+	action string,
+) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Retrieve API key from the header
+		apiKey := ctx.GetHeader("X-API-Key")
+		if apiKey == "" {
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Missing API Key", nil)
+			ctx.Abort()
+			return
+		}
+
+		// Validate the API key and fetch the account
+		account, err := accountUCase.FindAccountByAPIKey(apiKey)
+		if err != nil {
+			logger.GetLogger().Errorf("Error validating API key: %v", err)
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid API Key", nil)
+			ctx.Abort()
+			return
+		}
+
+		if account == nil {
+			logger.GetLogger().Warn("API key does not match any account")
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid API Key", nil)
+			ctx.Abort()
+			return
+		}
+
+		// Check if the account has the required permission
+		hasPermission, err := iamUCase.CheckPermission(account.ID, resource, action)
+		if err != nil {
+			logger.GetLogger().Errorf("Permission check failed: %v", err)
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Error checking permissions", err)
+			ctx.Abort()
+			return
+		}
+
+		if !hasPermission {
+			httpresponse.Error(ctx, http.StatusForbidden, "Permission denied", nil)
+			ctx.Abort()
+			return
+		}
+
+		// Add account to the context for downstream handlers
+		ctx.Set("account", account)
+		ctx.Next()
+	}
+}
