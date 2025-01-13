@@ -268,6 +268,19 @@ func (u *accountUCase) FindAccountByID(id string) (*dto.AccountDTO, error) {
 	return account.ToDTO(), nil
 }
 
+func (u *accountUCase) FindAccountByAPIKey(apiKey string) (*dto.AccountDTO, error) {
+	account, err := u.accountRepository.FindAccountByAPIKey(apiKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch account by API key: %w", err)
+	}
+
+	if account == nil {
+		return nil, nil
+	}
+
+	return account.ToDTO(), nil
+}
+
 // UpdateAccount updates an existing account's details.
 func (u *accountUCase) UpdateAccount(accountDTO *dto.AccountDTO) error {
 	// Fetch the existing account to ensure it exists

@@ -124,3 +124,35 @@ func getAuthenticatedAccount(ctx *gin.Context, authUCase interfaces.AuthUCase) (
 
 	return accountDTO, true
 }
+
+func RequiredAPIKey(accountUCase interfaces.AccountUCase) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Retrieve API key from the header
+		apiKey := ctx.GetHeader("X-API-Key")
+		if apiKey == "" {
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Missing API Key", nil)
+			ctx.Abort()
+			return
+		}
+
+		// Use the account use case to validate the API key
+		account, err := accountUCase.FindAccountByAPIKey(apiKey)
+		if err != nil {
+			logger.GetLogger().Errorf("Error validating API key: %v", err)
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid API Key", nil)
+			ctx.Abort()
+			return
+		}
+
+		if account == nil {
+			logger.GetLogger().Warn("API key does not match any account")
+			httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid API Key", nil)
+			ctx.Abort()
+			return
+		}
+
+		// Add the account to the context for downstream handlers
+		ctx.Set("account", account)
+		ctx.Next()
+	}
+}

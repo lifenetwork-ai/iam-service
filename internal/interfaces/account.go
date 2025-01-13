@@ -34,6 +34,7 @@ type AccountRepository interface {
 type AccountUCase interface {
 	FindAccountByEmail(email string) (*dto.AccountDTO, error)
 	FindAccountByID(id string) (*dto.AccountDTO, error)
+	FindAccountByAPIKey(apiKey string) (*dto.AccountDTO, error)
 	FindDetailByAccountID(account *dto.AccountDTO, role constants.AccountRole) (*dto.AccountDetailDTO, error)
 	GetActiveValidators() ([]dto.AccountDetailDTO, error)
 	UpdateAccount(accountDTO *dto.AccountDTO) error
