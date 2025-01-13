@@ -55,6 +55,11 @@ func RegisterRoutes(
 		middleware.RequiredRoles(authUCase, constants.User.String()),
 		accountHandler.UpdateAccountRole,
 	)
+	appRouterAccount.PUT(
+		"/api-key",
+		middleware.RequiredRoles(authUCase, constants.User.String()),
+		accountHandler.UpdateAPIKey,
+	)
 
 	// SECTION: validator
 	appRouterValidator := v1.Group("validators")

@@ -296,6 +296,44 @@ definitions:
 info:
   contact: {}
 paths:
+  /api/v1/account/api-key:
+    put:
+      consumes:
+      - application/json
+      description: Generate or update the API key for an account.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API key updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: Account not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Create or update API key
+      tags:
+      - account
   /api/v1/account/me:
     get:
       consumes:

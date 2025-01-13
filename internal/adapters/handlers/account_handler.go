@@ -10,6 +10,7 @@ import (
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
 	"github.com/genefriendway/human-network-auth/pkg/logger"
+	"github.com/genefriendway/human-network-auth/pkg/utils"
 )
 
 type accountHandler struct {
@@ -196,4 +197,60 @@ func (h *accountHandler) syncAccountPolicies(accountID string, role constants.Ac
 	}
 
 	return nil
+}
+
+// UpdateAPIKey creates or updates an API key for a specific account.
+// @Summary Create or update API key
+// @Description Generate or update the API key for an account.
+// @Tags account
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
+// @Success 200 {object} map[string]interface{} "API key updated successfully"
+// @Failure 401 {object} response.GeneralError "Unauthorized"
+// @Failure 403 {object} response.GeneralError "Forbidden"
+// @Failure 404 {object} response.GeneralError "Account not found"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/account/api-key [put]
+func (h *accountHandler) UpdateAPIKey(ctx *gin.Context) {
+	// Retrieve the authenticated account from the context
+	accountDTO, exists := ctx.Get("account")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
+		return
+	}
+
+	// Fetch the account from the database
+	account, err := h.accountUCase.FindAccountByID(accountDTO.(*dto.AccountDTO).ID)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to fetch account: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Error fetching account", err)
+		return
+	}
+	if account == nil {
+		httpresponse.Error(ctx, http.StatusNotFound, "Account not found", nil)
+		return
+	}
+
+	// Generate a new API key
+	newAPIKey, err := utils.GenerateAPIKey()
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to generate API key: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Error generating API key", err)
+		return
+	}
+
+	// Update the account with the new API key
+	account.APIKey = &newAPIKey
+	if err := h.accountUCase.UpdateAccount(account); err != nil {
+		logger.GetLogger().Errorf("Failed to update account with API key: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Error updating account with API key", err)
+		return
+	}
+
+	// Respond with success and return the new API key
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "API key updated successfully",
+		"api_key": newAPIKey,
+	})
 }
