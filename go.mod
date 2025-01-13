@@ -7,6 +7,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.12
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v4 v4.5.1
+	github.com/google/uuid v1.4.0
 	github.com/google/wire v0.6.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/patrickmn/go-cache v2.1.0+incompatible

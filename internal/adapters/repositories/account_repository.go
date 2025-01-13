@@ -61,6 +61,15 @@ func (r *accountRepository) FindAccountByPhoneNumber(phone string) (*domain.Acco
 	return &account, nil
 }
 
+func (r *accountRepository) FindAccountByAPIKey(apiKey string) (*domain.Account, error) {
+	var account domain.Account
+	err := r.db.Where("api_key = ?", apiKey).First(&account).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return &account, err
+}
+
 func (r *accountRepository) FindAccountByID(id string) (*domain.Account, error) {
 	var account domain.Account
 	err := r.db.Where("id = ?", id).First(&account).Error

@@ -13,6 +13,7 @@ type AccountRepository interface {
 	FindAccountByEmail(email string) (*domain.Account, error)
 	FindAccountByPhoneNumber(phone string) (*domain.Account, error)
 	FindAccountByID(id string) (*domain.Account, error)
+	FindAccountByAPIKey(apiKey string) (*domain.Account, error)
 	CreateAccount(account *domain.Account) error
 	UpdateAccount(account *domain.Account) error
 
@@ -36,4 +37,6 @@ type AccountUCase interface {
 	FindDetailByAccountID(account *dto.AccountDTO, role constants.AccountRole) (*dto.AccountDetailDTO, error)
 	GetActiveValidators() ([]dto.AccountDetailDTO, error)
 	UpdateAccount(accountDTO *dto.AccountDTO) error
+	GenerateAndAssignAPIKey(accountID string) (string, error)
+	RevokeAPIKey(accountID string) error
 }

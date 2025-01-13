@@ -6,8 +6,11 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/google/uuid"
+
 	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	"github.com/genefriendway/human-network-auth/pkg/crypto"
@@ -290,4 +293,41 @@ func (u *accountUCase) UpdateAccount(accountDTO *dto.AccountDTO) error {
 	}
 
 	return nil
+}
+
+func (u *accountUCase) GenerateAndAssignAPIKey(accountID string) (string, error) {
+	// Fetch the account
+	account, err := u.accountRepository.FindAccountByID(accountID)
+	if err != nil {
+		return "", err
+	}
+	if account == nil {
+		return "", domain.ErrDataNotFound
+	}
+
+	// Generate a unique API key
+	apiKey := uuid.NewString()
+
+	// Update the account with the new API key
+	account.APIKey = &apiKey
+	if err := u.accountRepository.UpdateAccount(account); err != nil {
+		return "", err
+	}
+
+	return apiKey, nil
+}
+
+func (u *accountUCase) RevokeAPIKey(accountID string) error {
+	// Find the account by ID
+	account, err := u.accountRepository.FindAccountByID(accountID)
+	if err != nil {
+		return err
+	}
+	if account == nil {
+		return domain.ErrDataNotFound
+	}
+
+	// Set the API key to nil
+	account.APIKey = nil // Ensure the API key is cleared by setting it to nil
+	return u.accountRepository.UpdateAccount(account)
 }
