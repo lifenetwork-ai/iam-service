@@ -49,3 +49,9 @@ func (r *policyRepository) GetPolicyByName(name string) (*domain.Policy, error) 
 	}
 	return &policy, nil
 }
+
+func (r *policyRepository) GetAllPolicies() ([]domain.Policy, error) {
+	var policies []domain.Policy
+	err := r.db.Find(&policies).Error
+	return policies, err
+}

@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/genefriendway/human-network-auth/internal/dto"
+)
 
 // Permission represents a permission in the IAM system.
 type Permission struct {
@@ -16,4 +20,16 @@ type Permission struct {
 // TableName overrides the default table name for GORM.
 func (m *Permission) TableName() string {
 	return "iam_permissions"
+}
+
+func (m *Permission) ToDTO() dto.PermissionDTO {
+	return dto.PermissionDTO{
+		ID:          m.ID,
+		PolicyID:    m.PolicyID,
+		Resource:    m.Resource,
+		Action:      m.Action,
+		Description: m.Description,
+		CreatedAt:   m.CreatedAt,
+		UpdatedAt:   m.UpdatedAt,
+	}
 }

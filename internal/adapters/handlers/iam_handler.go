@@ -40,6 +40,13 @@ func NewIAMHandler(iamUCase interfaces.IAMUCase, authUCase interfaces.AuthUCase)
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/iam/policies [post]
 func (h *iamHandler) CreatePolicy(ctx *gin.Context) {
+	// Retrieve the authenticated account from the context
+	_, exists := ctx.Get("account")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
+		return
+	}
+
 	// Parse and validate the payload
 	var payload dto.PolicyPayloadDTO
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
@@ -78,6 +85,14 @@ func (h *iamHandler) CreatePolicy(ctx *gin.Context) {
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/iam/accounts/{accountID}/policies [post]
 func (h *iamHandler) AssignPolicyToAccount(ctx *gin.Context) {
+	// Retrieve the authenticated account from the context
+	_, exists := ctx.Get("account")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
+		return
+	}
+
+	// Parse the account ID from the request
 	accountID := ctx.Param("accountID")
 	if accountID == "" {
 		httpresponse.Error(ctx, http.StatusBadRequest, "Account ID is required", nil)
@@ -154,4 +169,36 @@ func (h *iamHandler) CheckPermission(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Permission granted"})
+}
+
+// GetPoliciesWithPermissions retrieves all policies and their associated permissions.
+// @Summary Get policies with permissions
+// @Description Fetches a list of IAM policies along with their associated permissions.
+// @Tags IAM
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer access token"
+// @Success 200 {array} dto.PolicyWithPermissionsDTO "List of policies with permissions"
+// @Failure 401 {object} response.GeneralError "Unauthorized"
+// @Failure 403 {object} response.GeneralError "Insufficient permissions"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/iam/policies [get]
+func (h *iamHandler) GetPoliciesWithPermissions(ctx *gin.Context) {
+	// Retrieve the authenticated account from the context
+	_, exists := ctx.Get("account")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Unauthorized access: account information missing", nil)
+		return
+	}
+
+	// Fetch policies with permissions
+	policiesWithPermissions, err := h.iamUCase.GetPoliciesWithPermissions()
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to fetch policies with permissions: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch policies and permissions", err)
+		return
+	}
+
+	// Respond with the data
+	ctx.JSON(http.StatusOK, policiesWithPermissions)
 }

@@ -792,6 +792,57 @@ const docTemplate = `{
             }
         },
         "/api/v1/iam/policies": {
+            "get": {
+                "description": "Fetches a list of IAM policies along with their associated permissions.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IAM"
+                ],
+                "summary": "Get policies with permissions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of policies with permissions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.PolicyWithPermissionsDTO"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Adds a new IAM policy to the system. Only accessible to Admins.",
                 "consumes": [
@@ -1121,6 +1172,59 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.PermissionDTO": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "The action this permission allows",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "Timestamp of permission creation",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Optional description of the permission",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Unique ID for the permission",
+                    "type": "string"
+                },
+                "policy_id": {
+                    "description": "Foreign key referencing IAMPolicy",
+                    "type": "string"
+                },
+                "resource": {
+                    "description": "The resource this permission applies to",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "Timestamp of last update",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PolicyDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.PolicyPayloadDTO": {
             "type": "object",
             "required": [
@@ -1134,6 +1238,20 @@ const docTemplate = `{
                 "name": {
                     "description": "Name of the policy",
                     "type": "string"
+                }
+            }
+        },
+        "dto.PolicyWithPermissionsDTO": {
+            "type": "object",
+            "properties": {
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionDTO"
+                    }
+                },
+                "policy": {
+                    "$ref": "#/definitions/dto.PolicyDTO"
                 }
             }
         },

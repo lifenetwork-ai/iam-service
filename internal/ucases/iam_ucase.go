@@ -117,3 +117,36 @@ func (u *iamUCase) CreatePermission(payload dto.PermissionPayloadDTO) error {
 
 	return nil
 }
+
+// GetPoliciesWithPermissions retrieves all policies and their associated permissions.
+func (u *iamUCase) GetPoliciesWithPermissions() ([]dto.PolicyWithPermissionsDTO, error) {
+	// Fetch all policies
+	policies, err := u.policyRepository.GetAllPolicies()
+	if err != nil {
+		return nil, err
+	}
+
+	// Map policies to DTOs with permissions
+	var result []dto.PolicyWithPermissionsDTO
+	for _, policy := range policies {
+		// Fetch permissions for the policy
+		permissions, err := u.iamRepository.GetPermissionsByPolicyID(policy.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Convert permissions to DTOs
+		permissionDTOs := make([]dto.PermissionDTO, len(permissions))
+		for i, permission := range permissions {
+			permissionDTOs[i] = permission.ToDTO()
+		}
+
+		// Add policy with its permissions to the result
+		result = append(result, dto.PolicyWithPermissionsDTO{
+			Policy:      *policy.ToDTO(),
+			Permissions: permissionDTOs,
+		})
+	}
+
+	return result, nil
+}

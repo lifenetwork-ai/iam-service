@@ -9,4 +9,5 @@ type PolicyRepository interface {
 	CreatePolicy(policy *domain.Policy) error
 	CheckPolicyExistsByName(name string) (bool, error)
 	GetPolicyByName(name string) (*domain.Policy, error)
+	GetAllPolicies() ([]domain.Policy, error)
 }

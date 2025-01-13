@@ -43,3 +43,9 @@ func (r *iamRepository) GetAccountPermissions(accountID string) ([]domain.Permis
 		Scan(&permissions).Error
 	return permissions, err
 }
+
+func (r *iamRepository) GetPermissionsByPolicyID(policyID string) ([]domain.Permission, error) {
+	var permissions []domain.Permission
+	err := r.db.Where("policy_id = ?", policyID).Find(&permissions).Error
+	return permissions, err
+}
