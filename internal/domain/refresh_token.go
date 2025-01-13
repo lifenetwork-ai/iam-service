@@ -13,6 +13,6 @@ type RefreshToken struct {
 }
 
 // TableName specifies the table name for GORM
-func (RefreshToken) TableName() string {
+func (m *RefreshToken) TableName() string {
 	return "refresh_tokens"
 }

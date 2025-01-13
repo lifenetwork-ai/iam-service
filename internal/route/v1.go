@@ -22,51 +22,78 @@ func RegisterRoutes(
 	authUCase interfaces.AuthUCase,
 	accountUCase interfaces.AccountUCase,
 	dataAccessUCase interfaces.DataAccessUCase,
+	iamUCase interfaces.IAMUCase,
 ) {
 	v1 := r.Group("/api/v1")
-	appRouter := v1.Group("")
 
 	// SECTION: auth
+	appRouterAuth := v1.Group("auth")
 	authHandler := handlers.NewAuthHandler(authUCase)
-	appRouter.POST("/auth/register", authHandler.Register)
-	appRouter.POST("/auth/login", authHandler.Login)
-	appRouter.POST("/auth/logout", authHandler.Logout)
-	appRouter.POST("/auth/refresh-tokens", authHandler.RefreshTokens)
+	appRouterAuth.POST("/register", authHandler.Register)
+	appRouterAuth.POST("/login", authHandler.Login)
+	appRouterAuth.POST("/logout", authHandler.Logout)
+	appRouterAuth.POST("/refresh-tokens", authHandler.RefreshTokens)
 
 	// SECTION: account
+	appRouterAccount := v1.Group("account")
+	appRouterAccount.Use(middleware.ValidateBearerToken())
 	accountHandler := handlers.NewAccountHandler(accountUCase, authUCase)
-	appRouter.GET(
-		"/account/me",
-		middleware.ValidateBearerToken(),
+	appRouterAccount.GET(
+		"/me",
 		middleware.RequiredRoles(
 			authUCase,
-			string(constants.Admin),
-			string(constants.DataOwner),
-			string(constants.DataUtilizer),
-			string(constants.Validator),
+			constants.Admin.String(),
+			constants.User.String(),
+			constants.DataOwner.String(),
+			constants.DataUtilizer.String(),
+			constants.Validator.String(),
 		),
 		accountHandler.GetCurrentUser,
 	)
-	appRouter.PUT(
-		"/account/role",
-		middleware.ValidateBearerToken(),
-		middleware.RequiredRoles(authUCase, string(constants.DataOwner)),
+	appRouterAccount.PUT(
+		"/role",
+		middleware.RequiredRoles(authUCase, constants.User.String()),
 		accountHandler.UpdateAccountRole,
 	)
 
 	// SECTION: validator
-	appRouter.GET(
-		"validators/active",
-		middleware.ValidateBearerToken(),
-		middleware.RequiredRoles(authUCase, string(constants.DataOwner)),
+	appRouterValidator := v1.Group("validators")
+	appRouterValidator.GET(
+		"/active",
+		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
 		accountHandler.GetActiveValidators,
 	)
 
+	// SECTION: IAM
+	appRouterIAM := v1.Group("iam")
+	appRouterIAM.Use(middleware.ValidateBearerToken())
+	iamHandler := handlers.NewIAMHandler(iamUCase, authUCase)
+	appRouterIAM.POST(
+		"/policies",
+		middleware.RequiredRoles(authUCase, constants.Admin.String()),
+		iamHandler.CreatePolicy,
+	)
+	appRouterIAM.GET(
+		"/policies",
+		middleware.RequiredRoles(authUCase, constants.Admin.String()),
+		iamHandler.GetPoliciesWithPermissions,
+	)
+	appRouterIAM.POST(
+		"/accounts/:accountID/policies",
+		middleware.RequiredRoles(authUCase, constants.Admin.String()),
+		iamHandler.AssignPolicyToAccount,
+	)
+	appRouterIAM.POST(
+		"/check-permission",
+		iamHandler.CheckPermission,
+	)
+
 	// SECTION: data access
+	appRouterDataAccess := v1.Group("data-access")
 	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase)
-	appRouter.POST("/data-access", middleware.ValidateBearerToken(), dataAccessHandler.CreateDataAccessRequest)
-	appRouter.GET("/data-access", middleware.ValidateBearerToken(), dataAccessHandler.GetDataAccessRequests)
-	appRouter.PUT("/data-access/:requestID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
-	appRouter.PUT("/data-access/:requestID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
-	appRouter.GET("/data-access/:requesterAccountID", middleware.ValidateBearerToken(), dataAccessHandler.GetAccessRequest)
+	appRouterDataAccess.POST("/", middleware.ValidateBearerToken(), dataAccessHandler.CreateDataAccessRequest)
+	appRouterDataAccess.GET("/", middleware.ValidateBearerToken(), dataAccessHandler.GetDataAccessRequests)
+	appRouterDataAccess.PUT("/:requestID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
+	appRouterDataAccess.PUT("/:requestID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
+	appRouterDataAccess.GET("/:requesterAccountID", middleware.ValidateBearerToken(), dataAccessHandler.GetAccessRequest)
 }

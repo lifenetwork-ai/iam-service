@@ -64,3 +64,28 @@ type DataAccessRequestPayloadDTO struct {
 type RejectRequestPayloadDTO struct {
 	Reason string `json:"reason" validate:"required"` // Reason for rejecting the data access request
 }
+
+// PolicyPayloadDTO defines the payload for creating a policy
+type PolicyPayloadDTO struct {
+	Name        string `json:"name" validate:"required"` // Name of the policy
+	Description string `json:"description,omitempty"`    // Optional description
+}
+
+// AssignPolicyPayloadDTO defines the payload for assigning a policy to an account
+type AssignPolicyPayloadDTO struct {
+	PolicyID string `json:"policy_id" validate:"required,uuid"`
+}
+
+// CheckPermissionPayloadDTO defines the payload for checking if an account has permission to perform an action on a resource
+type CheckPermissionPayloadDTO struct {
+	Resource string `json:"resource" validate:"required"`
+	Action   string `json:"action" validate:"required"`
+}
+
+// PermissionPayloadDTO defines the payload for creating a permission
+type PermissionPayloadDTO struct {
+	PolicyName  string `json:"policy_name" validate:"required"`
+	Resource    string `json:"resource" validate:"required"`
+	Action      string `json:"action" validate:"required"`
+	Description string `json:"description,omitempty"`
+}

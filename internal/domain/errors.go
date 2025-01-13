@@ -2,20 +2,22 @@ package domain
 
 import "errors"
 
-// ErrInvalidCredentials represents an invalid login attempt
-var ErrInvalidCredentials = errors.New("invalid credentials")
+// General Errors
+var (
+	ErrInvalidCredentials      = errors.New("invalid credentials")      // Login failure
+	ErrInsufficientPermissions = errors.New("insufficient permissions") // Authorization failure
+)
 
-// ErrAccountAlreadyExists is returned when an account with the same email already exists
-var ErrAccountAlreadyExists = errors.New("account already exists")
+// Token Errors
+var (
+	ErrInvalidToken  = errors.New("invalid token")   // Token format or content is invalid
+	ErrExpiredToken  = errors.New("expired token")   // Token is no longer valid
+	ErrTokenNotFound = errors.New("token not found") // Token missing in the request
+)
 
-// ErrInvalidToken is returned when a provided token is invalid.
-var ErrInvalidToken = errors.New("invalid token")
-
-// ErrExpiredToken is returned when a provided token has expired.
-var ErrExpiredToken = errors.New("expired token")
-
-// ErrTokenNotFound is returned when a token is not found.
-var ErrTokenNotFound = errors.New("token not found")
-
-// ErrInsufficientPermissions is returned when a user does not have the required permissions.
-var ErrInsufficientPermissions = errors.New("insufficient permissions")
+// Data Errors
+var (
+	ErrDataNotFound      = errors.New("data not found")        // Resource not found
+	ErrAlreadyExists     = errors.New("record already exists") // Duplicate entry
+	ErrInvalidParameters = errors.New("invalid parameters")    // Validation error
+)

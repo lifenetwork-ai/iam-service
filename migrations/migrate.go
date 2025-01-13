@@ -31,7 +31,7 @@ func applySQLScript(db *gorm.DB, filePath string) error {
 
 func seedAdminAccount(db *gorm.DB, config *conf.Configuration) error {
 	var count int64
-	db.Model(&domain.Account{}).Where("role = ?", string(constants.Admin)).Count(&count)
+	db.Model(&domain.Account{}).Where("role = ?", constants.Admin.String()).Count(&count)
 
 	if count == 0 {
 		adminEmail := config.AdminAccount.AdminEmail
@@ -51,7 +51,7 @@ func seedAdminAccount(db *gorm.DB, config *conf.Configuration) error {
 			Email:        adminEmail,
 			Username:     "admin",
 			PasswordHash: &hashedPasswordString,
-			Role:         string(constants.Admin),
+			Role:         constants.Admin.String(),
 		}
 
 		if err := db.Create(admin).Error; err != nil {

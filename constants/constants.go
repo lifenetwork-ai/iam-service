@@ -27,6 +27,10 @@ const (
 // Order direction
 type OrderDirection string
 
+func (t OrderDirection) String() string {
+	return string(t)
+}
+
 const (
 	Asc  OrderDirection = "ASC"
 	Desc OrderDirection = "DESC"
@@ -35,7 +39,12 @@ const (
 // Account role
 type AccountRole string
 
+func (t AccountRole) String() string {
+	return string(t)
+}
+
 const (
+	User         AccountRole = "USER"
 	DataOwner    AccountRole = "DATA_OWNER"
 	DataUtilizer AccountRole = "DATA_UTILIZER"
 	Validator    AccountRole = "VALIDATOR"
@@ -61,6 +70,10 @@ const (
 // IdentifierType represents the types of identifiers used for login
 type IdentifierType string
 
+func (t IdentifierType) String() string {
+	return string(t)
+}
+
 const (
 	IdentifierEmail    IdentifierType = "email"
 	IdentifierUsername IdentifierType = "username"
@@ -73,8 +86,56 @@ const RefreshTokenRenewalThreshold = 24 * time.Hour
 // DataAccessRequestStatus represents the status of a data access request
 type DataAccessRequestStatus string
 
+func (t DataAccessRequestStatus) String() string {
+	return string(t)
+}
+
 const (
 	DataAccessRequestPending  DataAccessRequestStatus = "PENDING"
 	DataAccessRequestApproved DataAccessRequestStatus = "APPROVED"
 	DataAccessRequestRejected DataAccessRequestStatus = "REJECTED"
+)
+
+// IAMResource represents a type for resource constants
+type IAMResource string
+
+func (t IAMResource) String() string {
+	return string(t)
+}
+
+const (
+	ResourceAccounts     IAMResource = "accounts"
+	ResourceValidators   IAMResource = "validators"
+	ResourceDataRequests IAMResource = "data_requests"
+)
+
+// IAMAction represents a type for action constants
+type IAMAction string
+
+func (t IAMAction) String() string {
+	return string(t)
+}
+
+const (
+	ActionRead    IAMAction = "read"
+	ActionWrite   IAMAction = "write"
+	ActionUpdate  IAMAction = "update"
+	ActionDelete  IAMAction = "delete"
+	ActionApprove IAMAction = "approve"
+	ActionReject  IAMAction = "reject"
+)
+
+// IAMRolePolicy represents a type for IAM role policies
+type IAMRolePolicy string
+
+func (t IAMRolePolicy) String() string {
+	return string(t)
+}
+
+const (
+	AdminPolicy        IAMRolePolicy = "Admin Policy"
+	UserPolicy         IAMRolePolicy = "User Policy"
+	ValidatorPolicy    IAMRolePolicy = "Validator Policy"
+	DataOwnerPolicy    IAMRolePolicy = "Data Owner Policy"
+	DataUtilizerPolicy IAMRolePolicy = "Data Utilizer Policy"
 )

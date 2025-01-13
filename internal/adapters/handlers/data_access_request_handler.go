@@ -296,7 +296,7 @@ func (h *dataAccessHandler) GetAccessRequest(ctx *gin.Context) {
 	}
 
 	// Check if the authenticated user has the "DATA_OWNER" role
-	if accountDTO.Role != string(constants.DataOwner) {
+	if accountDTO.Role != constants.DataOwner.String() {
 		httpresponse.Error(ctx, http.StatusForbidden, "Access restricted to users only", nil)
 		return
 	}

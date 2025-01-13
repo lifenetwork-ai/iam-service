@@ -64,7 +64,7 @@ func (h *authHandler) Register(ctx *gin.Context) {
 	err := h.ucase.Register(&req)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to register user: %v", err)
-		if errors.Is(err, domain.ErrAccountAlreadyExists) {
+		if errors.Is(err, domain.ErrAlreadyExists) {
 			httpresponse.Error(ctx, http.StatusConflict, "Account already exists", err)
 		} else {
 			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to register", err)

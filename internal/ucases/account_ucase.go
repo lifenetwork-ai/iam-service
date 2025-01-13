@@ -53,7 +53,7 @@ func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role const
 
 		// Generate public key
 		publicKey, privateKey, err := crypto.GenerateAccount(
-			mnemonic, passphrase, salt, string(constants.DataOwner), account.ID,
+			mnemonic, passphrase, salt, constants.DataOwner.String(), account.ID,
 		)
 		if err != nil {
 			return nil, err
@@ -95,7 +95,7 @@ func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role const
 
 		// Generate public key
 		publicKey, privateKey, err := crypto.GenerateAccount(
-			mnemonic, passphrase, salt, string(constants.DataUtilizer), account.ID,
+			mnemonic, passphrase, salt, constants.DataUtilizer.String(), account.ID,
 		)
 		if err != nil {
 			return nil, err
@@ -138,7 +138,7 @@ func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role const
 
 		// Generate public key
 		publicKey, privateKey, err := crypto.GenerateAccount(
-			mnemonic, passphrase, salt, string(constants.Validator), account.ID,
+			mnemonic, passphrase, salt, constants.Validator.String(), account.ID,
 		)
 		if err != nil {
 			return nil, err
@@ -172,7 +172,7 @@ func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role const
 	case constants.Admin:
 		// Generate public key
 		publicKey, privateKey, err := crypto.GenerateAccount(
-			mnemonic, passphrase, salt, string(constants.Admin), account.ID,
+			mnemonic, passphrase, salt, constants.Admin.String(), account.ID,
 		)
 		if err != nil {
 			return nil, err

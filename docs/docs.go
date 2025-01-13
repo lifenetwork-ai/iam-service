@@ -658,6 +658,256 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/iam/accounts/{accountID}/policies": {
+            "post": {
+                "description": "Maps a specified policy to an account by accountID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IAM"
+                ],
+                "summary": "Assign a policy to an account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Account ID to assign the policy to",
+                        "name": "accountID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload containing the policy ID",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AssignPolicyPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Policy assigned successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload or missing policy",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "404": {
+                        "description": "Account or policy not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/iam/check-permission": {
+            "post": {
+                "description": "Validates if the authenticated user has the required permission to access a resource.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IAM"
+                ],
+                "summary": "Check user permissions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload containing resource and action",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CheckPermissionPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permission check result",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/iam/policies": {
+            "get": {
+                "description": "Fetches a list of IAM policies along with their associated permissions.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IAM"
+                ],
+                "summary": "Get policies with permissions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of policies with permissions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.PolicyWithPermissionsDTO"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Adds a new IAM policy to the system. Only accessible to Admins.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "IAM"
+                ],
+                "summary": "Create a new policy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload for creating policy",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PolicyPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Policy created successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/validators/active": {
             "get": {
                 "description": "Fetches a list of active validators.",
@@ -796,6 +1046,32 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AssignPolicyPayloadDTO": {
+            "type": "object",
+            "required": [
+                "policy_id"
+            ],
+            "properties": {
+                "policy_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CheckPermissionPayloadDTO": {
+            "type": "object",
+            "required": [
+                "action",
+                "resource"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "resource": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.DataAccessRequestDTO": {
             "type": "object",
             "properties": {
@@ -893,6 +1169,89 @@ const docTemplate = `{
             "properties": {
                 "refresh_token": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.PermissionDTO": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "The action this permission allows",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "Timestamp of permission creation",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Optional description of the permission",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Unique ID for the permission",
+                    "type": "string"
+                },
+                "policy_id": {
+                    "description": "Foreign key referencing IAMPolicy",
+                    "type": "string"
+                },
+                "resource": {
+                    "description": "The resource this permission applies to",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "Timestamp of last update",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PolicyDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PolicyPayloadDTO": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "description": "Optional description",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the policy",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PolicyWithPermissionsDTO": {
+            "type": "object",
+            "properties": {
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionDTO"
+                    }
+                },
+                "policy": {
+                    "$ref": "#/definitions/dto.PolicyDTO"
                 }
             }
         },
