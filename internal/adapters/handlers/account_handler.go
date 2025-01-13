@@ -13,15 +13,18 @@ import (
 )
 
 type accountHandler struct {
+	iamUCase     interfaces.IAMUCase
 	accountUCase interfaces.AccountUCase
 	authUCase    interfaces.AuthUCase
 }
 
 func NewAccountHandler(
+	iamUCase interfaces.IAMUCase,
 	accountUCase interfaces.AccountUCase,
 	authUCase interfaces.AuthUCase,
 ) *accountHandler {
 	return &accountHandler{
+		iamUCase:     iamUCase,
 		accountUCase: accountUCase,
 		authUCase:    authUCase,
 	}
@@ -161,7 +164,36 @@ func (h *accountHandler) UpdateAccountRole(ctx *gin.Context) {
 		return
 	}
 
+	// Synchronize policies for the new role
+	err = h.syncAccountPolicies(account.ID, role)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to synchronize account policies: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to synchronize account policies", err)
+		return
+	}
+
 	// Respond with success
 	logger.GetLogger().Infof("Successfully updated role [AccountID: %s, NewRole: %s]", account.ID, req.Role)
 	ctx.JSON(http.StatusOK, gin.H{"message": "Account role updated successfully"})
+}
+
+// syncAccountPolicies synchronizes the policies assigned to an account based on its role.
+func (h *accountHandler) syncAccountPolicies(accountID string, role constants.AccountRole) error {
+	// Fetch predefined policies for the role
+	predefinedPolicy, err := h.iamUCase.GetPolicyByRole(role)
+	if err != nil {
+		return err
+	}
+
+	// Remove existing policies for the account
+	if err := h.iamUCase.RemovePoliciesFromAccount(accountID); err != nil {
+		return err
+	}
+
+	// Assign the new policy to the account
+	if err := h.iamUCase.AssignPolicyToAccount(accountID, predefinedPolicy.ID); err != nil {
+		return err
+	}
+
+	return nil
 }

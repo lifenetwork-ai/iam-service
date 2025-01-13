@@ -49,3 +49,11 @@ func (r *iamRepository) GetPermissionsByPolicyID(policyID string) ([]domain.Perm
 	err := r.db.Where("policy_id = ?", policyID).Find(&permissions).Error
 	return permissions, err
 }
+
+func (r *iamRepository) RemoveAccountPolicies(accountID string) error {
+	err := r.db.Where("account_id = ?", accountID).Delete(&domain.AccountPolicy{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}

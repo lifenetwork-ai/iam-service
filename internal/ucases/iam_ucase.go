@@ -1,6 +1,7 @@
 package ucases
 
 import (
+	"github.com/genefriendway/human-network-auth/constants"
 	"github.com/genefriendway/human-network-auth/internal/domain"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
@@ -159,4 +160,51 @@ func (u *iamUCase) GetPoliciesWithPermissions() ([]dto.PolicyWithPermissionsDTO,
 	}
 
 	return result, nil
+}
+
+// GetPolicyByRole retrieves the policy assigned to a role.
+func (u *iamUCase) GetPolicyByRole(role constants.AccountRole) (*dto.PolicyDTO, error) {
+	// Map roles to policy names
+	rolePolicyMap := map[constants.AccountRole]string{
+		constants.Admin:        constants.AdminPolicy.String(),
+		constants.User:         constants.UserPolicy.String(),
+		constants.Validator:    constants.ValidatorPolicy.String(),
+		constants.DataOwner:    constants.DataOwnerPolicy.String(),
+		constants.DataUtilizer: constants.DataUtilizerPolicy.String(),
+	}
+
+	// Get the policy name for the given role
+	policyName, exists := rolePolicyMap[role]
+	if !exists {
+		return nil, domain.ErrInvalidParameters
+	}
+
+	// Fetch the policy by name
+	policy, err := u.policyRepository.GetPolicyByName(policyName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to DTO and return
+	return policy.ToDTO(), nil
+}
+
+// RemovePoliciesFromAccount removes all policies associated with an account.
+func (u *iamUCase) RemovePoliciesFromAccount(accountID string) error {
+	// Check if the account exists
+	accountExists, err := u.accountRepository.AccountExists(accountID)
+	if err != nil {
+		return err
+	}
+	if !accountExists {
+		return domain.ErrDataNotFound
+	}
+
+	// Remove all policies associated with the account
+	err = u.iamRepository.RemoveAccountPolicies(accountID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -37,7 +37,7 @@ func RegisterRoutes(
 	// SECTION: account
 	appRouterAccount := v1.Group("account")
 	appRouterAccount.Use(middleware.ValidateBearerToken())
-	accountHandler := handlers.NewAccountHandler(accountUCase, authUCase)
+	accountHandler := handlers.NewAccountHandler(iamUCase, accountUCase, authUCase)
 	appRouterAccount.GET(
 		"/me",
 		middleware.RequiredRoles(
