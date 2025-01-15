@@ -6,6 +6,7 @@ import "time"
 type DataAccessRequestDTO struct {
 	ID                 string       `json:"id"`                             // Unique identifier for the request
 	RequestAccountID   string       `json:"request_account_id"`             // ID of the account being accessed
+	FileID             string       `json:"file_id"`                        // ID of the file being accessed
 	Requesters         []AccountDTO `json:"requesters"`                     // List of accounts making the request
 	ReasonForRequest   string       `json:"reason_for_request"`             // Reason for the request
 	Status             string       `json:"status"`                         // Status of the request (PENDING, APPROVED, REJECTED)

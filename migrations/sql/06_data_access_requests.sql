@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS data_access_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- Use UUID as the primary key
     request_account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, -- Account whose data is being requested
+    file_id UUID NOT NULL, -- File ID associated with the request
     reason_for_request TEXT NOT NULL, -- Reason why the requester(s) are asking for access
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- Status: PENDING, APPROVED, REJECTED
     reason_for_rejection TEXT, -- Optional reason for rejecting the request

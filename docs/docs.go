@@ -1120,6 +1120,10 @@ const docTemplate = `{
                     "description": "Timestamp of when the request was created",
                     "type": "string"
                 },
+                "file_id": {
+                    "description": "ID of the file being accessed",
+                    "type": "string"
+                },
                 "id": {
                     "description": "Unique identifier for the request",
                     "type": "string"
