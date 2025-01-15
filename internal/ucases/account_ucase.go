@@ -202,6 +202,16 @@ func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role const
 			},
 		}, nil
 
+	case constants.User:
+		return &dto.AccountDetailDTO{
+			Account: dto.AccountDTO{
+				ID:       account.ID,
+				Email:    account.Email,
+				Username: account.Username,
+				Role:     account.Role,
+			},
+		}, nil
+
 	default:
 		return nil, errors.New("invalid role provided")
 	}
