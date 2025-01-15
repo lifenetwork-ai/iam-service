@@ -100,3 +100,24 @@ func (r *dataAccessRepository) GetAccessRequestByID(requestAccountID, requestID 
 
 	return &request, nil
 }
+
+// GetRequestsByRequesterID retrieves data access requests by requesterID.
+func (r *dataAccessRepository) GetRequestsByRequesterID(requesterID string) ([]domain.DataAccessRequest, error) {
+	var requests []domain.DataAccessRequest
+
+	// Build the query
+	query := r.db.
+		Joins("JOIN data_access_request_requesters ON data_access_request_requesters.request_id = data_access_requests.id").
+		Joins("JOIN accounts ON accounts.id = data_access_request_requesters.requester_account_id").
+		Where("data_access_request_requesters.requester_account_id = ?", requesterID).
+		Preload("FileInfo.Owner").
+		Preload("Requesters.RequesterAccount")
+
+	// Execute the query
+	err := query.Find(&requests).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return requests, nil
+}

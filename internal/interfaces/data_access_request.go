@@ -14,6 +14,7 @@ type DataAccessRepository interface {
 	) error
 	GetAccessRequestByID(requestAccountID, requestID string) (*domain.DataAccessRequest, error)
 	CreateDataAccessRequestRequester(requester *domain.DataAccessRequestRequester) error
+	GetRequestsByRequesterID(requesterID string) ([]domain.DataAccessRequest, error)
 }
 
 type DataAccessUCase interface {
