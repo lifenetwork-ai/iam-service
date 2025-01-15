@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-auth/infra/clients"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
@@ -13,20 +14,23 @@ import (
 )
 
 type dataAccessHandler struct {
-	dataAccessUCase interfaces.DataAccessUCase
-	authUCase       interfaces.AuthUCase
-	accountUCase    interfaces.AccountUCase
+	dataAccessUCase   interfaces.DataAccessUCase
+	authUCase         interfaces.AuthUCase
+	accountUCase      interfaces.AccountUCase
+	secureGenomClient clients.SecureGenomClient
 }
 
 func NewDataAccessHandler(
 	dataAccessUCase interfaces.DataAccessUCase,
 	authUCase interfaces.AuthUCase,
 	accountUCase interfaces.AccountUCase,
+	secureGenomClient clients.SecureGenomClient,
 ) *dataAccessHandler {
 	return &dataAccessHandler{
-		dataAccessUCase: dataAccessUCase,
-		authUCase:       authUCase,
-		accountUCase:    accountUCase,
+		dataAccessUCase:   dataAccessUCase,
+		authUCase:         authUCase,
+		accountUCase:      accountUCase,
+		secureGenomClient: secureGenomClient,
 	}
 }
 
@@ -133,7 +137,15 @@ func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
 		return
 	}
-	// TODO: should use this payload to call external api to validated the re-encryption key
+
+	// Call the external service to store re-encryption keys
+	authHeader := ctx.GetHeader("Authorization")
+	_, err = h.secureGenomClient.StoreReencryptionKeys(ctx, authHeader, payload)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to store re-encryption keys: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to store re-encryption keys", err)
+		return
+	}
 
 	// Approve the request
 	err = h.dataAccessUCase.ApproveOrRejectRequestByID(

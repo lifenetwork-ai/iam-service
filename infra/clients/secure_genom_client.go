@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/genefriendway/human-network-auth/internal/dto"
 )
 
 type SecureGenomClient struct {
@@ -24,8 +26,8 @@ func NewSecureGenomClient(endpoint string) *SecureGenomClient {
 // StoreReencryptionKeys sends the re-encryption keys to the Secure Genom endpoint.
 func (c *SecureGenomClient) StoreReencryptionKeys(
 	ctx context.Context,
-	header http.Header,
-	payload StoreReencryptionKeysRequest,
+	authHeader string,
+	payload dto.ReencryptionKeyInfoPayloadDTO,
 ) (*StoreReencryptionKeysResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/dataowner/reencryption/store-reencryption-keys", c.endpoint)
 
@@ -41,12 +43,10 @@ func (c *SecureGenomClient) StoreReencryptionKeys(
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Add headers
-	for key, values := range header {
-		for _, value := range values {
-			req.Header.Add(key, value)
-		}
-	}
+	// Add Authorization header
+	req.Header.Set("Authorization", authHeader)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
 
 	// Make the request
 	resp, err := c.httpClient.Do(req)

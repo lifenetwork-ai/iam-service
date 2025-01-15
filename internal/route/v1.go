@@ -9,6 +9,7 @@ import (
 
 	"github.com/genefriendway/human-network-auth/conf"
 	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-auth/infra/clients"
 	"github.com/genefriendway/human-network-auth/internal/adapters/handlers"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	"github.com/genefriendway/human-network-auth/internal/middleware"
@@ -26,6 +27,8 @@ func RegisterRoutes(
 	fileInfoUCase interfaces.FileInfoUCase,
 ) {
 	v1 := r.Group("/api/v1")
+
+	secureGenomClient := clients.NewSecureGenomClient(config.SecureGenomClient.SecureGenomAPIBaseURL)
 
 	// SECTION: auth
 	appRouterAuth := v1.Group("auth")
@@ -101,7 +104,7 @@ func RegisterRoutes(
 
 	// SECTION: data access
 	appRouterDataAccess := v1.Group("data-access")
-	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase, accountUCase)
+	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase, accountUCase, *secureGenomClient)
 	appRouterDataAccess.GET("/", middleware.ValidateBearerToken(), dataAccessHandler.GetDataAccessRequests)
 	appRouterDataAccess.PUT("/:requestID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
 	appRouterDataAccess.PUT("/:requestID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
