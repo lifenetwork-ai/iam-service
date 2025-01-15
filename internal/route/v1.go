@@ -108,6 +108,6 @@ func RegisterRoutes(
 	appRouterNotifications.POST(
 		"/data-upload",
 		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
-		notificationHandler.DataUploadNotification,
+		notificationHandler.DataUploadWebhook,
 	)
 }

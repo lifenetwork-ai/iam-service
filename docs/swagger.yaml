@@ -93,14 +93,6 @@ definitions:
         description: Timestamp of when the request was last updated
         type: string
     type: object
-  dto.DataUploadNotificationPayloadDTO:
-    properties:
-      data_id:
-        description: Unique identifier of the uploaded data
-        type: string
-    required:
-    - data_id
-    type: object
   dto.LoginPayloadDTO:
     properties:
       identifier:
@@ -896,20 +888,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint receives notifications when a user successfully uploads
-        data.
+      description: This webhook receives raw payload data when a user successfully
+        uploads data.
       parameters:
       - description: Bearer access token (e.g., 'Bearer <token>')
         in: header
         name: Authorization
         required: true
         type: string
-      - description: Payload containing data upload details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.DataUploadNotificationPayloadDTO'
       produces:
       - application/json
       responses:
