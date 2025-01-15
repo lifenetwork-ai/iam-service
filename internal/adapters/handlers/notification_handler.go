@@ -9,6 +9,7 @@ import (
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
 	"github.com/genefriendway/human-network-auth/pkg/logger"
+	"github.com/genefriendway/human-network-auth/pkg/utils"
 )
 
 type notificationHandler struct {
@@ -62,9 +63,17 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to get active validators", err)
 		return
 	}
-	fmt.Println(validators)
 
-	// TODO: i need a helper function that select random validators from the list of active validators, it could be 3 5 7 9,... for each round call
+	// Select a random subset of validators
+	subsetSize := 3
+	selectedValidators, err := utils.SelectRandomSubset(validators, subsetSize)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to select random validators: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to select random validators", err)
+		return
+	}
+
+	fmt.Println(selectedValidators)
 
 	// Return success response
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Notification received successfully"})
