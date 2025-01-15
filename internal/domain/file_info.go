@@ -27,7 +27,5 @@ func (m *FileInfo) ToDTO() *dto.FileInfoDTO {
 		Name:       m.Name,
 		ShareCount: m.ShareCount,
 		OwnerID:    m.OwnerID,
-		CreatedAt:  m.CreatedAt,
-		UpdatedAt:  m.UpdatedAt,
 	}
 }
