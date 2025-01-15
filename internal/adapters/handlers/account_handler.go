@@ -94,6 +94,9 @@ func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
 	var validatorIDs []string
 	if validatorIDsParam != "" {
 		validatorIDs = strings.Split(validatorIDsParam, ",")
+		for i := range validatorIDs {
+			validatorIDs[i] = strings.TrimSpace(validatorIDs[i])
+		}
 	}
 
 	// Fetch active validators, optionally filtered by IDs

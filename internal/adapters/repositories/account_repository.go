@@ -229,14 +229,19 @@ func (r *accountRepository) FindActiveValidators() ([]domain.Validator, error) {
 	return validators, nil
 }
 
-func (r *accountRepository) FindActiveValidatorsByIDs(validatorIDs []string) ([]domain.Validator, error) {
+func (r *accountRepository) FindActiveValidatorsByAccountIDs(accountIDs []string) ([]domain.Validator, error) {
+	if len(accountIDs) == 0 {
+		return nil, fmt.Errorf("no account IDs provided")
+	}
+
 	var validators []domain.Validator
 	err := r.db.Preload("Account").
-		Where("is_active = ? AND id IN ?", true, validatorIDs).
+		Where("is_active = ? AND account_id IN (?)", true, accountIDs).
 		Find(&validators).Error
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch active validators by account IDs: %w", err)
 	}
+
 	return validators, nil
 }
 
