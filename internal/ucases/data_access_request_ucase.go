@@ -200,6 +200,7 @@ func (u *dataAccessUCase) GetRequestsByRequesterAccountID(
 			return nil, err
 		}
 		requestDTOs[i] = *dto
+		requestDTOs[i].RequesterID = requesterAccountID
 	}
 
 	return requestDTOs, nil
