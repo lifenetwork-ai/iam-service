@@ -47,6 +47,7 @@ func (u *dataAccessUCase) CreateRequest(
 	dataAccessRequest := &domain.DataAccessRequest{
 		RequestAccountID: payload.RequestAccountID,
 		ReasonForRequest: payload.ReasonForRequest,
+		FileID:           payload.FileID,
 		Status:           constants.DataAccessRequestPending.String(), // Default status
 	}
 

@@ -22,6 +22,7 @@ import (
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	"github.com/genefriendway/human-network-auth/internal/middleware"
 	routev1 "github.com/genefriendway/human-network-auth/internal/route"
+	"github.com/genefriendway/human-network-auth/migrations"
 	pkginterfaces "github.com/genefriendway/human-network-auth/pkg/interfaces"
 	pkglogger "github.com/genefriendway/human-network-auth/pkg/logger"
 	"github.com/genefriendway/human-network-auth/wire"
@@ -39,11 +40,9 @@ func RunApp(config *conf.Configuration) {
 
 	// Initialize database connection
 	db := database.DBConnWithLoglevel(logger.Info)
-	/*
-		if err := migrations.RunMigrations(db, config); err != nil {
-			pkglogger.GetLogger().Fatalf("Failed to migrate database: %v", err)
-		}
-	*/
+	if err := migrations.RunMigrations(db, config); err != nil {
+		pkglogger.GetLogger().Fatalf("Failed to migrate database: %v", err)
+	}
 
 	// Initialize use cases and queue
 	authUCase := wire.GetAuthUCase(db, config)
