@@ -229,6 +229,17 @@ func (r *accountRepository) FindActiveValidators() ([]domain.Validator, error) {
 	return validators, nil
 }
 
+func (r *accountRepository) FindActiveValidatorsByIDs(validatorIDs []string) ([]domain.Validator, error) {
+	var validators []domain.Validator
+	err := r.db.Preload("Account").
+		Where("is_active = ? AND id IN ?", true, validatorIDs).
+		Find(&validators).Error
+	if err != nil {
+		return nil, err
+	}
+	return validators, nil
+}
+
 // UpdateAccount updates the details of an existing account.
 func (r *accountRepository) UpdateAccount(account *domain.Account) error {
 	// Use Save to update the account, it will update all fields of the account struct.

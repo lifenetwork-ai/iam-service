@@ -967,7 +967,7 @@ const docTemplate = `{
         },
         "/api/v1/validators/active": {
             "get": {
-                "description": "Fetches a list of active validators.",
+                "description": "Fetches a list of active validators. Optionally, a comma-separated list of validator IDs can be provided to filter the results.",
                 "consumes": [
                     "application/json"
                 ],
@@ -985,6 +985,12 @@ const docTemplate = `{
                         "name": "Authorization",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated list of validator IDs to filter results (e.g., 'id1,id2,id3')",
+                        "name": "validator_ids",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -995,6 +1001,12 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/dto.AccountDetailDTO"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
                         }
                     },
                     "401": {

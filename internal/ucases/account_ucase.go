@@ -207,11 +207,19 @@ func (u *accountUCase) FindDetailByAccountID(account *dto.AccountDTO, role const
 	}
 }
 
-func (u *accountUCase) GetActiveValidators() ([]dto.AccountDetailDTO, error) {
-	// Fetch active validators with preloaded account details
-	validators, err := u.accountRepository.FindActiveValidators()
+func (u *accountUCase) GetActiveValidators(validatorIDs []string) ([]dto.AccountDetailDTO, error) {
+	var validators []domain.Validator
+	var err error
+
+	// If validatorIDs is provided, filter by IDs; otherwise, fetch all active validators
+	if len(validatorIDs) > 0 {
+		validators, err = u.accountRepository.FindActiveValidatorsByIDs(validatorIDs)
+	} else {
+		validators, err = u.accountRepository.FindActiveValidators()
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch active validators: %w", err)
+		return nil, fmt.Errorf("failed to fetch validators: %w", err)
 	}
 
 	// Retrieve secret values for public key generation

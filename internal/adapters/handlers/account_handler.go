@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -68,12 +69,14 @@ func (h *accountHandler) GetCurrentUser(ctx *gin.Context) {
 
 // GetActiveValidators retrieves the list of active validators.
 // @Summary Get Active Validators
-// @Description Fetches a list of active validators.
+// @Description Fetches a list of active validators. Optionally, a comma-separated list of validator IDs can be provided to filter the results.
 // @Tags validators
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
+// @Param validator_ids query string false "Comma-separated list of validator IDs to filter results (e.g., 'id1,id2,id3')"
 // @Success 200 {array} dto.AccountDetailDTO "List of active validators"
+// @Failure 400 {object} response.GeneralError "Bad request"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
 // @Failure 403 {object} response.GeneralError "Insufficient permissions"
 // @Failure 500 {object} response.GeneralError "Internal server error"
@@ -86,8 +89,15 @@ func (h *accountHandler) GetActiveValidators(ctx *gin.Context) {
 		return
 	}
 
-	// Fetch active validators
-	validators, err := h.accountUCase.GetActiveValidators()
+	// Parse the optional query parameter for validator IDs
+	validatorIDsParam := ctx.Query("validator_ids")
+	var validatorIDs []string
+	if validatorIDsParam != "" {
+		validatorIDs = strings.Split(validatorIDsParam, ",")
+	}
+
+	// Fetch active validators, optionally filtered by IDs
+	validators, err := h.accountUCase.GetActiveValidators(validatorIDs)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to fetch active validators: %v", err)
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch active validators", err)

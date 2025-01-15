@@ -943,12 +943,18 @@ paths:
     get:
       consumes:
       - application/json
-      description: Fetches a list of active validators.
+      description: Fetches a list of active validators. Optionally, a comma-separated
+        list of validator IDs can be provided to filter the results.
       parameters:
       - description: Bearer access token (e.g., 'Bearer <token>')
         in: header
         name: Authorization
         required: true
+        type: string
+      - description: Comma-separated list of validator IDs to filter results (e.g.,
+          'id1,id2,id3')
+        in: query
+        name: validator_ids
         type: string
       produces:
       - application/json
@@ -959,6 +965,10 @@ paths:
             items:
               $ref: '#/definitions/dto.AccountDetailDTO'
             type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.GeneralError'
         "401":
           description: Unauthorized
           schema:

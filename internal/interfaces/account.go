@@ -29,6 +29,7 @@ type AccountRepository interface {
 	FindValidatorByAccountID(accountID string) (*domain.Validator, error)
 	CreateOrUpdateValidator(validator *domain.Validator) error
 	FindActiveValidators() ([]domain.Validator, error)
+	FindActiveValidatorsByIDs(validatorIDs []string) ([]domain.Validator, error)
 }
 
 type AccountUCase interface {
@@ -36,7 +37,7 @@ type AccountUCase interface {
 	FindAccountByID(id string) (*dto.AccountDTO, error)
 	FindAccountByAPIKey(apiKey string) (*dto.AccountDTO, error)
 	FindDetailByAccountID(account *dto.AccountDTO, role constants.AccountRole) (*dto.AccountDetailDTO, error)
-	GetActiveValidators() ([]dto.AccountDetailDTO, error)
+	GetActiveValidators(validatorIDs []string) ([]dto.AccountDetailDTO, error)
 	UpdateAccount(accountDTO *dto.AccountDTO) error
 	GenerateAndAssignAPIKey(accountID string) (string, error)
 	RevokeAPIKey(accountID string) error
