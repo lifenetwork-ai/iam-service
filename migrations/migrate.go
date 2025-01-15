@@ -78,6 +78,7 @@ func RunMigrations(db *gorm.DB, config *conf.Configuration) error {
 		"./migrations/sql/09_account_policies.sql",
 		"./migrations/sql/10_iam_policies.sql",
 		"./migrations/sql/11_file_access_mappings.sql",
+		"./migrations/sql/12_file_infos.sql",
 	}
 
 	for _, script := range sqlScripts {
