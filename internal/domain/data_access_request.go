@@ -10,6 +10,7 @@ type DataAccessRequest struct {
 	ID                 string                       `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
 	RequestAccountID   string                       `json:"request_account_id" gorm:"not null"`               // Account whose data is being requested
 	FileID             string                       `json:"file_id" gorm:"type:uuid;not null"`                // ID of the file being accessed
+	FileInfo           FileInfo                     `json:"file_info" gorm:"foreignKey:FileID;references:ID"` // Details of the file being accessed
 	ReasonForRequest   string                       `json:"reason_for_request" gorm:"not null"`               // Reason for the request
 	Status             string                       `json:"status" gorm:"type:varchar(20);default:'PENDING'"` // Request status (PENDING, APPROVED, REJECTED)
 	ReasonForRejection *string                      `json:"reason_for_rejection,omitempty"`                   // Reason for rejection (optional)
@@ -33,7 +34,7 @@ func (m *DataAccessRequest) ToDTO() *dto.DataAccessRequestDTO {
 	return &dto.DataAccessRequestDTO{
 		ID:                 m.ID,
 		RequestAccountID:   m.RequestAccountID,
-		FileID:             m.FileID,
+		FileInfo:           *m.FileInfo.ToDTO(),
 		Requesters:         requesters,
 		ReasonForRequest:   m.ReasonForRequest,
 		Status:             m.Status,

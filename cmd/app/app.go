@@ -49,6 +49,7 @@ func RunApp(config *conf.Configuration) {
 	accountUCase := wire.GetAccountUCase(db, config)
 	dataAccessUCase := wire.GetDataAccessUCase(db, config)
 	iamUCase := wire.GetIAMUCase(db)
+	fileInfoUCase := wire.GetFileInfoUCase(db)
 
 	// Initialize predefined policies
 	initializePolicies(iamUCase)
@@ -66,6 +67,7 @@ func RunApp(config *conf.Configuration) {
 		accountUCase,
 		dataAccessUCase,
 		iamUCase,
+		fileInfoUCase,
 	)
 
 	// Start server

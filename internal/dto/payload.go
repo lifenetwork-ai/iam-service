@@ -102,3 +102,11 @@ type FileAccessMappingPayloadDTO struct {
 	FileID    string `json:"file_id" validate:"required,uuid"`    // File ID being accessed
 	AccountID string `json:"account_id" validate:"required,uuid"` // Account requesting access
 }
+
+// FileInfoPayloadDTO defines the payload for creating a file info
+type FileInfoPayloadDTO struct {
+	ID         string `json:"id" validate:"required,uuid"`           // File ID
+	Name       string `json:"name" validate:"required"`              // File name
+	ShareCount int    `json:"share_count" validate:"required,min=0"` // Number of shares
+	OwnerID    string `json:"owner_id" validate:"required,uuid"`     // Owner ID
+}

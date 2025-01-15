@@ -47,6 +47,12 @@ func GetIAMUCase(db *gorm.DB) interfaces.IAMUCase {
 	return iamuCase
 }
 
+func GetFileInfoUCase(db *gorm.DB) interfaces.FileInfoUCase {
+	fileInfoRepository := repositories.NewFileInfoRepository(db)
+	fileInfoUCase := ucases.NewFileInfoUCase(fileInfoRepository)
+	return fileInfoUCase
+}
+
 // wire.go:
 
 // UCase set
@@ -57,3 +63,5 @@ var accountUCaseSet = wire.NewSet(repositories.NewAccountRepository, ucases.NewA
 var dataAccessUCaseSet = wire.NewSet(repositories.NewDataAccessRepository, repositories.NewAccountRepository, ucases.NewDataAccessUCase)
 
 var iamUCaseSet = wire.NewSet(repositories.NewIAMRepository, repositories.NewPolicyRepository, repositories.NewAccountRepository, repositories.NewPermissionRepository, ucases.NewIAMUCase)
+
+var fileInfoUCaseSet = wire.NewSet(repositories.NewFileInfoRepository, ucases.NewFileInfoUCase)
