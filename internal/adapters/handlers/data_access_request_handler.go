@@ -91,12 +91,13 @@ func (h *dataAccessHandler) isValidDataAccessRequestStatus(status string) bool {
 
 // ApproveRequest handles approving a data access request.
 // @Summary Approve a data access request
-// @Description Approves a pending data access request for the authenticated user.
+// @Description Approves a pending data access request for the authenticated user and includes re-encryption key information.
 // @Tags data-access
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
 // @Param requestID path string true "ID of the request being approved"
+// @Param payload body dto.ReencryptionKeyInfoPayloadDTO true "Payload containing re-encryption key information"
 // @Success 200 {object} map[string]interface{} "Request approved successfully"
 // @Failure 400 {object} response.GeneralError "Bad request"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
@@ -124,6 +125,15 @@ func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 		httpresponse.Error(ctx, http.StatusBadRequest, "Request ID is required", nil)
 		return
 	}
+
+	// Parse the re-encryption key information payload
+	var payload dto.ReencryptionKeyInfoPayloadDTO
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
+		return
+	}
+	// TODO: should use this payload to call external api to validated the re-encryption key
 
 	// Approve the request
 	err = h.dataAccessUCase.ApproveOrRejectRequestByID(

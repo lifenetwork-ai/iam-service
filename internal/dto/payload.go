@@ -110,3 +110,8 @@ type FileInfoPayloadDTO struct {
 	ShareCount int    `json:"share_count" validate:"required,min=0"` // Number of shares
 	OwnerID    string `json:"owner_id" validate:"required,uuid"`     // Owner ID
 }
+
+// ReencryptionKeyInfoPayloadDTO defines the payload structure for re-encryption key information
+type ReencryptionKeyInfoPayloadDTO struct {
+	ReencryptionKeyInfo []ReencryptionKeyDTO `json:"reencryption_key_info" validate:"required"`
+}

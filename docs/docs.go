@@ -534,7 +534,7 @@ const docTemplate = `{
         },
         "/api/v1/data-access/{requestID}/approve": {
             "put": {
-                "description": "Approves a pending data access request for the authenticated user.",
+                "description": "Approves a pending data access request for the authenticated user and includes re-encryption key information.",
                 "consumes": [
                     "application/json"
                 ],
@@ -559,6 +559,15 @@ const docTemplate = `{
                         "name": "requestID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Payload containing re-encryption key information",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReencryptionKeyInfoPayloadDTO"
+                        }
                     }
                 ],
                 "responses": {
@@ -1336,6 +1345,43 @@ const docTemplate = `{
                 },
                 "policy": {
                     "$ref": "#/definitions/dto.PolicyDTO"
+                }
+            }
+        },
+        "dto.ReencryptionKeyDTO": {
+            "type": "object",
+            "required": [
+                "pub_x",
+                "rk_key",
+                "validator_id",
+                "validator_public_key"
+            ],
+            "properties": {
+                "pub_x": {
+                    "type": "string"
+                },
+                "rk_key": {
+                    "type": "string"
+                },
+                "validator_id": {
+                    "type": "string"
+                },
+                "validator_public_key": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ReencryptionKeyInfoPayloadDTO": {
+            "type": "object",
+            "required": [
+                "reencryption_key_info"
+            ],
+            "properties": {
+                "reencryption_key_info": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ReencryptionKeyDTO"
+                    }
                 }
             }
         },
