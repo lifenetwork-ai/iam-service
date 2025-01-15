@@ -142,47 +142,6 @@ func (u *dataAccessUCase) ApproveOrRejectRequestByID(
 	return nil
 }
 
-// GetAccessRequest fetches a single data access request by requestAccountID and requesterAccountID
-func (u *dataAccessUCase) GetAccessRequest(requestAccountID, requestID string) (*dto.DataAccessRequestDTO, error) {
-	// Fetch the request by requestAccountID and requestID from the repository
-	request, err := u.dataAccessRepository.GetAccessRequestByID(requestAccountID, requestID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch access request: %w", err)
-	}
-
-	// Handle no request found
-	if request == nil {
-		return nil, nil
-	}
-
-	// Convert the domain model to a DTO
-	requestDTO := request.ToDTO()
-
-	// Optionally, include generated public key for each requester in the request
-	mnemonic := u.config.Secret.Mnemonic
-	passphrase := u.config.Secret.Passphrase
-	salt := u.config.Secret.Salt
-
-	for i := range requestDTO.Requesters {
-		requester := &requestDTO.Requesters[i]
-		publicKey, _, err := crypto.GenerateAccount(
-			mnemonic, passphrase, salt, requester.Role, requester.ID,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate public key for requester: %w", err)
-		}
-
-		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert public key to hex: %w", err)
-		}
-
-		requester.PublicKey = &publicKeyHex
-	}
-
-	return requestDTO, nil
-}
-
 func (u *dataAccessUCase) GetRequestsByRequesterAccountID(
 	requesterAccountID, status string,
 ) ([]dto.DataAccessRequestDTO, error) {

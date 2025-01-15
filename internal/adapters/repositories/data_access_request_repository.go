@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -81,24 +80,6 @@ func (r *dataAccessRepository) CreateDataAccessRequestRequester(requester *domai
 		return err
 	}
 	return nil
-}
-
-// GetAccessRequestByID fetches a single data access request by requestAccountID and requestID.
-func (r *dataAccessRepository) GetAccessRequestByID(requestAccountID, requestID string) (*domain.DataAccessRequest, error) {
-	var request domain.DataAccessRequest
-
-	err := r.db.Preload("Requesters.Account").
-		Where("id = ? AND request_account_id = ?", requestID, requestAccountID).
-		First(&request).Error
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil // Return nil if no matching record is found
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch request by ID: %w", err)
-	}
-
-	return &request, nil
 }
 
 // GetRequestsByRequesterAccountID fetches data access requests by requester id, optionally filtered by status.
