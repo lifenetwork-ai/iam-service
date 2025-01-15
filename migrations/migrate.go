@@ -73,9 +73,10 @@ func RunMigrations(db *gorm.DB, config *conf.Configuration) error {
 		"./migrations/sql/04_validators.sql",
 		"./migrations/sql/05_refresh_tokens.sql",
 		"./migrations/sql/06_data_access_requests.sql",
-		"./migrations/sql/07_iam_policies.sql",
-		"./migrations/sql/08_iam_permissions.sql",
-		"./migrations/sql/09_account_policies.sql",
+		"./migrations/sql/07_data_access_request_requesters.sql",
+		"./migrations/sql/08_iam_policies.sql",
+		"./migrations/sql/09_iam_permissions.sql",
+		"./migrations/sql/10_account_policies.sql",
 	}
 
 	for _, script := range sqlScripts {
