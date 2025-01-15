@@ -909,7 +909,7 @@ const docTemplate = `{
         },
         "/api/v1/notifications/data-upload": {
             "post": {
-                "description": "This endpoint receives notifications when a user successfully uploads data.",
+                "description": "This webhook receives raw payload data when a user successfully uploads data.",
                 "consumes": [
                     "application/json"
                 ],
@@ -927,15 +927,6 @@ const docTemplate = `{
                         "name": "Authorization",
                         "in": "header",
                         "required": true
-                    },
-                    {
-                        "description": "Payload containing data upload details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.DataUploadNotificationPayloadDTO"
-                        }
                     }
                 ],
                 "responses": {
@@ -1158,26 +1149,6 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "description": "Timestamp of when the request was last updated",
-                    "type": "string"
-                }
-            }
-        },
-        "dto.DataUploadNotificationPayloadDTO": {
-            "type": "object",
-            "required": [
-                "access_account_ids",
-                "data_id"
-            ],
-            "properties": {
-                "access_account_ids": {
-                    "description": "List of account IDs with access to the data",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "data_id": {
-                    "description": "Unique identifier of the uploaded data",
                     "type": "string"
                 }
             }
