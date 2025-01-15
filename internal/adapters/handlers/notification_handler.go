@@ -12,11 +12,18 @@ import (
 )
 
 type notificationHandler struct {
-	authUCase interfaces.AuthUCase
+	authUCase    interfaces.AuthUCase
+	accountUCase interfaces.AccountUCase
 }
 
-func NewNotificationHandler(authUCase interfaces.AuthUCase) *notificationHandler {
-	return &notificationHandler{authUCase: authUCase}
+func NewNotificationHandler(
+	authUCase interfaces.AuthUCase,
+	accountUCase interfaces.AccountUCase,
+) *notificationHandler {
+	return &notificationHandler{
+		authUCase:    authUCase,
+		accountUCase: accountUCase,
+	}
 }
 
 // DataUploadWebhook handles notifications when a user uploads data successfully.
@@ -49,6 +56,15 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 	// TODO: Implement data upload webhook processing logic here
 	fmt.Println(accountDTO)
 	fmt.Println(body)
+	validators, err := h.accountUCase.GetActiveValidators([]string{})
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to get active validators: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to get active validators", err)
+		return
+	}
+	fmt.Println(validators)
+
+	// TODO: i need a helper function that select random validators from the list of active validators, it could be 3 5 7 9,... for each round call
 
 	// Return success response
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Notification received successfully"})

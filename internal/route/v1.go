@@ -104,7 +104,7 @@ func RegisterRoutes(
 	// SECTION: notifications
 	appRouterNotifications := v1.Group("notifications")
 	appRouterNotifications.Use(middleware.ValidateBearerToken())
-	notificationHandler := handlers.NewNotificationHandler(authUCase)
+	notificationHandler := handlers.NewNotificationHandler(authUCase, accountUCase)
 	appRouterNotifications.POST(
 		"/data-upload",
 		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
