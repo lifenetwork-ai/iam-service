@@ -32,9 +32,9 @@ func NewDataAccessUCase(
 
 // CreateRequest handles the logic to create a new data access request
 func (u *dataAccessUCase) CreateRequest(
-	payload dto.DataAccessRequestPayloadDTO, requesterAccountID, requesterAccountRole string,
+	payload dto.DataAccessRequestPayloadDTO, requesterAccounts []dto.AccountDTO,
 ) error {
-	// Ensure the requester and requested accounts exist
+	// Ensure the requested account exists
 	requestAccount, err := u.accountRepository.FindAccountByID(payload.RequestAccountID)
 	if err != nil {
 		return err
@@ -45,16 +45,26 @@ func (u *dataAccessUCase) CreateRequest(
 
 	// Create the DataAccessRequest domain model
 	dataAccessRequest := &domain.DataAccessRequest{
-		RequestAccountID:   payload.RequestAccountID,
-		RequesterAccountID: requesterAccountID,
-		RequesterRole:      requesterAccountRole,
-		ReasonForRequest:   payload.ReasonForRequest,
-		Status:             constants.DataAccessRequestPending.String(), // Default status
+		RequestAccountID: payload.RequestAccountID,
+		ReasonForRequest: payload.ReasonForRequest,
+		Status:           constants.DataAccessRequestPending.String(), // Default status
 	}
 
-	// Save the request in the database using the repository
+	// Save the data access request in the database
 	if err := u.dataAccessRepository.CreateDataAccessRequest(dataAccessRequest); err != nil {
 		return err
+	}
+
+	// Loop through each requester and associate them with the request
+	for _, requester := range requesterAccounts {
+		requesterEntry := &domain.DataAccessRequestRequester{
+			RequestID:          dataAccessRequest.ID,
+			RequesterAccountID: requester.ID,
+		}
+
+		if err := u.dataAccessRepository.CreateDataAccessRequestRequester(requesterEntry); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -64,27 +74,37 @@ func (u *dataAccessUCase) CreateRequest(
 func (u *dataAccessUCase) GetRequestsByStatus(
 	requestAccountID string, status constants.DataAccessRequestStatus,
 ) ([]dto.DataAccessRequestDTO, error) {
-	// Retrieve secret values
-	mnemonic := u.config.Secret.Mnemonic
-	passphrase := u.config.Secret.Passphrase
-	salt := u.config.Secret.Salt
-
 	// Fetch requests by status from the repository
 	requests, err := u.dataAccessRepository.GetRequestsByStatus(requestAccountID, string(status))
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch requests with status %s: %w", status, err)
 	}
 
-	// Convert domain models to DTOs
+	// Process requests and convert them to DTOs
 	requestDTOs := make([]dto.DataAccessRequestDTO, len(requests))
 	for i, req := range requests {
-		dto := req.ToDTO()
+		dto, err := u.populateRequesterPublicKey(req)
+		if err != nil {
+			return nil, err
+		}
+		requestDTOs[i] = *dto
+	}
 
-		requester := dto.RequesterAccount
-		// Generate public key
-		publicKey, _, err := crypto.GenerateAccount(
-			mnemonic, passphrase, salt, requester.Role, requester.ID,
-		)
+	return requestDTOs, nil
+}
+
+// populateRequesterPublicKey enriches a request with the public keys of all requesters
+func (u *dataAccessUCase) populateRequesterPublicKey(request domain.DataAccessRequest) (*dto.DataAccessRequestDTO, error) {
+	mnemonic := u.config.Secret.Mnemonic
+	passphrase := u.config.Secret.Passphrase
+	salt := u.config.Secret.Salt
+
+	dto := request.ToDTO()
+
+	// Iterate over all requesters and generate public keys
+	for i, requester := range dto.Requesters {
+		// Generate public key for each requester
+		publicKey, _, err := crypto.GenerateAccount(mnemonic, passphrase, salt, requester.Role, requester.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate public key for requester %s: %w", requester.ID, err)
 		}
@@ -94,12 +114,12 @@ func (u *dataAccessUCase) GetRequestsByStatus(
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert public key to hex for requester %s: %w", requester.ID, err)
 		}
-		dto.RequesterAccount.PublicKey = &publicKeyHex
 
-		requestDTOs[i] = *dto
+		// Assign the public key to the requester's DTO
+		dto.Requesters[i].PublicKey = &publicKeyHex
 	}
 
-	return requestDTOs, nil
+	return dto, nil
 }
 
 // ApproveOrRejectRequest updates the status of a data access request
@@ -122,9 +142,9 @@ func (u *dataAccessUCase) ApproveOrRejectRequestByID(
 }
 
 // GetAccessRequest fetches a single data access request by requestAccountID and requesterAccountID
-func (u *dataAccessUCase) GetAccessRequest(requestAccountID, requesterAccountID string) (*dto.DataAccessRequestDTO, error) {
-	// Fetch the approved or pending request from the repository
-	request, err := u.dataAccessRepository.GetAccessRequest(requestAccountID, requesterAccountID)
+func (u *dataAccessUCase) GetAccessRequest(requestAccountID, requestID string) (*dto.DataAccessRequestDTO, error) {
+	// Fetch the request by requestAccountID and requestID from the repository
+	request, err := u.dataAccessRepository.GetAccessRequestByID(requestAccountID, requestID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch access request: %w", err)
 	}
@@ -137,24 +157,27 @@ func (u *dataAccessUCase) GetAccessRequest(requestAccountID, requesterAccountID 
 	// Convert the domain model to a DTO
 	requestDTO := request.ToDTO()
 
-	// Optionally, include generated public key for the requester
+	// Optionally, include generated public key for each requester in the request
 	mnemonic := u.config.Secret.Mnemonic
 	passphrase := u.config.Secret.Passphrase
 	salt := u.config.Secret.Salt
 
-	publicKey, _, err := crypto.GenerateAccount(
-		mnemonic, passphrase, salt, request.RequesterAccount.Role, request.RequesterAccount.ID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate public key for requester: %w", err)
-	}
+	for i := range requestDTO.Requesters {
+		requester := &requestDTO.Requesters[i]
+		publicKey, _, err := crypto.GenerateAccount(
+			mnemonic, passphrase, salt, requester.Role, requester.ID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate public key for requester: %w", err)
+		}
 
-	publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert public key to hex: %w", err)
-	}
+		publicKeyHex, err := crypto.PublicKeyToHex(publicKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert public key to hex: %w", err)
+		}
 
-	requestDTO.RequesterAccount.PublicKey = &publicKeyHex
+		requester.PublicKey = &publicKeyHex
+	}
 
 	return requestDTO, nil
 }

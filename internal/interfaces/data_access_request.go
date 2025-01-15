@@ -12,16 +12,17 @@ type DataAccessRepository interface {
 	UpdateRequestStatusByID(
 		requestAccountID, requestID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 	) error
-	GetAccessRequest(requestAccountID, requesterAccountID string) (*domain.DataAccessRequest, error)
+	GetAccessRequestByID(requestAccountID, requestID string) (*domain.DataAccessRequest, error)
+	CreateDataAccessRequestRequester(requester *domain.DataAccessRequestRequester) error
 }
 
 type DataAccessUCase interface {
-	CreateRequest(payload dto.DataAccessRequestPayloadDTO, requesterAccountID, requesterAccountRole string) error
+	CreateRequest(payload dto.DataAccessRequestPayloadDTO, requesterAccounts []dto.AccountDTO) error
 	GetRequestsByStatus(
 		requestAccountID string, status constants.DataAccessRequestStatus,
 	) ([]dto.DataAccessRequestDTO, error)
 	ApproveOrRejectRequestByID(
 		requestAccountID, requestID string, status constants.DataAccessRequestStatus, reasonForRejection *string,
 	) error
-	GetAccessRequest(requestAccountID, requesterAccountID string) (*dto.DataAccessRequestDTO, error)
+	GetAccessRequest(requestAccountID, requestID string) (*dto.DataAccessRequestDTO, error)
 }

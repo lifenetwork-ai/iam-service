@@ -461,9 +461,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
-                "description": "Allows a requester to create a new data access request for a specific user.",
+            }
+        },
+        "/api/v1/data-access/{requestID}": {
+            "get": {
+                "description": "Fetches the data access request for a specific requester and authenticated user, prioritizing approved requests.",
                 "consumes": [
                     "application/json"
                 ],
@@ -473,7 +475,7 @@ const docTemplate = `{
                 "tags": [
                     "data-access"
                 ],
-                "summary": "Create a data access request",
+                "summary": "Get a data access request",
                 "parameters": [
                     {
                         "type": "string",
@@ -483,31 +485,40 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Payload containing user ID and reason for request",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.DataAccessRequestPayloadDTO"
-                        }
+                        "type": "string",
+                        "description": "ID of the account making the request",
+                        "name": "requesterAccountID",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Data access request created successfully",
+                    "200": {
+                        "description": "Data access request details",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/dto.DataAccessRequestDTO"
                         }
                     },
                     "400": {
-                        "description": "Invalid payload",
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/response.GeneralError"
                         }
                     },
                     "404": {
-                        "description": "Requested user not found",
+                        "description": "Request not found",
                         "schema": {
                             "$ref": "#/definitions/response.GeneralError"
                         }
@@ -633,75 +644,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/data-access/{requesterAccountID}": {
-            "get": {
-                "description": "Fetches the data access request for a specific requester and authenticated user, prioritizing approved requests.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "data-access"
-                ],
-                "summary": "Get a data access request",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "ID of the account making the request",
-                        "name": "requesterAccountID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Data access request details",
-                        "schema": {
-                            "$ref": "#/definitions/dto.DataAccessRequestDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.GeneralError"
-                        }
-                    },
-                    "404": {
-                        "description": "Request not found",
                         "schema": {
                             "$ref": "#/definitions/response.GeneralError"
                         }
@@ -1203,13 +1145,12 @@ const docTemplate = `{
                     "description": "ID of the account being accessed",
                     "type": "string"
                 },
-                "requester_account": {
-                    "description": "Details of the account making the request",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/dto.AccountDTO"
-                        }
-                    ]
+                "requesters": {
+                    "description": "List of accounts making the request",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AccountDTO"
+                    }
                 },
                 "status": {
                     "description": "Status of the request (PENDING, APPROVED, REJECTED)",
@@ -1217,28 +1158,6 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "description": "Timestamp of when the request was last updated",
-                    "type": "string"
-                }
-            }
-        },
-        "dto.DataAccessRequestPayloadDTO": {
-            "type": "object",
-            "required": [
-                "file_id",
-                "reason_for_request",
-                "request_account_id"
-            ],
-            "properties": {
-                "file_id": {
-                    "description": "File ID",
-                    "type": "string"
-                },
-                "reason_for_request": {
-                    "description": "Reason for the data access request",
-                    "type": "string"
-                },
-                "request_account_id": {
-                    "description": "Account whose data is being requested",
                     "type": "string"
                 }
             }

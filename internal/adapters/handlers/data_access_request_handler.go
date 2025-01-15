@@ -15,79 +15,19 @@ import (
 type dataAccessHandler struct {
 	dataAccessUCase interfaces.DataAccessUCase
 	authUCase       interfaces.AuthUCase
+	accountUCase    interfaces.AccountUCase
 }
 
 func NewDataAccessHandler(
 	dataAccessUCase interfaces.DataAccessUCase,
 	authUCase interfaces.AuthUCase,
+	accountUCase interfaces.AccountUCase,
 ) *dataAccessHandler {
 	return &dataAccessHandler{
 		dataAccessUCase: dataAccessUCase,
 		authUCase:       authUCase,
+		accountUCase:    accountUCase,
 	}
-}
-
-// CreateDataAccessRequest handles the logic to create a new data access request.
-// @Summary Create a data access request
-// @Description Allows a requester to create a new data access request for a specific user.
-// @Tags data-access
-// @Accept json
-// @Produce json
-// @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
-// @Param payload body dto.DataAccessRequestPayloadDTO true "Payload containing user ID and reason for request"
-// @Success 201 {object} map[string]interface{} "Data access request created successfully"
-// @Failure 400 {object} response.GeneralError "Invalid payload"
-// @Failure 404 {object} response.GeneralError "Requested user not found"
-// @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/data-access [post]
-func (h *dataAccessHandler) CreateDataAccessRequest(ctx *gin.Context) {
-	// Retrieve the token from the context
-	token, exists := ctx.Get("token")
-	if !exists {
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", nil)
-		return
-	}
-
-	// Validate the token and fetch requester details
-	accountDTO, err := h.authUCase.ValidateToken(token.(string))
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to validate token: %v", err)
-		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
-		return
-	}
-
-	// Parse the request payload
-	var payload dto.DataAccessRequestPayloadDTO
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		logger.GetLogger().Errorf("Invalid payload: %v", err)
-		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
-		return
-	}
-
-	// Validate the payload
-	if accountDTO.ID == payload.RequestAccountID {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Cannot request access to own account", nil)
-		return
-	}
-
-	// Create the data access request
-	err = h.dataAccessUCase.CreateRequest(
-		payload,
-		accountDTO.ID,
-		accountDTO.Role,
-	)
-	if err != nil {
-		if err.Error() == "requested account not found" {
-			httpresponse.Error(ctx, http.StatusNotFound, "Requested user not found", nil)
-		} else {
-			logger.GetLogger().Errorf("Failed to create data access request: %v", err)
-			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to create data access request", err)
-		}
-		return
-	}
-
-	// Return success response
-	ctx.JSON(http.StatusCreated, gin.H{"message": "Data access request created successfully"})
 }
 
 // GetDataAccessRequests retrieves a list of data access requests filtered by status.
@@ -264,7 +204,7 @@ func (h *dataAccessHandler) RejectRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Request rejected successfully"})
 }
 
-// GetAccessRequest retrieves the data access request for a specific requester, focusing on approved requests.
+// GetAccessRequest retrieves the data access request for a specific request id.
 // @Summary Get a data access request
 // @Description Fetches the data access request for a specific requester and authenticated user, prioritizing approved requests.
 // @Tags data-access
@@ -278,7 +218,7 @@ func (h *dataAccessHandler) RejectRequest(ctx *gin.Context) {
 // @Failure 403 {object} response.GeneralError "Forbidden"
 // @Failure 404 {object} response.GeneralError "Request not found"
 // @Failure 500 {object} response.GeneralError "Internal server error"
-// @Router /api/v1/data-access/{requesterAccountID} [get]
+// @Router /api/v1/data-access/{requestID} [get]
 func (h *dataAccessHandler) GetAccessRequest(ctx *gin.Context) {
 	// Retrieve the token from the context
 	token, exists := ctx.Get("token")
@@ -302,14 +242,14 @@ func (h *dataAccessHandler) GetAccessRequest(ctx *gin.Context) {
 	}
 
 	// Get the requesterAccountID from the path
-	requesterAccountID := ctx.Param("requesterAccountID")
-	if requesterAccountID == "" {
-		httpresponse.Error(ctx, http.StatusBadRequest, "Requester account ID is required", nil)
+	requestID := ctx.Param("requestID")
+	if requestID == "" {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Request ID is required", nil)
 		return
 	}
 
 	// Fetch the data access request using the use case
-	accessRequest, err := h.dataAccessUCase.GetAccessRequest(accountDTO.ID, requesterAccountID)
+	accessRequest, err := h.dataAccessUCase.GetAccessRequest(accountDTO.ID, requestID)
 	if err != nil {
 		if err.Error() == "request not found" {
 			httpresponse.Error(ctx, http.StatusNotFound, "Request not found", nil)

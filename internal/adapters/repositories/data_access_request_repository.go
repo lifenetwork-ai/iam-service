@@ -72,19 +72,27 @@ func (r *dataAccessRepository) UpdateRequestStatusByID(
 	return nil
 }
 
-// GetAccessRequest fetches a single data access request by requestAccountID and requesterAccountID.
-func (r *dataAccessRepository) GetAccessRequest(requestAccountID, requesterAccountID string) (*domain.DataAccessRequest, error) {
+// CreateDataAccessRequestRequester inserts a new requester entry into the data_access_request_requesters table.
+func (r *dataAccessRepository) CreateDataAccessRequestRequester(requester *domain.DataAccessRequestRequester) error {
+	if err := r.db.Create(requester).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetAccessRequestByID fetches a single data access request by requestAccountID and requestID.
+func (r *dataAccessRepository) GetAccessRequestByID(requestAccountID, requestID string) (*domain.DataAccessRequest, error) {
 	var request domain.DataAccessRequest
 
-	err := r.db.Preload("RequesterAccount").
-		Where("request_account_id = ? AND requester_account_id = ?", requestAccountID, requesterAccountID).
+	err := r.db.Preload("Requesters.Account").
+		Where("id = ? AND request_account_id = ?", requestID, requestAccountID).
 		First(&request).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil // Return nil if no matching record is found
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch approved request: %w", err)
+		return nil, fmt.Errorf("failed to fetch request by ID: %w", err)
 	}
 
 	return &request, nil

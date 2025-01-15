@@ -95,8 +95,7 @@ func RegisterRoutes(
 
 	// SECTION: data access
 	appRouterDataAccess := v1.Group("data-access")
-	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase)
-	appRouterDataAccess.POST("/", middleware.ValidateBearerToken(), dataAccessHandler.CreateDataAccessRequest)
+	dataAccessHandler := handlers.NewDataAccessHandler(dataAccessUCase, authUCase, accountUCase)
 	appRouterDataAccess.GET("/", middleware.ValidateBearerToken(), dataAccessHandler.GetDataAccessRequests)
 	appRouterDataAccess.PUT("/:requestID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
 	appRouterDataAccess.PUT("/:requestID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
