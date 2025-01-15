@@ -100,3 +100,27 @@ func (r *dataAccessRepository) GetAccessRequestByID(requestAccountID, requestID 
 
 	return &request, nil
 }
+
+// GetRequestsByRequesterAccountID fetches data access requests by requester id, optionally filtered by status.
+func (r *dataAccessRepository) GetRequestsByRequesterAccountID(requesterAccountID, status string) ([]domain.DataAccessRequest, error) {
+	var requests []domain.DataAccessRequest
+
+	// Build the query to fetch requests by requester_account_id
+	query := r.db.
+		Joins("JOIN data_access_request_requesters ON data_access_request_requesters.request_id = data_access_requests.id").
+		Where("data_access_request_requesters.requester_account_id = ?", requesterAccountID).
+		Preload("FileInfo.Owner")
+
+	// Add the status condition if it is provided
+	if status != "" {
+		query = query.Where("data_access_requests.status = ?", status)
+	}
+
+	// Execute the query
+	err := query.Find(&requests).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch requests for requester account ID %s: %w", requesterAccountID, err)
+	}
+
+	return requests, nil
+}
