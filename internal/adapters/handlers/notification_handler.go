@@ -16,17 +16,20 @@ type notificationHandler struct {
 	authUCase       interfaces.AuthUCase
 	accountUCase    interfaces.AccountUCase
 	dataAccessUCase interfaces.DataAccessUCase
+	fileInfoUCase   interfaces.FileInfoUCase
 }
 
 func NewNotificationHandler(
 	authUCase interfaces.AuthUCase,
 	accountUCase interfaces.AccountUCase,
 	dataAccessUCase interfaces.DataAccessUCase,
+	fileInfoUCase interfaces.FileInfoUCase,
 ) *notificationHandler {
 	return &notificationHandler{
 		authUCase:       authUCase,
 		accountUCase:    accountUCase,
 		dataAccessUCase: dataAccessUCase,
+		fileInfoUCase:   fileInfoUCase,
 	}
 }
 
@@ -92,6 +95,8 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to create data access request", err)
 		return
 	}
+
+	_ = h.fileInfoUCase.CreateFileInfo(*payload)
 
 	// TODO: map the data access request
 

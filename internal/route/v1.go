@@ -23,6 +23,7 @@ func RegisterRoutes(
 	accountUCase interfaces.AccountUCase,
 	dataAccessUCase interfaces.DataAccessUCase,
 	iamUCase interfaces.IAMUCase,
+	fileInfoUCase interfaces.FileInfoUCase,
 ) {
 	v1 := r.Group("/api/v1")
 
@@ -109,7 +110,7 @@ func RegisterRoutes(
 	// SECTION: notifications
 	appRouterNotifications := v1.Group("notifications")
 	appRouterNotifications.Use(middleware.ValidateBearerToken())
-	notificationHandler := handlers.NewNotificationHandler(authUCase, accountUCase, dataAccessUCase)
+	notificationHandler := handlers.NewNotificationHandler(authUCase, accountUCase, dataAccessUCase, fileInfoUCase)
 	appRouterNotifications.POST(
 		"/data-upload",
 		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),

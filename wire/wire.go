@@ -37,6 +37,11 @@ var iamUCaseSet = wire.NewSet(
 	ucases.NewIAMUCase,
 )
 
+var fileInfoUCaseSet = wire.NewSet(
+	repositories.NewFileInfoRepository,
+	ucases.NewFileInfoUCase,
+)
+
 // Init ucase
 func GetAuthUCase(db *gorm.DB, config *conf.Configuration) interfaces.AuthUCase {
 	wire.Build(authUCaseSet)
@@ -55,5 +60,10 @@ func GetDataAccessUCase(db *gorm.DB, config *conf.Configuration) interfaces.Data
 
 func GetIAMUCase(db *gorm.DB) interfaces.IAMUCase {
 	wire.Build(iamUCaseSet)
+	return nil
+}
+
+func GetFileInfoUCase(db *gorm.DB) interfaces.FileInfoUCase {
+	wire.Build(fileInfoUCaseSet)
 	return nil
 }
