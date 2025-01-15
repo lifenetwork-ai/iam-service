@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
 	"github.com/genefriendway/human-network-auth/pkg/logger"
@@ -13,17 +14,20 @@ import (
 )
 
 type notificationHandler struct {
-	authUCase    interfaces.AuthUCase
-	accountUCase interfaces.AccountUCase
+	authUCase       interfaces.AuthUCase
+	accountUCase    interfaces.AccountUCase
+	dataAccessUCase interfaces.DataAccessUCase
 }
 
 func NewNotificationHandler(
 	authUCase interfaces.AuthUCase,
 	accountUCase interfaces.AccountUCase,
+	dataAccessUCase interfaces.DataAccessUCase,
 ) *notificationHandler {
 	return &notificationHandler{
-		authUCase:    authUCase,
-		accountUCase: accountUCase,
+		authUCase:       authUCase,
+		accountUCase:    accountUCase,
+		dataAccessUCase: dataAccessUCase,
 	}
 }
 
@@ -55,7 +59,6 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 	}
 
 	// TODO: Implement data upload webhook processing logic here
-	fmt.Println(accountDTO)
 	fmt.Println(body)
 	validators, err := h.accountUCase.GetActiveValidators([]string{})
 	if err != nil {
@@ -72,8 +75,27 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to select random validators", err)
 		return
 	}
+	logger.GetLogger().Infof("Selected validators: %v", selectedValidators)
 
-	fmt.Println(selectedValidators)
+	// Convert selected validators to DTOs
+	requesterAccounts := make([]dto.AccountDTO, len(selectedValidators))
+	for i, validator := range selectedValidators {
+		requesterAccounts[i] = validator.Account
+	}
+
+	// TODO: should parse file-id from the request body
+	// Create a data access request for the selected validators
+	dataAccessPayload := dto.DataAccessRequestPayloadDTO{
+		RequestAccountID: accountDTO.(*dto.AccountDTO).ID,
+		ReasonForRequest: "Access data for validation",
+		FileID:           "file-id",
+	}
+
+	if err := h.dataAccessUCase.CreateRequest(dataAccessPayload, requesterAccounts); err != nil {
+		logger.GetLogger().Errorf("Failed to create data access request: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to create data access request", err)
+		return
+	}
 
 	// Return success response
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Notification received successfully"})

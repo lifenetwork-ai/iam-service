@@ -33,7 +33,7 @@ func (r *dataAccessRepository) GetRequestsByStatus(requestAccountID, status stri
 	var requests []domain.DataAccessRequest
 
 	// Build the query
-	query := r.db.Preload("RequesterAccount").Where("request_account_id = ?", requestAccountID)
+	query := r.db.Preload("Requesters").Where("request_account_id = ?", requestAccountID)
 
 	// Add the status condition if it is provided
 	if status != "" {
