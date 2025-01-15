@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -50,16 +49,20 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 		return
 	}
 
-	// Read the raw request body
-	body, err := ctx.GetRawData()
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to read request body: %v", err)
-		httpresponse.Error(ctx, http.StatusBadRequest, "Failed to read request body", err)
+	// Parse the JSON payload into a struct
+	var registeredDataPayload struct {
+		ID         string `json:"id" validate:"required,uuid"`           // File ID
+		Name       string `json:"name" validate:"required"`              // File name
+		ShareCount int    `json:"share_count" validate:"required,min=1"` // Number of shares
+		OwnerID    string `json:"owner_id" validate:"required,uuid"`     // Owner ID
+	}
+
+	if err := ctx.ShouldBindJSON(&registeredDataPayload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload format", err)
 		return
 	}
 
-	// TODO: Implement data upload webhook processing logic here
-	fmt.Println(body)
 	validators, err := h.accountUCase.GetActiveValidators([]string{})
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get active validators: %v", err)
@@ -83,12 +86,11 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 		requesterAccounts[i] = validator.Account
 	}
 
-	// TODO: should parse file-id from the request body
 	// Create a data access request for the selected validators
 	dataAccessPayload := dto.DataAccessRequestPayloadDTO{
 		RequestAccountID: accountDTO.(*dto.AccountDTO).ID,
 		ReasonForRequest: "Access data for validation",
-		FileID:           "file-id",
+		FileID:           registeredDataPayload.ID,
 	}
 
 	if err := h.dataAccessUCase.CreateRequest(dataAccessPayload, requesterAccounts); err != nil {
@@ -96,6 +98,8 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to create data access request", err)
 		return
 	}
+
+	// TODO: map the data access request
 
 	// Return success response
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Notification received successfully"})
