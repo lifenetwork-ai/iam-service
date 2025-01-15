@@ -1153,6 +1153,10 @@ const docTemplate = `{
                     "description": "ID of the account being accessed",
                     "type": "string"
                 },
+                "requester_id": {
+                    "description": "ID of the account making the request",
+                    "type": "string"
+                },
                 "requesters": {
                     "description": "List of accounts making the request",
                     "type": "array",

@@ -182,3 +182,26 @@ func (u *dataAccessUCase) GetAccessRequest(requestAccountID, requestID string) (
 
 	return requestDTO, nil
 }
+
+func (u *dataAccessUCase) GetRequestsByRequesterAccountID(
+	requesterAccountID, status string,
+) ([]dto.DataAccessRequestDTO, error) {
+	// Fetch requests by requesterAccountID and status from the repository
+	requests, err := u.dataAccessRepository.GetRequestsByRequesterAccountID(requesterAccountID, status)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch requests for requester account ID %s: %w", requesterAccountID, err)
+	}
+
+	// Process requests and convert them to DTOs
+	requestDTOs := make([]dto.DataAccessRequestDTO, len(requests))
+	for i, req := range requests {
+		dto, err := u.populateRequesterPublicKey(req)
+		if err != nil {
+			return nil, err
+		}
+		requestDTOs[i] = *dto
+		requestDTOs[i].RequesterID = requesterAccountID
+	}
+
+	return requestDTOs, nil
+}

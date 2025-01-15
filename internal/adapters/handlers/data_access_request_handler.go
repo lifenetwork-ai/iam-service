@@ -69,11 +69,28 @@ func (h *dataAccessHandler) GetDataAccessRequests(ctx *gin.Context) {
 		return
 	}
 
-	// Fetch requests by status
-	requests, err := h.dataAccessUCase.GetRequestsByStatus(accountDTO.ID, constants.DataAccessRequestStatus(status))
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to fetch data access requests: %v", err)
-		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch data access requests", err)
+	var requests []dto.DataAccessRequestDTO
+
+	// Check role and fetch requests accordingly
+	if accountDTO.Role == constants.DataOwner.String() {
+		// Fetch requests by status for DataOwner
+		requests, err = h.dataAccessUCase.GetRequestsByStatus(accountDTO.ID, constants.DataAccessRequestStatus(status))
+		if err != nil {
+			logger.GetLogger().Errorf("Failed to fetch data access requests for DataOwner: %v", err)
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch data access requests", err)
+			return
+		}
+	} else if accountDTO.Role == constants.Validator.String() {
+		// Fetch requests by requesterAccountID for Validator
+		requests, err = h.dataAccessUCase.GetRequestsByRequesterAccountID(accountDTO.ID, status)
+		if err != nil {
+			logger.GetLogger().Errorf("Failed to fetch data access requests for Validator: %v", err)
+			httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch data access requests", err)
+			return
+		}
+	} else {
+		// If role is not recognized, return a forbidden error
+		httpresponse.Error(ctx, http.StatusForbidden, "Access denied", nil)
 		return
 	}
 
