@@ -50,14 +50,8 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 	}
 
 	// Parse the JSON payload into a struct
-	var registeredDataPayload struct {
-		ID         string `json:"id" validate:"required,uuid"`           // File ID
-		Name       string `json:"name" validate:"required"`              // File name
-		ShareCount int    `json:"share_count" validate:"required,min=1"` // Number of shares
-		OwnerID    string `json:"owner_id" validate:"required,uuid"`     // Owner ID
-	}
-
-	if err := ctx.ShouldBindJSON(&registeredDataPayload); err != nil {
+	payload := &dto.FileInfoPayloadDTO{}
+	if err := ctx.ShouldBindJSON(payload); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
 		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload format", err)
 		return
@@ -90,7 +84,7 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 	dataAccessPayload := dto.DataAccessRequestPayloadDTO{
 		RequestAccountID: accountDTO.(*dto.AccountDTO).ID,
 		ReasonForRequest: "Access data for validation",
-		FileID:           registeredDataPayload.ID,
+		FileID:           payload.ID,
 	}
 
 	if err := h.dataAccessUCase.CreateRequest(dataAccessPayload, requesterAccounts); err != nil {
