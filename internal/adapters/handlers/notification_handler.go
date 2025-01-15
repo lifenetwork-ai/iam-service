@@ -1,22 +1,33 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
 	"github.com/genefriendway/human-network-auth/pkg/logger"
+	"github.com/genefriendway/human-network-auth/pkg/utils"
 )
 
 type notificationHandler struct {
-	authUCase interfaces.AuthUCase
+	authUCase       interfaces.AuthUCase
+	accountUCase    interfaces.AccountUCase
+	dataAccessUCase interfaces.DataAccessUCase
 }
 
-func NewNotificationHandler(authUCase interfaces.AuthUCase) *notificationHandler {
-	return &notificationHandler{authUCase: authUCase}
+func NewNotificationHandler(
+	authUCase interfaces.AuthUCase,
+	accountUCase interfaces.AccountUCase,
+	dataAccessUCase interfaces.DataAccessUCase,
+) *notificationHandler {
+	return &notificationHandler{
+		authUCase:       authUCase,
+		accountUCase:    accountUCase,
+		dataAccessUCase: dataAccessUCase,
+	}
 }
 
 // DataUploadWebhook handles notifications when a user uploads data successfully.
@@ -38,17 +49,57 @@ func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
 		return
 	}
 
-	// Read the raw request body
-	body, err := ctx.GetRawData()
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to read request body: %v", err)
-		httpresponse.Error(ctx, http.StatusBadRequest, "Failed to read request body", err)
+	// Parse the JSON payload into a struct
+	var registeredDataPayload struct {
+		ID         string `json:"id" validate:"required,uuid"`           // File ID
+		Name       string `json:"name" validate:"required"`              // File name
+		ShareCount int    `json:"share_count" validate:"required,min=1"` // Number of shares
+		OwnerID    string `json:"owner_id" validate:"required,uuid"`     // Owner ID
+	}
+
+	if err := ctx.ShouldBindJSON(&registeredDataPayload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload format", err)
 		return
 	}
 
-	// TODO: Implement data upload webhook processing logic here
-	fmt.Println(accountDTO)
-	fmt.Println(body)
+	validators, err := h.accountUCase.GetActiveValidators([]string{})
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to get active validators: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to get active validators", err)
+		return
+	}
+
+	// Select a random subset of validators
+	subsetSize := 3
+	selectedValidators, err := utils.SelectRandomSubset(validators, subsetSize)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to select random validators: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to select random validators", err)
+		return
+	}
+	logger.GetLogger().Infof("Selected validators: %v", selectedValidators)
+
+	// Convert selected validators to DTOs
+	requesterAccounts := make([]dto.AccountDTO, len(selectedValidators))
+	for i, validator := range selectedValidators {
+		requesterAccounts[i] = validator.Account
+	}
+
+	// Create a data access request for the selected validators
+	dataAccessPayload := dto.DataAccessRequestPayloadDTO{
+		RequestAccountID: accountDTO.(*dto.AccountDTO).ID,
+		ReasonForRequest: "Access data for validation",
+		FileID:           registeredDataPayload.ID,
+	}
+
+	if err := h.dataAccessUCase.CreateRequest(dataAccessPayload, requesterAccounts); err != nil {
+		logger.GetLogger().Errorf("Failed to create data access request: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to create data access request", err)
+		return
+	}
+
+	// TODO: map the data access request
 
 	// Return success response
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Notification received successfully"})
