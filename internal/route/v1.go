@@ -63,6 +63,7 @@ func RegisterRoutes(
 
 	// SECTION: validator
 	appRouterValidator := v1.Group("validators")
+	appRouterValidator.Use(middleware.ValidateBearerToken())
 	appRouterValidator.GET(
 		"/active",
 		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
