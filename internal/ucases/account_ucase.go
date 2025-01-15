@@ -223,7 +223,7 @@ func (u *accountUCase) GetActiveValidators(validatorIDs []string) ([]dto.Account
 
 	// If validatorIDs is provided, filter by IDs; otherwise, fetch all active validators
 	if len(validatorIDs) > 0 {
-		validators, err = u.accountRepository.FindActiveValidatorsByIDs(validatorIDs)
+		validators, err = u.accountRepository.FindActiveValidatorsByAccountIDs(validatorIDs)
 	} else {
 		validators, err = u.accountRepository.FindActiveValidators()
 	}

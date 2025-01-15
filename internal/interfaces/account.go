@@ -29,7 +29,7 @@ type AccountRepository interface {
 	FindValidatorByAccountID(accountID string) (*domain.Validator, error)
 	CreateOrUpdateValidator(validator *domain.Validator) error
 	FindActiveValidators() ([]domain.Validator, error)
-	FindActiveValidatorsByIDs(validatorIDs []string) ([]domain.Validator, error)
+	FindActiveValidatorsByAccountIDs(accountIDs []string) ([]domain.Validator, error)
 }
 
 type AccountUCase interface {
