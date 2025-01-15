@@ -954,6 +954,60 @@
                 }
             }
         },
+        "/api/v1/notifications/data-upload": {
+            "post": {
+                "description": "This endpoint receives notifications when a user successfully uploads data.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Notify about successful data upload",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload containing data upload details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.DataUploadNotificationPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Notification received successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/validators/active": {
             "get": {
                 "description": "Fetches a list of active validators. Optionally, a comma-separated list of validator IDs can be provided to filter the results.",
@@ -1174,6 +1228,18 @@
                 },
                 "request_account_id": {
                     "description": "Account whose data is being requested",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DataUploadNotificationPayloadDTO": {
+            "type": "object",
+            "required": [
+                "data_id"
+            ],
+            "properties": {
+                "data_id": {
+                    "description": "Unique identifier of the uploaded data",
                     "type": "string"
                 }
             }

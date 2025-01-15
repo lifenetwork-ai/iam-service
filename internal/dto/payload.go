@@ -90,3 +90,8 @@ type PermissionPayloadDTO struct {
 	Action      string `json:"action" binding:"required"`                       // The action the permission allows
 	Description string `json:"description,omitempty"`                           // Optional description of the permission
 }
+
+// DataUploadNotificationPayloadDTO defines the payload for data upload notifications
+type DataUploadNotificationPayloadDTO struct {
+	DataID string `json:"data_id" validate:"required"` // Unique identifier of the uploaded data
+}

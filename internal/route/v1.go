@@ -101,4 +101,14 @@ func RegisterRoutes(
 	appRouterDataAccess.PUT("/:requestID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
 	appRouterDataAccess.PUT("/:requestID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
 	appRouterDataAccess.GET("/:requesterAccountID", middleware.ValidateBearerToken(), dataAccessHandler.GetAccessRequest)
+
+	// SECTION: notifications
+	appRouterNotifications := v1.Group("notifications")
+	appRouterNotifications.Use(middleware.ValidateBearerToken())
+	notificationHandler := handlers.NewNotificationHandler(authUCase)
+	appRouterNotifications.POST(
+		"/data-upload",
+		middleware.RequiredRoles(authUCase, constants.DataOwner.String()),
+		notificationHandler.DataUploadNotification,
+	)
 }

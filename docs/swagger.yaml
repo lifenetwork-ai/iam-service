@@ -108,6 +108,14 @@ definitions:
     - reason_for_request
     - request_account_id
     type: object
+  dto.DataUploadNotificationPayloadDTO:
+    properties:
+      data_id:
+        description: Unique identifier of the uploaded data
+        type: string
+    required:
+    - data_id
+    type: object
   dto.LoginPayloadDTO:
     properties:
       identifier:
@@ -939,6 +947,43 @@ paths:
       summary: Assign a permission to a policy
       tags:
       - IAM
+  /api/v1/notifications/data-upload:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint receives notifications when a user successfully uploads
+        data.
+      parameters:
+      - description: Bearer access token (e.g., 'Bearer <token>')
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Payload containing data upload details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DataUploadNotificationPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Notification received successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Notify about successful data upload
+      tags:
+      - notifications
   /api/v1/validators/active:
     get:
       consumes:
