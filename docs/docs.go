@@ -1165,9 +1165,17 @@ const docTemplate = `{
         "dto.DataUploadNotificationPayloadDTO": {
             "type": "object",
             "required": [
+                "access_account_ids",
                 "data_id"
             ],
             "properties": {
+                "access_account_ids": {
+                    "description": "List of account IDs with access to the data",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "data_id": {
                     "description": "Unique identifier of the uploaded data",
                     "type": "string"

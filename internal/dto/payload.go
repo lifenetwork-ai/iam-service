@@ -93,5 +93,12 @@ type PermissionPayloadDTO struct {
 
 // DataUploadNotificationPayloadDTO defines the payload for data upload notifications
 type DataUploadNotificationPayloadDTO struct {
-	DataID string `json:"data_id" validate:"required"` // Unique identifier of the uploaded data
+	DataID           string   `json:"data_id" validate:"required"`                      // Unique identifier of the uploaded data
+	AccessAccountIDs []string `json:"access_account_ids" validate:"required,dive,uuid"` // List of account IDs with access to the data
+}
+
+// FileAccessMappingPayloadDTO defines the payload for creating a file access mapping
+type FileAccessMappingPayloadDTO struct {
+	FileID    string `json:"file_id" validate:"required,uuid"`    // File ID being accessed
+	AccountID string `json:"account_id" validate:"required,uuid"` // Account requesting access
 }

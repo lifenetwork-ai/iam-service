@@ -95,10 +95,16 @@ definitions:
     type: object
   dto.DataUploadNotificationPayloadDTO:
     properties:
+      access_account_ids:
+        description: List of account IDs with access to the data
+        items:
+          type: string
+        type: array
       data_id:
         description: Unique identifier of the uploaded data
         type: string
     required:
+    - access_account_ids
     - data_id
     type: object
   dto.LoginPayloadDTO:
