@@ -1172,6 +1172,14 @@ const docTemplate = `{
                     "description": "File name",
                     "type": "string"
                 },
+                "owner": {
+                    "description": "Owner account",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.AccountDTO"
+                        }
+                    ]
+                },
                 "owner_id": {
                     "description": "Owner ID",
                     "type": "string"

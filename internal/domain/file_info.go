@@ -11,8 +11,9 @@ type FileInfo struct {
 	Name       string    `json:"name" gorm:"type:varchar(255);not null"`                    // File name
 	ShareCount int       `json:"share_count" gorm:"not null;check:share_count >= 0"`        // Number of shares, must be >= 0
 	OwnerID    string    `json:"owner_id" gorm:"type:uuid;not null"`                        // Owner ID, references accounts table
-	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`                          // Automatically set creation timestamp
-	UpdatedAt  time.Time `json:"updated_at" gorm:"autoUpdateTime"`                          // Automatically update timestamp on changes
+	Owner      Account   `json:"owner" gorm:"foreignKey:OwnerID;references:ID"`
+	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"` // Automatically set creation timestamp
+	UpdatedAt  time.Time `json:"updated_at" gorm:"autoUpdateTime"` // Automatically update timestamp on changes
 }
 
 // TableName overrides the default table name for GORM
@@ -27,5 +28,6 @@ func (m *FileInfo) ToDTO() *dto.FileInfoDTO {
 		Name:       m.Name,
 		ShareCount: m.ShareCount,
 		OwnerID:    m.OwnerID,
+		Owner:      *m.Owner.ToDTO(),
 	}
 }

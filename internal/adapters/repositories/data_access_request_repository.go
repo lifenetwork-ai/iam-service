@@ -34,7 +34,7 @@ func (r *dataAccessRepository) GetRequestsByStatus(requestAccountID, status stri
 
 	// Build the query
 	query := r.db.
-		Preload("FileInfo").
+		Preload("FileInfo.Owner").
 		Preload("Requesters.RequesterAccount").
 		Where("request_account_id = ?", requestAccountID)
 

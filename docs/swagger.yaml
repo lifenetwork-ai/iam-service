@@ -105,6 +105,10 @@ definitions:
       name:
         description: File name
         type: string
+      owner:
+        allOf:
+        - $ref: '#/definitions/dto.AccountDTO'
+        description: Owner account
       owner_id:
         description: Owner ID
         type: string
