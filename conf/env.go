@@ -33,38 +33,44 @@ type AdminAccountConfiguration struct {
 	AdminPassword string `mapstructure:"ADMIN_PASSWORD"`
 }
 
+type SecureGenomAPIConfiguration struct {
+	SecureGenomAPIBaseURL string `mapstructure:"SECURE_GENOM_API_BASE_URL"`
+}
+
 type Configuration struct {
-	Database     DatabaseConfiguration     `mapstructure:",squash"`
-	Redis        RedisConfiguration        `mapstructure:",squash"`
-	Secret       SecretConfiguration       `mapstructure:",squash"`
-	AdminAccount AdminAccountConfiguration `mapstructure:",squash"`
-	AppName      string                    `mapstructure:"APP_NAME"`
-	AppPort      uint32                    `mapstructure:"APP_PORT"`
-	Env          string                    `mapstructure:"ENV"`
-	LogLevel     string                    `mapstructure:"LOG_LEVEL"`
-	JWTSecret    string                    `mapstructure:"JWT_SECRET"`
+	Database          DatabaseConfiguration       `mapstructure:",squash"`
+	Redis             RedisConfiguration          `mapstructure:",squash"`
+	Secret            SecretConfiguration         `mapstructure:",squash"`
+	AdminAccount      AdminAccountConfiguration   `mapstructure:",squash"`
+	SecureGenomClient SecureGenomAPIConfiguration `mapstructure:",squash"`
+	AppName           string                      `mapstructure:"APP_NAME"`
+	AppPort           uint32                      `mapstructure:"APP_PORT"`
+	Env               string                      `mapstructure:"ENV"`
+	LogLevel          string                      `mapstructure:"LOG_LEVEL"`
+	JWTSecret         string                      `mapstructure:"JWT_SECRET"`
 }
 
 var configuration Configuration
 
 var defaultConfigurations = map[string]any{
-	"REDIS_ADDRESS":  "localhost:6379",
-	"REDIS_TTL":      "60",
-	"APP_PORT":       "8080",
-	"ENV_FILE":       ".env",
-	"ENV":            "DEV",
-	"LOG_LEVEL":      "debug",
-	"DB_USER":        "",
-	"DB_PASSWORD":    "",
-	"DB_HOST":        "",
-	"DB_PORT":        "",
-	"DB_NAME":        "",
-	"MNEMONIC":       "",
-	"PASSPHRASE":     "",
-	"SALT":           "",
-	"ADMIN_EMAIL":    "",
-	"ADMIN_PASSWORD": "",
-	"JWT_SECRET":     "",
+	"REDIS_ADDRESS":             "localhost:6379",
+	"REDIS_TTL":                 "60",
+	"APP_PORT":                  "8080",
+	"ENV_FILE":                  ".env",
+	"ENV":                       "DEV",
+	"LOG_LEVEL":                 "debug",
+	"DB_USER":                   "",
+	"DB_PASSWORD":               "",
+	"DB_HOST":                   "",
+	"DB_PORT":                   "",
+	"DB_NAME":                   "",
+	"MNEMONIC":                  "",
+	"PASSPHRASE":                "",
+	"SALT":                      "",
+	"ADMIN_EMAIL":               "",
+	"ADMIN_PASSWORD":            "",
+	"JWT_SECRET":                "",
+	"SECURE_GENOM_API_BASE_URL": "https://secure-genom.humannetwork.life",
 }
 
 // loadDefaultConfigs sets default values for critical configurations

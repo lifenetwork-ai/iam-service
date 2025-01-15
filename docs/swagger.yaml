@@ -218,6 +218,31 @@ definitions:
       policy:
         $ref: '#/definitions/dto.PolicyDTO'
     type: object
+  dto.ReencryptionKeyDTO:
+    properties:
+      pub_x:
+        type: string
+      rk_key:
+        type: string
+      validator_id:
+        type: string
+      validator_public_key:
+        type: string
+    required:
+    - pub_x
+    - rk_key
+    - validator_id
+    - validator_public_key
+    type: object
+  dto.ReencryptionKeyInfoPayloadDTO:
+    properties:
+      reencryption_key_info:
+        items:
+          $ref: '#/definitions/dto.ReencryptionKeyDTO'
+        type: array
+    required:
+    - reencryption_key_info
+    type: object
   dto.RefreshTokenPayloadDTO:
     properties:
       refresh_token:
@@ -660,7 +685,8 @@ paths:
     put:
       consumes:
       - application/json
-      description: Approves a pending data access request for the authenticated user.
+      description: Approves a pending data access request for the authenticated user
+        and includes re-encryption key information.
       parameters:
       - description: Bearer access token (e.g., 'Bearer <token>')
         in: header
@@ -672,6 +698,12 @@ paths:
         name: requestID
         required: true
         type: string
+      - description: Payload containing re-encryption key information
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReencryptionKeyInfoPayloadDTO'
       produces:
       - application/json
       responses:

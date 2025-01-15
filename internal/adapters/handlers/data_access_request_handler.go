@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-auth/infra/clients"
 	"github.com/genefriendway/human-network-auth/internal/dto"
 	"github.com/genefriendway/human-network-auth/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
@@ -13,20 +14,23 @@ import (
 )
 
 type dataAccessHandler struct {
-	dataAccessUCase interfaces.DataAccessUCase
-	authUCase       interfaces.AuthUCase
-	accountUCase    interfaces.AccountUCase
+	dataAccessUCase   interfaces.DataAccessUCase
+	authUCase         interfaces.AuthUCase
+	accountUCase      interfaces.AccountUCase
+	secureGenomClient clients.SecureGenomClient
 }
 
 func NewDataAccessHandler(
 	dataAccessUCase interfaces.DataAccessUCase,
 	authUCase interfaces.AuthUCase,
 	accountUCase interfaces.AccountUCase,
+	secureGenomClient clients.SecureGenomClient,
 ) *dataAccessHandler {
 	return &dataAccessHandler{
-		dataAccessUCase: dataAccessUCase,
-		authUCase:       authUCase,
-		accountUCase:    accountUCase,
+		dataAccessUCase:   dataAccessUCase,
+		authUCase:         authUCase,
+		accountUCase:      accountUCase,
+		secureGenomClient: secureGenomClient,
 	}
 }
 
@@ -91,12 +95,13 @@ func (h *dataAccessHandler) isValidDataAccessRequestStatus(status string) bool {
 
 // ApproveRequest handles approving a data access request.
 // @Summary Approve a data access request
-// @Description Approves a pending data access request for the authenticated user.
+// @Description Approves a pending data access request for the authenticated user and includes re-encryption key information.
 // @Tags data-access
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
 // @Param requestID path string true "ID of the request being approved"
+// @Param payload body dto.ReencryptionKeyInfoPayloadDTO true "Payload containing re-encryption key information"
 // @Success 200 {object} map[string]interface{} "Request approved successfully"
 // @Failure 400 {object} response.GeneralError "Bad request"
 // @Failure 401 {object} response.GeneralError "Unauthorized"
@@ -122,6 +127,23 @@ func (h *dataAccessHandler) ApproveRequest(ctx *gin.Context) {
 	requestID := ctx.Param("requestID")
 	if requestID == "" {
 		httpresponse.Error(ctx, http.StatusBadRequest, "Request ID is required", nil)
+		return
+	}
+
+	// Parse the re-encryption key information payload
+	var payload dto.ReencryptionKeyInfoPayloadDTO
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid payload", err)
+		return
+	}
+
+	// Call the external service to store re-encryption keys
+	authHeader := ctx.GetHeader("Authorization")
+	_, err = h.secureGenomClient.StoreReencryptionKeys(ctx, authHeader, payload)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to store re-encryption keys: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to store re-encryption keys", err)
 		return
 	}
 
