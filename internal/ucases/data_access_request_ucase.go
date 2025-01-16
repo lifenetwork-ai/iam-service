@@ -196,3 +196,25 @@ func (u *dataAccessUCase) ValidatorValidateFileContent(
 ) error {
 	return u.dataAccessRepository.ValidateFileContent(accountID, requestID, status, msg)
 }
+
+func (u *dataAccessUCase) ValidatorGetRequestDetail(
+	accountID, requestID string,
+) (dto.RequesterRequestDTO, error) {
+	requester, err := u.dataAccessRepository.GetValidatorRequestDetail(accountID, requestID)
+	if err != nil {
+		return dto.RequesterRequestDTO{}, err
+	}
+
+	dtoRes, err := u.populateRequesterPublicKey(requester.Request)
+	if err != nil {
+		return dto.RequesterRequestDTO{}, err
+	}
+
+	result := dto.RequesterRequestDTO{
+		DataAccessRequestDTO: *dtoRes,
+		RequesterID:          accountID,
+		ValidationStatus:     requester.ValidationStatus,
+		ValidationMessage:    requester.ValidationMessage,
+	}
+	return result, nil
+}

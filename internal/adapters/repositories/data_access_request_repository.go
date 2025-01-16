@@ -144,3 +144,19 @@ func (r *dataAccessRepository) ValidateFileContent(accountID, requestID string, 
 
 	return nil
 }
+
+func (r *dataAccessRepository) GetValidatorRequestDetail(accountID, requestID string) (domain.DataAccessRequestRequesterTest, error) {
+	var requester domain.DataAccessRequestRequesterTest
+
+	query := r.db.Table("data_access_request_requesters").
+		Where("request_id = ? AND requester_account_id = ?", requestID, accountID).
+		Preload("Request.FileInfo.Owner").
+		Preload("RequesterAccount")
+
+	err := query.First(&requester).Error
+	if err != nil {
+		return domain.DataAccessRequestRequesterTest{}, fmt.Errorf("failed to fetch validator request detail: %w", err)
+	}
+
+	return requester, nil
+}

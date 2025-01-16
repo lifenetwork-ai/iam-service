@@ -12,3 +12,7 @@ type ValidationRequestDTO struct {
 	Status    string `json:"status" binding:"required"`
 	Msg       string `json:"msg,omitempty"`
 }
+
+type GetRequestDetailDTO struct {
+	RequestID string `json:"request_id" binding:"required"`
+}

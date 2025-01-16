@@ -19,6 +19,8 @@ type DataAccessRepository interface {
 
 	// TODO: sepearte this later / naming
 	ValidateFileContent(accountID, requestID string, status constants.RequesterRequestStatus, msg string) error
+
+	GetValidatorRequestDetail(accountID, requestID string) (domain.DataAccessRequestRequesterTest, error)
 }
 
 type DataAccessUCase interface {
@@ -39,4 +41,5 @@ type DataAccessUCase interface {
 
 	// TODO: sepearte this later / naming
 	ValidatorValidateFileContent(accountID, requestID string, status constants.RequesterRequestStatus, msg string) error
+	ValidatorGetRequestDetail(accountID, requestID string) (dto.RequesterRequestDTO, error)
 }

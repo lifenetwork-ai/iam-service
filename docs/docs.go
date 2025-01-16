@@ -522,6 +522,75 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/data-access/validator/requests/detail/{requestID}": {
+            "get": {
+                "description": "Fetches detailed information about a specific validation request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-access"
+                ],
+                "summary": "Get validator request detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Request ID to get details for",
+                        "name": "requestID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request details retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/domain.DataAccessRequestRequesterTest"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request ID",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Not a validator",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "404": {
+                        "description": "Request not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/data-access/validator/validate": {
             "post": {
                 "description": "Updates the validation status of a file (VALID or INVALID)",
@@ -1109,6 +1178,191 @@ const docTemplate = `{
                 "IdentifierUsername",
                 "IdentifierPhone"
             ]
+        },
+        "domain.Account": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "description": "Nullable, used for API-based roles",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "description": "UUID primary key",
+                    "type": "string"
+                },
+                "oauth_id": {
+                    "description": "Nullable, stores ID from OAuth provider",
+                    "type": "string"
+                },
+                "oauth_provider": {
+                    "description": "Nullable, stores OAuth provider name (e.g., Google, Facebook)",
+                    "type": "string"
+                },
+                "password_hash": {
+                    "description": "Nullable for OAuth or API Key accounts",
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DataAccessRequest": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Automatically set creation timestamp",
+                    "type": "string"
+                },
+                "file_id": {
+                    "description": "ID of the file being accessed",
+                    "type": "string"
+                },
+                "file_info": {
+                    "description": "Details of the file being accessed",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.FileInfo"
+                        }
+                    ]
+                },
+                "id": {
+                    "type": "string"
+                },
+                "reason_for_rejection": {
+                    "description": "Reason for rejection (optional)",
+                    "type": "string"
+                },
+                "reason_for_request": {
+                    "description": "Reason for the request",
+                    "type": "string"
+                },
+                "request_account_id": {
+                    "description": "Account whose data is being requested",
+                    "type": "string"
+                },
+                "requesters": {
+                    "description": "Linked requesters",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.DataAccessRequestRequester"
+                    }
+                },
+                "status": {
+                    "description": "Request status (PENDING, APPROVED, REJECTED)",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "Automatically update timestamp on changes",
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DataAccessRequestRequester": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "request_id": {
+                    "description": "Reference to data access request",
+                    "type": "string"
+                },
+                "requester_account": {
+                    "description": "Linked requester account                             // Automatically set creation timestamp",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.Account"
+                        }
+                    ]
+                },
+                "requester_account_id": {
+                    "description": "ID of the requester account",
+                    "type": "string"
+                },
+                "validation_message": {
+                    "type": "string"
+                },
+                "validation_status": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DataAccessRequestRequesterTest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Base requester information from data_access_request_requesters table",
+                    "type": "integer"
+                },
+                "request": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.DataAccessRequest"
+                        }
+                    ]
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "requester_account": {
+                    "$ref": "#/definitions/domain.Account"
+                },
+                "requester_account_id": {
+                    "type": "string"
+                },
+                "validation_message": {
+                    "type": "string"
+                },
+                "validation_status": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.FileInfo": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Automatically set creation timestamp",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Unique identifier for the file",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "File name",
+                    "type": "string"
+                },
+                "owner": {
+                    "$ref": "#/definitions/domain.Account"
+                },
+                "owner_id": {
+                    "description": "Owner ID, references accounts table",
+                    "type": "string"
+                },
+                "share_count": {
+                    "description": "Number of shares, must be \u003e= 0",
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "description": "Automatically update timestamp on changes",
+                    "type": "string"
+                }
+            }
         },
         "dto.AccountDTO": {
             "type": "object",

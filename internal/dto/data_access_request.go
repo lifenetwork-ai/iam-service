@@ -23,3 +23,33 @@ type RequesterRequestDTO struct {
 	ValidationStatus  string `json:"validation_status"`
 	ValidationMessage string `json:"validation_message,omitempty"`
 }
+
+type RequesterRequestDetailDTO struct {
+	ReencryptedDataDTO
+	RequesterRequestDTO
+}
+
+type ReencryptedDataDTO struct {
+	CapsuleAsBytes string                        `json:"capsule"`
+	PubX           string                        `json:"pub_x"`
+	FileUrl        string                        `json:"file_url"`
+	Metadata       ReencryptDataResponseMetadata `json:"metadata"`
+	FileInfo       RegisteredDataInfoResponse    `json:"file_info"`
+}
+
+type ReencryptDataResponseMetadata struct {
+	ID                  string `json:"id"`
+	OwnerID             string `json:"owner_id"`
+	ValidatorID         string `json:"validator_id"`
+	ContentType         string `json:"content_type"`
+	EncryptionAlgorithm string `json:"encryption_algorithm"`
+	EncryptionTimestamp int64  `json:"encryption_timestamp"`
+}
+
+type RegisteredDataInfoResponse struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	ShareCount int    `json:"share_count"`
+	OwnerID    string `json:"owner_id"`
+	CreatedAt  string `json:"created_at"`
+}
