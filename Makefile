@@ -36,3 +36,23 @@ swagger:
 
 wiring: 
 	wire ./wire
+
+
+DB_NAME=human-network-auth
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_PORT=5432
+DB_HOST=localhost
+
+
+docker-db-up:
+	docker run --name secure-genom-db \
+		-e POSTGRES_DB=$(DB_NAME) \
+		-e POSTGRES_USER=$(DB_USER) \
+		-e POSTGRES_PASSWORD=$(DB_PASSWORD) \
+		-p $(DB_PORT):5432 \
+		-d postgres:12
+
+docker-db-down:
+	docker stop secure-genom-db
+	docker rm secure-genom-db

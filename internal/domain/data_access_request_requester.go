@@ -5,6 +5,8 @@ type DataAccessRequestRequester struct {
 	RequestID          string  `json:"request_id" gorm:"not null"`                                           // Reference to data access request
 	RequesterAccountID string  `json:"requester_account_id" gorm:"not null"`                                 // ID of the requester account
 	RequesterAccount   Account `json:"requester_account" gorm:"foreignKey:RequesterAccountID;references:ID"` // Linked requester account                             // Automatically set creation timestamp
+	ValidationStatus   string  `json:"validation_status" gorm:"not null;default:PENDING"`
+	ValidationMessage  string  `json:"validation_message"`
 }
 
 func (m *DataAccessRequestRequester) TableName() string {

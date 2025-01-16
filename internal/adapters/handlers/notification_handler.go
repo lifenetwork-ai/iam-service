@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -47,7 +46,6 @@ func NewNotificationHandler(
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/notifications/data-upload [post]
 func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
-	fmt.Println("DataUploadWebhook...")
 	// Retrieve the authenticated account from context
 	accountDTO, ok := ctx.Get("account")
 	if !ok {
