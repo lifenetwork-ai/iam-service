@@ -190,3 +190,9 @@ func (u *dataAccessUCase) GetRequestsByRequesterAccountIDTest(
 
 	return requestDTOs, nil
 }
+
+func (u *dataAccessUCase) ValidatorValidateFileContent(
+	accountID, requestID string, status constants.RequesterRequestStatus, msg string,
+) error {
+	return u.dataAccessRepository.ValidateFileContent(accountID, requestID, status, msg)
+}

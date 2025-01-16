@@ -16,6 +16,9 @@ type DataAccessRepository interface {
 	GetRequestsByRequesterAccountID(requesterAccountID, status string) ([]domain.DataAccessRequest, error)
 
 	GetRequestsByRequesterAccountIDTest(requesterAccountID, status string) ([]domain.DataAccessRequestRequesterTest, error)
+
+	// TODO: sepearte this later / naming
+	ValidateFileContent(accountID, requestID string, status constants.RequesterRequestStatus, msg string) error
 }
 
 type DataAccessUCase interface {
@@ -33,4 +36,7 @@ type DataAccessUCase interface {
 	GetRequestsByRequesterAccountIDTest(
 		requesterAccountID, status string,
 	) ([]dto.RequesterRequestDTO, error)
+
+	// TODO: sepearte this later / naming
+	ValidatorValidateFileContent(accountID, requestID string, status constants.RequesterRequestStatus, msg string) error
 }

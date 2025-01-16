@@ -125,3 +125,22 @@ func (r *dataAccessRepository) GetRequestsByRequesterAccountIDTest(requesterAcco
 
 	return requesters, nil
 }
+
+func (r *dataAccessRepository) ValidateFileContent(accountID, requestID string, status constants.RequesterRequestStatus, msg string) error {
+	// Prepare the update data
+	updateData := map[string]interface{}{
+		"validation_status":  string(status),
+		"validation_message": msg,
+	}
+
+	// Update the existing record in data_access_request_requesters table
+	result := r.db.Table("data_access_request_requesters").
+		Where("request_id = ? AND requester_account_id = ?", requestID, accountID).
+		Updates(updateData)
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to update validation status: %w", result.Error)
+	}
+
+	return nil
+}

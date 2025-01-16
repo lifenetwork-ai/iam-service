@@ -511,6 +511,76 @@
                 }
             }
         },
+        "/api/v1/data-access/validator/validate": {
+            "post": {
+                "description": "Updates the validation status of a file (VALID or INVALID)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-access"
+                ],
+                "summary": "Set file validation status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Validation status details",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ValidationRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Validation status updated successfully",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload or status",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Not a validator",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/data-access/{requestID}/approve": {
             "put": {
                 "description": "Approves a pending data access request for the authenticated user and includes re-encryption key information.",
@@ -1567,6 +1637,24 @@
                             "$ref": "#/definitions/dto.RoleDetailsPayloadDTO"
                         }
                     ]
+                }
+            }
+        },
+        "dto.ValidationRequestDTO": {
+            "type": "object",
+            "required": [
+                "request_id",
+                "status"
+            ],
+            "properties": {
+                "msg": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
