@@ -156,7 +156,7 @@ func (h *dataAccessHandler) GetDetailFromSecureGenom(headers http.Header, ownerI
 	}
 
 	// Create request
-	url := "http://localhost:8081/api/v1/validator/access-data"
+	url := "https://secure-genom.humannetwork.life/api/v1/validator/access-data"
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return dto.ReencryptedDataDTO{}, fmt.Errorf("failed to marshal request payload: %w", err)
@@ -166,6 +166,7 @@ func (h *dataAccessHandler) GetDetailFromSecureGenom(headers http.Header, ownerI
 	if err != nil {
 		return dto.ReencryptedDataDTO{}, fmt.Errorf("failed to create request: %w", err)
 	}
+	fmt.Println("err: ", err)
 
 	// Set headers from the incoming request
 	req.Header = headers
@@ -182,6 +183,7 @@ func (h *dataAccessHandler) GetDetailFromSecureGenom(headers http.Header, ownerI
 		return dto.ReencryptedDataDTO{}, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
+	fmt.Println("resp: ", resp)
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
