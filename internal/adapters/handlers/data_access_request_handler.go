@@ -110,6 +110,18 @@ func (h *dataAccessHandler) isValidDataAccessRequestStatus(status string) bool {
 	}
 }
 
+// isValidRequesterRequestStatus validates if a given status is valid.
+func (h *dataAccessHandler) isValidRequesterRequestStatus(status string) bool {
+	switch constants.RequesterRequestStatus(status) {
+	case constants.RequestValidationPending,
+		constants.RequestValidationValid,
+		constants.RequestValidationInvalid:
+		return true
+	default:
+		return false
+	}
+}
+
 // ApproveRequest handles approving a data access request.
 // @Summary Approve a data access request
 // @Description Approves a pending data access request for the authenticated user and includes re-encryption key information.
@@ -241,4 +253,53 @@ func (h *dataAccessHandler) RejectRequest(ctx *gin.Context) {
 
 	// Respond with success
 	ctx.JSON(http.StatusOK, gin.H{"message": "Request rejected successfully"})
+}
+
+// GetValidatorRequests retrieves a list of requests for a specific validator
+// @Summary Get validator requests
+// @Description Fetches a list of data access requests for the authenticated validator
+// @Tags data-access
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer access token"
+// @Param status query string false "Request status filter (PENDING, INVALID, VALID)"
+// @Success 200 {array} dto.RequesterRequestDTO "List of validator requests"
+// @Failure 401 {object} response.GeneralError "Unauthorized"
+// @Failure 403 {object} response.GeneralError "Forbidden - Not a validator"
+// @Failure 500 {object} response.GeneralError "Internal server error"
+// @Router /api/v1/data-access/validator/get-requests [get]
+func (h *dataAccessHandler) GetValidatorRequests(ctx *gin.Context) {
+	token, exists := ctx.Get("token")
+	if !exists {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Token not found", nil)
+		return
+	}
+
+	accountDTO, err := h.authUCase.ValidateToken(token.(string))
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to validate token: %v", err)
+		httpresponse.Error(ctx, http.StatusUnauthorized, "Invalid token", err)
+		return
+	}
+
+	// Ensure user is a validator
+	if accountDTO.Role != constants.Validator.String() {
+		httpresponse.Error(ctx, http.StatusForbidden, "Access denied - Not a validator", nil)
+		return
+	}
+
+	status := ctx.DefaultQuery("status", "")
+	if status != "" && !h.isValidRequesterRequestStatus(status) {
+		httpresponse.Error(ctx, http.StatusBadRequest, "Invalid status provided", nil)
+		return
+	}
+
+	requests, err := h.dataAccessUCase.GetRequestsByRequesterAccountIDTest(accountDTO.ID, status)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to fetch validator requests: %v", err)
+		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to fetch requests", err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"requests": requests})
 }

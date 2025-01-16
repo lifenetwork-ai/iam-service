@@ -105,3 +105,23 @@ func (r *dataAccessRepository) GetRequestsByRequesterAccountID(requesterAccountI
 
 	return requests, nil
 }
+
+func (r *dataAccessRepository) GetRequestsByRequesterAccountIDTest(requesterAccountID, status string) ([]domain.DataAccessRequestRequesterTest, error) {
+	var requesters []domain.DataAccessRequestRequesterTest
+
+	query := r.db.Table("data_access_request_requesters").
+		Where("requester_account_id = ?", requesterAccountID).
+		Preload("Request.FileInfo.Owner").
+		Preload("RequesterAccount")
+
+	if status != "" {
+		query = query.Where("validation_status = ?", status)
+	}
+
+	err := query.Find(&requesters).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch requests for requester account ID %s: %w", requesterAccountID, err)
+	}
+
+	return requesters, nil
+}

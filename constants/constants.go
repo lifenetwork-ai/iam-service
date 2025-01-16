@@ -96,6 +96,19 @@ const (
 	DataAccessRequestRejected DataAccessRequestStatus = "REJECTED"
 )
 
+// DataAccessRequestStatus represents the status of a data access request
+type RequesterRequestStatus string
+
+func (t RequesterRequestStatus) String() string {
+	return string(t)
+}
+
+const (
+	RequestValidationPending RequesterRequestStatus = "PENDING"
+	RequestValidationValid   RequesterRequestStatus = "VALID"
+	RequestValidationInvalid RequesterRequestStatus = "INVALID"
+)
+
 // IAMResource represents a type for resource constants
 type IAMResource string
 

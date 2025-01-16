@@ -452,6 +452,65 @@
                 }
             }
         },
+        "/api/v1/data-access/validator/get-requests": {
+            "get": {
+                "description": "Fetches a list of data access requests for the authenticated validator",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-access"
+                ],
+                "summary": "Get validator requests",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Request status filter (PENDING, INVALID, VALID)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of validator requests",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.RequesterRequestDTO"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Not a validator",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.GeneralError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/data-access/{requestID}/approve": {
             "put": {
                 "description": "Approves a pending data access request for the authenticated user and includes re-encryption key information.",
@@ -1384,6 +1443,63 @@
             "properties": {
                 "reason": {
                     "description": "Reason for rejecting the data access request",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RequesterRequestDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp of when the request was created",
+                    "type": "string"
+                },
+                "file_info": {
+                    "description": "Details of the file being accessed",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.FileInfoDTO"
+                        }
+                    ]
+                },
+                "id": {
+                    "description": "Unique identifier for the request",
+                    "type": "string"
+                },
+                "reason_for_rejection": {
+                    "description": "Optional reason for rejection",
+                    "type": "string"
+                },
+                "reason_for_request": {
+                    "description": "Reason for the request",
+                    "type": "string"
+                },
+                "request_account_id": {
+                    "description": "ID of the account being accessed",
+                    "type": "string"
+                },
+                "requester_id": {
+                    "type": "string"
+                },
+                "requesters": {
+                    "description": "List of accounts making the request",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AccountDTO"
+                    }
+                },
+                "status": {
+                    "description": "Status of the request (PENDING, APPROVED, REJECTED)",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "Timestamp of when the request was last updated",
+                    "type": "string"
+                },
+                "validation_message": {
+                    "type": "string"
+                },
+                "validation_status": {
                     "type": "string"
                 }
             }

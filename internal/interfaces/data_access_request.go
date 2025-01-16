@@ -14,6 +14,8 @@ type DataAccessRepository interface {
 	) error
 	CreateDataAccessRequestRequester(requester *domain.DataAccessRequestRequester) error
 	GetRequestsByRequesterAccountID(requesterAccountID, status string) ([]domain.DataAccessRequest, error)
+
+	GetRequestsByRequesterAccountIDTest(requesterAccountID, status string) ([]domain.DataAccessRequestRequesterTest, error)
 }
 
 type DataAccessUCase interface {
@@ -27,4 +29,8 @@ type DataAccessUCase interface {
 	GetRequestsByRequesterAccountID(
 		requesterAccountID, status string,
 	) ([]dto.DataAccessRequestDTO, error)
+
+	GetRequestsByRequesterAccountIDTest(
+		requesterAccountID, status string,
+	) ([]dto.RequesterRequestDTO, error)
 }

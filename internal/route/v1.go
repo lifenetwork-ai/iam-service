@@ -108,7 +108,7 @@ func RegisterRoutes(
 	appRouterDataAccess.GET("/", middleware.ValidateBearerToken(), dataAccessHandler.GetDataAccessRequests)
 	appRouterDataAccess.PUT("/:requestID/reject", middleware.ValidateBearerToken(), dataAccessHandler.RejectRequest)
 	appRouterDataAccess.PUT("/:requestID/approve", middleware.ValidateBearerToken(), dataAccessHandler.ApproveRequest)
-
+	appRouterDataAccess.GET("/validator/get-requests", middleware.ValidateBearerToken(), dataAccessHandler.GetValidatorRequests)
 	// SECTION: notifications
 	appRouterNotifications := v1.Group("notifications")
 	appRouterNotifications.Use(middleware.ValidateBearerToken())
