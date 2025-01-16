@@ -119,6 +119,27 @@ definitions:
         description: Number of shares
         type: integer
     type: object
+  dto.FileInfoPayloadDTO:
+    properties:
+      id:
+        description: File ID
+        type: string
+      name:
+        description: File name
+        type: string
+      owner_id:
+        description: Owner ID
+        type: string
+      share_count:
+        description: Number of shares
+        minimum: 0
+        type: integer
+    required:
+    - id
+    - name
+    - owner_id
+    - share_count
+    type: object
   dto.LoginPayloadDTO:
     properties:
       identifier:
@@ -907,6 +928,12 @@ paths:
         name: Authorization
         required: true
         type: string
+      - description: Payload containing file information
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.FileInfoPayloadDTO'
       produces:
       - application/json
       responses:

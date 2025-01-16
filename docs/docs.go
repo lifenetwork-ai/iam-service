@@ -867,6 +867,15 @@ const docTemplate = `{
                         "name": "Authorization",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "Payload containing file information",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.FileInfoPayloadDTO"
+                        }
                     }
                 ],
                 "responses": {
@@ -1131,6 +1140,34 @@ const docTemplate = `{
                 "share_count": {
                     "description": "Number of shares",
                     "type": "integer"
+                }
+            }
+        },
+        "dto.FileInfoPayloadDTO": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "owner_id",
+                "share_count"
+            ],
+            "properties": {
+                "id": {
+                    "description": "File ID",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "File name",
+                    "type": "string"
+                },
+                "owner_id": {
+                    "description": "Owner ID",
+                    "type": "string"
+                },
+                "share_count": {
+                    "description": "Number of shares",
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -40,11 +41,13 @@ func NewNotificationHandler(
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer access token (e.g., 'Bearer <token>')"
+// @Param payload body dto.FileInfoPayloadDTO true "Payload containing file information"
 // @Success 201 {object} map[string]interface{} "Notification received successfully"
 // @Failure 400 {object} response.GeneralError "Invalid payload"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/notifications/data-upload [post]
 func (h *notificationHandler) DataUploadWebhook(ctx *gin.Context) {
+	fmt.Println("DataUploadWebhook...")
 	// Retrieve the authenticated account from context
 	accountDTO, ok := ctx.Get("account")
 	if !ok {
