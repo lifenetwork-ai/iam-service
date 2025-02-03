@@ -1,4 +1,4 @@
-module github.com/genefriendway/human-network-auth
+module github.com/genefriendway/human-network-iam
 
 go 1.22.4
 

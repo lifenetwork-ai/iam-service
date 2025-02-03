@@ -15,9 +15,9 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o human-network-auth ./cmd
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o human-network-iam ./cmd
 
 EXPOSE 8080
 
 # The command to run the application
-CMD ["./human-network-auth"]
+CMD ["./human-network-iam"]

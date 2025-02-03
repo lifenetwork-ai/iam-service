@@ -7,12 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/genefriendway/human-network-auth/internal/domain"
-	"github.com/genefriendway/human-network-auth/internal/dto"
-	"github.com/genefriendway/human-network-auth/internal/interfaces"
-	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
-	"github.com/genefriendway/human-network-auth/pkg/logger"
-	"github.com/genefriendway/human-network-auth/pkg/utils"
+	"github.com/genefriendway/human-network-iam/internal/domain"
+	"github.com/genefriendway/human-network-iam/internal/dto"
+	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	httpresponse "github.com/genefriendway/human-network-iam/pkg/http/response"
+	"github.com/genefriendway/human-network-iam/pkg/logger"
+	"github.com/genefriendway/human-network-iam/pkg/utils"
 )
 
 type authHandler struct {

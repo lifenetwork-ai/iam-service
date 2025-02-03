@@ -3,7 +3,7 @@ package domain
 import (
 	"time"
 
-	"github.com/genefriendway/human-network-auth/internal/dto"
+	"github.com/genefriendway/human-network-iam/internal/dto"
 )
 
 // Permission represents a permission in the IAM system.

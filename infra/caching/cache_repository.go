@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/genefriendway/human-network-auth/infra/interfaces"
+	"github.com/genefriendway/human-network-iam/infra/interfaces"
 )
 
 type cachingRepository struct {

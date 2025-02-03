@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/genefriendway/human-network-auth/pkg/interfaces"
+	"github.com/genefriendway/human-network-iam/pkg/interfaces"
 )
 
 type zapLogger struct {

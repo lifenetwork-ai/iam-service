@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-iam/constants"
 )
 
 // Default Create a new pagination middleware with default values

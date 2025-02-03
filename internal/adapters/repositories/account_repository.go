@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/genefriendway/human-network-auth/internal/domain"
-	"github.com/genefriendway/human-network-auth/internal/interfaces"
+	"github.com/genefriendway/human-network-iam/internal/domain"
+	"github.com/genefriendway/human-network-iam/internal/interfaces"
 )
 
 type accountRepository struct {

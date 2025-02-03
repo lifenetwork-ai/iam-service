@@ -3,67 +3,22 @@
 package wire
 
 import (
-	"github.com/genefriendway/human-network-auth/conf"
-	"github.com/genefriendway/human-network-auth/internal/adapters/repositories"
-	"github.com/genefriendway/human-network-auth/internal/interfaces"
-	"github.com/genefriendway/human-network-auth/internal/ucases"
+	"github.com/genefriendway/human-network-iam/conf"
+	"github.com/genefriendway/human-network-iam/internal/adapters/repositories"
+	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	"github.com/genefriendway/human-network-iam/internal/usecases"
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
 
 // UCase set
-var authUCaseSet = wire.NewSet(
-	repositories.NewAccountRepository,
-	repositories.NewAuthRepository,
-	ucases.NewAuthUCase,
-)
-
-var accountUCaseSet = wire.NewSet(
-	repositories.NewAccountRepository,
-	ucases.NewAccountUCase,
-)
-
-var dataAccessUCaseSet = wire.NewSet(
-	repositories.NewDataAccessRepository,
-	repositories.NewAccountRepository,
-	ucases.NewDataAccessUCase,
-)
-
-var iamUCaseSet = wire.NewSet(
-	repositories.NewIAMRepository,
-	repositories.NewPolicyRepository,
-	repositories.NewAccountRepository,
-	repositories.NewPermissionRepository,
-	ucases.NewIAMUCase,
-)
-
-var fileInfoUCaseSet = wire.NewSet(
-	repositories.NewFileInfoRepository,
-	ucases.NewFileInfoUCase,
+var organizationUseCaseSet = wire.NewSet(
+	repositories.NewOrganizationRepository,
+	usecases.NewOrganizationUseCase,
 )
 
 // Init ucase
-func GetAuthUCase(db *gorm.DB, config *conf.Configuration) interfaces.AuthUCase {
-	wire.Build(authUCaseSet)
-	return nil
-}
-
-func GetAccountUCase(db *gorm.DB, config *conf.Configuration) interfaces.AccountUCase {
-	wire.Build(accountUCaseSet)
-	return nil
-}
-
-func GetDataAccessUCase(db *gorm.DB, config *conf.Configuration) interfaces.DataAccessUCase {
-	wire.Build(dataAccessUCaseSet)
-	return nil
-}
-
-func GetIAMUCase(db *gorm.DB) interfaces.IAMUCase {
-	wire.Build(iamUCaseSet)
-	return nil
-}
-
-func GetFileInfoUCase(db *gorm.DB) interfaces.FileInfoUCase {
-	wire.Build(fileInfoUCaseSet)
+func GetOrganizationUseCase(db *gorm.DB, config *conf.Configuration) interfaces.OrganizationUseCase {
+	wire.Build(organizationUseCaseSet)
 	return nil
 }

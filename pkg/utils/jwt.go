@@ -9,7 +9,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 
-	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-iam/constants"
 )
 
 type Claims struct {

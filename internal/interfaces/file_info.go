@@ -1,8 +1,8 @@
 package interfaces
 
 import (
-	"github.com/genefriendway/human-network-auth/internal/domain"
-	"github.com/genefriendway/human-network-auth/internal/dto"
+	"github.com/genefriendway/human-network-iam/internal/domain"
+	"github.com/genefriendway/human-network-iam/internal/dto"
 )
 
 type FileInfoRepository interface {

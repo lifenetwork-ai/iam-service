@@ -1,4 +1,4 @@
-package ucases
+package usecases
 
 import (
 	"errors"
@@ -8,12 +8,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/genefriendway/human-network-auth/conf"
-	"github.com/genefriendway/human-network-auth/constants"
-	"github.com/genefriendway/human-network-auth/internal/domain"
-	"github.com/genefriendway/human-network-auth/internal/dto"
-	"github.com/genefriendway/human-network-auth/internal/interfaces"
-	"github.com/genefriendway/human-network-auth/pkg/crypto"
+	"github.com/genefriendway/human-network-iam/conf"
+	"github.com/genefriendway/human-network-iam/constants"
+	"github.com/genefriendway/human-network-iam/internal/domain"
+	"github.com/genefriendway/human-network-iam/internal/dto"
+	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	"github.com/genefriendway/human-network-iam/pkg/crypto"
 )
 
 type accountUCase struct {

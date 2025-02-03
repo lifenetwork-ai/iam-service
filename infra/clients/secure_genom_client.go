@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/genefriendway/human-network-auth/internal/dto"
+	"github.com/genefriendway/human-network-iam/internal/dto"
 )
 
 type SecureGenomClient struct {

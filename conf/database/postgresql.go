@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/genefriendway/human-network-auth/conf"
+	"github.com/genefriendway/human-network-iam/conf"
 )
 
 func GetDBConnectionURL() string {

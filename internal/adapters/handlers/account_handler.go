@@ -6,12 +6,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/genefriendway/human-network-auth/constants"
-	"github.com/genefriendway/human-network-auth/internal/dto"
-	"github.com/genefriendway/human-network-auth/internal/interfaces"
-	httpresponse "github.com/genefriendway/human-network-auth/pkg/http/response"
-	"github.com/genefriendway/human-network-auth/pkg/logger"
-	"github.com/genefriendway/human-network-auth/pkg/utils"
+	"github.com/genefriendway/human-network-iam/constants"
+	"github.com/genefriendway/human-network-iam/internal/dto"
+	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	httpresponse "github.com/genefriendway/human-network-iam/pkg/http/response"
+	"github.com/genefriendway/human-network-iam/pkg/logger"
+	"github.com/genefriendway/human-network-iam/pkg/utils"
 )
 
 type accountHandler struct {

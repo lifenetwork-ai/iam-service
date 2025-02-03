@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/genefriendway/human-network-auth/constants"
+	"github.com/genefriendway/human-network-iam/constants"
 )
 
 // LoginPayloadDTO defines the payload for the login request

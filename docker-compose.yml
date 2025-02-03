@@ -18,7 +18,7 @@ services:
       db:
         condition: service_healthy  # Wait for the db service to become healthy
     networks:
-      - human-network-auth-service
+      - human-network-iam-service
 
   db:
     image: postgres:14-alpine
@@ -32,7 +32,7 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - human-network-auth-service
+      - human-network-iam-service
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -44,4 +44,4 @@ volumes:
     driver: local
 
 networks:
-  human-network-auth-service:
+  human-network-iam-service:

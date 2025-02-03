@@ -7,10 +7,10 @@
 package wire
 
 import (
-	"github.com/genefriendway/human-network-auth/conf"
-	"github.com/genefriendway/human-network-auth/internal/adapters/repositories"
-	"github.com/genefriendway/human-network-auth/internal/interfaces"
-	"github.com/genefriendway/human-network-auth/internal/ucases"
+	"github.com/genefriendway/human-network-iam/conf"
+	"github.com/genefriendway/human-network-iam/internal/adapters/repositories"
+	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	"github.com/genefriendway/human-network-iam/internal/usecases"
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
@@ -18,50 +18,13 @@ import (
 // Injectors from wire.go:
 
 // Init ucase
-func GetAuthUCase(db *gorm.DB, config *conf.Configuration) interfaces.AuthUCase {
-	accountRepository := repositories.NewAccountRepository(db)
-	authRepository := repositories.NewAuthRepository(db)
-	authUCase := ucases.NewAuthUCase(config, accountRepository, authRepository)
-	return authUCase
-}
-
-func GetAccountUCase(db *gorm.DB, config *conf.Configuration) interfaces.AccountUCase {
-	accountRepository := repositories.NewAccountRepository(db)
-	accountUCase := ucases.NewAccountUCase(config, accountRepository)
-	return accountUCase
-}
-
-func GetDataAccessUCase(db *gorm.DB, config *conf.Configuration) interfaces.DataAccessUCase {
-	dataAccessRepository := repositories.NewDataAccessRepository(db)
-	accountRepository := repositories.NewAccountRepository(db)
-	dataAccessUCase := ucases.NewDataAccessUCase(config, dataAccessRepository, accountRepository)
-	return dataAccessUCase
-}
-
-func GetIAMUCase(db *gorm.DB) interfaces.IAMUCase {
-	iamRepository := repositories.NewIAMRepository(db)
-	policyRepository := repositories.NewPolicyRepository(db)
-	accountRepository := repositories.NewAccountRepository(db)
-	permissionRepository := repositories.NewPermissionRepository(db)
-	iamuCase := ucases.NewIAMUCase(iamRepository, policyRepository, accountRepository, permissionRepository)
-	return iamuCase
-}
-
-func GetFileInfoUCase(db *gorm.DB) interfaces.FileInfoUCase {
-	fileInfoRepository := repositories.NewFileInfoRepository(db)
-	fileInfoUCase := ucases.NewFileInfoUCase(fileInfoRepository)
-	return fileInfoUCase
+func GetOrganizationUseCase(db *gorm.DB, config *conf.Configuration) interfaces.OrganizationUseCase {
+	organizationRepository := repositories.NewOrganizationRepository(db)
+	organizationUseCase := usecases.NewOrganizationUseCase(organizationRepository)
+	return organizationUseCase
 }
 
 // wire.go:
 
 // UCase set
-var authUCaseSet = wire.NewSet(repositories.NewAccountRepository, repositories.NewAuthRepository, ucases.NewAuthUCase)
-
-var accountUCaseSet = wire.NewSet(repositories.NewAccountRepository, ucases.NewAccountUCase)
-
-var dataAccessUCaseSet = wire.NewSet(repositories.NewDataAccessRepository, repositories.NewAccountRepository, ucases.NewDataAccessUCase)
-
-var iamUCaseSet = wire.NewSet(repositories.NewIAMRepository, repositories.NewPolicyRepository, repositories.NewAccountRepository, repositories.NewPermissionRepository, ucases.NewIAMUCase)
-
-var fileInfoUCaseSet = wire.NewSet(repositories.NewFileInfoRepository, ucases.NewFileInfoUCase)
+var organizationUseCaseSet = wire.NewSet(repositories.NewOrganizationRepository, usecases.NewOrganizationUseCase)

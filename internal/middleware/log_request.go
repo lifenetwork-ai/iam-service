@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/genefriendway/human-network-auth/pkg/interfaces"
-	"github.com/genefriendway/human-network-auth/pkg/logger"
+	"github.com/genefriendway/human-network-iam/pkg/interfaces"
+	"github.com/genefriendway/human-network-iam/pkg/logger"
 )
 
 // RequestLoggerMiddleware returns a gin middleware for HTTP request logging

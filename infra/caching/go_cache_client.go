@@ -8,8 +8,8 @@ import (
 
 	"github.com/patrickmn/go-cache"
 
-	"github.com/genefriendway/human-network-auth/constants"
-	"github.com/genefriendway/human-network-auth/infra/interfaces"
+	"github.com/genefriendway/human-network-iam/constants"
+	"github.com/genefriendway/human-network-iam/infra/interfaces"
 )
 
 type goCacheClient struct {

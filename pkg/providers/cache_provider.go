@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/genefriendway/human-network-auth/infra/caching"
-	"github.com/genefriendway/human-network-auth/infra/interfaces"
+	"github.com/genefriendway/human-network-iam/infra/caching"
+	"github.com/genefriendway/human-network-iam/infra/interfaces"
 )
 
 var (
