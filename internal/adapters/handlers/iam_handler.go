@@ -9,8 +9,8 @@ import (
 	"github.com/genefriendway/human-network-iam/internal/domain"
 	"github.com/genefriendway/human-network-iam/internal/dto"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
-	httpresponse "github.com/genefriendway/human-network-iam/pkg/http/response"
-	"github.com/genefriendway/human-network-iam/pkg/logger"
+	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
+	"github.com/genefriendway/human-network-iam/packages/logger"
 )
 
 type iamHandler struct {

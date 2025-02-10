@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/genefriendway/human-network-iam/constants"
-	"github.com/genefriendway/human-network-iam/pkg/logger"
+	"github.com/genefriendway/human-network-iam/packages/logger"
 )
 
 func SendWebhook(payload interface{}, webhookURL string) error {

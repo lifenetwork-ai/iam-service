@@ -8,9 +8,8 @@ package wire
 
 import (
 	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/internal/adapters/repositories"
+	"github.com/genefriendway/human-network-iam/internal/adapters/identity/organization"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
-	"github.com/genefriendway/human-network-iam/internal/usecases"
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
@@ -19,12 +18,12 @@ import (
 
 // Init ucase
 func GetOrganizationUseCase(db *gorm.DB, config *conf.Configuration) interfaces.OrganizationUseCase {
-	organizationRepository := repositories.NewOrganizationRepository(db)
-	organizationUseCase := usecases.NewOrganizationUseCase(organizationRepository)
+	organizationRepository := identity_organization.NewOrganizationRepository(db)
+	organizationUseCase := identity_organization.NewOrganizationUseCase(organizationRepository)
 	return organizationUseCase
 }
 
 // wire.go:
 
 // UCase set
-var organizationUseCaseSet = wire.NewSet(repositories.NewOrganizationRepository, usecases.NewOrganizationUseCase)
+var organizationUseCaseSet = wire.NewSet(identity_organization.NewOrganizationRepository, identity_organization.NewOrganizationUseCase)

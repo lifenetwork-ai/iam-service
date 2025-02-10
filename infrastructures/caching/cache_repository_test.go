@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/genefriendway/human-network-iam/infra/mocks"
+	"github.com/genefriendway/human-network-iam/infrastructures/mocks"
 )
 
 func TestSaveItem(t *testing.T) {

@@ -7,7 +7,7 @@ clean:
 	rm -i -f human-network-iam-service
 
 run-test:
-	go test -v ./internal/infra/caching/test
+	go test -v ./internal/infrastructures/caching/test
 	go test -v ./internal/util/test
 	go test -v ./test
 
@@ -20,7 +20,7 @@ build-service: clean build
 
 run: build
 	@echo "Starting the human-network-iam-service..."
-	@env DB_PASSWORD=${DB_PASSWORD} ./human-network-iam-service &
+	@env ./human-network-iam-service &
 	@echo "human-network-iam-service running!"
 
 stop:

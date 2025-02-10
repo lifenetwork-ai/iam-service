@@ -8,14 +8,14 @@ import (
 )
 
 type identityUseCase struct {
-	identityRepository        interfaces.IdentityRepository
+	identityRepository interfaces.IdentityRepository
 }
 
 func NewIdentityUseCase(
 	identityRepository interfaces.IdentityRepository,
 ) interfaces.IdentityUseCase {
 	return &identityUseCase{
-		identityRepository:        identityRepository,
+		identityRepository: identityRepository,
 	}
 }
 
@@ -28,7 +28,7 @@ func (u *identityUseCase) ChallengeWithPhone(phone string) (*dto.IdentityChallen
 
 	// Generate a challenge
 	challenge := &dto.IdentityChallengeDTO{
-		SessionID: account.ID,
+		SessionID:   account.ID,
 		ChallengeAt: time.Now().Format(time.RFC3339),
 	}
 
@@ -44,7 +44,7 @@ func (u *identityUseCase) ChallengeWithEmail(email string) (*dto.IdentityChallen
 
 	// Generate a challenge
 	challenge := &dto.IdentityChallengeDTO{
-		SessionID: account.ID,
+		SessionID:   account.ID,
 		ChallengeAt: time.Now().Format(time.RFC3339),
 	}
 
@@ -74,4 +74,3 @@ func (u *identityUseCase) LogInWithApple() (*dto.IdentityChallengeDTO, error) {
 func (u *identityUseCase) LogOut() error {
 	return nil
 }
-

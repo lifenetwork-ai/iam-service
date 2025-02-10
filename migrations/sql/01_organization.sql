@@ -3,23 +3,21 @@ SET TIMEZONE TO 'UTC';
 -- Enable the uuid-ossp extension for generating UUIDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS accounts (
+CREATE TABLE IF NOT EXISTS identity_organizations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash TEXT,
-    api_key VARCHAR(255) UNIQUE,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('USER', 'DATA_OWNER', 'DATA_UTILIZER', 'VALIDATOR', 'ADMIN')),
-    oauth_provider VARCHAR(50),
-    oauth_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    parent_id UUID REFERENCES identity_organizations(id),
+    parent_path TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes if they do not exist
-CREATE INDEX IF NOT EXISTS accounts_email_idx ON accounts (email);
-CREATE INDEX IF NOT EXISTS accounts_username_idx ON accounts (username);
-CREATE INDEX IF NOT EXISTS accounts_api_key_idx ON accounts (api_key);
+CREATE INDEX IF NOT EXISTS organization_name_idx ON identity_organizations (name);
+CREATE INDEX IF NOT EXISTS organization_code_idx ON identity_organizations (code);
+CREATE INDEX IF NOT EXISTS organization_parent_path_idx ON identity_organizations (parent_path);
 
 -- Create a trigger function to update 'updated_at' column on update
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -36,14 +34,14 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM pg_trigger
-        WHERE tgname = 'update_accounts_updated_at'
-          AND tgrelid = 'accounts'::regclass
+        WHERE tgname = 'update_identity_organizations_updated_at'
+          AND tgrelid = 'identity_organizations'::regclass
     ) THEN
-        DROP TRIGGER update_accounts_updated_at ON accounts;
+        DROP TRIGGER update_identity_organizations_updated_at ON identity_organizations;
     END IF;
 
-    CREATE TRIGGER update_accounts_updated_at
-    BEFORE UPDATE ON accounts
+    CREATE TRIGGER update_identity_organizations_updated_at
+    BEFORE UPDATE ON identity_organizations
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 END;

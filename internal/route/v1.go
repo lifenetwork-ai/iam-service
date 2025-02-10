@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/internal/adapters/handlers"
+	identity_organization "github.com/genefriendway/human-network-iam/internal/adapters/identity/organization"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
 )
 
@@ -23,15 +23,12 @@ func RegisterRoutes(
 
 	// SECTION: organization
 	organizationRouter := v1.Group("organizations")
-	organizationHandler := handlers.NewOrganizationHandler(organizationUCase)
+	organizationHandler := identity_organization.NewOrganizationHandler(organizationUCase)
 	organizationRouter.GET("/", organizationHandler.GetOrganizations)
-	organizationRouter.GET("/:organizationID", organizationHandler.GetOrganizationByID)
+	organizationRouter.GET("/:organization_id", organizationHandler.GetOrganizationByID)
 	organizationRouter.POST("/", organizationHandler.CreateOrganization)
-	organizationRouter.PUT("/:organizationID", organizationHandler.UpdateOrganization)
-	organizationRouter.DELETE("/:organizationID", organizationHandler.DeleteOrganization)
-	organizationRouter.GET("/:organizationID/members", organizationHandler.GetMembers)
-	organizationRouter.POST("/:organizationID/members/:memberID", organizationHandler.AddMember)
-	organizationRouter.DELETE("/:organizationID/members/:memberID", organizationHandler.RemoveMember)
+	organizationRouter.PUT("/:organization_id", organizationHandler.UpdateOrganization)
+	organizationRouter.DELETE("/:organization_id", organizationHandler.DeleteOrganization)
 
 	// SECTION: identity
 	// identityRouter := v1.Group("auth")

@@ -4,17 +4,16 @@ package wire
 
 import (
 	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/internal/adapters/repositories"
+	identity_organization "github.com/genefriendway/human-network-iam/internal/adapters/identity/organization"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
-	"github.com/genefriendway/human-network-iam/internal/usecases"
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
 
 // UCase set
 var organizationUseCaseSet = wire.NewSet(
-	repositories.NewOrganizationRepository,
-	usecases.NewOrganizationUseCase,
+	identity_organization.NewOrganizationRepository,
+	identity_organization.NewOrganizationUseCase,
 )
 
 // Init ucase

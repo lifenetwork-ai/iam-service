@@ -19,8 +19,8 @@ import (
 	"github.com/genefriendway/human-network-iam/internal/middleware"
 	routev1 "github.com/genefriendway/human-network-iam/internal/route"
 	"github.com/genefriendway/human-network-iam/migrations"
-	pkginterfaces "github.com/genefriendway/human-network-iam/pkg/interfaces"
-	pkglogger "github.com/genefriendway/human-network-iam/pkg/logger"
+	pkginterfaces "github.com/genefriendway/human-network-iam/packages/interfaces"
+	pkglogger "github.com/genefriendway/human-network-iam/packages/logger"
 	"github.com/genefriendway/human-network-iam/wire"
 )
 
@@ -122,6 +122,8 @@ func startServer(
 		if err := r.Run(fmt.Sprintf("0.0.0.0:%v", config.AppPort)); err != nil {
 			pkglogger.GetLogger().Fatalf("Failed to run gin router: %v", err)
 		}
+
+		pkglogger.GetLogger().Infof("Server started on port %v", config.AppPort)
 	}()
 }
 

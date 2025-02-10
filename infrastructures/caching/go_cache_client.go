@@ -9,7 +9,7 @@ import (
 	"github.com/patrickmn/go-cache"
 
 	"github.com/genefriendway/human-network-iam/constants"
-	"github.com/genefriendway/human-network-iam/infra/interfaces"
+	"github.com/genefriendway/human-network-iam/infrastructures/interfaces"
 )
 
 type goCacheClient struct {

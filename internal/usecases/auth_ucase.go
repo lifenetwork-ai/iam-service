@@ -13,7 +13,7 @@ import (
 	"github.com/genefriendway/human-network-iam/internal/domain"
 	"github.com/genefriendway/human-network-iam/internal/dto"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
-	"github.com/genefriendway/human-network-iam/pkg/utils"
+	"github.com/genefriendway/human-network-iam/packages/utils"
 )
 
 type authUCase struct {

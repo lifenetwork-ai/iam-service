@@ -9,133 +9,6 @@ definitions:
     - IdentifierEmail
     - IdentifierUsername
     - IdentifierPhone
-  domain.Account:
-    properties:
-      api_key:
-        description: Nullable, used for API-based roles
-        type: string
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        description: UUID primary key
-        type: string
-      oauth_id:
-        description: Nullable, stores ID from OAuth provider
-        type: string
-      oauth_provider:
-        description: Nullable, stores OAuth provider name (e.g., Google, Facebook)
-        type: string
-      password_hash:
-        description: Nullable for OAuth or API Key accounts
-        type: string
-      role:
-        type: string
-      updated_at:
-        type: string
-      username:
-        type: string
-    type: object
-  domain.DataAccessRequest:
-    properties:
-      created_at:
-        description: Automatically set creation timestamp
-        type: string
-      file_id:
-        description: ID of the file being accessed
-        type: string
-      file_info:
-        allOf:
-        - $ref: '#/definitions/domain.FileInfo'
-        description: Details of the file being accessed
-      id:
-        type: string
-      reason_for_rejection:
-        description: Reason for rejection (optional)
-        type: string
-      reason_for_request:
-        description: Reason for the request
-        type: string
-      request_account_id:
-        description: Account whose data is being requested
-        type: string
-      requesters:
-        description: Linked requesters
-        items:
-          $ref: '#/definitions/domain.DataAccessRequestRequester'
-        type: array
-      status:
-        description: Request status (PENDING, APPROVED, REJECTED)
-        type: string
-      updated_at:
-        description: Automatically update timestamp on changes
-        type: string
-    type: object
-  domain.DataAccessRequestRequester:
-    properties:
-      id:
-        type: integer
-      request_id:
-        description: Reference to data access request
-        type: string
-      requester_account:
-        allOf:
-        - $ref: '#/definitions/domain.Account'
-        description: Linked requester account                             // Automatically
-          set creation timestamp
-      requester_account_id:
-        description: ID of the requester account
-        type: string
-      validation_message:
-        type: string
-      validation_status:
-        type: string
-    type: object
-  domain.DataAccessRequestRequesterTest:
-    properties:
-      id:
-        description: Base requester information from data_access_request_requesters
-          table
-        type: integer
-      request:
-        allOf:
-        - $ref: '#/definitions/domain.DataAccessRequest'
-        description: Relationships
-      request_id:
-        type: string
-      requester_account:
-        $ref: '#/definitions/domain.Account'
-      requester_account_id:
-        type: string
-      validation_message:
-        type: string
-      validation_status:
-        type: string
-    type: object
-  domain.FileInfo:
-    properties:
-      created_at:
-        description: Automatically set creation timestamp
-        type: string
-      id:
-        description: Unique identifier for the file
-        type: string
-      name:
-        description: File name
-        type: string
-      owner:
-        $ref: '#/definitions/domain.Account'
-      owner_id:
-        description: Owner ID, references accounts table
-        type: string
-      share_count:
-        description: Number of shares, must be >= 0
-        type: integer
-      updated_at:
-        description: Automatically update timestamp on changes
-        type: string
-    type: object
   dto.AccountDTO:
     properties:
       api_key:
@@ -191,61 +64,6 @@ definitions:
     required:
     - policy_id
     type: object
-  dto.DataAccessRequestDTO:
-    properties:
-      created_at:
-        description: Timestamp of when the request was created
-        type: string
-      file_info:
-        allOf:
-        - $ref: '#/definitions/dto.FileInfoDTO'
-        description: Details of the file being accessed
-      id:
-        description: Unique identifier for the request
-        type: string
-      reason_for_rejection:
-        description: Optional reason for rejection
-        type: string
-      reason_for_request:
-        description: Reason for the request
-        type: string
-      request_account_id:
-        description: ID of the account being accessed
-        type: string
-      requester_id:
-        description: ID of the account making the request
-        type: string
-      requesters:
-        description: List of accounts making the request
-        items:
-          $ref: '#/definitions/dto.AccountDTO'
-        type: array
-      status:
-        description: Status of the request (PENDING, APPROVED, REJECTED)
-        type: string
-      updated_at:
-        description: Timestamp of when the request was last updated
-        type: string
-    type: object
-  dto.FileInfoDTO:
-    properties:
-      id:
-        description: Unique identifier for the file
-        type: string
-      name:
-        description: File name
-        type: string
-      owner:
-        allOf:
-        - $ref: '#/definitions/dto.AccountDTO'
-        description: Owner account
-      owner_id:
-        description: Owner ID
-        type: string
-      share_count:
-        description: Number of shares
-        type: integer
-    type: object
   dto.FileInfoPayloadDTO:
     properties:
       id:
@@ -290,6 +108,63 @@ definitions:
         type: string
     required:
     - refresh_token
+    type: object
+  dto.OrganizationCreatePayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.OrganizationDTO:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.OrganizationUpdatePayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.PaginationDTOResponse:
+    properties:
+      data:
+        items: {}
+        type: array
+      next_page:
+        type: integer
+      page:
+        type: integer
+      size:
+        type: integer
+      total:
+        type: integer
     type: object
   dto.PermissionDTO:
     properties:
@@ -369,31 +244,6 @@ definitions:
       policy:
         $ref: '#/definitions/dto.PolicyDTO'
     type: object
-  dto.ReencryptionKeyDTO:
-    properties:
-      pub_x:
-        type: string
-      rk_key:
-        type: string
-      validator_id:
-        type: string
-      validator_public_key:
-        type: string
-    required:
-    - pub_x
-    - rk_key
-    - validator_id
-    - validator_public_key
-    type: object
-  dto.ReencryptionKeyInfoPayloadDTO:
-    properties:
-      reencryption_key_info:
-        items:
-          $ref: '#/definitions/dto.ReencryptionKeyDTO'
-        type: array
-    required:
-    - reencryption_key_info
-    type: object
   dto.RefreshTokenPayloadDTO:
     properties:
       refresh_token:
@@ -413,53 +263,6 @@ definitions:
     - email
     - password
     - username
-    type: object
-  dto.RejectRequestPayloadDTO:
-    properties:
-      reason:
-        description: Reason for rejecting the data access request
-        type: string
-    required:
-    - reason
-    type: object
-  dto.RequesterRequestDTO:
-    properties:
-      created_at:
-        description: Timestamp of when the request was created
-        type: string
-      file_info:
-        allOf:
-        - $ref: '#/definitions/dto.FileInfoDTO'
-        description: Details of the file being accessed
-      id:
-        description: Unique identifier for the request
-        type: string
-      reason_for_rejection:
-        description: Optional reason for rejection
-        type: string
-      reason_for_request:
-        description: Reason for the request
-        type: string
-      request_account_id:
-        description: ID of the account being accessed
-        type: string
-      requester_id:
-        type: string
-      requesters:
-        description: List of accounts making the request
-        items:
-          $ref: '#/definitions/dto.AccountDTO'
-        type: array
-      status:
-        description: Status of the request (PENDING, APPROVED, REJECTED)
-        type: string
-      updated_at:
-        description: Timestamp of when the request was last updated
-        type: string
-      validation_message:
-        type: string
-      validation_status:
-        type: string
     type: object
   dto.RoleDetailsPayloadDTO:
     properties:
@@ -504,18 +307,6 @@ definitions:
         description: Role-specific details
     required:
     - role
-    type: object
-  dto.ValidationRequestDTO:
-    properties:
-      msg:
-        type: string
-      request_id:
-        type: string
-      status:
-        type: string
-    required:
-    - request_id
-    - status
     type: object
   response.GeneralError:
     properties:
@@ -796,268 +587,6 @@ paths:
       summary: Register a new account
       tags:
       - authentication
-  /api/v1/data-access:
-    get:
-      consumes:
-      - application/json
-      description: Fetches a list of data access requests for the authenticated user
-        filtered by status.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Request status to filter by (e.g., 'PENDING', 'APPROVED', 'REJECTED')
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of data access requests
-          schema:
-            items:
-              $ref: '#/definitions/dto.DataAccessRequestDTO'
-            type: array
-        "400":
-          description: Invalid status
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get data access requests by status
-      tags:
-      - data-access
-  /api/v1/data-access/{requestID}/approve:
-    put:
-      consumes:
-      - application/json
-      description: Approves a pending data access request for the authenticated user
-        and includes re-encryption key information.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: ID of the request being approved
-        in: path
-        name: requestID
-        required: true
-        type: string
-      - description: Payload containing re-encryption key information
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.ReencryptionKeyInfoPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Request approved successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Approve a data access request
-      tags:
-      - data-access
-  /api/v1/data-access/{requestID}/reject:
-    put:
-      consumes:
-      - application/json
-      description: Rejects a pending data access request for the authenticated user.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: ID of the request being rejected
-        in: path
-        name: requestID
-        required: true
-        type: string
-      - description: Payload with rejection reason
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RejectRequestPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Request rejected successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Reject a data access request
-      tags:
-      - data-access
-  /api/v1/data-access/validator/get-requests:
-    get:
-      consumes:
-      - application/json
-      description: Fetches a list of data access requests for the authenticated validator
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Request status filter (PENDING, INVALID, VALID)
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of validator requests
-          schema:
-            items:
-              $ref: '#/definitions/dto.RequesterRequestDTO'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden - Not a validator
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get validator requests
-      tags:
-      - data-access
-  /api/v1/data-access/validator/requests/detail/{requestID}:
-    get:
-      consumes:
-      - application/json
-      description: Fetches detailed information about a specific validation request
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Request ID to get details for
-        in: path
-        name: requestID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Request details retrieved successfully
-          schema:
-            $ref: '#/definitions/domain.DataAccessRequestRequesterTest'
-        "400":
-          description: Invalid request ID
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden - Not a validator
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "404":
-          description: Request not found
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get validator request detail
-      tags:
-      - data-access
-  /api/v1/data-access/validator/validate:
-    post:
-      consumes:
-      - application/json
-      description: Updates the validation status of a file (VALID or INVALID)
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Validation status details
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.ValidationRequestDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Validation status updated successfully
-          schema:
-            properties:
-              message:
-                type: string
-            type: object
-        "400":
-          description: Invalid payload or status
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden - Not a validator
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Set file validation status
-      tags:
-      - data-access
   /api/v1/iam/accounts/{accountID}/policies:
     post:
       consumes:
@@ -1262,6 +791,172 @@ paths:
       summary: Notify about successful data upload
       tags:
       - notifications
+  /api/v1/organization:
+    get:
+      consumes:
+      - application/json
+      description: Get organizations
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of organizations
+          schema:
+            $ref: '#/definitions/dto.PaginationDTOResponse'
+        "400":
+          description: Invalid page number or size
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Retrieve organizations
+      tags:
+      - organization
+    post:
+      consumes:
+      - application/json
+      description: Create a new organization
+      parameters:
+      - description: organization payload
+        in: body
+        name: organization
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrganizationCreatePayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successful creation of organization
+          schema:
+            $ref: '#/definitions/dto.OrganizationDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Create a new organization
+      tags:
+      - organization
+  /api/v1/organization/{organization_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing organization
+      parameters:
+      - description: organization ID
+        in: path
+        name: organization_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successful deletion of organization
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: organization not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Delete an existing organization
+      tags:
+      - organization
+    get:
+      consumes:
+      - application/json
+      description: Get organization by ID
+      parameters:
+      - description: organization ID
+        in: path
+        name: organization_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of organization
+          schema:
+            $ref: '#/definitions/dto.OrganizationDTO'
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: organization not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Retrieve organization by ID
+      tags:
+      - organization
+    put:
+      consumes:
+      - application/json
+      description: Update an existing organization
+      parameters:
+      - description: organization ID
+        in: path
+        name: organization_id
+        required: true
+        type: string
+      - description: organization payload
+        in: body
+        name: organization
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrganizationUpdatePayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful update of organization
+          schema:
+            $ref: '#/definitions/dto.OrganizationDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "404":
+          description: organization not found
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.GeneralError'
+      summary: Update an existing organization
+      tags:
+      - organization
   /api/v1/validators/active:
     get:
       consumes:
