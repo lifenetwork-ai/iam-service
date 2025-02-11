@@ -18,8 +18,8 @@ func NewOrganizationRepository(db *gorm.DB) interfaces.OrganizationRepository {
 	return &organizationRepository{db: db}
 }
 
-// GetOrganizations retrieves a list of organizations based on the provided filters
-func (r *organizationRepository) GetOrganizations(
+// Get retrieves a list of organizations based on the provided filters
+func (r *organizationRepository) Get(
 	ctx context.Context,
 	limit int,
 	offset int,
@@ -41,4 +41,75 @@ func (r *organizationRepository) GetOrganizations(
 	}
 
 	return organizations, nil
+}
+
+// GetByID retrieves an organization based on the provided ID
+func (r *organizationRepository) GetByID(
+	ctx context.Context,
+	id string,
+) (*domain.Organization, error) {
+	var organization domain.Organization
+
+	// Execute query
+	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&organization).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve organization: %w", err)
+	}
+
+	return &organization, nil
+}
+
+// GetByCode retrieves an organization based on the provided code
+func (r *organizationRepository) GetByCode(
+	ctx context.Context,
+	code string,
+) (*domain.Organization, error) {
+	var organization domain.Organization
+
+	// Execute query
+	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&organization).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve organization: %w", err)
+	}
+
+	return &organization, nil
+}
+
+// Create creates a new organization
+func (r *organizationRepository) Create(
+	ctx context.Context,
+	organization domain.Organization,
+) (*domain.Organization, error) {
+	// Execute query
+	if err := r.db.WithContext(ctx).Create(&organization).Error; err != nil {
+		return nil, fmt.Errorf("failed to create organization: %w", err)
+	}
+
+	return &organization, nil
+}
+
+// Update updates an existing organization
+func (r *organizationRepository) Update(
+	ctx context.Context,
+	organization domain.Organization,
+) (*domain.Organization, error) {
+	// Execute query
+	if err := r.db.WithContext(ctx).Save(&organization).Error; err != nil {
+		return nil, fmt.Errorf("failed to update organization: %w", err)
+	}
+
+	return &organization, nil
+}
+
+// Delete deletes an existing organization
+func (r *organizationRepository) Delete(
+	ctx context.Context,
+	id string,
+) (*domain.Organization, error) {
+	var organization domain.Organization
+
+	// Execute query
+	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&organization).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete organization: %w", err)
+	}
+
+	return &organization, nil
 }

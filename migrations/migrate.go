@@ -61,8 +61,14 @@ func seedAdminAccount(db *gorm.DB, config *conf.Configuration) error {
 func RunMigrations(db *gorm.DB, config *conf.Configuration) error {
 	log.Println("Running migrations...")
 
+	// Apply SQL scripts
+	var parentRelative = "."
+	if os.PathSeparator == '\\' {
+		parentRelative = ".."
+	}
+
 	sqlScripts := []string{
-		filepath.Join(".", "migrations", "sql", "01_organization.sql"),
+		filepath.Join(parentRelative, "migrations", "sql", "01_organization.sql"),
 	}
 
 	for _, script := range sqlScripts {
