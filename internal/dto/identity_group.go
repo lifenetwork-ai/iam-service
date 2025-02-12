@@ -1,15 +1,20 @@
 package dto
 
-// OrganizationCreatePayloadDTO defines the payload for the create organization request
-type OrganizationCreatePayloadDTO struct {
+// IdentityGroupDTO represents an Group.
+type IdentityGroupDTO struct {
+	ID          string    `json:"id"`
+}
+
+// CreateIdentityGroupPayloadDTO defines the payload for the create group request
+type CreateIdentityGroupPayloadDTO struct {
 	Name        string `json:"name" validate:"required"`
 	Code        string `json:"code" validate:"required"`
 	Description string `json:"description,omitempty"`
 	ParentID    string `json:"parent_id,omitempty" validate:"omitempty,uuid"`
 }
 
-// OrganizationUpdatePayloadDTO defines the payload for the update organization request
-type OrganizationUpdatePayloadDTO struct {
+// UpdateIdentityGroupPayloadDTO defines the payload for the update group request
+type UpdateIdentityGroupPayloadDTO struct {
 	Name        string `json:"name" validate:"required"`
 	Code        string `json:"code" validate:"required"`
 	Description string `json:"description,omitempty"`

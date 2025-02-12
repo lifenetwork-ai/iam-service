@@ -13,10 +13,10 @@ import (
 )
 
 type organizationHandler struct {
-	ucase interfaces.OrganizationUseCase
+	ucase interfaces.IdentityOrganizationUseCase
 }
 
-func NewOrganizationHandler(ucase interfaces.OrganizationUseCase) *organizationHandler {
+func NewIdentityOrganizationHandler(ucase interfaces.IdentityOrganizationUseCase) *organizationHandler {
 	return &organizationHandler{
 		ucase: ucase,
 	}
@@ -55,7 +55,7 @@ func (h *organizationHandler) GetOrganizations(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.GetOrganizations(ctx, pageInt, sizeInt, keyword)
+	response, errResponse := h.ucase.List(ctx, pageInt, sizeInt, keyword)
 	if errResponse != nil {
 		logger.GetLogger().Errorf("Failed to get organizations: %v", errResponse)
 		httpresponse.Error(ctx, http.StatusBadRequest, "Failed to get organizations", errResponse)
@@ -66,7 +66,7 @@ func (h *organizationHandler) GetOrganizations(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-// GetOrganizationByID retrieves a organization by it's ID.
+// GetDetail retrieves a organization by it's ID.
 // @Summary Retrieve organization by ID
 // @Description Get organization by ID
 // @Tags organizations
@@ -78,7 +78,7 @@ func (h *organizationHandler) GetOrganizations(ctx *gin.Context) {
 // @Failure 404 {object} response.GeneralError "organization not found"
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/organizations/{organization_id} [get]
-func (h *organizationHandler) GetOrganizationByID(ctx *gin.Context) {
+func (h *organizationHandler) GetDetail(ctx *gin.Context) {
 	// Extract and parse organization_id from query string
 	organizationId := ctx.Query("organization_id")
 	if organizationId == "" {
@@ -87,7 +87,7 @@ func (h *organizationHandler) GetOrganizationByID(ctx *gin.Context) {
 		return
 	}
 
-	organization, err := h.ucase.GetOrganizationByID(ctx, organizationId)
+	organization, err := h.ucase.GetByID(ctx, organizationId)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get organization: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get organization"})
@@ -110,7 +110,7 @@ func (h *organizationHandler) GetOrganizationByID(ctx *gin.Context) {
 // @Failure 500 {object} response.GeneralError "Internal server error"
 // @Router /api/v1/organizations [post]
 func (h *organizationHandler) CreateOrganization(ctx *gin.Context) {
-	var reqPayload dto.OrganizationCreatePayloadDTO
+	var reqPayload dto.CreateIdentityOrganizationPayloadDTO
 
 	// Parse and validate the request payload
 	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
@@ -120,7 +120,7 @@ func (h *organizationHandler) CreateOrganization(ctx *gin.Context) {
 	}
 
 	// Create the organization
-	response, err := h.ucase.CreateOrganization(ctx, reqPayload)
+	response, err := h.ucase.Create(ctx, reqPayload)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to create organization: %v", err)
 		httpresponse.Error(ctx, http.StatusInternalServerError, "Failed to create organization", err)

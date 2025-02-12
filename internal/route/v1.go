@@ -17,15 +17,15 @@ func RegisterRoutes(
 	r *gin.Engine,
 	config *conf.Configuration,
 	db *gorm.DB,
-	organizationUCase interfaces.OrganizationUseCase,
+	organizationUCase interfaces.IdentityOrganizationUseCase,
 ) {
 	v1 := r.Group("/api/v1")
 
 	// SECTION: organization
 	organizationRouter := v1.Group("organizations")
-	organizationHandler := identity_organization.NewOrganizationHandler(organizationUCase)
+	organizationHandler := identity_organization.NewIdentityOrganizationHandler(organizationUCase)
 	organizationRouter.GET("/", organizationHandler.GetOrganizations)
-	organizationRouter.GET("/:organization_id", organizationHandler.GetOrganizationByID)
+	organizationRouter.GET("/:organization_id", organizationHandler.GetDetail)
 	organizationRouter.POST("/", organizationHandler.CreateOrganization)
 	organizationRouter.PUT("/:organization_id", organizationHandler.UpdateOrganization)
 	organizationRouter.DELETE("/:organization_id", organizationHandler.DeleteOrganization)

@@ -17,13 +17,13 @@ import (
 // Injectors from wire.go:
 
 // Init ucase
-func GetOrganizationUseCase(db *gorm.DB, config *conf.Configuration) interfaces.OrganizationUseCase {
-	organizationRepository := identity_organization.NewOrganizationRepository(db)
-	organizationUseCase := identity_organization.NewOrganizationUseCase(organizationRepository)
-	return organizationUseCase
+func GetOrganizationUseCase(db *gorm.DB, config *conf.Configuration) interfaces.IdentityOrganizationUseCase {
+	identityOrganizationRepository := identity_organization.NewIdentityOrganizationRepository(db)
+	identityOrganizationUseCase := identity_organization.NewIdentityOrganizationUseCase(identityOrganizationRepository)
+	return identityOrganizationUseCase
 }
 
 // wire.go:
 
 // UCase set
-var organizationUseCaseSet = wire.NewSet(identity_organization.NewOrganizationRepository, identity_organization.NewOrganizationUseCase)
+var organizationUseCaseSet = wire.NewSet(identity_organization.NewIdentityOrganizationRepository, identity_organization.NewIdentityOrganizationUseCase)

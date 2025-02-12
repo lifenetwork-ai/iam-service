@@ -14,7 +14,7 @@ type organizationRepository struct {
 	db *gorm.DB
 }
 
-func NewOrganizationRepository(db *gorm.DB) interfaces.OrganizationRepository {
+func NewIdentityOrganizationRepository(db *gorm.DB) interfaces.IdentityOrganizationRepository {
 	return &organizationRepository{db: db}
 }
 
@@ -24,8 +24,8 @@ func (r *organizationRepository) Get(
 	limit int,
 	offset int,
 	keyword *string,
-) ([]domain.Organization, error) {
-	var organizations []domain.Organization
+) ([]domain.IdentityOrganization, error) {
+	var organizations []domain.IdentityOrganization
 
 	// Start with pagination setup
 	query := r.db.WithContext(ctx).Limit(limit).Offset(offset)
@@ -47,8 +47,8 @@ func (r *organizationRepository) Get(
 func (r *organizationRepository) GetByID(
 	ctx context.Context,
 	id string,
-) (*domain.Organization, error) {
-	var organization domain.Organization
+) (*domain.IdentityOrganization, error) {
+	var organization domain.IdentityOrganization
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&organization).Error; err != nil {
@@ -62,8 +62,8 @@ func (r *organizationRepository) GetByID(
 func (r *organizationRepository) GetByCode(
 	ctx context.Context,
 	code string,
-) (*domain.Organization, error) {
-	var organization domain.Organization
+) (*domain.IdentityOrganization, error) {
+	var organization domain.IdentityOrganization
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&organization).Error; err != nil {
@@ -76,39 +76,54 @@ func (r *organizationRepository) GetByCode(
 // Create creates a new organization
 func (r *organizationRepository) Create(
 	ctx context.Context,
-	organization domain.Organization,
-) (*domain.Organization, error) {
+	entity domain.IdentityOrganization,
+) (*domain.IdentityOrganization, error) {
 	// Execute query
-	if err := r.db.WithContext(ctx).Create(&organization).Error; err != nil {
+	if err := r.db.WithContext(ctx).Create(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to create organization: %w", err)
 	}
 
-	return &organization, nil
+	return &entity, nil
 }
 
 // Update updates an existing organization
 func (r *organizationRepository) Update(
 	ctx context.Context,
-	organization domain.Organization,
-) (*domain.Organization, error) {
+	entity domain.IdentityOrganization,
+) (*domain.IdentityOrganization, error) {
 	// Execute query
-	if err := r.db.WithContext(ctx).Save(&organization).Error; err != nil {
+	if err := r.db.WithContext(ctx).Save(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
-	return &organization, nil
+	return &entity, nil
 }
 
 // Delete deletes an existing organization
 func (r *organizationRepository) Delete(
 	ctx context.Context,
 	id string,
-) (*domain.Organization, error) {
-	var organization domain.Organization
+) (*domain.IdentityOrganization, error) {
+	var organization domain.IdentityOrganization
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&organization).Error; err != nil {
 		return nil, fmt.Errorf("failed to delete organization: %w", err)
+	}
+
+	return &organization, nil
+}
+
+// SoftDelete soft-deletes an existing organization
+func (r *organizationRepository) SoftDelete(
+	ctx context.Context,
+	id string,
+) (*domain.IdentityOrganization, error) {
+	var organization domain.IdentityOrganization
+
+	// Execute query
+	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(domain.IdentityOrganization{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
+		return nil, fmt.Errorf("failed to soft-delete organization: %w", err)
 	}
 
 	return &organization, nil

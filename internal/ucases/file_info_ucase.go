@@ -1,4 +1,4 @@
-package usecases
+package ucases
 
 import (
 	"github.com/genefriendway/human-network-iam/internal/domain"

@@ -12,18 +12,18 @@ import (
 )
 
 type organizationUseCase struct {
-	organizationRepo interfaces.OrganizationRepository
+	organizationRepo interfaces.IdentityOrganizationRepository
 }
 
-func NewOrganizationUseCase(
-	organizationRepo interfaces.OrganizationRepository,
-) interfaces.OrganizationUseCase {
+func NewIdentityOrganizationUseCase(
+	organizationRepo interfaces.IdentityOrganizationRepository,
+) interfaces.IdentityOrganizationUseCase {
 	return &organizationUseCase{
 		organizationRepo: organizationRepo,
 	}
 }
 
-func (u *organizationUseCase) GetOrganizations(
+func (u *organizationUseCase) List(
 	ctx context.Context,
 	page int,
 	size int,
@@ -67,17 +67,17 @@ func (u *organizationUseCase) GetOrganizations(
 	}, nil
 }
 
-func (u *organizationUseCase) GetOrganizationByID(
+func (u *organizationUseCase) GetByID(
 	ctx context.Context,
-	organizationID string,
-) (*dto.OrganizationDTO, *dto.ErrorDTOResponse) {
+	id string,
+) (*dto.IdentityOrganizationDTO, *dto.ErrorDTOResponse) {
 	return nil, nil
 }
 
-func (u *organizationUseCase) CreateOrganization(
+func (u *organizationUseCase) Create(
 	ctx context.Context,
-	payload dto.OrganizationCreatePayloadDTO,
-) (*dto.OrganizationDTO, *dto.ErrorDTOResponse) {
+	payload dto.CreateIdentityOrganizationPayloadDTO,
+) (*dto.IdentityOrganizationDTO, *dto.ErrorDTOResponse) {
 	// Check if the organization already exists
 	exist, err := u.organizationRepo.GetByCode(ctx, payload.Code)
 	if err != nil {
@@ -98,7 +98,7 @@ func (u *organizationUseCase) CreateOrganization(
 	}
 
 	// Create the organization
-	newOrganization := domain.Organization{
+	newOrganization := domain.IdentityOrganization{
 		Name:        payload.Name,
 		Code:        payload.Code,
 		Description: payload.Description,
@@ -125,7 +125,11 @@ func (u *organizationUseCase) CreateOrganization(
 		}
 
 		newOrganization.ParentID = payload.ParentID
-		newOrganization.ParentPath = parentOrganization.ParentPath + "::" + parentOrganization.ID
+		if parentOrganization.ParentPath == "" {
+			newOrganization.ParentPath = parentOrganization.Code
+		} else {
+			newOrganization.ParentPath = parentOrganization.ParentPath + "::" + parentOrganization.Code
+		}
 	}
 
 	organization, err := u.organizationRepo.Create(ctx, newOrganization)
@@ -142,16 +146,149 @@ func (u *organizationUseCase) CreateOrganization(
 	return &dto, nil
 }
 
-func (u *organizationUseCase) UpdateOrganization(
+func (u *organizationUseCase) Update(
 	ctx context.Context,
-	payloads dto.OrganizationUpdatePayloadDTO,
-) (*dto.OrganizationDTO, *dto.ErrorDTOResponse) {
-	return nil, nil
+	id string,
+	payloads dto.UpdateIdentityOrganizationPayloadDTO,
+) (*dto.IdentityOrganizationDTO, *dto.ErrorDTOResponse) {
+	exist, err := u.organizationRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+			Details: []interface{}{err},
+		}
+	}
+
+	if exist == nil {
+		logger.GetLogger().Errorf("Organization with ID %s does not exist", id)
+		return nil, &dto.ErrorDTOResponse{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("Organization with ID %s does not exist", id),
+			Details: []interface{}{fmt.Sprintf("Organization with ID %s does not exist", id)},
+		}
+	}
+
+	var hasUpdate bool = false
+	// Update the organization
+	if payloads.Name != "" && payloads.Name != exist.Name {
+		exist.Name = payloads.Name
+		hasUpdate = true
+	}
+
+	if payloads.Code != "" && payloads.Code != exist.Code {
+		// Check if the organization already exists
+		existCode, err := u.organizationRepo.GetByCode(ctx, payloads.Code)
+		if err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+				Details: []interface{}{err},
+			}
+		}
+
+		if existCode != nil {
+			logger.GetLogger().Errorf("Organization with code %s already exists", payloads.Code)
+			return nil, &dto.ErrorDTOResponse{
+				Code:    http.StatusBadRequest,
+				Message: fmt.Sprintf("Organization with code %s already exists", payloads.Code),
+				Details: []interface{}{fmt.Sprintf("Organization with code %s already exists", payloads.Code)},
+			}
+		}
+
+		exist.Code = payloads.Code
+		hasUpdate = true
+	}
+
+
+	if payloads.Description != "" && payloads.Description != exist.Description {
+		exist.Description = payloads.Description
+		hasUpdate = true
+	}
+
+	if payloads.ParentID != "" && payloads.ParentID != exist.ParentID {
+		// Check if the parent organization exists
+		parentOrganization, err := u.organizationRepo.GetByID(ctx, payloads.ParentID)
+		if err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+				Details: []interface{}{err},
+			}
+		}
+
+		if parentOrganization == nil {
+			logger.GetLogger().Errorf("Parent organization with ID %s does not exist", payloads.ParentID)
+			return nil, &dto.ErrorDTOResponse{
+				Code:    http.StatusBadRequest,
+				Message: fmt.Sprintf("Parent organization with ID %s does not exist", payloads.ParentID),
+				Details: []interface{}{fmt.Sprintf("Parent organization with ID %s does not exist", payloads.ParentID)},
+			}
+		}
+
+		exist.ParentID = payloads.ParentID
+		if parentOrganization.ParentPath == "" {
+			exist.ParentPath = parentOrganization.Code
+		} else {
+			exist.ParentPath = parentOrganization.ParentPath + "::" + parentOrganization.Code
+		}
+		hasUpdate = true
+	}
+
+	if !hasUpdate {
+		return nil, &dto.ErrorDTOResponse{
+			Code:    http.StatusBadRequest,
+			Message: "No update data",
+			Details: []interface{}{"No update data"},
+		}
+	}
+
+	organization, err := u.organizationRepo.Update(ctx, *exist)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+			Details: []interface{}{err},
+		}
+	}
+
+	// Return the response DTO
+	dto := organization.ToDTO()
+	return &dto, nil
 }
 
-func (u *organizationUseCase) DeleteOrganization(
+func (u *organizationUseCase) Delete(
 	ctx context.Context,
-	organizationID string,
-) (*dto.OrganizationDTO, *dto.ErrorDTOResponse) {
-	return nil, nil
+	id string,
+) (*dto.IdentityOrganizationDTO, *dto.ErrorDTOResponse) {
+	organization, err := u.organizationRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+			Details: []interface{}{err},
+		}
+	}
+
+	if organization == nil {
+		logger.GetLogger().Errorf("Organization with ID %s does not exist", id)
+		return nil, &dto.ErrorDTOResponse{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("Organization with ID %s does not exist", id),
+			Details: []interface{}{fmt.Sprintf("Organization with ID %s does not exist", id)},
+		}
+	}
+
+	organization, err = u.organizationRepo.SoftDelete(ctx, id)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+			Details: []interface{}{err},
+		}
+	}
+
+	// Return the response DTO
+	dto := organization.ToDTO()
+	return &dto, nil
 }

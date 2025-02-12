@@ -12,12 +12,12 @@ import (
 
 // UCase set
 var organizationUseCaseSet = wire.NewSet(
-	identity_organization.NewOrganizationRepository,
-	identity_organization.NewOrganizationUseCase,
+	identity_organization.NewIdentityOrganizationRepository,
+	identity_organization.NewIdentityOrganizationUseCase,
 )
 
 // Init ucase
-func GetOrganizationUseCase(db *gorm.DB, config *conf.Configuration) interfaces.OrganizationUseCase {
+func GetOrganizationUseCase(db *gorm.DB, config *conf.Configuration) interfaces.IdentityOrganizationUseCase {
 	wire.Build(organizationUseCaseSet)
 	return nil
 }
