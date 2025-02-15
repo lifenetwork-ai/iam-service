@@ -42,7 +42,7 @@ type AccessSessionRepository interface {
 		ctx context.Context,
 		limit int,
 		offset int,
-		keyword *string,
+		keyword string,
 	) ([]domain.AccessSession, error)
 
 	GetByID(

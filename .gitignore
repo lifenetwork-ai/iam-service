@@ -67,3 +67,5 @@ typechain-types
 
 # Hardhat files
 cache
+
+cmd/__*

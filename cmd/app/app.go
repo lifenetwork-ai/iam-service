@@ -18,7 +18,6 @@ import (
 	"github.com/genefriendway/human-network-iam/conf/database"
 	"github.com/genefriendway/human-network-iam/internal/middleware"
 	routev1 "github.com/genefriendway/human-network-iam/internal/route"
-	"github.com/genefriendway/human-network-iam/migrations"
 	pkginterfaces "github.com/genefriendway/human-network-iam/packages/interfaces"
 	pkglogger "github.com/genefriendway/human-network-iam/packages/logger"
 	"github.com/genefriendway/human-network-iam/wire"
@@ -36,9 +35,9 @@ func RunApp(config *conf.Configuration) {
 
 	// Initialize database connection
 	db := database.DBConnWithLoglevel(logger.Info)
-	if err := migrations.RunMigrations(db, config); err != nil {
-		pkglogger.GetLogger().Fatalf("Failed to migrate database: %v", err)
-	}
+	// if err := migrations.RunMigrations(db, config); err != nil {
+	// 	pkglogger.GetLogger().Fatalf("Failed to migrate database: %v", err)
+	// }
 
 	// Initialize use cases and queue
 	organizationUCase := wire.GetOrganizationUseCase(db, config)

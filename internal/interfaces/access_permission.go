@@ -42,7 +42,7 @@ type AccessPermissionRepository interface {
 		ctx context.Context,
 		limit int,
 		offset int,
-		keyword *string,
+		keyword string,
 	) ([]domain.AccessPermission, error)
 
 	GetByID(

@@ -37,6 +37,10 @@ type SecureGenomAPIConfiguration struct {
 	SecureGenomAPIBaseURL string `mapstructure:"SECURE_GENOM_API_BASE_URL"`
 }
 
+type LifeAIConfiguration struct {
+	LifeAIBackendURL string `mapstructure:"LIFE_AI_BACKEND_URL"`
+}
+
 type Configuration struct {
 	Database          DatabaseConfiguration       `mapstructure:",squash"`
 	Redis             RedisConfiguration          `mapstructure:",squash"`
@@ -48,6 +52,7 @@ type Configuration struct {
 	Env               string                      `mapstructure:"ENV"`
 	LogLevel          string                      `mapstructure:"LOG_LEVEL"`
 	JWTSecret         string                      `mapstructure:"JWT_SECRET"`
+	LifeAIConfig      LifeAIConfiguration         `mapstructure:",squash"`
 }
 
 var configuration Configuration
@@ -71,6 +76,7 @@ var defaultConfigurations = map[string]any{
 	"ADMIN_PASSWORD":            "",
 	"JWT_SECRET":                "",
 	"SECURE_GENOM_API_BASE_URL": "https://secure-genom.humannetwork.life",
+	"LIFE_AI_BACKEND_URL":       "https://nightly.lifenetwork.ai",
 }
 
 // loadDefaultConfigs sets default values for critical configurations

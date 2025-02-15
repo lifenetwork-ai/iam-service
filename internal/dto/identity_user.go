@@ -33,3 +33,35 @@ type IdentityUserAuthDTO struct {
 	LastLoginAt      time.Time       `json:"last_login_at"`
 	User             IdentityUserDTO `json:"user"`
 }
+
+// IdentityChallengeWithPhoneDTO represents the request for a phone challenge.
+type IdentityChallengeWithPhoneDTO struct {
+	OrganizationID string `json:"organization_id"`
+	Phone          string `json:"phone"`
+}
+
+// IdentityChallengeWithEmailDTO represents the request for a phone challenge.
+type IdentityChallengeWithEmailDTO struct {
+	OrganizationID string `json:"organization_id"`
+	Email          string `json:"email"`
+}
+
+type IdentityUserRegisterDTO struct {
+	OrganizationID string `json:"organization_id"`
+	UserName       string `json:"user_name"`
+	Email          string `json:"email"`
+	Phone          string `json:"phone"`
+	Password       string `json:"password"`
+}
+
+// IdentityUserLoginDTO represents the request for a user login.
+type IdentityUserLoginDTO struct {
+	OrganizationId string `json:"organization_id"`
+	UserName       string `json:"user_name"`
+	Password       string `json:"password"`
+}
+
+// IdentityRefreshTokenDTO represents the request for a refresh token.
+type IdentityRefreshTokenDTO struct {
+	RefreshToken string `json:"refresh_token"`
+}

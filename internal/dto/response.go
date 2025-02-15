@@ -9,7 +9,8 @@ type PaginationDTOResponse struct {
 }
 
 type ErrorDTOResponse struct {
-	Code    int           `json:"code"`
+	Status  int           `json:"status,omitempty"`
+	Code    string        `json:"code"`
 	Message string        `json:"message"`
 	Details []interface{} `json:"details,omitempty"`
 }
