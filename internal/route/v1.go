@@ -18,10 +18,11 @@ func RegisterRoutes(
 	config *conf.Configuration,
 	db *gorm.DB,
 	organizationUCase interfaces.IdentityOrganizationUseCase,
+	userUCase interfaces.IdentityUserUseCase,
 ) {
 	v1 := r.Group("/api/v1")
 
-	// SECTION: organization
+	// SECTION: organizations
 	organizationRouter := v1.Group("organizations")
 	organizationHandler := handlers.NewIdentityOrganizationHandler(organizationUCase)
 	organizationRouter.GET("/", organizationHandler.GetOrganizations)
@@ -30,6 +31,18 @@ func RegisterRoutes(
 	organizationRouter.PUT("/:organization_id", organizationHandler.UpdateOrganization)
 	organizationRouter.DELETE("/:organization_id", organizationHandler.DeleteOrganization)
 
-	// SECTION: identity
-	// identityRouter := v1.Group("auth")
+	// SECTION: organizations
+	userRouter := v1.Group("users")
+	userHandler := handlers.NewIdentityUserHandler(userUCase)
+	userRouter.POST("/challenge-with-phone", userHandler.ChallengeWithPhone)
+	userRouter.POST("/challenge-with-email", userHandler.ChallengeWithEmail)
+	userRouter.POST("/challenge-verify", userHandler.ChallengeVerify)
+	userRouter.POST("/login-with-google", userHandler.LoginWithGoogle)
+	userRouter.POST("/login-with-facebook", userHandler.LoginWithFacebook)
+	userRouter.POST("/login-with-apple", userHandler.LoginWithApple)
+	// userRouter.POST("/register", userHandler.Register)
+	userRouter.POST("/login", userHandler.Login)
+	userRouter.GET("/me", userHandler.Me)
+	userRouter.POST("/refresh-token", userHandler.RefreshToken)
+	userRouter.POST("/logout", userHandler.Logout)
 }

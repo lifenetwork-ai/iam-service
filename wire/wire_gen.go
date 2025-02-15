@@ -24,7 +24,15 @@ func GetOrganizationUseCase(db *gorm.DB, config *conf.Configuration) interfaces.
 	return identityOrganizationUseCase
 }
 
+func GetUserUseCase(db *gorm.DB, config *conf.Configuration) interfaces.IdentityUserUseCase {
+	identityUserRepository := repositories.NewIdentityUserRepository(db)
+	identityUserUseCase := ucases.NewIdentityUserUseCase(identityUserRepository)
+	return identityUserUseCase
+}
+
 // wire.go:
 
 // UCase set
 var organizationUseCaseSet = wire.NewSet(repositories.NewIdentityOrganizationRepository, ucases.NewIdentityOrganizationUseCase)
+
+var userCaseSet = wire.NewSet(repositories.NewIdentityUserRepository, ucases.NewIdentityUserUseCase)

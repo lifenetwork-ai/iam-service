@@ -21,7 +21,8 @@ type IdentityUserDTO struct {
 // IdentityUserChallengeDTO represents a challenge for identity verification.
 type IdentityUserChallengeDTO struct {
 	SessionID   string `json:"session_id"`
-	ChallengeAt string `json:"challenge_at"`
+	Receiver    string `json:"receiver"`
+	ChallengeAt int64  `json:"challenge_at"`
 }
 
 // IdentityUserAuthDTO represents the response for a successful login.
@@ -36,29 +37,25 @@ type IdentityUserAuthDTO struct {
 
 // IdentityChallengeWithPhoneDTO represents the request for a phone challenge.
 type IdentityChallengeWithPhoneDTO struct {
-	OrganizationID string `json:"organization_id"`
-	Phone          string `json:"phone"`
+	Phone string `json:"phone"`
 }
 
 // IdentityChallengeWithEmailDTO represents the request for a phone challenge.
 type IdentityChallengeWithEmailDTO struct {
-	OrganizationID string `json:"organization_id"`
-	Email          string `json:"email"`
+	Email string `json:"email"`
 }
 
 type IdentityUserRegisterDTO struct {
-	OrganizationID string `json:"organization_id"`
-	UserName       string `json:"user_name"`
-	Email          string `json:"email"`
-	Phone          string `json:"phone"`
-	Password       string `json:"password"`
+	UserName string `json:"user_name"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Password string `json:"password"`
 }
 
 // IdentityUserLoginDTO represents the request for a user login.
 type IdentityUserLoginDTO struct {
-	OrganizationId string `json:"organization_id"`
-	UserName       string `json:"user_name"`
-	Password       string `json:"password"`
+	UserName string `json:"user_name"`
+	Password string `json:"password"`
 }
 
 // IdentityRefreshTokenDTO represents the request for a refresh token.

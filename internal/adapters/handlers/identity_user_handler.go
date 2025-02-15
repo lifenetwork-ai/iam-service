@@ -3,8 +3,10 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/genefriendway/human-network-iam/internal/dto"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
+	"github.com/genefriendway/human-network-iam/packages/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,15 +30,45 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 // @Success 200 {object} dto.IdentityUserChallengeDTO "Successful make a challenge with Phone and OTP"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/challenge-with-phone [post]
+// @Router /api/v1/users/challenge-with-phone [post]
 func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
-	httpresponse.Error(
-		ctx,
-		http.StatusNotImplemented,
-		"MSG_NOT_IMPLEMENTED",
-		"Not implemented",
-		nil,
-	)
+	reqPayload := dto.IdentityChallengeWithPhoneDTO{}
+	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_PAYLOAD",
+			"Invalid payload",
+			err,
+		)
+		return
+	}
+
+	if reqPayload.Phone == "" {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_PHONE_NUMBER_IS_REQUIRED",
+			"Phone number is required",
+			nil,
+		)
+		return
+	}
+
+	session, err := h.ucase.ChallengeWithPhone(ctx, reqPayload.Phone)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusInternalServerError,
+			"MSG_FAILED_TO_MAKE_CHALLENGE",
+			"Failed to make a challenge",
+			err,
+		)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, session)
 }
 
 // ChallengeWithEmail to login with email and otp.
@@ -49,15 +81,45 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 // @Success 200 {object} dto.IdentityUserChallengeDTO "Successful make a challenge with Email and OTP"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/challenge-with-email [post]
+// @Router /api/v1/users/challenge-with-email [post]
 func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
-	httpresponse.Error(
-		ctx,
-		http.StatusNotImplemented,
-		"MSG_NOT_IMPLEMENTED",
-		"Not implemented",
-		nil,
-	)
+	var reqPayload dto.IdentityChallengeWithEmailDTO
+	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_PAYLOAD",
+			"Invalid payload",
+			err,
+		)
+		return
+	}
+
+	if reqPayload.Email == "" {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_EMAIL_IS_REQUIRED",
+			"Email is required",
+			nil,
+		)
+		return
+	}
+
+	session, err := h.ucase.ChallengeWithEmail(ctx, reqPayload.Email)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusInternalServerError,
+			"MSG_FAILED_TO_MAKE_CHALLENGE",
+			"Failed to make a challenge",
+			err,
+		)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, session)
 }
 
 // Verify the challenge
@@ -71,7 +133,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Success 200 {object} dto.IdentityUserAuthDTO "Successful verify the challenge"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/challenge-verify [post]
+// @Router /api/v1/users/challenge-verify [post]
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	httpresponse.Error(
 		ctx,
@@ -93,7 +155,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Success 200 {object} dto.IdentityUserAuthDTO "Successful authenticate user"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/login [post]
+// @Router /api/v1/users/login [post]
 func (h *userHandler) Login(ctx *gin.Context) {
 	httpresponse.Error(
 		ctx,
@@ -112,7 +174,7 @@ func (h *userHandler) Login(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} dto.IdentityUserAuthDTO "Successful authenticate user with Google"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/login-with-google [post]
+// @Router /api/v1/users/login-with-google [post]
 func (h *userHandler) LoginWithGoogle(ctx *gin.Context) {
 	httpresponse.Error(
 		ctx,
@@ -131,7 +193,7 @@ func (h *userHandler) LoginWithGoogle(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} dto.IdentityUserAuthDTO "Successful authenticate user with Facebook"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/login-with-facebook [post]
+// @Router /api/v1/users/login-with-facebook [post]
 func (h *userHandler) LoginWithFacebook(ctx *gin.Context) {
 	httpresponse.Error(
 		ctx,
@@ -150,7 +212,7 @@ func (h *userHandler) LoginWithFacebook(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} dto.IdentityUserAuthDTO "Successful authenticate user with Apple"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/login-with-apple [post]
+// @Router /api/v1/users/login-with-apple [post]
 func (h *userHandler) LoginWithApple(ctx *gin.Context) {
 	httpresponse.Error(
 		ctx,
@@ -171,7 +233,7 @@ func (h *userHandler) LoginWithApple(ctx *gin.Context) {
 // @Success 200 {object} dto.IdentityUserAuthDTO "Successful refresh token"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/refresh-token [post]
+// @Router /api/v1/users/refresh-token [post]
 func (h *userHandler) RefreshToken(ctx *gin.Context) {
 	httpresponse.Error(
 		ctx,
@@ -190,7 +252,7 @@ func (h *userHandler) RefreshToken(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} dto.IdentityUserDTO "Successful get user profile"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/me [get]
+// @Router /api/v1/users/me [get]
 func (h *userHandler) Me(ctx *gin.Context) {
 	httpresponse.Error(
 		ctx,
@@ -209,7 +271,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} response.SuccessResponse "Successful de-authenticate user"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/identity/logout [post]
+// @Router /api/v1/users/logout [post]
 func (h *userHandler) Logout(ctx *gin.Context) {
 	httpresponse.Error(
 		ctx,

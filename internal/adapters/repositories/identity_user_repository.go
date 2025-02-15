@@ -2,11 +2,12 @@ package repositories
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 
 	"github.com/genefriendway/human-network-iam/internal/domain"
-	"github.com/genefriendway/human-network-iam/internal/dto"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
 )
 
@@ -20,61 +21,109 @@ func NewIdentityUserRepository(db *gorm.DB) interfaces.IdentityUserRepository {
 
 func (r *identityRepository) GetByPhone(
 	ctx context.Context,
-	organizationId string,
 	phone string,
-) (*dto.IdentityUserDTO, error) {
-	var entity dto.IdentityUserDTO
-	err := r.db.Where("phone = ?", phone).First(&entity).Error
+) (*domain.IdentityUser, error) {
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	var entity domain.IdentityUser
+	err := r.db.Where("organization_id = ? AND phone = ?", organizationId, phone).First(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
 	return &entity, err
 }
 
 func (r *identityRepository) GetByEmail(
 	ctx context.Context,
-	organizationId string,
 	email string,
-) (*dto.IdentityUserDTO, error) {
-	var entity dto.IdentityUserDTO
-	err := r.db.Where("email = ?", email).First(&entity).Error
+) (*domain.IdentityUser, error) {
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	var entity domain.IdentityUser
+	err := r.db.Where("organization_id = ? AND email = ?", organizationId, email).First(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
 	return &entity, err
 }
 
 func (r *identityRepository) GetByUsername(
 	ctx context.Context,
-	organizationId string,
 	username string,
-) (*dto.IdentityUserDTO, error) {
-	var entity dto.IdentityUserDTO
-	err := r.db.Where("username = ?", username).First(&entity).Error
+) (*domain.IdentityUser, error) {
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	var entity domain.IdentityUser
+	err := r.db.Where("organization_id = ? AND username = ?", organizationId, username).First(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
 	return &entity, err
 }
 
 func (r *identityRepository) GetByGoogleID(
 	ctx context.Context,
-	organizationId string,
 	googleID string,
-) (*dto.IdentityUserDTO, error) {
-	var entity dto.IdentityUserDTO
-	err := r.db.Where("google_id = ?", googleID).First(&entity).Error
+) (*domain.IdentityUser, error) {
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	var entity domain.IdentityUser
+	err := r.db.Where("organization_id = ? AND google_id = ?", organizationId, googleID).First(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
 	return &entity, err
 }
 
 func (r *identityRepository) GetByFacebookID(
 	ctx context.Context,
-	organizationId string,
 	facebookID string,
-) (*dto.IdentityUserDTO, error) {
-	var entity dto.IdentityUserDTO
-	err := r.db.Where("facebook_id = ?", facebookID).First(&entity).Error
+) (*domain.IdentityUser, error) {
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	var entity domain.IdentityUser
+	err := r.db.Where("organization_id = ? AND facebook_id = ?", organizationId, facebookID).First(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
 	return &entity, err
 }
 
 func (r *identityRepository) GetByAppleID(
 	ctx context.Context,
-	organizationId string,
 	appleID string,
-) (*dto.IdentityUserDTO, error) {
-	var entity dto.IdentityUserDTO
-	err := r.db.Where("apple_id = ?", appleID).First(&entity).Error
+) (*domain.IdentityUser, error) {
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	var entity domain.IdentityUser
+	err := r.db.Where("organization_id = ? AND apple_id = ?", organizationId, appleID).First(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
 	return &entity, err
 }
 
@@ -82,6 +131,12 @@ func (r *identityRepository) Create(
 	ctx context.Context,
 	entity *domain.IdentityUser,
 ) error {
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return fmt.Errorf("missing organization ID")
+	}
+
+	entity.OrganizationId = organizationId
 	err := r.db.Create(entity).Error
 	return err
 }
@@ -90,6 +145,12 @@ func (r *identityRepository) Update(
 	ctx context.Context,
 	entity *domain.IdentityUser,
 ) error {
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return fmt.Errorf("missing organization ID")
+	}
+
+	entity.OrganizationId = organizationId
 	err := r.db.Save(entity).Error
 	return err
 }
@@ -98,6 +159,11 @@ func (r *identityRepository) Delete(
 	ctx context.Context,
 	userID string,
 ) error {
-	err := r.db.Where("id = ?", userID).Delete(&domain.IdentityUser{}).Error
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return fmt.Errorf("missing organization ID")
+	}
+
+	err := r.db.Where("organization_id = ? AND id = ?", organizationId, userID).Delete(&domain.IdentityUser{}).Error
 	return err
 }

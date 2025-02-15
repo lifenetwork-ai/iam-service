@@ -17,8 +17,18 @@ var organizationUseCaseSet = wire.NewSet(
 	ucases.NewIdentityOrganizationUseCase,
 )
 
+var userCaseSet = wire.NewSet(
+	repositories.NewIdentityUserRepository,
+	ucases.NewIdentityUserUseCase,
+)
+
 // Init ucase
 func GetOrganizationUseCase(db *gorm.DB, config *conf.Configuration) interfaces.IdentityOrganizationUseCase {
 	wire.Build(organizationUseCaseSet)
+	return nil
+}
+
+func GetUserUseCase(db *gorm.DB, config *conf.Configuration) interfaces.IdentityUserUseCase {
+	wire.Build(userCaseSet)
 	return nil
 }

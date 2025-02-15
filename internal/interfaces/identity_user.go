@@ -10,13 +10,11 @@ import (
 type IdentityUserUseCase interface {
 	ChallengeWithPhone(
 		ctx context.Context,
-		organizationId string,
 		phone string,
 	) (*dto.IdentityUserChallengeDTO, *dto.ErrorDTOResponse)
 
 	ChallengeWithEmail(
 		ctx context.Context,
-		organizationId string,
 		email string,
 	) (*dto.IdentityUserChallengeDTO, *dto.ErrorDTOResponse)
 
@@ -28,28 +26,23 @@ type IdentityUserUseCase interface {
 
 	LogInWithGoogle(
 		ctx context.Context,
-		organizationId string,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
 
 	LogInWithFacebook(
 		ctx context.Context,
-		organizationId string,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
 
 	LogInWithApple(
 		ctx context.Context,
-		organizationId string,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
 
 	Register(
 		ctx context.Context,
-		organizationId string,
 		payload dto.IdentityUserRegisterDTO,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
 
 	LogIn(
 		ctx context.Context,
-		organizationId string,
 		username string,
 		password string,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
@@ -62,39 +55,33 @@ type IdentityUserUseCase interface {
 type IdentityUserRepository interface {
 	GetByPhone(
 		ctx context.Context,
-		organizationId string,
 		phone string,
-	) (*dto.IdentityUserDTO, error)
+	) (*domain.IdentityUser, error)
 
 	GetByEmail(
 		ctx context.Context,
-		organizationId string,
 		email string,
-	) (*dto.IdentityUserDTO, error)
+	) (*domain.IdentityUser, error)
 
 	GetByUsername(
 		ctx context.Context,
-		organizationId string,
 		username string,
-	) (*dto.IdentityUserDTO, error)
+	) (*domain.IdentityUser, error)
 
 	GetByGoogleID(
 		ctx context.Context,
-		organizationId string,
 		googleID string,
-	) (*dto.IdentityUserDTO, error)
+	) (*domain.IdentityUser, error)
 
 	GetByFacebookID(
 		ctx context.Context,
-		organizationId string,
 		facebookID string,
-	) (*dto.IdentityUserDTO, error)
+	) (*domain.IdentityUser, error)
 
 	GetByAppleID(
 		ctx context.Context,
-		organizationId string,
 		appleID string,
-	) (*dto.IdentityUserDTO, error)
+	) (*domain.IdentityUser, error)
 
 	Create(
 		ctx context.Context,

@@ -41,6 +41,7 @@ func RunApp(config *conf.Configuration) {
 
 	// Initialize use cases and queue
 	organizationUCase := wire.GetOrganizationUseCase(db, config)
+	userUCase := wire.GetUserUseCase(db, config)
 
 	// Register routes
 	routev1.RegisterRoutes(
@@ -49,6 +50,7 @@ func RunApp(config *conf.Configuration) {
 		config,
 		db,
 		organizationUCase,
+		userUCase,
 	)
 
 	// Start server
@@ -99,6 +101,7 @@ func initializeRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.DefaultPagination())
 	r.Use(middleware.RequestLoggerMiddleware())
+	r.Use(middleware.XHeaderValidationMiddleware())
 	r.Use(gin.Recovery())
 	return r
 }
