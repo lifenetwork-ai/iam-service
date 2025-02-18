@@ -20,6 +20,7 @@ import (
 	routev1 "github.com/genefriendway/human-network-iam/internal/route"
 	pkginterfaces "github.com/genefriendway/human-network-iam/packages/interfaces"
 	pkglogger "github.com/genefriendway/human-network-iam/packages/logger"
+	"github.com/genefriendway/human-network-iam/packages/providers"
 	"github.com/genefriendway/human-network-iam/wire"
 )
 
@@ -39,9 +40,11 @@ func RunApp(config *conf.Configuration) {
 	// 	pkglogger.GetLogger().Fatalf("Failed to migrate database: %v", err)
 	// }
 
-	// Initialize use cases and queue
-	organizationUCase := wire.GetOrganizationUseCase(db, config)
-	userUCase := wire.GetUserUseCase(db, config)
+	// Initialize the cache repository
+	cacheRepository := providers.ProvideCacheRepository(ctx)
+
+	// Initialize use cases
+	ucases := wire.InitializeUseCases(db, cacheRepository)
 
 	// Register routes
 	routev1.RegisterRoutes(
@@ -49,8 +52,8 @@ func RunApp(config *conf.Configuration) {
 		r,
 		config,
 		db,
-		organizationUCase,
-		userUCase,
+		ucases.IdentityOrganizationUCase,
+		ucases.IdentityUserUCase,
 	)
 
 	// Start server

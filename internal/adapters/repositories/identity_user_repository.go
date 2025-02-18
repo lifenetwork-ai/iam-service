@@ -7,16 +7,24 @@ import (
 
 	"gorm.io/gorm"
 
+	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
 	"github.com/genefriendway/human-network-iam/internal/domain"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
 )
 
 type identityRepository struct {
-	db *gorm.DB
+	db    *gorm.DB
+	cache infrainterfaces.CacheRepository
 }
 
-func NewIdentityUserRepository(db *gorm.DB) interfaces.IdentityUserRepository {
-	return &identityRepository{db: db}
+func NewIdentityUserRepository(
+	db *gorm.DB,
+	cache infrainterfaces.CacheRepository,
+) interfaces.IdentityUserRepository {
+	return &identityRepository{
+		db:    db,
+		cache: cache,
+	}
 }
 
 func (r *identityRepository) GetByPhone(

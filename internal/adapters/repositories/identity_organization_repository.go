@@ -7,16 +7,21 @@ import (
 
 	"gorm.io/gorm"
 
+	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
 	"github.com/genefriendway/human-network-iam/internal/domain"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
 )
 
 type organizationRepository struct {
-	db *gorm.DB
+	db    *gorm.DB
+	cache infrainterfaces.CacheRepository
 }
 
-func NewIdentityOrganizationRepository(db *gorm.DB) interfaces.IdentityOrganizationRepository {
-	return &organizationRepository{db: db}
+func NewIdentityOrganizationRepository(
+	db *gorm.DB,
+	cache infrainterfaces.CacheRepository,
+) interfaces.IdentityOrganizationRepository {
+	return &organizationRepository{db: db, cache: cache}
 }
 
 // Get retrieves a list of organizations based on the provided filters

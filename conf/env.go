@@ -1,11 +1,10 @@
 package conf
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"strings"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -53,6 +52,7 @@ type Configuration struct {
 	LogLevel          string                      `mapstructure:"LOG_LEVEL"`
 	JWTSecret         string                      `mapstructure:"JWT_SECRET"`
 	LifeAIConfig      LifeAIConfiguration         `mapstructure:",squash"`
+	CacheType         string                      `mapstructure:"CACHE_TYPE"`
 }
 
 var configuration Configuration
@@ -87,37 +87,32 @@ func loadDefaultConfigs() {
 }
 
 func init() {
+	// Set environment variable for .env file location
 	envFile := os.Getenv("ENV_FILE")
 	if envFile == "" {
-		envFile = ".env"
+		envFile = ".env" // Default to .env if ENV_FILE is not set
 	}
 
-	viper.SetConfigFile("./.env")
-	viper.AutomaticEnv()
+	// Set Viper to look for the config file
+	viper.SetConfigFile(envFile)
+	viper.SetConfigType("env")                             // Explicitly tell Viper it's an .env file
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // Replace dots with underscores
 
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	// Set defaults for critical configurations
+	// Set default values before reading config
 	loadDefaultConfigs()
 
-	if err := viper.ReadInConfig(); err != nil {
-		viper.SetConfigFile(fmt.Sprintf("../%s", envFile))
-		if err := viper.ReadInConfig(); err != nil {
-			log.Logger.Printf("Error reading config file \"%s\", %v", envFile, err)
-		}
+	// Attempt to read the .env file
+	if err := viper.ReadInConfig(); err == nil {
+		log.Printf("Loaded configuration from file: %s", envFile)
+	} else {
+		viper.AutomaticEnv() // Enable reading from environment variables
+		log.Printf("Config file \"%s\" not found or unreadable, falling back to environment variables", envFile)
 	}
 
+	// Unmarshal values into the global `configuration` struct
 	if err := viper.Unmarshal(&configuration); err != nil {
-		log.Fatal().Err(err).Msgf("Error unmarshalling configuration %v", err)
+		log.Fatalf("Error unmarshalling configuration: %v", err)
 	}
 
-	log.Info().Msg("Configuration loaded successfully")
-}
-
-func GetConfiguration() *Configuration {
-	return &configuration
-}
-
-func GetRedisConnectionURL() string {
-	return configuration.Redis.RedisAddress
+	log.Println("Configuration loaded successfully")
 }
