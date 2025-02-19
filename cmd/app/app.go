@@ -20,8 +20,8 @@ import (
 	routev1 "github.com/genefriendway/human-network-iam/internal/route"
 	pkglogger "github.com/genefriendway/human-network-iam/packages/logger"
 	pkglogtypes "github.com/genefriendway/human-network-iam/packages/logger/types"
-	"github.com/genefriendway/human-network-iam/packages/providers"
 	"github.com/genefriendway/human-network-iam/wire"
+	"github.com/genefriendway/human-network-iam/wire/providers"
 )
 
 func RunApp(config *conf.Configuration) {
