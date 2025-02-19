@@ -2,7 +2,7 @@ package dto
 
 // AccessSessionDTO represents an AccessSession.
 type AccessSessionDTO struct {
-	ID          string    `json:"id"`
+	ID string `json:"id"`
 }
 
 // CreateAccessSessionPayloadDTO defines the payload for the create group request

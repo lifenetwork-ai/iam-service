@@ -2,7 +2,7 @@ package dto
 
 // AccessPolicyDTO represents an AccessPolicy.
 type AccessPolicyDTO struct {
-	ID          string    `json:"id"`
+	ID string `json:"id"`
 }
 
 // CreateAccessPolicyPayloadDTO defines the payload for the create group request

@@ -3,11 +3,12 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/genefriendway/human-network-iam/internal/dto"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
 	"github.com/genefriendway/human-network-iam/packages/logger"
-	"github.com/gin-gonic/gin"
 )
 
 type userHandler struct {
@@ -142,7 +143,6 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 		"Not implemented",
 		nil,
 	)
-
 }
 
 // Login to authenticate user.

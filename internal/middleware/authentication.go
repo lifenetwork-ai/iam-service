@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/genefriendway/human-network-iam/conf"
 	"github.com/gin-gonic/gin"
+
+	"github.com/genefriendway/human-network-iam/conf"
 )
 
 func CallLifeAIProfileAPI(authHeader string) (map[string]interface{}, error) {

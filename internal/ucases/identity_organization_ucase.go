@@ -32,7 +32,7 @@ func (u *organizationUseCase) List(
 ) (*dto.PaginationDTOResponse, *dto.ErrorDTOResponse) {
 	// Setup pagination variables
 	limit := size + 1 // Fetch one extra record to determine if there's a next page
-	var offset = (page - 1) * size
+	offset := (page - 1) * size
 
 	organizations, err := u.organizationRepo.Get(ctx, limit, offset, keyword)
 	if err != nil {
@@ -49,7 +49,7 @@ func (u *organizationUseCase) List(
 		nextPage += 1
 	}
 
-	var organizationDTOs []interface{} = make([]interface{}, 0)
+	organizationDTOs := make([]interface{}, 0)
 	for _, organization := range organizations {
 		organizationDTOs = append(organizationDTOs, organization.ToDTO())
 	}
@@ -165,7 +165,7 @@ func (u *organizationUseCase) Update(
 		}
 	}
 
-	var hasUpdate bool = false
+	hasUpdate := false
 	// Update the organization
 	if payloads.Name != "" && payloads.Name != exist.Name {
 		exist.Name = payloads.Name

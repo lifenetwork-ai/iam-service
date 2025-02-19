@@ -2,7 +2,7 @@ package dto
 
 // IdentityRoleDTO represents an IdentityRole.
 type IdentityRoleDTO struct {
-	ID          string    `json:"id"`
+	ID string `json:"id"`
 }
 
 // CreateIdentityRolePayloadDTO defines the payload for the create group request

@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/genefriendway/human-network-iam/internal/dto"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
 	"github.com/genefriendway/human-network-iam/packages/utils"
-	"github.com/google/uuid"
 )
 
 type userUseCase struct {

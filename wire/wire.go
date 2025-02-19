@@ -1,11 +1,12 @@
 package wire
 
 import (
+	"gorm.io/gorm"
+
 	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
 	"github.com/genefriendway/human-network-iam/internal/adapters/repositories"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
 	ucases "github.com/genefriendway/human-network-iam/internal/ucases"
-	"gorm.io/gorm"
 )
 
 // Struct to hold all repositories

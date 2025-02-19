@@ -14,16 +14,19 @@ func makeJsonResponse(
 	var res Response
 	res.Status = status
 	res.Code = code
-	res.Message = message
 
-	if message == "" && payload != nil {
-		message = "Success"
+	// Assign default messages when message is empty
+	if message == "" {
+		if payload != nil {
+			res.Message = "Success"
+		} else if errors != nil {
+			res.Message = "Failed"
+		}
+	} else {
+		res.Message = message
 	}
 
-	if message == "" && errors != nil {
-		message = "Failed"
-	}
-
+	// Set data and errors if provided
 	if payload != nil {
 		res.Data = payload
 	}
@@ -32,9 +35,12 @@ func makeJsonResponse(
 		res.Errors = errors
 	}
 
+	// Handle optional isCached parameter
 	if len(isCached) > 0 {
 		res.IsCached = isCached[0]
 	}
+
+	// Send JSON response
 	c.Abort()
 	c.JSON(status, res)
 }
@@ -43,7 +49,7 @@ func Success(c *gin.Context, status int, payload interface{}) {
 	makeJsonResponse(c, status, "MSG_SUCCESS", "Success", payload, nil)
 }
 
-func Error(c *gin.Context, status int, code string, msg string, errors interface{}) {
+func Error(c *gin.Context, status int, code, msg string, errors interface{}) {
 	if msg == "" {
 		makeJsonResponse(c, status, code, "Failed", nil, errors)
 	} else {

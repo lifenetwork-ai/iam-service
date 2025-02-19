@@ -3,8 +3,9 @@ package domain
 import (
 	"time"
 
-	"github.com/genefriendway/human-network-iam/internal/dto"
 	"gorm.io/gorm"
+
+	"github.com/genefriendway/human-network-iam/internal/dto"
 )
 
 // Represent a IdentityGroup in the IAM system.

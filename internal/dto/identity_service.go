@@ -2,7 +2,7 @@ package dto
 
 // IdentityServiceDTO represents an IdentityService.
 type IdentityServiceDTO struct {
-	ID          string    `json:"id"`
+	ID string `json:"id"`
 }
 
 // CreateIdentityServicePayloadDTO defines the payload for the create group request

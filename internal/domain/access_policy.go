@@ -3,8 +3,9 @@ package domain
 import (
 	"time"
 
-	"github.com/genefriendway/human-network-iam/internal/dto"
 	"gorm.io/gorm"
+
+	"github.com/genefriendway/human-network-iam/internal/dto"
 )
 
 // Represent a AccessPolicy in the IAM system.
@@ -15,7 +16,7 @@ type AccessPolicy struct {
 	Description    string         `json:"description"`
 	OrganizationId string         `json:"organization_id" gorm:"type:uuid;not null"`
 	ServiceId      string         `json:"service_id" gorm:"type:uuid;not null"`
-	ActionId	   string         `json:"action_id" gorm:"type:uuid;not null"`
+	ActionId       string         `json:"action_id" gorm:"type:uuid;not null"`
 	CreatedAt      time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt      gorm.DeletedAt `json:"deleted_at" gorm:"index"`

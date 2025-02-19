@@ -2,7 +2,7 @@ package dto
 
 // AccessPermissionDTO represents an AccessPermission.
 type AccessPermissionDTO struct {
-	ID          string    `json:"id"`
+	ID string `json:"id"`
 }
 
 // CreateAccessPermissionPayloadDTO defines the payload for the create group request

@@ -2,7 +2,7 @@ package dto
 
 // AccessActionDTO represents an AccessAction.
 type AccessActionDTO struct {
-	ID          string    `json:"id"`
+	ID string `json:"id"`
 }
 
 // CreateAccessActionPayloadDTO defines the payload for the create group request
