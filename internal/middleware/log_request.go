@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/genefriendway/human-network-iam/packages/interfaces"
 	"github.com/genefriendway/human-network-iam/packages/logger"
+	pkglogtypes "github.com/genefriendway/human-network-iam/packages/logger/types"
 )
 
 // RequestLoggerMiddleware returns a gin middleware for HTTP request logging
@@ -16,7 +16,7 @@ func RequestLoggerMiddleware() gin.HandlerFunc {
 }
 
 // RequestLoggerWithLogger allows specifying a custom logger instance
-func RequestLoggerWithLogger(log interfaces.Logger) gin.HandlerFunc {
+func RequestLoggerWithLogger(log pkglogtypes.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
@@ -54,7 +54,7 @@ func RequestLoggerWithLogger(log interfaces.Logger) gin.HandlerFunc {
 		}
 
 		// Add request headers if debug level
-		if logger.GetLogger().GetLogLevel() == interfaces.DebugLevel {
+		if logger.GetLogger().GetLogLevel() == pkglogtypes.DebugLevel {
 			headers := make(map[string]string)
 			for k, v := range c.Request.Header {
 				if len(v) > 0 {
@@ -91,7 +91,7 @@ type LoggerConfig struct {
 }
 
 // RequestLoggerWithConfig returns a middleware with custom configuration
-func RequestLoggerWithConfig(log interfaces.Logger, conf LoggerConfig) gin.HandlerFunc {
+func RequestLoggerWithConfig(log pkglogtypes.Logger, conf LoggerConfig) gin.HandlerFunc {
 	skip := make(map[string]struct{}, len(conf.SkipPaths))
 	for _, path := range conf.SkipPaths {
 		skip[path] = struct{}{}

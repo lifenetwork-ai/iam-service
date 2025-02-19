@@ -37,7 +37,7 @@ type SecureGenomAPIConfiguration struct {
 }
 
 type LifeAIConfiguration struct {
-	LifeAIBackendURL string `mapstructure:"LIFE_AI_BACKEND_URL"`
+	BackendURL string `mapstructure:"LIFE_AI_BACKEND_URL"`
 }
 
 type Configuration struct {

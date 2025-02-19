@@ -1,4 +1,4 @@
-package interfaces
+package types
 
 // Level defines the severity level for logging.
 type Level string

@@ -18,8 +18,8 @@ import (
 	"github.com/genefriendway/human-network-iam/conf/database"
 	"github.com/genefriendway/human-network-iam/internal/middleware"
 	routev1 "github.com/genefriendway/human-network-iam/internal/route"
-	pkginterfaces "github.com/genefriendway/human-network-iam/packages/interfaces"
 	pkglogger "github.com/genefriendway/human-network-iam/packages/logger"
+	pkglogtypes "github.com/genefriendway/human-network-iam/packages/logger/types"
 	"github.com/genefriendway/human-network-iam/packages/providers"
 	"github.com/genefriendway/human-network-iam/wire"
 )
@@ -71,17 +71,17 @@ func initializeLoggerAndMode(config *conf.Configuration) {
 	}
 
 	// Determine the log level from the configuration
-	var logLevel pkginterfaces.Level
+	var logLevel pkglogtypes.Level
 	switch strings.ToLower(config.LogLevel) {
 	case "debug":
-		logLevel = pkginterfaces.DebugLevel
+		logLevel = pkglogtypes.DebugLevel
 		gin.SetMode(gin.DebugMode) // Development mode
 	case "info":
-		logLevel = pkginterfaces.InfoLevel
+		logLevel = pkglogtypes.InfoLevel
 		gin.SetMode(gin.ReleaseMode) // Production mode
 	default:
 		// Default to info level if unspecified or invalid
-		logLevel = pkginterfaces.InfoLevel
+		logLevel = pkglogtypes.InfoLevel
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -95,7 +95,7 @@ func initializeLoggerAndMode(config *conf.Configuration) {
 	appLogger.Infof("Application '%s' started with log level '%s' in '%s' mode", config.AppName, logLevel, config.Env)
 
 	// Log additional details for debugging
-	if logLevel == pkginterfaces.DebugLevel {
+	if logLevel == pkglogtypes.DebugLevel {
 		appLogger.Debug("Debugging mode enabled. Verbose logging is active.")
 	}
 }

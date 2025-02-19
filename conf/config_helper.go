@@ -11,3 +11,7 @@ func GetRedisConfiguration() *RedisConfiguration {
 func GetCacheType() string {
 	return configuration.CacheType
 }
+
+func GetLifeAIConfiguration() *LifeAIConfiguration {
+	return &configuration.LifeAIConfig
+}

@@ -4,7 +4,6 @@ package middleware
 import (
 	"net/http"
 
-	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,14 +12,17 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		organizationId := c.GetHeader("X-Organization-Id")
 		if organizationId == "" {
-			httpresponse.Error(
-				c,
+			c.AbortWithStatusJSON(
 				http.StatusPreconditionRequired,
-				"MSG_MISSING_ORGANIZATION_ID_HEADER",
-				"Missing X-Organization-Id header",
 				gin.H{
-					"field": "X-Organization-Id",
-					"error": "X-Organization-Id header is required",
+					"code":    "MSG_MISSING_ORGANIZATION_ID_HEADER",
+					"message": "Missing X-Organization-Id header",
+					"details": []interface{}{
+						map[string]string{
+							"field": "X-Organization-Id",
+							"error": "X-Organization-Id header is required",
+						},
+					},
 				},
 			)
 			return
