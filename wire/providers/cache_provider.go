@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	once      sync.Once
+	cacheOnce sync.Once
 	cacheRepo interfaces.CacheRepository
 )
 
 // ProvideCacheRepository provides a singleton instance of CacheRepository.
 func ProvideCacheRepository(ctx context.Context) interfaces.CacheRepository {
-	once.Do(func() {
+	cacheOnce.Do(func() {
 		cacheType := conf.GetCacheType()
 		switch cacheType {
 		case "redis":
