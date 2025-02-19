@@ -65,6 +65,11 @@ func CallLifeAIProfileAPI(authHeader string) (map[string]interface{}, error) {
 // RequestAuthenticationMiddleware returns a gin middleware for HTTP request logging
 func RequestAuthenticationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Dependency injection
+		// lifeAIClient := providers.ProvideLifeAIClient()
+		// db := providers.ProvideDBConnection()
+		// cacheRepo := providers.ProvideCacheRepository(c)
+
 		// Get the Bearer token from the Authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
