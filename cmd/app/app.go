@@ -8,20 +8,17 @@ import (
 	"strings"
 	"syscall"
 
-	"gorm.io/gorm/logger"
-
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginswagger "github.com/swaggo/gin-swagger"
 
 	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/conf/database"
 	"github.com/genefriendway/human-network-iam/internal/middleware"
 	routev1 "github.com/genefriendway/human-network-iam/internal/route"
 	pkglogger "github.com/genefriendway/human-network-iam/packages/logger"
 	pkglogtypes "github.com/genefriendway/human-network-iam/packages/logger/types"
-	"github.com/genefriendway/human-network-iam/packages/providers"
 	"github.com/genefriendway/human-network-iam/wire"
+	"github.com/genefriendway/human-network-iam/wire/providers"
 )
 
 func RunApp(config *conf.Configuration) {
@@ -35,7 +32,7 @@ func RunApp(config *conf.Configuration) {
 	r := initializeRouter()
 
 	// Initialize database connection
-	db := database.DBConnWithLoglevel(logger.Info)
+	db := providers.ProvideDBConnection()
 	// if err := migrations.RunMigrations(db, config); err != nil {
 	// 	pkglogger.GetLogger().Fatalf("Failed to migrate database: %v", err)
 	// }

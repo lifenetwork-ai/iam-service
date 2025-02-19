@@ -9,19 +9,19 @@ import (
 	"net/http"
 )
 
-type lifeAIClient struct {
+type LifeAIClient struct {
 	endpoint   string
 	httpClient *http.Client
 }
 
-func NewLifeAIClient(endpoint string) *lifeAIClient {
-	return &lifeAIClient{
+func NewLifeAIClient(endpoint string) *LifeAIClient {
+	return &LifeAIClient{
 		endpoint:   endpoint,
 		httpClient: &http.Client{},
 	}
 }
 
-func (c *lifeAIClient) GetProfile(
+func (c *LifeAIClient) GetProfile(
 	ctx context.Context,
 	authHeader string,
 ) (*StoreReencryptionKeysResponse, error) {
