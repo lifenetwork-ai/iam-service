@@ -5,7 +5,7 @@ import (
 )
 
 // RequestAuthorizationMiddleware returns a gin middleware for HTTP request logging
-func RequestAuthorizationMiddleware() gin.HandlerFunc {
+func RequestAuthorizationMiddleware(action string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Process request
 		c.Next()

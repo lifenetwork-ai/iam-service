@@ -63,7 +63,8 @@ func RunMigrations(db *gorm.DB, config *conf.Configuration) error {
 
 	// Apply SQL scripts
 	sqlScripts := []string{
-		filepath.Join(".", "migrations", "sql", "01_organization.sql"),
+		filepath.Join("..", "migrations", "sql", "01_identity_user.sql"),
+		filepath.Join("..", "migrations", "sql", "01_identity_organization.sql"),
 	}
 
 	for _, script := range sqlScripts {

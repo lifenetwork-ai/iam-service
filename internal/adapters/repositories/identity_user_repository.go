@@ -36,6 +36,10 @@ func (r *identityRepository) GetByPhone(
 		return nil, fmt.Errorf("missing organization ID")
 	}
 
+	if phone == "" {
+		return nil, nil
+	}
+
 	var entity domain.IdentityUser
 	err := r.db.Where("organization_id = ? AND phone = ?", organizationId, phone).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -52,6 +56,10 @@ func (r *identityRepository) GetByEmail(
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	if email == "" {
+		return nil, nil
 	}
 
 	var entity domain.IdentityUser
@@ -72,8 +80,34 @@ func (r *identityRepository) GetByUsername(
 		return nil, fmt.Errorf("missing organization ID")
 	}
 
+	if username == "" {
+		return nil, nil
+	}
+
 	var entity domain.IdentityUser
 	err := r.db.Where("organization_id = ? AND username = ?", organizationId, username).First(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
+	return &entity, err
+}
+
+func (r *identityRepository) GetByLifeAIID(
+	ctx context.Context,
+	lifeAIID string,
+) (*domain.IdentityUser, error) {
+	organizationId := ctx.Value("organization_id").(string)
+	if organizationId == "" {
+		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	if lifeAIID == "" {
+		return nil, nil
+	}
+
+	var entity domain.IdentityUser
+	err := r.db.Where("organization_id = ? AND lifeai_id = ?", organizationId, lifeAIID).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -88,6 +122,10 @@ func (r *identityRepository) GetByGoogleID(
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	if googleID == "" {
+		return nil, nil
 	}
 
 	var entity domain.IdentityUser
@@ -108,6 +146,10 @@ func (r *identityRepository) GetByFacebookID(
 		return nil, fmt.Errorf("missing organization ID")
 	}
 
+	if facebookID == "" {
+		return nil, nil
+	}
+
 	var entity domain.IdentityUser
 	err := r.db.Where("organization_id = ? AND facebook_id = ?", organizationId, facebookID).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -124,6 +166,10 @@ func (r *identityRepository) GetByAppleID(
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
+	}
+
+	if appleID == "" {
+		return nil, nil
 	}
 
 	var entity domain.IdentityUser

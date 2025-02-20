@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/genefriendway/human-network-iam/internal/domain"
 	"github.com/genefriendway/human-network-iam/internal/dto"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
 	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
@@ -254,13 +255,31 @@ func (h *userHandler) RefreshToken(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
 func (h *userHandler) Me(ctx *gin.Context) {
-	httpresponse.Error(
-		ctx,
-		http.StatusNotImplemented,
-		"MSG_NOT_IMPLEMENTED",
-		"Not implemented",
-		nil,
-	)
+	requesterValue, exists := ctx.Get("requester")
+	if !exists {
+		httpresponse.Error(
+			ctx,
+			http.StatusInternalServerError,
+			"MSG_REQUESTER_NOT_FOUND",
+			"Requester not found",
+			nil,
+		)
+		return
+	}
+
+	requester, ok := requesterValue.(*domain.IdentityUser)
+	if !ok {
+		httpresponse.Error(
+			ctx,
+			http.StatusInternalServerError,
+			"MSG_REQUESTER_TYPE_ASSERTION_FAILED",
+			"Requester type assertion failed",
+			nil,
+		)
+		return
+	}
+	requesterDTO := requester.ToDTO()
+	httpresponse.Success(ctx, http.StatusOK, requesterDTO)
 }
 
 // Logout to de-authenticate user.

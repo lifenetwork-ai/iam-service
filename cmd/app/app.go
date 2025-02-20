@@ -15,6 +15,7 @@ import (
 	"github.com/genefriendway/human-network-iam/conf"
 	"github.com/genefriendway/human-network-iam/internal/middleware"
 	routev1 "github.com/genefriendway/human-network-iam/internal/route"
+	"github.com/genefriendway/human-network-iam/migrations"
 	pkglogger "github.com/genefriendway/human-network-iam/packages/logger"
 	pkglogtypes "github.com/genefriendway/human-network-iam/packages/logger/types"
 	"github.com/genefriendway/human-network-iam/wire"
@@ -33,9 +34,9 @@ func RunApp(config *conf.Configuration) {
 
 	// Initialize database connection
 	db := providers.ProvideDBConnection()
-	// if err := migrations.RunMigrations(db, config); err != nil {
-	// 	pkglogger.GetLogger().Fatalf("Failed to migrate database: %v", err)
-	// }
+	if err := migrations.RunMigrations(db, config); err != nil {
+		pkglogger.GetLogger().Fatalf("Failed to migrate database: %v", err)
+	}
 
 	// Initialize the cache repository
 	cacheRepository := providers.ProvideCacheRepository(ctx)

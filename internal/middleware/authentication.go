@@ -1,144 +1,228 @@
 package middleware
 
 import (
-	"encoding/json"
+	"crypto/md5"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/genefriendway/human-network-iam/conf"
+	cachingTypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
+	"github.com/genefriendway/human-network-iam/internal/adapters/repositories"
+	"github.com/genefriendway/human-network-iam/internal/domain"
+	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
+	"github.com/genefriendway/human-network-iam/wire/providers"
 )
-
-func CallLifeAIProfileAPI(authHeader string) (map[string]interface{}, error) {
-	lifeAIConfig := conf.GetLifeAIConfiguration()
-
-	// Assuming you have a package config that contains the AuthServiceURL
-	url := lifeAIConfig.BackendURL + "/api/v1/user-profile/"
-
-	// Create a new request using http package
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set the Authorization header
-	req.Header.Set("Authorization", authHeader)
-
-	// Send the request using http.DefaultClient
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// Check if the response status is not 200 OK
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("authentication failed with status: %s", resp.Status)
-	}
-
-	// Parse the response body to get the requester_id
-	type LifeAIProfile struct {
-		ID       string `json:"id"`
-		Email    string `json:"email"`
-		Username string `json:"username"`
-	}
-
-	var meResult struct {
-		Profile LifeAIProfile `json:"profile"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&meResult); err != nil {
-		return nil, err
-	}
-
-	result := map[string]interface{}{
-		"id":       meResult.Profile.ID,
-		"username": meResult.Profile.Username,
-		"email":    meResult.Profile.Email,
-	}
-
-	return result, nil
-}
 
 // RequestAuthenticationMiddleware returns a gin middleware for HTTP request logging
 func RequestAuthenticationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Dependency injection
-		// lifeAIClient := providers.ProvideLifeAIClient()
-		// db := providers.ProvideDBConnection()
-		// cacheRepo := providers.ProvideCacheRepository(c)
+		dbConnection := providers.ProvideDBConnection()
+		cacheRepo := providers.ProvideCacheRepository(c)
+		lifeAIClient := providers.ProvideLifeAIClient()
 
 		// Get the Bearer token from the Authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.AbortWithStatusJSON(
+			httpresponse.Error(
+				c,
 				http.StatusUnauthorized,
-				gin.H{
-					"code":    "UNAUTHORIZED",
-					"message": "Authorization header is required",
-					"details": []interface{}{
-						map[string]string{
-							"field": "Authorization",
-							"error": "Authorization header is required",
-						},
-					},
-				},
+				"UNAUTHORIZED",
+				"Authorization header is required",
+				[]map[string]string{{
+					"field": "Authorization",
+					"error": "Authorization header is required",
+				}},
 			)
 			return
 		}
-
-		// tokenMd5 := fmt.Sprintf("%x", md5.Sum([]byte(authHeader)))
-		// Query Redis to find profile with key is tokenMd5
 
 		// Check if the token is a Bearer token
 		tokenParts := strings.Split(authHeader, " ")
 		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			c.AbortWithStatusJSON(
+			httpresponse.Error(
+				c,
 				http.StatusUnauthorized,
-				gin.H{
-					"code":    "UNAUTHORIZED",
-					"message": "Authorization header is required",
-					"details": []interface{}{
-						map[string]string{
-							"field": "Authorization",
-							"error": "Invalid authorization header format",
-						},
-					},
-				},
+				"UNAUTHORIZED",
+				"Authorization header is required",
+				[]map[string]string{{
+					"field": "Authorization",
+					"error": "Invalid authorization header format",
+				}},
 			)
 			return
 		}
 
-		// token := tokenParts[1]
-		// You can now use the token for further processing
+		// Query Redis to find profile with key is tokenMd5
+		token := tokenParts[1]
+		var requester *domain.IdentityUser = nil
+		cacheKey := &cachingTypes.Keyer{
+			Raw: fmt.Sprintf("%x", md5.Sum([]byte(token))),
+		}
 
-		// Check if request is using LifeAI token
-		profile, err := CallLifeAIProfileAPI(authHeader)
+		var cacheRequester interface{}
+		err := cacheRepo.RetrieveItem(cacheKey, &cacheRequester)
+
+		// Try to get user from database if not found in cache
 		if err != nil {
-			c.AbortWithStatusJSON(
-				http.StatusUnauthorized,
-				gin.H{
-					"code":    "UNAUTHORIZED",
-					"message": "Invalid token",
-					"details": []interface{}{
-						map[string]string{
+			// Check if request is using LifeAI token
+			profile, err := lifeAIClient.GetProfile(c, authHeader)
+			if err != nil {
+				httpresponse.Error(
+					c,
+					http.StatusUnauthorized,
+					"UNAUTHORIZED",
+					"Invalid token",
+					[]map[string]string{{
+						"field": "Authorization",
+						"error": "Invalid token",
+					}},
+				)
+				return
+			}
+
+			if profile == nil || profile.ID == "" || (profile.Email == "" && profile.Phone == "") {
+				httpresponse.Error(
+					c,
+					http.StatusUnauthorized,
+					"UNAUTHORIZED",
+					"Invalid token",
+					[]map[string]string{{
+						"field": "Authorization",
+						"error": "Invalid token",
+					}},
+				)
+				return
+			}
+
+			// Check profile is exist or not -> if not exist, create new user
+			userRepo := repositories.NewIdentityUserRepository(dbConnection, cacheRepo)
+			userByID, err := userRepo.GetByLifeAIID(c, profile.ID)
+			if err != nil {
+				httpresponse.Error(
+					c,
+					http.StatusInternalServerError,
+					"INTERNAL_SERVER_ERROR",
+					"Failed to get user with LifeAI profile by ID",
+					[]map[string]string{{
+						"field": "Authorization",
+						"error": err.Error(),
+					}},
+				)
+				return
+			}
+
+			requester = userByID
+			if requester == nil && profile.Phone != "" {
+				userByPhone, err := userRepo.GetByPhone(c, profile.Phone)
+				if err != nil {
+					httpresponse.Error(
+						c,
+						http.StatusInternalServerError,
+						"INTERNAL_SERVER_ERROR",
+						"Failed to get user with LifeAI profile by phone",
+						[]map[string]string{{
 							"field": "Authorization",
-							"error": "Invalid token",
-						},
-					},
-				},
-			)
-			return
+							"error": err.Error(),
+						}},
+					)
+					return
+				}
+				requester = userByPhone
+			}
+
+			if requester == nil && profile.Email != "" {
+				userByEmail, err := userRepo.GetByEmail(c, profile.Email)
+				if err != nil {
+					httpresponse.Error(
+						c,
+						http.StatusInternalServerError,
+						"INTERNAL_SERVER_ERROR",
+						"Failed to get user with LifeAI profile by email",
+						[]map[string]string{{
+							"field": "Authorization",
+							"error": err.Error(),
+						}},
+					)
+					return
+				}
+				requester = userByEmail
+			}
+
+			if requester == nil {
+				// Create new user
+				username := func() string {
+					if profile.Phone != "" {
+						return profile.Phone
+					}
+					return profile.Email
+				}()
+
+				newIdentityUser := &domain.IdentityUser{
+					UserName: username,
+					Email:    profile.Email,
+					Phone:    profile.Phone,
+					LifeAIID: profile.ID,
+				}
+
+				if err := userRepo.Create(c, newIdentityUser); err != nil {
+					httpresponse.Error(
+						c,
+						http.StatusInternalServerError,
+						"INTERNAL_SERVER_ERROR",
+						"Failed to create user with LifeAI profile",
+						[]map[string]string{{
+							"field": "Authorization",
+							"error": err.Error(),
+						}},
+					)
+					return
+				}
+
+				requester = newIdentityUser
+			}
+
+			// Cache the user to memory cache
+			err = cacheRepo.SaveItem(cacheKey, *requester, time.Duration(30*time.Minute))
+			if err != nil {
+				httpresponse.Error(
+					c,
+					http.StatusInternalServerError,
+					"INTERNAL_SERVER_ERROR",
+					"Failed to cache user",
+					[]map[string]string{{
+						"field": "Authorization",
+						"error": "Failed to cache user",
+					}},
+				)
+				return
+			}
+		} else {
+			if user, ok := cacheRequester.(domain.IdentityUser); ok {
+				requester = &user
+			}
 		}
 
-		// Check profile is exist or not -> if not exist, create new user
-
-		// Set the profile in the context
-		c.Set("profile", profile)
-
-		// Process request
-		c.Next()
+		if requester == nil {
+			httpresponse.Error(
+				c,
+				http.StatusUnauthorized,
+				"UNAUTHORIZED",
+				"Invalid token",
+				[]map[string]string{{
+					"field": "Authorization",
+					"error": "Invalid token",
+				}},
+			)
+			return
+		} else {
+			// Set the user in the context
+			c.Set("requesterId", requester.ID)
+			c.Set("requester", requester)
+			c.Next()
+		}
 	}
 }

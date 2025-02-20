@@ -10,6 +10,7 @@ import (
 	"github.com/genefriendway/human-network-iam/conf"
 	"github.com/genefriendway/human-network-iam/internal/adapters/handlers"
 	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	"github.com/genefriendway/human-network-iam/internal/middleware"
 )
 
 func RegisterRoutes(
@@ -25,11 +26,36 @@ func RegisterRoutes(
 	// SECTION: organizations
 	organizationRouter := v1.Group("organizations")
 	organizationHandler := handlers.NewIdentityOrganizationHandler(organizationUCase)
-	organizationRouter.GET("/", organizationHandler.GetOrganizations)
-	organizationRouter.GET("/:organization_id", organizationHandler.GetDetail)
-	organizationRouter.POST("/", organizationHandler.CreateOrganization)
-	organizationRouter.PUT("/:organization_id", organizationHandler.UpdateOrganization)
-	organizationRouter.DELETE("/:organization_id", organizationHandler.DeleteOrganization)
+	organizationRouter.GET(
+		"/",
+		middleware.RequestAuthenticationMiddleware(),
+		middleware.RequestAuthorizationMiddleware("iam:identity_organization:read"),
+		organizationHandler.GetOrganizations,
+	)
+	organizationRouter.GET(
+		"/:organization_id",
+		middleware.RequestAuthenticationMiddleware(),
+		middleware.RequestAuthorizationMiddleware("iam:identity_organization:read"),
+		organizationHandler.GetDetail,
+	)
+	organizationRouter.POST(
+		"/",
+		middleware.RequestAuthenticationMiddleware(),
+		middleware.RequestAuthorizationMiddleware("iam:identity_organization:create"),
+		organizationHandler.CreateOrganization,
+	)
+	organizationRouter.PUT(
+		"/:organization_id",
+		middleware.RequestAuthenticationMiddleware(),
+		middleware.RequestAuthorizationMiddleware("iam:identity_organization:update"),
+		organizationHandler.UpdateOrganization,
+	)
+	organizationRouter.DELETE(
+		"/:organization_id",
+		middleware.RequestAuthenticationMiddleware(),
+		middleware.RequestAuthorizationMiddleware("iam:identity_organization:delete"),
+		organizationHandler.DeleteOrganization,
+	)
 
 	// SECTION: organizations
 	userRouter := v1.Group("users")
@@ -41,8 +67,21 @@ func RegisterRoutes(
 	userRouter.POST("/login-with-facebook", userHandler.LoginWithFacebook)
 	userRouter.POST("/login-with-apple", userHandler.LoginWithApple)
 	// userRouter.POST("/register", userHandler.Register)
+
 	userRouter.POST("/login", userHandler.Login)
-	userRouter.GET("/me", userHandler.Me)
-	userRouter.POST("/refresh-token", userHandler.RefreshToken)
-	userRouter.POST("/logout", userHandler.Logout)
+	userRouter.POST(
+		"/refresh-token",
+		middleware.RequestAuthenticationMiddleware(),
+		userHandler.RefreshToken,
+	)
+	userRouter.POST(
+		"/logout",
+		middleware.RequestAuthenticationMiddleware(),
+		userHandler.Logout,
+	)
+	userRouter.GET(
+		"/me",
+		middleware.RequestAuthenticationMiddleware(),
+		userHandler.Me,
+	)
 }

@@ -68,6 +68,11 @@ type IdentityUserRepository interface {
 		username string,
 	) (*domain.IdentityUser, error)
 
+	GetByLifeAIID(
+		ctx context.Context,
+		lifeAIID string,
+	) (*domain.IdentityUser, error)
+
 	GetByGoogleID(
 		ctx context.Context,
 		googleID string,

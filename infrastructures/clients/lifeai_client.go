@@ -24,11 +24,11 @@ func NewLifeAIClient(endpoint string) *LifeAIClient {
 func (c *LifeAIClient) GetProfile(
 	ctx context.Context,
 	authHeader string,
-) (*StoreReencryptionKeysResponse, error) {
+) (*LifeAIProfile, error) {
 	url := fmt.Sprintf("%s/api/v1/user-profile/", c.endpoint)
 
 	// Create the request
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer([]byte{}))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, bytes.NewBuffer([]byte{}))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -37,6 +37,7 @@ func (c *LifeAIClient) GetProfile(
 	req.Header.Set("Authorization", authHeader)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Version-Management", "1.0.20|web")
 
 	// Make the request
 	resp, err := c.httpClient.Do(req)
@@ -52,7 +53,7 @@ func (c *LifeAIClient) GetProfile(
 	}
 
 	// Parse the response body
-	var response StoreReencryptionKeysResponse
+	var response LifeAIProfile
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}

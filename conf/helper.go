@@ -15,3 +15,7 @@ func GetCacheType() string {
 func GetLifeAIConfiguration() *LifeAIConfiguration {
 	return &configuration.LifeAIConfig
 }
+
+func GetAppName() string {
+	return configuration.AppName
+}
