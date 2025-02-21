@@ -31,7 +31,7 @@ func (r *identityRepository) GetByPhone(
 	ctx context.Context,
 	phone string,
 ) (*entities.IdentityUser, error) {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
 	}
@@ -53,7 +53,7 @@ func (r *identityRepository) GetByEmail(
 	ctx context.Context,
 	email string,
 ) (*entities.IdentityUser, error) {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
 	}
@@ -75,7 +75,7 @@ func (r *identityRepository) GetByUsername(
 	ctx context.Context,
 	username string,
 ) (*entities.IdentityUser, error) {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
 	}
@@ -97,7 +97,7 @@ func (r *identityRepository) GetByLifeAIID(
 	ctx context.Context,
 	lifeAIID string,
 ) (*entities.IdentityUser, error) {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
 	}
@@ -119,7 +119,7 @@ func (r *identityRepository) GetByGoogleID(
 	ctx context.Context,
 	googleID string,
 ) (*entities.IdentityUser, error) {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
 	}
@@ -141,7 +141,7 @@ func (r *identityRepository) GetByFacebookID(
 	ctx context.Context,
 	facebookID string,
 ) (*entities.IdentityUser, error) {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
 	}
@@ -163,7 +163,7 @@ func (r *identityRepository) GetByAppleID(
 	ctx context.Context,
 	appleID string,
 ) (*entities.IdentityUser, error) {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
 	}
@@ -185,7 +185,7 @@ func (r *identityRepository) Create(
 	ctx context.Context,
 	entity *entities.IdentityUser,
 ) error {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return fmt.Errorf("missing organization ID")
 	}
@@ -199,7 +199,7 @@ func (r *identityRepository) Update(
 	ctx context.Context,
 	entity *entities.IdentityUser,
 ) error {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return fmt.Errorf("missing organization ID")
 	}
@@ -213,7 +213,7 @@ func (r *identityRepository) Delete(
 	ctx context.Context,
 	userID string,
 ) error {
-	organizationId := ctx.Value("organization_id").(string)
+	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return fmt.Errorf("missing organization ID")
 	}

@@ -3,6 +3,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,6 +11,12 @@ import (
 // XHeaderValidationMiddleware returns a gin middleware for HTTP request logging
 func XHeaderValidationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Ignore Swagger requests
+		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
+			c.Next() // Skip check headers for Swagger routes
+			return
+		}
+		
 		organizationId := c.GetHeader("X-Organization-Id")
 		if organizationId == "" {
 			c.AbortWithStatusJSON(
@@ -31,7 +38,7 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 		// Validate organization ID
 
 		// Process request
-		c.Set("organization_id", organizationId)
+		c.Set("organizationId", organizationId)
 		c.Next()
 	}
 }
