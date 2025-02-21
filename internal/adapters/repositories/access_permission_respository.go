@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/genefriendway/human-network-iam/internal/domain"
-	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
+	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 )
 
 type permissionRepository struct {
@@ -24,8 +24,8 @@ func (r *permissionRepository) Get(
 	limit int,
 	offset int,
 	keyword string,
-) ([]domain.AccessPermission, error) {
-	var entities []domain.AccessPermission
+) ([]entities.AccessPermission, error) {
+	var entities []entities.AccessPermission
 
 	// Start with pagination setup
 	query := r.db.WithContext(ctx).Limit(limit).Offset(offset)
@@ -47,8 +47,8 @@ func (r *permissionRepository) Get(
 func (r *permissionRepository) GetByID(
 	ctx context.Context,
 	id string,
-) (*domain.AccessPermission, error) {
-	var entity domain.AccessPermission
+) (*entities.AccessPermission, error) {
+	var entity entities.AccessPermission
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&entity).Error; err != nil {
@@ -62,8 +62,8 @@ func (r *permissionRepository) GetByID(
 func (r *permissionRepository) GetByCode(
 	ctx context.Context,
 	code string,
-) (*domain.AccessPermission, error) {
-	var entity domain.AccessPermission
+) (*entities.AccessPermission, error) {
+	var entity entities.AccessPermission
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&entity).Error; err != nil {
@@ -76,8 +76,8 @@ func (r *permissionRepository) GetByCode(
 // Create creates a new permission
 func (r *permissionRepository) Create(
 	ctx context.Context,
-	entity domain.AccessPermission,
-) (*domain.AccessPermission, error) {
+	entity entities.AccessPermission,
+) (*entities.AccessPermission, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Create(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to create permission: %w", err)
@@ -89,8 +89,8 @@ func (r *permissionRepository) Create(
 // Update updates an existing permission
 func (r *permissionRepository) Update(
 	ctx context.Context,
-	entity domain.AccessPermission,
-) (*domain.AccessPermission, error) {
+	entity entities.AccessPermission,
+) (*entities.AccessPermission, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Save(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to update permission: %w", err)
@@ -103,8 +103,8 @@ func (r *permissionRepository) Update(
 func (r *permissionRepository) Delete(
 	ctx context.Context,
 	id string,
-) (*domain.AccessPermission, error) {
-	var entity domain.AccessPermission
+) (*entities.AccessPermission, error) {
+	var entity entities.AccessPermission
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&entity).Error; err != nil {
@@ -118,11 +118,11 @@ func (r *permissionRepository) Delete(
 func (r *permissionRepository) SoftDelete(
 	ctx context.Context,
 	id string,
-) (*domain.AccessPermission, error) {
-	var entity domain.AccessPermission
+) (*entities.AccessPermission, error) {
+	var entity entities.AccessPermission
 
 	// Execute query
-	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(domain.AccessPermission{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(entities.AccessPermission{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
 		return nil, fmt.Errorf("failed to soft-delete permission: %w", err)
 	}
 

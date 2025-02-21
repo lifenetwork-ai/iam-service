@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/genefriendway/human-network-iam/internal/domain"
-	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
+	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 )
 
 type sessionRepository struct {
@@ -24,8 +24,8 @@ func (r *sessionRepository) Get(
 	limit int,
 	offset int,
 	keyword string,
-) ([]domain.AccessSession, error) {
-	var entities []domain.AccessSession
+) ([]entities.AccessSession, error) {
+	var entities []entities.AccessSession
 
 	// Start with pagination setup
 	query := r.db.WithContext(ctx).Limit(limit).Offset(offset)
@@ -47,8 +47,8 @@ func (r *sessionRepository) Get(
 func (r *sessionRepository) GetByID(
 	ctx context.Context,
 	id string,
-) (*domain.AccessSession, error) {
-	var entity domain.AccessSession
+) (*entities.AccessSession, error) {
+	var entity entities.AccessSession
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&entity).Error; err != nil {
@@ -62,8 +62,8 @@ func (r *sessionRepository) GetByID(
 func (r *sessionRepository) GetByCode(
 	ctx context.Context,
 	code string,
-) (*domain.AccessSession, error) {
-	var entity domain.AccessSession
+) (*entities.AccessSession, error) {
+	var entity entities.AccessSession
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&entity).Error; err != nil {
@@ -76,8 +76,8 @@ func (r *sessionRepository) GetByCode(
 // Create creates a new session
 func (r *sessionRepository) Create(
 	ctx context.Context,
-	entity domain.AccessSession,
-) (*domain.AccessSession, error) {
+	entity entities.AccessSession,
+) (*entities.AccessSession, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Create(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to create session: %w", err)
@@ -89,8 +89,8 @@ func (r *sessionRepository) Create(
 // Update updates an existing session
 func (r *sessionRepository) Update(
 	ctx context.Context,
-	entity domain.AccessSession,
-) (*domain.AccessSession, error) {
+	entity entities.AccessSession,
+) (*entities.AccessSession, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Save(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to update session: %w", err)
@@ -103,8 +103,8 @@ func (r *sessionRepository) Update(
 func (r *sessionRepository) Delete(
 	ctx context.Context,
 	id string,
-) (*domain.AccessSession, error) {
-	var entity domain.AccessSession
+) (*entities.AccessSession, error) {
+	var entity entities.AccessSession
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&entity).Error; err != nil {
@@ -118,11 +118,11 @@ func (r *sessionRepository) Delete(
 func (r *sessionRepository) SoftDelete(
 	ctx context.Context,
 	id string,
-) (*domain.AccessSession, error) {
-	var entity domain.AccessSession
+) (*entities.AccessSession, error) {
+	var entity entities.AccessSession
 
 	// Execute query
-	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(domain.AccessSession{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(entities.AccessSession{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
 		return nil, fmt.Errorf("failed to soft-delete session: %w", err)
 	}
 

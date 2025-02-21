@@ -8,8 +8,8 @@ import (
 	"gorm.io/gorm"
 
 	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
-	"github.com/genefriendway/human-network-iam/internal/domain"
-	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
+	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 )
 
 type identityRepository struct {
@@ -30,7 +30,7 @@ func NewIdentityUserRepository(
 func (r *identityRepository) GetByPhone(
 	ctx context.Context,
 	phone string,
-) (*domain.IdentityUser, error) {
+) (*entities.IdentityUser, error) {
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
@@ -40,7 +40,7 @@ func (r *identityRepository) GetByPhone(
 		return nil, nil
 	}
 
-	var entity domain.IdentityUser
+	var entity entities.IdentityUser
 	err := r.db.Where("organization_id = ? AND phone = ?", organizationId, phone).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -52,7 +52,7 @@ func (r *identityRepository) GetByPhone(
 func (r *identityRepository) GetByEmail(
 	ctx context.Context,
 	email string,
-) (*domain.IdentityUser, error) {
+) (*entities.IdentityUser, error) {
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
@@ -62,7 +62,7 @@ func (r *identityRepository) GetByEmail(
 		return nil, nil
 	}
 
-	var entity domain.IdentityUser
+	var entity entities.IdentityUser
 	err := r.db.Where("organization_id = ? AND email = ?", organizationId, email).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -74,7 +74,7 @@ func (r *identityRepository) GetByEmail(
 func (r *identityRepository) GetByUsername(
 	ctx context.Context,
 	username string,
-) (*domain.IdentityUser, error) {
+) (*entities.IdentityUser, error) {
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
@@ -84,7 +84,7 @@ func (r *identityRepository) GetByUsername(
 		return nil, nil
 	}
 
-	var entity domain.IdentityUser
+	var entity entities.IdentityUser
 	err := r.db.Where("organization_id = ? AND username = ?", organizationId, username).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -96,7 +96,7 @@ func (r *identityRepository) GetByUsername(
 func (r *identityRepository) GetByLifeAIID(
 	ctx context.Context,
 	lifeAIID string,
-) (*domain.IdentityUser, error) {
+) (*entities.IdentityUser, error) {
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
@@ -106,7 +106,7 @@ func (r *identityRepository) GetByLifeAIID(
 		return nil, nil
 	}
 
-	var entity domain.IdentityUser
+	var entity entities.IdentityUser
 	err := r.db.Where("organization_id = ? AND lifeai_id = ?", organizationId, lifeAIID).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -118,7 +118,7 @@ func (r *identityRepository) GetByLifeAIID(
 func (r *identityRepository) GetByGoogleID(
 	ctx context.Context,
 	googleID string,
-) (*domain.IdentityUser, error) {
+) (*entities.IdentityUser, error) {
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
@@ -128,7 +128,7 @@ func (r *identityRepository) GetByGoogleID(
 		return nil, nil
 	}
 
-	var entity domain.IdentityUser
+	var entity entities.IdentityUser
 	err := r.db.Where("organization_id = ? AND google_id = ?", organizationId, googleID).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -140,7 +140,7 @@ func (r *identityRepository) GetByGoogleID(
 func (r *identityRepository) GetByFacebookID(
 	ctx context.Context,
 	facebookID string,
-) (*domain.IdentityUser, error) {
+) (*entities.IdentityUser, error) {
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
@@ -150,7 +150,7 @@ func (r *identityRepository) GetByFacebookID(
 		return nil, nil
 	}
 
-	var entity domain.IdentityUser
+	var entity entities.IdentityUser
 	err := r.db.Where("organization_id = ? AND facebook_id = ?", organizationId, facebookID).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -162,7 +162,7 @@ func (r *identityRepository) GetByFacebookID(
 func (r *identityRepository) GetByAppleID(
 	ctx context.Context,
 	appleID string,
-) (*domain.IdentityUser, error) {
+) (*entities.IdentityUser, error) {
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
@@ -172,7 +172,7 @@ func (r *identityRepository) GetByAppleID(
 		return nil, nil
 	}
 
-	var entity domain.IdentityUser
+	var entity entities.IdentityUser
 	err := r.db.Where("organization_id = ? AND apple_id = ?", organizationId, appleID).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -183,7 +183,7 @@ func (r *identityRepository) GetByAppleID(
 
 func (r *identityRepository) Create(
 	ctx context.Context,
-	entity *domain.IdentityUser,
+	entity *entities.IdentityUser,
 ) error {
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
@@ -197,7 +197,7 @@ func (r *identityRepository) Create(
 
 func (r *identityRepository) Update(
 	ctx context.Context,
-	entity *domain.IdentityUser,
+	entity *entities.IdentityUser,
 ) error {
 	organizationId := ctx.Value("organization_id").(string)
 	if organizationId == "" {
@@ -218,6 +218,6 @@ func (r *identityRepository) Delete(
 		return fmt.Errorf("missing organization ID")
 	}
 
-	err := r.db.Where("organization_id = ? AND id = ?", organizationId, userID).Delete(&domain.IdentityUser{}).Error
+	err := r.db.Where("organization_id = ? AND id = ?", organizationId, userID).Delete(&entities.IdentityUser{}).Error
 	return err
 }

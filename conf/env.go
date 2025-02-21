@@ -40,6 +40,19 @@ type LifeAIConfiguration struct {
 	BackendURL string `mapstructure:"LIFE_AI_BACKEND_URL"`
 }
 
+type EmailConfiguration struct {
+	EmailHost     string `mapstructure:"EMAIL_HOST"`
+	EmailPort     string `mapstructure:"EMAIL_PORT"`
+	EmailUsername string `mapstructure:"EMAIL_USERNAME"`
+	EmailPassword string `mapstructure:"EMAIL_PASSWORD"`
+}
+
+type SmsConfiguration struct {
+	SmsProvider string `mapstructure:"SMS_PROVIDER"`
+	SmsUsername string `mapstructure:"SMS_USERNAME"`
+	SmsPassword string `mapstructure:"SMS_PASSWORD"`
+}
+
 type Configuration struct {
 	Database          DatabaseConfiguration       `mapstructure:",squash"`
 	Redis             RedisConfiguration          `mapstructure:",squash"`
@@ -53,6 +66,8 @@ type Configuration struct {
 	JWTSecret         string                      `mapstructure:"JWT_SECRET"`
 	LifeAIConfig      LifeAIConfiguration         `mapstructure:",squash"`
 	CacheType         string                      `mapstructure:"CACHE_TYPE"`
+	EmailConfig       EmailConfiguration          `mapstructure:",squash"`
+	SmsConfig         SmsConfiguration            `mapstructure:",squash"`
 }
 
 var configuration Configuration

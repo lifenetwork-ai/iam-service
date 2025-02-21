@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/genefriendway/human-network-iam/internal/dto"
-	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	dto "github.com/genefriendway/human-network-iam/internal/delivery/dto"
+	interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
 	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
 	"github.com/genefriendway/human-network-iam/packages/logger"
 )

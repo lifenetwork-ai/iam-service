@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/genefriendway/human-network-iam/internal/domain"
-	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
+	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 )
 
 type policyRepository struct {
@@ -24,8 +24,8 @@ func (r *policyRepository) Get(
 	limit int,
 	offset int,
 	keyword string,
-) ([]domain.AccessPolicy, error) {
-	var entities []domain.AccessPolicy
+) ([]entities.AccessPolicy, error) {
+	var entities []entities.AccessPolicy
 
 	// Start with pagination setup
 	query := r.db.WithContext(ctx).Limit(limit).Offset(offset)
@@ -47,8 +47,8 @@ func (r *policyRepository) Get(
 func (r *policyRepository) GetByID(
 	ctx context.Context,
 	id string,
-) (*domain.AccessPolicy, error) {
-	var entity domain.AccessPolicy
+) (*entities.AccessPolicy, error) {
+	var entity entities.AccessPolicy
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&entity).Error; err != nil {
@@ -62,8 +62,8 @@ func (r *policyRepository) GetByID(
 func (r *policyRepository) GetByCode(
 	ctx context.Context,
 	code string,
-) (*domain.AccessPolicy, error) {
-	var entity domain.AccessPolicy
+) (*entities.AccessPolicy, error) {
+	var entity entities.AccessPolicy
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&entity).Error; err != nil {
@@ -76,8 +76,8 @@ func (r *policyRepository) GetByCode(
 // Create creates a new policy
 func (r *policyRepository) Create(
 	ctx context.Context,
-	entity domain.AccessPolicy,
-) (*domain.AccessPolicy, error) {
+	entity entities.AccessPolicy,
+) (*entities.AccessPolicy, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Create(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to create policy: %w", err)
@@ -89,8 +89,8 @@ func (r *policyRepository) Create(
 // Update updates an existing policy
 func (r *policyRepository) Update(
 	ctx context.Context,
-	entity domain.AccessPolicy,
-) (*domain.AccessPolicy, error) {
+	entity entities.AccessPolicy,
+) (*entities.AccessPolicy, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Save(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to update policy: %w", err)
@@ -103,8 +103,8 @@ func (r *policyRepository) Update(
 func (r *policyRepository) Delete(
 	ctx context.Context,
 	id string,
-) (*domain.AccessPolicy, error) {
-	var entity domain.AccessPolicy
+) (*entities.AccessPolicy, error) {
+	var entity entities.AccessPolicy
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&entity).Error; err != nil {
@@ -118,11 +118,11 @@ func (r *policyRepository) Delete(
 func (r *policyRepository) SoftDelete(
 	ctx context.Context,
 	id string,
-) (*domain.AccessPolicy, error) {
-	var entity domain.AccessPolicy
+) (*entities.AccessPolicy, error) {
+	var entity entities.AccessPolicy
 
 	// Execute query
-	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(domain.AccessPolicy{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(entities.AccessPolicy{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
 		return nil, fmt.Errorf("failed to soft-delete policy: %w", err)
 	}
 

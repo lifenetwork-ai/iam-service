@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"golang.org/x/exp/rand"
@@ -30,4 +31,13 @@ func SelectRandomSubset[T any](items []T, subsetSize int) ([]T, error) {
 
 	// Return the first `subsetSize` elements
 	return items[:subsetSize], nil
+}
+
+// GenerateOTP generates a random 6-digit one-time password.
+func GenerateOTP() string {
+	// Seed the random number generator
+	rand.Seed(uint64(time.Now().UnixNano()))
+
+	// Generate a random 6-digit number
+	return fmt.Sprintf("%06d", rand.Intn(1_000_000))
 }

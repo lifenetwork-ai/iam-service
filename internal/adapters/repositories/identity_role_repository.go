@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/genefriendway/human-network-iam/internal/domain"
-	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
+	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 )
 
 type roleRepository struct {
@@ -24,8 +24,8 @@ func (r *roleRepository) Get(
 	limit int,
 	offset int,
 	keyword string,
-) ([]domain.IdentityRole, error) {
-	var entities []domain.IdentityRole
+) ([]entities.IdentityRole, error) {
+	var entities []entities.IdentityRole
 
 	// Start with pagination setup
 	query := r.db.WithContext(ctx).Limit(limit).Offset(offset)
@@ -47,8 +47,8 @@ func (r *roleRepository) Get(
 func (r *roleRepository) GetByID(
 	ctx context.Context,
 	id string,
-) (*domain.IdentityRole, error) {
-	var entity domain.IdentityRole
+) (*entities.IdentityRole, error) {
+	var entity entities.IdentityRole
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&entity).Error; err != nil {
@@ -62,8 +62,8 @@ func (r *roleRepository) GetByID(
 func (r *roleRepository) GetByCode(
 	ctx context.Context,
 	code string,
-) (*domain.IdentityRole, error) {
-	var entity domain.IdentityRole
+) (*entities.IdentityRole, error) {
+	var entity entities.IdentityRole
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&entity).Error; err != nil {
@@ -76,8 +76,8 @@ func (r *roleRepository) GetByCode(
 // Create creates a new role
 func (r *roleRepository) Create(
 	ctx context.Context,
-	entity domain.IdentityRole,
-) (*domain.IdentityRole, error) {
+	entity entities.IdentityRole,
+) (*entities.IdentityRole, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Create(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to create role: %w", err)
@@ -89,8 +89,8 @@ func (r *roleRepository) Create(
 // Update updates an existing role
 func (r *roleRepository) Update(
 	ctx context.Context,
-	entity domain.IdentityRole,
-) (*domain.IdentityRole, error) {
+	entity entities.IdentityRole,
+) (*entities.IdentityRole, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Save(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to update role: %w", err)
@@ -103,8 +103,8 @@ func (r *roleRepository) Update(
 func (r *roleRepository) Delete(
 	ctx context.Context,
 	id string,
-) (*domain.IdentityRole, error) {
-	var entity domain.IdentityRole
+) (*entities.IdentityRole, error) {
+	var entity entities.IdentityRole
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&entity).Error; err != nil {
@@ -118,11 +118,11 @@ func (r *roleRepository) Delete(
 func (r *roleRepository) SoftDelete(
 	ctx context.Context,
 	id string,
-) (*domain.IdentityRole, error) {
-	var entity domain.IdentityRole
+) (*entities.IdentityRole, error) {
+	var entity entities.IdentityRole
 
 	// Execute query
-	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(domain.IdentityRole{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(entities.IdentityRole{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
 		return nil, fmt.Errorf("failed to soft-delete role: %w", err)
 	}
 

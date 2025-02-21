@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/genefriendway/human-network-iam/internal/domain"
-	"github.com/genefriendway/human-network-iam/internal/dto"
-	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	dto "github.com/genefriendway/human-network-iam/internal/delivery/dto"
+	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
+	interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
 	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
 	"github.com/genefriendway/human-network-iam/packages/logger"
 )
@@ -267,7 +267,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 		return
 	}
 
-	requester, ok := requesterValue.(*domain.IdentityUser)
+	requester, ok := requesterValue.(*entities.IdentityUser)
 	if !ok {
 		httpresponse.Error(
 			ctx,

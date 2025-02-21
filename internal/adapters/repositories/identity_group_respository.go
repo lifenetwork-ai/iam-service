@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/genefriendway/human-network-iam/internal/domain"
-	"github.com/genefriendway/human-network-iam/internal/interfaces"
+	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
+	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 )
 
 type groupRepository struct {
@@ -24,8 +24,8 @@ func (r *groupRepository) Get(
 	limit int,
 	offset int,
 	keyword string,
-) ([]domain.IdentityGroup, error) {
-	var entities []domain.IdentityGroup
+) ([]entities.IdentityGroup, error) {
+	var entities []entities.IdentityGroup
 
 	// Start with pagination setup
 	query := r.db.WithContext(ctx).Limit(limit).Offset(offset)
@@ -47,8 +47,8 @@ func (r *groupRepository) Get(
 func (r *groupRepository) GetByID(
 	ctx context.Context,
 	id string,
-) (*domain.IdentityGroup, error) {
-	var entity domain.IdentityGroup
+) (*entities.IdentityGroup, error) {
+	var entity entities.IdentityGroup
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&entity).Error; err != nil {
@@ -62,8 +62,8 @@ func (r *groupRepository) GetByID(
 func (r *groupRepository) GetByCode(
 	ctx context.Context,
 	code string,
-) (*domain.IdentityGroup, error) {
-	var entity domain.IdentityGroup
+) (*entities.IdentityGroup, error) {
+	var entity entities.IdentityGroup
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&entity).Error; err != nil {
@@ -76,8 +76,8 @@ func (r *groupRepository) GetByCode(
 // Create creates a new group
 func (r *groupRepository) Create(
 	ctx context.Context,
-	entity domain.IdentityGroup,
-) (*domain.IdentityGroup, error) {
+	entity entities.IdentityGroup,
+) (*entities.IdentityGroup, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Create(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to create group: %w", err)
@@ -89,8 +89,8 @@ func (r *groupRepository) Create(
 // Update updates an existing group
 func (r *groupRepository) Update(
 	ctx context.Context,
-	entity domain.IdentityGroup,
-) (*domain.IdentityGroup, error) {
+	entity entities.IdentityGroup,
+) (*entities.IdentityGroup, error) {
 	// Execute query
 	if err := r.db.WithContext(ctx).Save(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to update group: %w", err)
@@ -103,8 +103,8 @@ func (r *groupRepository) Update(
 func (r *groupRepository) Delete(
 	ctx context.Context,
 	id string,
-) (*domain.IdentityGroup, error) {
-	var entity domain.IdentityGroup
+) (*entities.IdentityGroup, error) {
+	var entity entities.IdentityGroup
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&entity).Error; err != nil {
@@ -118,11 +118,11 @@ func (r *groupRepository) Delete(
 func (r *groupRepository) SoftDelete(
 	ctx context.Context,
 	id string,
-) (*domain.IdentityGroup, error) {
-	var entity domain.IdentityGroup
+) (*entities.IdentityGroup, error) {
+	var entity entities.IdentityGroup
 
 	// Execute query
-	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(domain.IdentityGroup{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", id).Updates(entities.IdentityGroup{DeletedAt: gorm.DeletedAt{}}).Error; err != nil {
 		return nil, fmt.Errorf("failed to soft-delete group: %w", err)
 	}
 
