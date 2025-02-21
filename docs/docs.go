@@ -15,395 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/account/api-key": {
-            "put": {
-                "description": "Generate or update the API key for an account.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "account"
-                ],
-                "summary": "Create or update API key",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "API key updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Account not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/account/me": {
-            "get": {
-                "description": "This endpoint retrieves the details of the currently authenticated user using the provided access token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "account"
-                ],
-                "summary": "Get current user details",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User details",
-                        "schema": {
-                            "$ref": "#/definitions/dto.AccountDetailDTO"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/account/role": {
-            "put": {
-                "description": "Update the role of an account and save associated role-specific details.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "account"
-                ],
-                "summary": "Update account role and role-specific details",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Payload containing role and role-specific details",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateRolePayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Account role updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Account not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/login": {
-            "post": {
-                "description": "This endpoint authenticates the user by email, username, or phone number, and returns an access token and refresh token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "authentication"
-                ],
-                "summary": "Authenticate user",
-                "parameters": [
-                    {
-                        "description": "User credentials (identifier, password, and identifier_type (e.g: email, username, phone))",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.LoginPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Login successful: {\\\"access_token\\\": \\\"...\\\", \\\"refresh_token\\\": \\\"...\\\"}",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TokenPairDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid credentials",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/logout": {
-            "post": {
-                "description": "This endpoint invalidates the refresh token, effectively logging the user out.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "authentication"
-                ],
-                "summary": "Logout user",
-                "parameters": [
-                    {
-                        "description": "Logout payload containing the refresh token",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.LogoutPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Logout successful: {\\\"success\\\": true}",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid or expired refresh token",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/refresh-tokens": {
-            "post": {
-                "description": "This endpoint generates a new pair of access and refresh tokens using a valid refresh token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "authentication"
-                ],
-                "summary": "Refresh tokens",
-                "parameters": [
-                    {
-                        "description": "Refresh token payload",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RefreshTokenPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Tokens refreshed successfully",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TokenPairDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid or expired refresh token",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/register": {
-            "post": {
-                "description": "This endpoint registers a new account and its associated role-specific details.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "authentication"
-                ],
-                "summary": "Register a new account",
-                "parameters": [
-                    {
-                        "description": "User registration details",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RegisterPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Registration successful: {\\\"success\\\": true}",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Account already exists",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/groups": {
             "get": {
                 "description": "Get groups",
@@ -642,690 +253,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "group not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/iam/accounts/{accountID}/policies": {
-            "post": {
-                "description": "Maps a specified policy to an account by accountID.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "IAM"
-                ],
-                "summary": "Assign a policy to an account",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Account ID to assign the policy to",
-                        "name": "accountID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Payload containing the policy ID",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.AssignPolicyPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Policy assigned successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or missing policy",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Account or policy not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/iam/policies": {
-            "get": {
-                "description": "Fetches a list of IAM policies along with their associated permissions.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "IAM"
-                ],
-                "summary": "Get policies with permissions",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of policies with permissions",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.PolicyWithPermissionsDTO"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Adds a new IAM policy to the system. Only accessible to Admins.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "IAM"
-                ],
-                "summary": "Create a new policy",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Payload for creating policy",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.PolicyPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Policy created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/iam/policies/permissions": {
-            "post": {
-                "description": "Adds a new permission to an existing IAM policy.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "IAM"
-                ],
-                "summary": "Assign a permission to a policy",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Payload for assigning permission",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.PermissionPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Permission assigned successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or missing policy",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Policy not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Permission already exists",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/challenge-verify": {
-            "post": {
-                "description": "Verify the challenge",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Verify the challenge",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "session_id",
-                        "name": "session_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "code",
-                        "name": "code",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful verify the challenge",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/challenge-with-email": {
-            "post": {
-                "description": "Login with email and otp",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Login with email and otp",
-                "parameters": [
-                    {
-                        "description": "challenge payload",
-                        "name": "challenge",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityChallengeWithEmailDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful make a challenge with Email and OTP",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/challenge-with-phone": {
-            "post": {
-                "description": "Login with phone and otp",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Login with phone and otp",
-                "parameters": [
-                    {
-                        "description": "challenge payload",
-                        "name": "challenge",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityChallengeWithPhoneDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful make a challenge with Phone and OTP",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/login": {
-            "post": {
-                "description": "Authenticate user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user",
-                "parameters": [
-                    {
-                        "description": "login payload",
-                        "name": "login",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserLoginDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/login-with-apple": {
-            "post": {
-                "description": "Authenticate user with Apple",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user with Apple",
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user with Apple",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/login-with-facebook": {
-            "post": {
-                "description": "Authenticate user with Facebook",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user with Facebook",
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user with Facebook",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/login-with-google": {
-            "post": {
-                "description": "Authenticate user with Google",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user with Google",
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user with Google",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/logout": {
-            "post": {
-                "description": "De-authenticate user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "De-authenticate user",
-                "responses": {
-                    "200": {
-                        "description": "Successful de-authenticate user",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/me": {
-            "get": {
-                "description": "Get user profile",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get user profile",
-                "responses": {
-                    "200": {
-                        "description": "Successful get user profile",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserDTO"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/identity/refresh-token": {
-            "post": {
-                "description": "Refresh token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Refresh token",
-                "parameters": [
-                    {
-                        "description": "refresh token payload",
-                        "name": "refresh_token",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityRefreshTokenDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful refresh token",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/notifications/data-upload": {
-            "post": {
-                "description": "This webhook receives raw payload data when a user successfully uploads data.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "notifications"
-                ],
-                "summary": "Notify about successful data upload",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Payload containing file information",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.FileInfoPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Notification received successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -1671,7 +598,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Successful creation of permission",
                         "schema": {
-                            "$ref": "#/definitions/dto.PermissionDTO"
+                            "$ref": "#/definitions/dto.AccessPermissionDTO"
                         }
                     },
                     "400": {
@@ -1715,7 +642,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful retrieval of permission",
                         "schema": {
-                            "$ref": "#/definitions/dto.PermissionDTO"
+                            "$ref": "#/definitions/dto.AccessPermissionDTO"
                         }
                     },
                     "400": {
@@ -1772,7 +699,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful update of permission",
                         "schema": {
-                            "$ref": "#/definitions/dto.PermissionDTO"
+                            "$ref": "#/definitions/dto.AccessPermissionDTO"
                         }
                     },
                     "400": {
@@ -1922,7 +849,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Successful creation of policy",
                         "schema": {
-                            "$ref": "#/definitions/dto.PolicyDTO"
+                            "$ref": "#/definitions/dto.AccessPolicyDTO"
                         }
                     },
                     "400": {
@@ -1966,7 +893,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful retrieval of policy",
                         "schema": {
-                            "$ref": "#/definitions/dto.PolicyDTO"
+                            "$ref": "#/definitions/dto.AccessPolicyDTO"
                         }
                     },
                     "400": {
@@ -2023,7 +950,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful update of policy",
                         "schema": {
-                            "$ref": "#/definitions/dto.PolicyDTO"
+                            "$ref": "#/definitions/dto.AccessPolicyDTO"
                         }
                     },
                     "400": {
@@ -2845,9 +1772,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/validators/active": {
-            "get": {
-                "description": "Fetches a list of active validators. Optionally, a comma-separated list of validator IDs can be provided to filter the results.",
+        "/api/v1/users/challenge-verify": {
+            "post": {
+                "description": "Verify the challenge",
                 "consumes": [
                     "application/json"
                 ],
@@ -2855,48 +1782,363 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "validators"
+                    "users"
                 ],
-                "summary": "Get Active Validators",
+                "summary": "Verify the challenge",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer access token (e.g., 'Bearer \u003ctoken\u003e')",
-                        "name": "Authorization",
-                        "in": "header",
+                        "description": "session_id",
+                        "name": "session_id",
+                        "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Comma-separated list of validator IDs to filter results (e.g., 'id1,id2,id3')",
-                        "name": "validator_ids",
-                        "in": "query"
+                        "description": "code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of active validators",
+                        "description": "Successful verify the challenge",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.AccountDetailDTO"
-                            }
+                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
                         }
                     },
                     "400": {
-                        "description": "Bad request",
+                        "description": "Invalid request payload",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/challenge-with-email": {
+            "post": {
+                "description": "Login with email and otp",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Login with email and otp",
+                "parameters": [
+                    {
+                        "description": "challenge payload",
+                        "name": "challenge",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityChallengeWithEmailDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful make a challenge with Email and OTP",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
-                    "403": {
-                        "description": "Insufficient permissions",
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/challenge-with-phone": {
+            "post": {
+                "description": "Login with phone and otp",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Login with phone and otp",
+                "parameters": [
+                    {
+                        "description": "challenge payload",
+                        "name": "challenge",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityChallengeWithPhoneDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful make a challenge with Phone and OTP",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/login": {
+            "post": {
+                "description": "Authenticate user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Authenticate user",
+                "parameters": [
+                    {
+                        "description": "login payload",
+                        "name": "login",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserLoginDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful authenticate user",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/login-with-apple": {
+            "post": {
+                "description": "Authenticate user with Apple",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Authenticate user with Apple",
+                "responses": {
+                    "200": {
+                        "description": "Successful authenticate user with Apple",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/login-with-facebook": {
+            "post": {
+                "description": "Authenticate user with Facebook",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Authenticate user with Facebook",
+                "responses": {
+                    "200": {
+                        "description": "Successful authenticate user with Facebook",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/login-with-google": {
+            "post": {
+                "description": "Authenticate user with Google",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Authenticate user with Google",
+                "responses": {
+                    "200": {
+                        "description": "Successful authenticate user with Google",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/logout": {
+            "post": {
+                "description": "De-authenticate user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "De-authenticate user",
+                "responses": {
+                    "200": {
+                        "description": "Successful de-authenticate user",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me": {
+            "get": {
+                "description": "Get user profile",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user profile",
+                "responses": {
+                    "200": {
+                        "description": "Successful get user profile",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserDTO"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/refresh-token": {
+            "post": {
+                "description": "Refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Refresh token",
+                "parameters": [
+                    {
+                        "description": "refresh token payload",
+                        "name": "refresh_token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityRefreshTokenDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -2912,104 +2154,26 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "constants.IdentifierType": {
-            "type": "string",
-            "enum": [
-                "email",
-                "username",
-                "phone"
-            ],
-            "x-enum-varnames": [
-                "IdentifierEmail",
-                "IdentifierUsername",
-                "IdentifierPhone"
-            ]
+        "dto.AccessPermissionDTO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AccessPolicyDTO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
         },
         "dto.AccessSessionDTO": {
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.AccountDTO": {
-            "type": "object",
-            "properties": {
-                "api_key": {
-                    "description": "Nullable",
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "oauth_id": {
-                    "description": "Nullable",
-                    "type": "string"
-                },
-                "oauth_provider": {
-                    "description": "Nullable",
-                    "type": "string"
-                },
-                "private_key": {
-                    "description": "Nullable",
-                    "type": "string"
-                },
-                "public_key": {
-                    "description": "Nullable",
-                    "type": "string"
-                },
-                "role": {
-                    "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.AccountDetailDTO": {
-            "type": "object",
-            "properties": {
-                "account": {
-                    "$ref": "#/definitions/dto.AccountDTO"
-                },
-                "company_name": {
-                    "type": "string"
-                },
-                "contact_name": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "industry": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "organization_name": {
-                    "type": "string"
-                },
-                "phone_number": {
-                    "type": "string"
-                },
-                "validation_organization": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.AssignPolicyPayloadDTO": {
-            "type": "object",
-            "required": [
-                "policy_id"
-            ],
-            "properties": {
-                "policy_id": {
                     "type": "string"
                 }
             }
@@ -3161,41 +2325,10 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.FileInfoPayloadDTO": {
-            "type": "object",
-            "required": [
-                "id",
-                "name",
-                "owner_id",
-                "share_count"
-            ],
-            "properties": {
-                "id": {
-                    "description": "File ID",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "File name",
-                    "type": "string"
-                },
-                "owner_id": {
-                    "description": "Owner ID",
-                    "type": "string"
-                },
-                "share_count": {
-                    "description": "Number of shares",
-                    "type": "integer",
-                    "minimum": 0
-                }
-            }
-        },
         "dto.IdentityChallengeWithEmailDTO": {
             "type": "object",
             "properties": {
                 "email": {
-                    "type": "string"
-                },
-                "organization_id": {
                     "type": "string"
                 }
             }
@@ -3203,9 +2336,6 @@ const docTemplate = `{
         "dto.IdentityChallengeWithPhoneDTO": {
             "type": "object",
             "properties": {
-                "organization_id": {
-                    "type": "string"
-                },
                 "phone": {
                     "type": "string"
                 }
@@ -3293,6 +2423,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "challenge_at": {
+                    "type": "integer"
+                },
+                "receiver": {
                     "type": "string"
                 },
                 "session_id": {
@@ -3344,50 +2477,10 @@ const docTemplate = `{
         "dto.IdentityUserLoginDTO": {
             "type": "object",
             "properties": {
-                "organization_id": {
-                    "type": "string"
-                },
                 "password": {
                     "type": "string"
                 },
                 "user_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.LoginPayloadDTO": {
-            "type": "object",
-            "required": [
-                "identifier",
-                "identifier_type",
-                "password"
-            ],
-            "properties": {
-                "identifier": {
-                    "description": "Identifier (email, username, or phone number)",
-                    "type": "string"
-                },
-                "identifier_type": {
-                    "description": "Type of identifier: \"email\", \"username\", or \"phone\"",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/constants.IdentifierType"
-                        }
-                    ]
-                },
-                "password": {
-                    "description": "User password",
-                    "type": "string"
-                }
-            }
-        },
-        "dto.LogoutPayloadDTO": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
                     "type": "string"
                 }
             }
@@ -3410,194 +2503,6 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
-                }
-            }
-        },
-        "dto.PermissionDTO": {
-            "type": "object",
-            "properties": {
-                "action": {
-                    "description": "The action this permission allows",
-                    "type": "string"
-                },
-                "created_at": {
-                    "description": "Timestamp of permission creation",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "Optional description of the permission",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "Unique ID for the permission",
-                    "type": "string"
-                },
-                "policy_id": {
-                    "description": "Foreign key referencing IAMPolicy",
-                    "type": "string"
-                },
-                "resource": {
-                    "description": "The resource this permission applies to",
-                    "type": "string"
-                },
-                "updated_at": {
-                    "description": "Timestamp of last update",
-                    "type": "string"
-                }
-            }
-        },
-        "dto.PermissionPayloadDTO": {
-            "type": "object",
-            "required": [
-                "action",
-                "resource"
-            ],
-            "properties": {
-                "action": {
-                    "description": "The action the permission allows",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "Optional description of the permission",
-                    "type": "string"
-                },
-                "policy_id": {
-                    "description": "Either PolicyID or PolicyName is required",
-                    "type": "string"
-                },
-                "policy_name": {
-                    "description": "Either PolicyID or PolicyName is required",
-                    "type": "string"
-                },
-                "resource": {
-                    "description": "The resource the permission applies to",
-                    "type": "string"
-                }
-            }
-        },
-        "dto.PolicyDTO": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.PolicyPayloadDTO": {
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "description": {
-                    "description": "Optional description",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "Name of the policy",
-                    "type": "string"
-                }
-            }
-        },
-        "dto.PolicyWithPermissionsDTO": {
-            "type": "object",
-            "properties": {
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.PermissionDTO"
-                    }
-                },
-                "policy": {
-                    "$ref": "#/definitions/dto.PolicyDTO"
-                }
-            }
-        },
-        "dto.RefreshTokenPayloadDTO": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.RegisterPayloadDTO": {
-            "type": "object",
-            "required": [
-                "email",
-                "password",
-                "username"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.RoleDetailsPayloadDTO": {
-            "type": "object",
-            "properties": {
-                "company_name": {
-                    "description": "Partner fields",
-                    "type": "string"
-                },
-                "contact_name": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "description": "Common fields",
-                    "type": "string"
-                },
-                "industry": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "organization_name": {
-                    "description": "Customer fields",
-                    "type": "string"
-                },
-                "phone_number": {
-                    "type": "string"
-                },
-                "validation_organization": {
-                    "description": "Validator fields",
-                    "type": "string"
-                }
-            }
-        },
-        "dto.TokenPairDTO": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "description": "The JWT Access Token",
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "description": "The plain Refresh Token",
-                    "type": "string"
                 }
             }
         },
@@ -3745,26 +2650,6 @@ const docTemplate = `{
                 },
                 "parent_id": {
                     "type": "string"
-                }
-            }
-        },
-        "dto.UpdateRolePayloadDTO": {
-            "type": "object",
-            "required": [
-                "role"
-            ],
-            "properties": {
-                "role": {
-                    "description": "USER, PARTNER, CUSTOMER, VALIDATOR",
-                    "type": "string"
-                },
-                "role_details": {
-                    "description": "Role-specific details",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/dto.RoleDetailsPayloadDTO"
-                        }
-                    ]
                 }
             }
         },

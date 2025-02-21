@@ -1,73 +1,18 @@
 definitions:
-  constants.IdentifierType:
-    enum:
-    - email
-    - username
-    - phone
-    type: string
-    x-enum-varnames:
-    - IdentifierEmail
-    - IdentifierUsername
-    - IdentifierPhone
+  dto.AccessPermissionDTO:
+    properties:
+      id:
+        type: string
+    type: object
+  dto.AccessPolicyDTO:
+    properties:
+      id:
+        type: string
+    type: object
   dto.AccessSessionDTO:
     properties:
       id:
         type: string
-    type: object
-  dto.AccountDTO:
-    properties:
-      api_key:
-        description: Nullable
-        type: string
-      email:
-        type: string
-      id:
-        type: string
-      oauth_id:
-        description: Nullable
-        type: string
-      oauth_provider:
-        description: Nullable
-        type: string
-      private_key:
-        description: Nullable
-        type: string
-      public_key:
-        description: Nullable
-        type: string
-      role:
-        description: USER, PARTNER, CUSTOMER, VALIDATOR
-        type: string
-      username:
-        type: string
-    type: object
-  dto.AccountDetailDTO:
-    properties:
-      account:
-        $ref: '#/definitions/dto.AccountDTO'
-      company_name:
-        type: string
-      contact_name:
-        type: string
-      first_name:
-        type: string
-      industry:
-        type: string
-      last_name:
-        type: string
-      organization_name:
-        type: string
-      phone_number:
-        type: string
-      validation_organization:
-        type: string
-    type: object
-  dto.AssignPolicyPayloadDTO:
-    properties:
-      policy_id:
-        type: string
-    required:
-    - policy_id
     type: object
   dto.CreateAccessPermissionPayloadDTO:
     properties:
@@ -167,38 +112,13 @@ definitions:
     - code
     - name
     type: object
-  dto.FileInfoPayloadDTO:
-    properties:
-      id:
-        description: File ID
-        type: string
-      name:
-        description: File name
-        type: string
-      owner_id:
-        description: Owner ID
-        type: string
-      share_count:
-        description: Number of shares
-        minimum: 0
-        type: integer
-    required:
-    - id
-    - name
-    - owner_id
-    - share_count
-    type: object
   dto.IdentityChallengeWithEmailDTO:
     properties:
       email:
         type: string
-      organization_id:
-        type: string
     type: object
   dto.IdentityChallengeWithPhoneDTO:
     properties:
-      organization_id:
-        type: string
       phone:
         type: string
     type: object
@@ -255,6 +175,8 @@ definitions:
   dto.IdentityUserChallengeDTO:
     properties:
       challenge_at:
+        type: integer
+      receiver:
         type: string
       session_id:
         type: string
@@ -288,36 +210,10 @@ definitions:
     type: object
   dto.IdentityUserLoginDTO:
     properties:
-      organization_id:
-        type: string
       password:
         type: string
       user_name:
         type: string
-    type: object
-  dto.LoginPayloadDTO:
-    properties:
-      identifier:
-        description: Identifier (email, username, or phone number)
-        type: string
-      identifier_type:
-        allOf:
-        - $ref: '#/definitions/constants.IdentifierType'
-        description: 'Type of identifier: "email", "username", or "phone"'
-      password:
-        description: User password
-        type: string
-    required:
-    - identifier
-    - identifier_type
-    - password
-    type: object
-  dto.LogoutPayloadDTO:
-    properties:
-      refresh_token:
-        type: string
-    required:
-    - refresh_token
     type: object
   dto.PaginationDTOResponse:
     properties:
@@ -332,136 +228,6 @@ definitions:
         type: integer
       total:
         type: integer
-    type: object
-  dto.PermissionDTO:
-    properties:
-      action:
-        description: The action this permission allows
-        type: string
-      created_at:
-        description: Timestamp of permission creation
-        type: string
-      description:
-        description: Optional description of the permission
-        type: string
-      id:
-        description: Unique ID for the permission
-        type: string
-      policy_id:
-        description: Foreign key referencing IAMPolicy
-        type: string
-      resource:
-        description: The resource this permission applies to
-        type: string
-      updated_at:
-        description: Timestamp of last update
-        type: string
-    type: object
-  dto.PermissionPayloadDTO:
-    properties:
-      action:
-        description: The action the permission allows
-        type: string
-      description:
-        description: Optional description of the permission
-        type: string
-      policy_id:
-        description: Either PolicyID or PolicyName is required
-        type: string
-      policy_name:
-        description: Either PolicyID or PolicyName is required
-        type: string
-      resource:
-        description: The resource the permission applies to
-        type: string
-    required:
-    - action
-    - resource
-    type: object
-  dto.PolicyDTO:
-    properties:
-      created_at:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  dto.PolicyPayloadDTO:
-    properties:
-      description:
-        description: Optional description
-        type: string
-      name:
-        description: Name of the policy
-        type: string
-    required:
-    - name
-    type: object
-  dto.PolicyWithPermissionsDTO:
-    properties:
-      permissions:
-        items:
-          $ref: '#/definitions/dto.PermissionDTO'
-        type: array
-      policy:
-        $ref: '#/definitions/dto.PolicyDTO'
-    type: object
-  dto.RefreshTokenPayloadDTO:
-    properties:
-      refresh_token:
-        type: string
-    required:
-    - refresh_token
-    type: object
-  dto.RegisterPayloadDTO:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-      username:
-        type: string
-    required:
-    - email
-    - password
-    - username
-    type: object
-  dto.RoleDetailsPayloadDTO:
-    properties:
-      company_name:
-        description: Partner fields
-        type: string
-      contact_name:
-        type: string
-      first_name:
-        description: Common fields
-        type: string
-      industry:
-        type: string
-      last_name:
-        type: string
-      organization_name:
-        description: Customer fields
-        type: string
-      phone_number:
-        type: string
-      validation_organization:
-        description: Validator fields
-        type: string
-    type: object
-  dto.TokenPairDTO:
-    properties:
-      access_token:
-        description: The JWT Access Token
-        type: string
-      refresh_token:
-        description: The plain Refresh Token
-        type: string
     type: object
   dto.UpdateAccessPermissionPayloadDTO:
     properties:
@@ -561,18 +327,6 @@ definitions:
     - code
     - name
     type: object
-  dto.UpdateRolePayloadDTO:
-    properties:
-      role:
-        description: USER, PARTNER, CUSTOMER, VALIDATOR
-        type: string
-      role_details:
-        allOf:
-        - $ref: '#/definitions/dto.RoleDetailsPayloadDTO'
-        description: Role-specific details
-    required:
-    - role
-    type: object
   response.ErrorResponse:
     properties:
       code:
@@ -598,271 +352,6 @@ definitions:
 info:
   contact: {}
 paths:
-  /api/v1/account/api-key:
-    put:
-      consumes:
-      - application/json
-      description: Generate or update the API key for an account.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: API key updated successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: Account not found
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Create or update API key
-      tags:
-      - account
-  /api/v1/account/me:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint retrieves the details of the currently authenticated
-        user using the provided access token.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User details
-          schema:
-            $ref: '#/definitions/dto.AccountDetailDTO'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "403":
-          description: Insufficient permissions
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Get current user details
-      tags:
-      - account
-  /api/v1/account/role:
-    put:
-      consumes:
-      - application/json
-      description: Update the role of an account and save associated role-specific
-        details.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Payload containing role and role-specific details
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateRolePayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Account role updated successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "403":
-          description: Insufficient permissions
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: Account not found
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Update account role and role-specific details
-      tags:
-      - account
-  /api/v1/auth/login:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint authenticates the user by email, username, or phone
-        number, and returns an access token and refresh token.
-      parameters:
-      - description: 'User credentials (identifier, password, and identifier_type
-          (e.g: email, username, phone))'
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.LoginPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 'Login successful: {\"access_token\": \"...\", \"refresh_token\":
-            \"...\"}'
-          schema:
-            $ref: '#/definitions/dto.TokenPairDTO'
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Invalid credentials
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user
-      tags:
-      - authentication
-  /api/v1/auth/logout:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint invalidates the refresh token, effectively logging
-        the user out.
-      parameters:
-      - description: Logout payload containing the refresh token
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.LogoutPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 'Logout successful: {\"success\": true}'
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Invalid or expired refresh token
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Logout user
-      tags:
-      - authentication
-  /api/v1/auth/refresh-tokens:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint generates a new pair of access and refresh tokens
-        using a valid refresh token.
-      parameters:
-      - description: Refresh token payload
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RefreshTokenPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Tokens refreshed successfully
-          schema:
-            $ref: '#/definitions/dto.TokenPairDTO'
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Invalid or expired refresh token
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Refresh tokens
-      tags:
-      - authentication
-  /api/v1/auth/register:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint registers a new account and its associated role-specific
-        details.
-      parameters:
-      - description: User registration details
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RegisterPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: 'Registration successful: {\"success\": true}'
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "409":
-          description: Account already exists
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Register a new account
-      tags:
-      - authentication
   /api/v1/groups:
     get:
       consumes:
@@ -1029,459 +518,6 @@ paths:
       summary: Update an existing group
       tags:
       - groups
-  /api/v1/iam/accounts/{accountID}/policies:
-    post:
-      consumes:
-      - application/json
-      description: Maps a specified policy to an account by accountID.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Account ID to assign the policy to
-        in: path
-        name: accountID
-        required: true
-        type: string
-      - description: Payload containing the policy ID
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.AssignPolicyPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Policy assigned successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload or missing policy
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: Account or policy not found
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Assign a policy to an account
-      tags:
-      - IAM
-  /api/v1/iam/policies:
-    get:
-      consumes:
-      - application/json
-      description: Fetches a list of IAM policies along with their associated permissions.
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of policies with permissions
-          schema:
-            items:
-              $ref: '#/definitions/dto.PolicyWithPermissionsDTO'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "403":
-          description: Insufficient permissions
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Get policies with permissions
-      tags:
-      - IAM
-    post:
-      consumes:
-      - application/json
-      description: Adds a new IAM policy to the system. Only accessible to Admins.
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Payload for creating policy
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.PolicyPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Policy created successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Create a new policy
-      tags:
-      - IAM
-  /api/v1/iam/policies/permissions:
-    post:
-      consumes:
-      - application/json
-      description: Adds a new permission to an existing IAM policy.
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Payload for assigning permission
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.PermissionPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Permission assigned successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload or missing policy
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: Policy not found
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "409":
-          description: Permission already exists
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Assign a permission to a policy
-      tags:
-      - IAM
-  /api/v1/identity/challenge-verify:
-    post:
-      consumes:
-      - application/json
-      description: Verify the challenge
-      parameters:
-      - description: session_id
-        in: path
-        name: session_id
-        required: true
-        type: string
-      - description: code
-        in: path
-        name: code
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful verify the challenge
-          schema:
-            $ref: '#/definitions/dto.IdentityUserAuthDTO'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Verify the challenge
-      tags:
-      - users
-  /api/v1/identity/challenge-with-email:
-    post:
-      consumes:
-      - application/json
-      description: Login with email and otp
-      parameters:
-      - description: challenge payload
-        in: body
-        name: challenge
-        required: true
-        schema:
-          $ref: '#/definitions/dto.IdentityChallengeWithEmailDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful make a challenge with Email and OTP
-          schema:
-            $ref: '#/definitions/dto.IdentityUserChallengeDTO'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Login with email and otp
-      tags:
-      - users
-  /api/v1/identity/challenge-with-phone:
-    post:
-      consumes:
-      - application/json
-      description: Login with phone and otp
-      parameters:
-      - description: challenge payload
-        in: body
-        name: challenge
-        required: true
-        schema:
-          $ref: '#/definitions/dto.IdentityChallengeWithPhoneDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful make a challenge with Phone and OTP
-          schema:
-            $ref: '#/definitions/dto.IdentityUserChallengeDTO'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Login with phone and otp
-      tags:
-      - users
-  /api/v1/identity/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user
-      parameters:
-      - description: login payload
-        in: body
-        name: login
-        required: true
-        schema:
-          $ref: '#/definitions/dto.IdentityUserLoginDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user
-          schema:
-            $ref: '#/definitions/dto.IdentityUserAuthDTO'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user
-      tags:
-      - users
-  /api/v1/identity/login-with-apple:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with Apple
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user with Apple
-          schema:
-            $ref: '#/definitions/dto.IdentityUserAuthDTO'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user with Apple
-      tags:
-      - users
-  /api/v1/identity/login-with-facebook:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with Facebook
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user with Facebook
-          schema:
-            $ref: '#/definitions/dto.IdentityUserAuthDTO'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user with Facebook
-      tags:
-      - users
-  /api/v1/identity/login-with-google:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with Google
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user with Google
-          schema:
-            $ref: '#/definitions/dto.IdentityUserAuthDTO'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user with Google
-      tags:
-      - users
-  /api/v1/identity/logout:
-    post:
-      consumes:
-      - application/json
-      description: De-authenticate user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful de-authenticate user
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: De-authenticate user
-      tags:
-      - users
-  /api/v1/identity/me:
-    get:
-      consumes:
-      - application/json
-      description: Get user profile
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful get user profile
-          schema:
-            $ref: '#/definitions/dto.IdentityUserDTO'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Get user profile
-      tags:
-      - users
-  /api/v1/identity/refresh-token:
-    post:
-      consumes:
-      - application/json
-      description: Refresh token
-      parameters:
-      - description: refresh token payload
-        in: body
-        name: refresh_token
-        required: true
-        schema:
-          $ref: '#/definitions/dto.IdentityRefreshTokenDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful refresh token
-          schema:
-            $ref: '#/definitions/dto.IdentityUserAuthDTO'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Refresh token
-      tags:
-      - users
-  /api/v1/notifications/data-upload:
-    post:
-      consumes:
-      - application/json
-      description: This webhook receives raw payload data when a user successfully
-        uploads data.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Payload containing file information
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.FileInfoPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Notification received successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Notify about successful data upload
-      tags:
-      - notifications
   /api/v1/organizations:
     get:
       consumes:
@@ -1701,7 +737,7 @@ paths:
         "201":
           description: Successful creation of permission
           schema:
-            $ref: '#/definitions/dto.PermissionDTO'
+            $ref: '#/definitions/dto.AccessPermissionDTO'
         "400":
           description: Invalid request payload
           schema:
@@ -1760,7 +796,7 @@ paths:
         "200":
           description: Successful retrieval of permission
           schema:
-            $ref: '#/definitions/dto.PermissionDTO'
+            $ref: '#/definitions/dto.AccessPermissionDTO'
         "400":
           description: Invalid request ID
           schema:
@@ -1798,7 +834,7 @@ paths:
         "200":
           description: Successful update of permission
           schema:
-            $ref: '#/definitions/dto.PermissionDTO'
+            $ref: '#/definitions/dto.AccessPermissionDTO'
         "400":
           description: Invalid request payload
           schema:
@@ -1867,7 +903,7 @@ paths:
         "201":
           description: Successful creation of policy
           schema:
-            $ref: '#/definitions/dto.PolicyDTO'
+            $ref: '#/definitions/dto.AccessPolicyDTO'
         "400":
           description: Invalid request payload
           schema:
@@ -1926,7 +962,7 @@ paths:
         "200":
           description: Successful retrieval of policy
           schema:
-            $ref: '#/definitions/dto.PolicyDTO'
+            $ref: '#/definitions/dto.AccessPolicyDTO'
         "400":
           description: Invalid request ID
           schema:
@@ -1964,7 +1000,7 @@ paths:
         "200":
           description: Successful update of policy
           schema:
-            $ref: '#/definitions/dto.PolicyDTO'
+            $ref: '#/definitions/dto.AccessPolicyDTO'
         "400":
           description: Invalid request payload
           schema:
@@ -2478,49 +1514,253 @@ paths:
       summary: Update an existing session
       tags:
       - sessions
-  /api/v1/validators/active:
-    get:
+  /api/v1/users/challenge-verify:
+    post:
       consumes:
       - application/json
-      description: Fetches a list of active validators. Optionally, a comma-separated
-        list of validator IDs can be provided to filter the results.
+      description: Verify the challenge
       parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
+      - description: session_id
+        in: path
+        name: session_id
         required: true
         type: string
-      - description: Comma-separated list of validator IDs to filter results (e.g.,
-          'id1,id2,id3')
-        in: query
-        name: validator_ids
+      - description: code
+        in: path
+        name: code
+        required: true
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: List of active validators
+          description: Successful verify the challenge
           schema:
-            items:
-              $ref: '#/definitions/dto.AccountDetailDTO'
-            type: array
+            $ref: '#/definitions/dto.IdentityUserAuthDTO'
         "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "403":
-          description: Insufficient permissions
+          description: Invalid request payload
           schema:
             $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Get Active Validators
+      summary: Verify the challenge
       tags:
-      - validators
+      - users
+  /api/v1/users/challenge-with-email:
+    post:
+      consumes:
+      - application/json
+      description: Login with email and otp
+      parameters:
+      - description: challenge payload
+        in: body
+        name: challenge
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityChallengeWithEmailDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful make a challenge with Email and OTP
+          schema:
+            $ref: '#/definitions/dto.IdentityUserChallengeDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Login with email and otp
+      tags:
+      - users
+  /api/v1/users/challenge-with-phone:
+    post:
+      consumes:
+      - application/json
+      description: Login with phone and otp
+      parameters:
+      - description: challenge payload
+        in: body
+        name: challenge
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityChallengeWithPhoneDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful make a challenge with Phone and OTP
+          schema:
+            $ref: '#/definitions/dto.IdentityUserChallengeDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Login with phone and otp
+      tags:
+      - users
+  /api/v1/users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user
+      parameters:
+      - description: login payload
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserLoginDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful authenticate user
+          schema:
+            $ref: '#/definitions/dto.IdentityUserAuthDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Authenticate user
+      tags:
+      - users
+  /api/v1/users/login-with-apple:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with Apple
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful authenticate user with Apple
+          schema:
+            $ref: '#/definitions/dto.IdentityUserAuthDTO'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Authenticate user with Apple
+      tags:
+      - users
+  /api/v1/users/login-with-facebook:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with Facebook
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful authenticate user with Facebook
+          schema:
+            $ref: '#/definitions/dto.IdentityUserAuthDTO'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Authenticate user with Facebook
+      tags:
+      - users
+  /api/v1/users/login-with-google:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with Google
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful authenticate user with Google
+          schema:
+            $ref: '#/definitions/dto.IdentityUserAuthDTO'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Authenticate user with Google
+      tags:
+      - users
+  /api/v1/users/logout:
+    post:
+      consumes:
+      - application/json
+      description: De-authenticate user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful de-authenticate user
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: De-authenticate user
+      tags:
+      - users
+  /api/v1/users/me:
+    get:
+      consumes:
+      - application/json
+      description: Get user profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful get user profile
+          schema:
+            $ref: '#/definitions/dto.IdentityUserDTO'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get user profile
+      tags:
+      - users
+  /api/v1/users/refresh-token:
+    post:
+      consumes:
+      - application/json
+      description: Refresh token
+      parameters:
+      - description: refresh token payload
+        in: body
+        name: refresh_token
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityRefreshTokenDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful refresh token
+          schema:
+            $ref: '#/definitions/dto.IdentityUserAuthDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Refresh token
+      tags:
+      - users
 swagger: "2.0"

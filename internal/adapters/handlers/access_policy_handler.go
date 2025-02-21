@@ -91,7 +91,7 @@ func (h *policyHandler) GetPolicies(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param policy_id path string true "policy ID"
-// @Success 200 {object} dto.PolicyDTO "Successful retrieval of policy"
+// @Success 200 {object} dto.AccessPolicyDTO "Successful retrieval of policy"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
 // @Failure 404 {object} response.ErrorResponse "policy not found"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
@@ -123,7 +123,7 @@ func (h *policyHandler) GetDetail(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param policy body dto.CreateAccessPolicyPayloadDTO true "policy payload"
-// @Success 201 {object} dto.PolicyDTO "Successful creation of policy"
+// @Success 201 {object} dto.AccessPolicyDTO "Successful creation of policy"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/policies [post]
@@ -169,7 +169,7 @@ func (h *policyHandler) CreatePolicy(ctx *gin.Context) {
 // @Produce json
 // @Param policy_id path string true "policy ID"
 // @Param policy body dto.UpdateAccessPolicyPayloadDTO true "policy payload"
-// @Success 200 {object} dto.PolicyDTO "Successful update of policy"
+// @Success 200 {object} dto.AccessPolicyDTO "Successful update of policy"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 404 {object} response.ErrorResponse "policy not found"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"

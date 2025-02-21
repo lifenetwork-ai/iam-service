@@ -91,7 +91,7 @@ func (h *permissionHandler) GetPermissions(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param permission_id path string true "permission ID"
-// @Success 200 {object} dto.PermissionDTO "Successful retrieval of permission"
+// @Success 200 {object} dto.AccessPermissionDTO "Successful retrieval of permission"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
 // @Failure 404 {object} response.ErrorResponse "permission not found"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
@@ -123,7 +123,7 @@ func (h *permissionHandler) GetDetail(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param permission body dto.CreateAccessPermissionPayloadDTO true "permission payload"
-// @Success 201 {object} dto.PermissionDTO "Successful creation of permission"
+// @Success 201 {object} dto.AccessPermissionDTO "Successful creation of permission"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/permissions [post]
@@ -157,7 +157,7 @@ func (h *permissionHandler) CreatePermission(ctx *gin.Context) {
 // @Produce json
 // @Param permission_id path string true "permission ID"
 // @Param permission body dto.UpdateAccessPermissionPayloadDTO true "permission payload"
-// @Success 200 {object} dto.PermissionDTO "Successful update of permission"
+// @Success 200 {object} dto.AccessPermissionDTO "Successful update of permission"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 404 {object} response.ErrorResponse "permission not found"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
