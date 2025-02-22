@@ -28,6 +28,8 @@ func NewIdentityRoleHandler(ucase interfaces.IdentityRoleUseCase) *roleHandler {
 // @Tags roles
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param page query int false "Page number"
 // @Param size query int false "Page size"
 // @Param keyword query string false "Keyword"
@@ -90,6 +92,8 @@ func (h *roleHandler) GetRoles(ctx *gin.Context) {
 // @Tags roles
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param role_id path string true "role ID"
 // @Success 200 {object} dto.IdentityRoleDTO "Successful retrieval of role"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
@@ -122,6 +126,8 @@ func (h *roleHandler) GetDetail(ctx *gin.Context) {
 // @Tags roles
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param role body dto.CreateIdentityRolePayloadDTO true "role payload"
 // @Success 201 {object} dto.IdentityRoleDTO "Successful creation of role"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -167,6 +173,8 @@ func (h *roleHandler) CreateRole(ctx *gin.Context) {
 // @Tags roles
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param role_id path string true "role ID"
 // @Param role body dto.UpdateIdentityRolePayloadDTO true "role payload"
 // @Success 200 {object} dto.IdentityRoleDTO "Successful update of role"
@@ -190,6 +198,8 @@ func (h *roleHandler) UpdateRole(ctx *gin.Context) {
 // @Tags roles
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param role_id path string true "role ID"
 // @Success 204 "Successful deletion of role"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"

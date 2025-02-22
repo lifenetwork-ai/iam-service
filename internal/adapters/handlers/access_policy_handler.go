@@ -28,6 +28,8 @@ func NewAccessPolicyHandler(ucase interfaces.AccessPolicyUseCase) *policyHandler
 // @Tags policies
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param page query int false "Page number"
 // @Param size query int false "Page size"
 // @Param keyword query string false "Keyword"
@@ -90,6 +92,8 @@ func (h *policyHandler) GetPolicies(ctx *gin.Context) {
 // @Tags policies
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param policy_id path string true "policy ID"
 // @Success 200 {object} dto.AccessPolicyDTO "Successful retrieval of policy"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
@@ -122,6 +126,8 @@ func (h *policyHandler) GetDetail(ctx *gin.Context) {
 // @Tags policies
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param policy body dto.CreateAccessPolicyPayloadDTO true "policy payload"
 // @Success 201 {object} dto.AccessPolicyDTO "Successful creation of policy"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -167,6 +173,8 @@ func (h *policyHandler) CreatePolicy(ctx *gin.Context) {
 // @Tags policies
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param policy_id path string true "policy ID"
 // @Param policy body dto.UpdateAccessPolicyPayloadDTO true "policy payload"
 // @Success 200 {object} dto.AccessPolicyDTO "Successful update of policy"
@@ -190,6 +198,8 @@ func (h *policyHandler) UpdatePolicy(ctx *gin.Context) {
 // @Tags policies
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param policy_id path string true "policy ID"
 // @Success 204 "Successful deletion of policy"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"

@@ -28,6 +28,8 @@ func NewAccessPermissionHandler(ucase interfaces.AccessPermissionUseCase) *permi
 // @Tags permissions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param page query int false "Page number"
 // @Param size query int false "Page size"
 // @Param keyword query string false "Keyword"
@@ -90,6 +92,8 @@ func (h *permissionHandler) GetPermissions(ctx *gin.Context) {
 // @Tags permissions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param permission_id path string true "permission ID"
 // @Success 200 {object} dto.AccessPermissionDTO "Successful retrieval of permission"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
@@ -122,6 +126,8 @@ func (h *permissionHandler) GetDetail(ctx *gin.Context) {
 // @Tags permissions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param permission body dto.CreateAccessPermissionPayloadDTO true "permission payload"
 // @Success 201 {object} dto.AccessPermissionDTO "Successful creation of permission"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -155,6 +161,8 @@ func (h *permissionHandler) CreatePermission(ctx *gin.Context) {
 // @Tags permissions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param permission_id path string true "permission ID"
 // @Param permission body dto.UpdateAccessPermissionPayloadDTO true "permission payload"
 // @Success 200 {object} dto.AccessPermissionDTO "Successful update of permission"
@@ -178,6 +186,8 @@ func (h *permissionHandler) UpdatePermission(ctx *gin.Context) {
 // @Tags permissions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param permission_id path string true "permission ID"
 // @Success 204 "Successful deletion of permission"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"

@@ -28,6 +28,8 @@ func NewIdentityOrganizationHandler(ucase interfaces.IdentityOrganizationUseCase
 // @Tags organizations
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param page query int false "Page number"
 // @Param size query int false "Page size"
 // @Param keyword query string false "Keyword"
@@ -90,7 +92,8 @@ func (h *organizationHandler) GetOrganizations(ctx *gin.Context) {
 // @Tags organizations
 // @Accept json
 // @Produce json
-// @Param organization_id path string true "organization ID"
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Success 200 {object} dto.IdentityOrganizationDTO "Successful retrieval of organization"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
 // @Failure 404 {object} response.ErrorResponse "organization not found"
@@ -122,6 +125,8 @@ func (h *organizationHandler) GetDetail(ctx *gin.Context) {
 // @Tags organizations
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param organization body dto.CreateIdentityOrganizationPayloadDTO true "organization payload"
 // @Success 201 {object} dto.IdentityOrganizationDTO "Successful creation of organization"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -167,7 +172,8 @@ func (h *organizationHandler) CreateOrganization(ctx *gin.Context) {
 // @Tags organizations
 // @Accept json
 // @Produce json
-// @Param organization_id path string true "organization ID"
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param organization body dto.UpdateIdentityOrganizationPayloadDTO true "organization payload"
 // @Success 200 {object} dto.IdentityOrganizationDTO "Successful update of organization"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -190,7 +196,8 @@ func (h *organizationHandler) UpdateOrganization(ctx *gin.Context) {
 // @Tags organizations
 // @Accept json
 // @Produce json
-// @Param organization_id path string true "organization ID"
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Success 204 "Successful deletion of organization"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
 // @Failure 404 {object} response.ErrorResponse "organization not found"

@@ -10,9 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 
 	cachingTypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
-	"github.com/genefriendway/human-network-iam/internal/adapters/repositories"
+	repositories "github.com/genefriendway/human-network-iam/internal/adapters/repositories"
 	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
+	"github.com/genefriendway/human-network-iam/packages/logger"
 	"github.com/genefriendway/human-network-iam/wire/providers"
 )
 
@@ -196,22 +197,6 @@ func RequestAuthenticationMiddleware() gin.HandlerFunc {
 			requester = newIdentityUser
 		}
 
-		// Cache the user to memory cache
-		err = cacheRepo.SaveItem(cacheKey, *requester, 30*time.Minute)
-		if err != nil {
-			httpresponse.Error(
-				c,
-				http.StatusInternalServerError,
-				"INTERNAL_SERVER_ERROR",
-				"Failed to cache user",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Failed to cache user",
-				}},
-			)
-			return
-		}
-
 		if requester == nil {
 			httpresponse.Error(
 				c,
@@ -224,11 +209,16 @@ func RequestAuthenticationMiddleware() gin.HandlerFunc {
 				}},
 			)
 			return
-		} else {
-			// Set the user in the context
-			c.Set("requesterId", requester.ID)
-			c.Set("requester", requester)
-			c.Next()
 		}
+
+		// Cache the user to memory cache
+		if err = cacheRepo.SaveItem(cacheKey, *requester, 30*time.Minute); err != nil {
+			logger.GetLogger().Errorf("Failed to cache user: %v", err)
+		}
+
+		// Set the user in the context
+		c.Set("requesterId", requester.ID)
+		c.Set("requester", requester)
+		c.Next()
 	}
 }

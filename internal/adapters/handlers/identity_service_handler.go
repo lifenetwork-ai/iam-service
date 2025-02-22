@@ -28,6 +28,8 @@ func NewIdentityServiceHandler(ucase interfaces.IdentityServiceUseCase) *service
 // @Tags services
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param page query int false "Page number"
 // @Param size query int false "Page size"
 // @Param keyword query string false "Keyword"
@@ -90,6 +92,8 @@ func (h *serviceHandler) GetServices(ctx *gin.Context) {
 // @Tags services
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param service_id path string true "service ID"
 // @Success 200 {object} dto.IdentityServiceDTO "Successful retrieval of service"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
@@ -122,6 +126,8 @@ func (h *serviceHandler) GetDetail(ctx *gin.Context) {
 // @Tags services
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param service body dto.CreateIdentityServicePayloadDTO true "service payload"
 // @Success 201 {object} dto.IdentityServiceDTO "Successful creation of service"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -166,6 +172,8 @@ func (h *serviceHandler) CreateService(ctx *gin.Context) {
 // @Tags services
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param service_id path string true "Service ID"
 // @Param service body dto.UpdateIdentityServicePayloadDTO true "service payload"
 // @Success 200 {object} dto.IdentityServiceDTO "Successful update of service"
@@ -189,6 +197,8 @@ func (h *serviceHandler) UpdateService(ctx *gin.Context) {
 // @Tags services
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param service_id path string true "Service ID"
 // @Success 204 "Successful deletion of service"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"

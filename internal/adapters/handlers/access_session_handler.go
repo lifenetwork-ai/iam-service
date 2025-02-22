@@ -28,6 +28,8 @@ func NewAccessSessionHandler(ucase interfaces.AccessSessionUseCase) *sessionHand
 // @Tags sessions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param page query int false "Page number"
 // @Param size query int false "Page size"
 // @Param keyword query string false "Keyword"
@@ -90,6 +92,8 @@ func (h *sessionHandler) GetSessions(ctx *gin.Context) {
 // @Tags sessions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param session_id path string true "session ID"
 // @Success 200 {object} dto.AccessSessionDTO "Successful retrieval of session"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
@@ -122,6 +126,8 @@ func (h *sessionHandler) GetDetail(ctx *gin.Context) {
 // @Tags sessions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param session body dto.CreateAccessSessionPayloadDTO true "session payload"
 // @Success 201 {object} dto.AccessSessionDTO "Successful creation of session"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -167,6 +173,8 @@ func (h *sessionHandler) CreateSession(ctx *gin.Context) {
 // @Tags sessions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param session_id path string true "session ID"
 // @Param session body dto.UpdateAccessSessionPayloadDTO true "session payload"
 // @Success 200 {object} dto.AccessSessionDTO "Successful update of session"
@@ -190,6 +198,8 @@ func (h *sessionHandler) UpdateSession(ctx *gin.Context) {
 // @Tags sessions
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param session_id path string true "session ID"
 // @Success 204 "Successful deletion of session"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"

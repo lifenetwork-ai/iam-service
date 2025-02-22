@@ -28,6 +28,8 @@ func NewIdentityGroupHandler(ucase interfaces.IdentityGroupUseCase) *groupHandle
 // @Tags groups
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param page query int false "Page number"
 // @Param size query int false "Page size"
 // @Param keyword query string false "Keyword"
@@ -90,6 +92,8 @@ func (h *groupHandler) GetGroups(ctx *gin.Context) {
 // @Tags groups
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param group_id path string true "group ID"
 // @Success 200 {object} dto.IdentityGroupDTO "Successful retrieval of group"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"
@@ -122,6 +126,8 @@ func (h *groupHandler) GetDetail(ctx *gin.Context) {
 // @Tags groups
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param group body dto.CreateIdentityGroupPayloadDTO true "group payload"
 // @Success 201 {object} dto.IdentityGroupDTO "Successful creation of group"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -167,6 +173,8 @@ func (h *groupHandler) CreateGroup(ctx *gin.Context) {
 // @Tags groups
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param group_id path string true "group ID"
 // @Param group body dto.UpdateIdentityGroupPayloadDTO true "group payload"
 // @Success 200 {object} dto.IdentityGroupDTO "Successful update of group"
@@ -190,6 +198,8 @@ func (h *groupHandler) UpdateGroup(ctx *gin.Context) {
 // @Tags groups
 // @Accept json
 // @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Param group_id path string true "group ID"
 // @Success 204 "Successful deletion of group"
 // @Failure 400 {object} response.ErrorResponse "Invalid request ID"

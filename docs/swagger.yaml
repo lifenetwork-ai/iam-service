@@ -358,6 +358,16 @@ paths:
       - application/json
       description: Get groups
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Page number
         in: query
         name: page
@@ -393,6 +403,16 @@ paths:
       - application/json
       description: Create a new group
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: group payload
         in: body
         name: group
@@ -423,6 +443,16 @@ paths:
       - application/json
       description: Delete an existing group
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: group ID
         in: path
         name: group_id
@@ -453,6 +483,16 @@ paths:
       - application/json
       description: Get group by ID
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: group ID
         in: path
         name: group_id
@@ -485,6 +525,16 @@ paths:
       - application/json
       description: Update an existing group
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: group ID
         in: path
         name: group_id
@@ -524,6 +574,16 @@ paths:
       - application/json
       description: Get organizations
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Page number
         in: query
         name: page
@@ -559,6 +619,16 @@ paths:
       - application/json
       description: Create a new organization
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: organization payload
         in: body
         name: organization
@@ -589,9 +659,14 @@ paths:
       - application/json
       description: Delete an existing organization
       parameters:
-      - description: organization ID
-        in: path
-        name: organization_id
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
         required: true
         type: string
       produces:
@@ -619,9 +694,14 @@ paths:
       - application/json
       description: Get organization by ID
       parameters:
-      - description: organization ID
-        in: path
-        name: organization_id
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
         required: true
         type: string
       produces:
@@ -651,9 +731,14 @@ paths:
       - application/json
       description: Update an existing organization
       parameters:
-      - description: organization ID
-        in: path
-        name: organization_id
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
         required: true
         type: string
       - description: organization payload
@@ -690,6 +775,16 @@ paths:
       - application/json
       description: Get permissions
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Page number
         in: query
         name: page
@@ -725,6 +820,16 @@ paths:
       - application/json
       description: Create a new permission
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: permission payload
         in: body
         name: permission
@@ -755,6 +860,16 @@ paths:
       - application/json
       description: Delete an existing permission
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: permission ID
         in: path
         name: permission_id
@@ -785,6 +900,16 @@ paths:
       - application/json
       description: Get permission by ID
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: permission ID
         in: path
         name: permission_id
@@ -817,6 +942,16 @@ paths:
       - application/json
       description: Update an existing permission
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: permission ID
         in: path
         name: permission_id
@@ -856,6 +991,16 @@ paths:
       - application/json
       description: Get policies
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Page number
         in: query
         name: page
@@ -891,6 +1036,16 @@ paths:
       - application/json
       description: Create a new policy
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: policy payload
         in: body
         name: policy
@@ -921,6 +1076,16 @@ paths:
       - application/json
       description: Delete an existing policy
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: policy ID
         in: path
         name: policy_id
@@ -951,6 +1116,16 @@ paths:
       - application/json
       description: Get policy by ID
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: policy ID
         in: path
         name: policy_id
@@ -983,6 +1158,16 @@ paths:
       - application/json
       description: Update an existing policy
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: policy ID
         in: path
         name: policy_id
@@ -1022,6 +1207,16 @@ paths:
       - application/json
       description: Get roles
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Page number
         in: query
         name: page
@@ -1057,6 +1252,16 @@ paths:
       - application/json
       description: Create a new role
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: role payload
         in: body
         name: role
@@ -1087,6 +1292,16 @@ paths:
       - application/json
       description: Delete an existing role
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: role ID
         in: path
         name: role_id
@@ -1117,6 +1332,16 @@ paths:
       - application/json
       description: Get role by ID
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: role ID
         in: path
         name: role_id
@@ -1149,6 +1374,16 @@ paths:
       - application/json
       description: Update an existing role
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: role ID
         in: path
         name: role_id
@@ -1188,6 +1423,16 @@ paths:
       - application/json
       description: Get services
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Page number
         in: query
         name: page
@@ -1223,6 +1468,16 @@ paths:
       - application/json
       description: Create a new service
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: service payload
         in: body
         name: service
@@ -1253,6 +1508,16 @@ paths:
       - application/json
       description: Delete an existing service
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Service ID
         in: path
         name: service_id
@@ -1283,6 +1548,16 @@ paths:
       - application/json
       description: Get service by ID
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: service ID
         in: path
         name: service_id
@@ -1315,6 +1590,16 @@ paths:
       - application/json
       description: Update an existing service
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Service ID
         in: path
         name: service_id
@@ -1354,6 +1639,16 @@ paths:
       - application/json
       description: Get sessions
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Page number
         in: query
         name: page
@@ -1389,6 +1684,16 @@ paths:
       - application/json
       description: Create a new session
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: session payload
         in: body
         name: session
@@ -1419,6 +1724,16 @@ paths:
       - application/json
       description: Delete an existing session
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: session ID
         in: path
         name: session_id
@@ -1449,6 +1764,16 @@ paths:
       - application/json
       description: Get session by ID
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: session ID
         in: path
         name: session_id
@@ -1481,6 +1806,16 @@ paths:
       - application/json
       description: Update an existing session
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: session ID
         in: path
         name: session_id
@@ -1520,6 +1855,11 @@ paths:
       - application/json
       description: Verify the challenge
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
       - description: session_id
         in: path
         name: session_id
@@ -1554,6 +1894,11 @@ paths:
       - application/json
       description: Login with email and otp
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
       - description: challenge payload
         in: body
         name: challenge
@@ -1584,6 +1929,11 @@ paths:
       - application/json
       description: Login with phone and otp
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
       - description: challenge payload
         in: body
         name: challenge
@@ -1614,6 +1964,11 @@ paths:
       - application/json
       description: Authenticate user
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
       - description: login payload
         in: body
         name: login
@@ -1643,6 +1998,12 @@ paths:
       consumes:
       - application/json
       description: Authenticate user with Apple
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -1662,6 +2023,12 @@ paths:
       consumes:
       - application/json
       description: Authenticate user with Facebook
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -1681,6 +2048,12 @@ paths:
       consumes:
       - application/json
       description: Authenticate user with Google
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -1700,6 +2073,12 @@ paths:
       consumes:
       - application/json
       description: De-authenticate user
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -1719,6 +2098,17 @@ paths:
       consumes:
       - application/json
       description: Get user profile
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -1739,6 +2129,16 @@ paths:
       - application/json
       description: Refresh token
       parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: refresh token payload
         in: body
         name: refresh_token

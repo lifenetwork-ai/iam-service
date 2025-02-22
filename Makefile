@@ -37,6 +37,9 @@ swagger:
 wiring: 
 	wire ./wire
 
+migrate:
+	go run cmd/migration/main.go
+
 
 DB_NAME=human-network-auth
 DB_USER=postgres
