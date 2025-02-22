@@ -8,6 +8,13 @@ type PaginationDTOResponse struct {
 	Data     []interface{} `json:"data"`
 }
 
+type SuccessDTOResponse struct {
+	Status  int         `json:"status,omitempty"`
+	Code    string      `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
 type ErrorDTOResponse struct {
 	Status  int           `json:"status,omitempty"`
 	Code    string        `json:"code"`

@@ -30,7 +30,7 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
 // @Param challenge body dto.IdentityChallengeWithPhoneDTO true "challenge payload"
-// @Success 200 {object} dto.IdentityUserChallengeDTO "Successful make a challenge with Phone and OTP"
+// @Success 200 {object} response.SuccessResponse "Successful make a challenge with Phone and OTP"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-phone [post]
@@ -82,7 +82,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
 // @Param challenge body dto.IdentityChallengeWithEmailDTO true "challenge payload"
-// @Success 200 {object} dto.IdentityUserChallengeDTO "Successful make a challenge with Email and OTP"
+// @Success 200 {object} response.SuccessResponse "Successful make a challenge with Email and OTP"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-email [post]
@@ -135,7 +135,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Param X-Organization-Id header string true "Organization ID"
 // @Param session_id path string true "session_id"
 // @Param code path string true "code"
-// @Success 200 {object} dto.IdentityUserAuthDTO "Successful verify the challenge"
+// @Success 200 {object} response.SuccessResponse "Successful verify the challenge"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-verify [post]
@@ -157,7 +157,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
 // @Param login body dto.IdentityUserLoginDTO true "login payload"
-// @Success 200 {object} dto.IdentityUserAuthDTO "Successful authenticate user"
+// @Success 200 {object} response.SuccessResponse "Successful authenticate user"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/login [post]
@@ -178,7 +178,7 @@ func (h *userHandler) Login(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
-// @Success 200 {object} dto.IdentityUserAuthDTO "Successful authenticate user with Google"
+// @Success 200 {object} response.SuccessResponse "Successful authenticate user with Google"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/login-with-google [post]
 func (h *userHandler) LoginWithGoogle(ctx *gin.Context) {
@@ -198,7 +198,7 @@ func (h *userHandler) LoginWithGoogle(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
-// @Success 200 {object} dto.IdentityUserAuthDTO "Successful authenticate user with Facebook"
+// @Success 200 {object} response.SuccessResponse "Successful authenticate user with Facebook"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/login-with-facebook [post]
 func (h *userHandler) LoginWithFacebook(ctx *gin.Context) {
@@ -218,7 +218,7 @@ func (h *userHandler) LoginWithFacebook(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
-// @Success 200 {object} dto.IdentityUserAuthDTO "Successful authenticate user with Apple"
+// @Success 200 {object} response.SuccessResponse "Successful authenticate user with Apple"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/login-with-apple [post]
 func (h *userHandler) LoginWithApple(ctx *gin.Context) {
@@ -240,7 +240,7 @@ func (h *userHandler) LoginWithApple(ctx *gin.Context) {
 // @Param X-Organization-Id header string true "Organization ID"
 // @Param Authorization header string true "Bearer Token"
 // @Param refresh_token body dto.IdentityRefreshTokenDTO true "refresh token payload"
-// @Success 200 {object} dto.IdentityUserAuthDTO "Successful refresh token"
+// @Success 200 {object} response.SuccessResponse "Successful refresh token"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/refresh-token [post]
@@ -262,7 +262,7 @@ func (h *userHandler) RefreshToken(ctx *gin.Context) {
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
 // @Param Authorization header string true "Bearer Token"
-// @Success 200 {object} dto.IdentityUserDTO "Successful get user profile"
+// @Success 200 {object} response.SuccessResponse "Successful get user profile"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
 func (h *userHandler) Me(ctx *gin.Context) {
@@ -300,6 +300,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
+// @Param Authorization header string true "Bearer Token"
 // @Success 200 {object} response.SuccessResponse "Successful de-authenticate user"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/logout [post]

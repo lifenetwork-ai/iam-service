@@ -2281,7 +2281,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful verify the challenge",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
@@ -2334,7 +2334,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful make a challenge with Email and OTP",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
@@ -2387,7 +2387,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful make a challenge with Phone and OTP",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
@@ -2440,7 +2440,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful authenticate user",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
@@ -2484,7 +2484,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful authenticate user with Apple",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "500": {
@@ -2522,7 +2522,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful authenticate user with Facebook",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "500": {
@@ -2560,7 +2560,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful authenticate user with Google",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "500": {
@@ -2590,6 +2590,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Organization ID",
                         "name": "X-Organization-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer Token",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     }
@@ -2643,7 +2650,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful get user profile",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "500": {
@@ -2697,7 +2704,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful refresh token",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
@@ -2959,84 +2966,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.IdentityUserAuthDTO": {
-            "type": "object",
-            "properties": {
-                "access_expires_at": {
-                    "type": "string"
-                },
-                "access_token": {
-                    "type": "string"
-                },
-                "last_login_at": {
-                    "type": "string"
-                },
-                "refresh_expires_at": {
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/dto.IdentityUserDTO"
-                }
-            }
-        },
-        "dto.IdentityUserChallengeDTO": {
-            "type": "object",
-            "properties": {
-                "challenge_at": {
-                    "type": "integer"
-                },
-                "receiver": {
-                    "type": "string"
-                },
-                "session_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.IdentityUserDTO": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "last_login_at": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "boolean"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "user_name": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.IdentityUserLoginDTO": {
             "type": "object",
             "properties": {
@@ -3224,7 +3153,10 @@ const docTemplate = `{
                 },
                 "errors": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
                 },
                 "message": {
                     "type": "string"
@@ -3240,7 +3172,10 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
-                "data": {},
+                "data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "message": {
                     "type": "string"
                 },

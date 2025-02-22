@@ -22,7 +22,7 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 			c.Next() // Skip check headers for Swagger routes
 			return
 		}
-		
+
 		organizationId := c.GetHeader("X-Organization-Id")
 		if organizationId == "" {
 			c.AbortWithStatusJSON(
@@ -60,7 +60,7 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 			}
 
 			if organization != nil {
-				c.Set("requesterId", organization.ID)
+				c.Set("organizationId", organization.ID)
 				c.Set("organization", organization)
 				c.Next()
 				return
@@ -106,7 +106,7 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 			logger.GetLogger().Errorf("Failed to cache organization: %v", err)
 		}
 
-		c.Set("requesterId", organization.ID)
+		c.Set("organizationId", organization.ID)
 		c.Set("organization", organization)
 		c.Next()
 	}
