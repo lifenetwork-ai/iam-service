@@ -49,4 +49,13 @@ type IdentityUserUseCase interface {
 	LogOut(
 		ctx context.Context,
 	) *dto.ErrorDTOResponse
+
+	RefreshToken(
+		ctx context.Context,
+		refreshToken string,
+	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
+
+	Profile(
+		ctx context.Context,
+	) (*dto.IdentityUserDTO, *dto.ErrorDTOResponse)
 }

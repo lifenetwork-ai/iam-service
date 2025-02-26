@@ -40,7 +40,7 @@ func (u *organizationUseCase) List(
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Message: err.Error(),
-			Details: []interface{}{err},
+			Details: []interface{}{err.Error()},
 		}
 	}
 
@@ -81,7 +81,7 @@ func (u *organizationUseCase) Create(
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Message: err.Error(),
-			Details: []interface{}{err},
+			Details: []interface{}{err.Error()},
 		}
 	}
 
@@ -108,7 +108,7 @@ func (u *organizationUseCase) Create(
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusBadRequest,
 				Message: err.Error(),
-				Details: []interface{}{err},
+				Details: []interface{}{err.Error()},
 			}
 		}
 
@@ -134,7 +134,7 @@ func (u *organizationUseCase) Create(
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Message: err.Error(),
-			Details: []interface{}{err},
+			Details: []interface{}{err.Error()},
 		}
 	}
 
@@ -153,7 +153,7 @@ func (u *organizationUseCase) Update(
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Message: err.Error(),
-			Details: []interface{}{err},
+			Details: []interface{}{err.Error()},
 		}
 	}
 
@@ -180,7 +180,7 @@ func (u *organizationUseCase) Update(
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusBadRequest,
 				Message: err.Error(),
-				Details: []interface{}{err},
+				Details: []interface{}{err.Error()},
 			}
 		}
 
@@ -209,7 +209,7 @@ func (u *organizationUseCase) Update(
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusBadRequest,
 				Message: err.Error(),
-				Details: []interface{}{err},
+				Details: []interface{}{err.Error()},
 			}
 		}
 
@@ -244,7 +244,7 @@ func (u *organizationUseCase) Update(
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Message: err.Error(),
-			Details: []interface{}{err},
+			Details: []interface{}{err.Error()},
 		}
 	}
 
@@ -262,7 +262,7 @@ func (u *organizationUseCase) Delete(
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Message: err.Error(),
-			Details: []interface{}{err},
+			Details: []interface{}{err.Error()},
 		}
 	}
 
@@ -280,7 +280,7 @@ func (u *organizationUseCase) Delete(
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Message: err.Error(),
-			Details: []interface{}{err},
+			Details: []interface{}{err.Error()},
 		}
 	}
 

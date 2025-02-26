@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	dto "github.com/genefriendway/human-network-iam/internal/delivery/dto"
 	interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
 	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
 	"github.com/genefriendway/human-network-iam/packages/logger"
@@ -118,78 +117,6 @@ func (h *sessionHandler) GetDetail(ctx *gin.Context) {
 
 	// Return the response as a JSON response
 	httpresponse.Success(ctx, http.StatusOK, session)
-}
-
-// CreateSession creates a new session.
-// @Summary Create a new session
-// @Description Create a new session
-// @Tags sessions
-// @Accept json
-// @Produce json
-// @Param X-Organization-Id header string true "Organization ID"
-// @Param Authorization header string true "Bearer Token"
-// @Param session body dto.CreateAccessSessionPayloadDTO true "session payload"
-// @Success 201 {object} dto.AccessSessionDTO "Successful creation of session"
-// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
-// @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/sessions [post]
-func (h *sessionHandler) CreateSession(ctx *gin.Context) {
-	var reqPayload dto.CreateAccessSessionPayloadDTO
-
-	// Parse and validate the request payload
-	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
-		logger.GetLogger().Errorf("Invalid payload: %v", err)
-		httpresponse.Error(
-			ctx,
-			http.StatusBadRequest,
-			"MSG_INVALID_PAYLOAD",
-			"Failed to create group, invalid payload",
-			err,
-		)
-		return
-	}
-
-	// Create the session
-	response, err := h.ucase.Create(ctx, reqPayload)
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to create session: %v", err)
-		httpresponse.Error(
-			ctx,
-			http.StatusInternalServerError,
-			"MSG_FAILED_CREATE_SESSION",
-			"Failed to create session",
-			err,
-		)
-		return
-	}
-
-	// Return the response as a JSON response
-	httpresponse.Success(ctx, http.StatusCreated, response)
-}
-
-// UpdateSession updates an existing session.
-// @Summary Update an existing session
-// @Description Update an existing session
-// @Tags sessions
-// @Accept json
-// @Produce json
-// @Param X-Organization-Id header string true "Organization ID"
-// @Param Authorization header string true "Bearer Token"
-// @Param session_id path string true "session ID"
-// @Param session body dto.UpdateAccessSessionPayloadDTO true "session payload"
-// @Success 200 {object} dto.AccessSessionDTO "Successful update of session"
-// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
-// @Failure 404 {object} response.ErrorResponse "session not found"
-// @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/sessions/{session_id} [put]
-func (h *sessionHandler) UpdateSession(ctx *gin.Context) {
-	httpresponse.Error(
-		ctx,
-		http.StatusNotImplemented,
-		"MSG_NOT_IMPLEMENTED",
-		"Not implemented",
-		nil,
-	)
 }
 
 // DeleteSession deletes an existing session.

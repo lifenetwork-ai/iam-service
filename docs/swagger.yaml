@@ -42,20 +42,6 @@ definitions:
     - code
     - name
     type: object
-  dto.CreateAccessSessionPayloadDTO:
-    properties:
-      code:
-        type: string
-      description:
-        type: string
-      name:
-        type: string
-      parent_id:
-        type: string
-    required:
-    - code
-    - name
-    type: object
   dto.CreateIdentityGroupPayloadDTO:
     properties:
       code:
@@ -111,6 +97,13 @@ definitions:
     required:
     - code
     - name
+    type: object
+  dto.IdentityChallengeVerifyDTO:
+    properties:
+      code:
+        type: string
+      session_id:
+        type: string
     type: object
   dto.IdentityChallengeWithEmailDTO:
     properties:
@@ -193,20 +186,6 @@ definitions:
     - name
     type: object
   dto.UpdateAccessPolicyPayloadDTO:
-    properties:
-      code:
-        type: string
-      description:
-        type: string
-      name:
-        type: string
-      parent_id:
-        type: string
-    required:
-    - code
-    - name
-    type: object
-  dto.UpdateAccessSessionPayloadDTO:
     properties:
       code:
         type: string
@@ -1632,45 +1611,6 @@ paths:
       summary: Retrieve sessions
       tags:
       - sessions
-    post:
-      consumes:
-      - application/json
-      description: Create a new session
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: Bearer Token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: session payload
-        in: body
-        name: session
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateAccessSessionPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Successful creation of session
-          schema:
-            $ref: '#/definitions/dto.AccessSessionDTO'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Create a new session
-      tags:
-      - sessions
   /api/v1/sessions/{session_id}:
     delete:
       consumes:
@@ -1754,54 +1694,6 @@ paths:
       summary: Retrieve session by ID
       tags:
       - sessions
-    put:
-      consumes:
-      - application/json
-      description: Update an existing session
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: Bearer Token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: session ID
-        in: path
-        name: session_id
-        required: true
-        type: string
-      - description: session payload
-        in: body
-        name: session
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateAccessSessionPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful update of session
-          schema:
-            $ref: '#/definitions/dto.AccessSessionDTO'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: session not found
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Update an existing session
-      tags:
-      - sessions
   /api/v1/users/challenge-verify:
     post:
       consumes:
@@ -1813,16 +1705,12 @@ paths:
         name: X-Organization-Id
         required: true
         type: string
-      - description: session_id
-        in: path
-        name: session_id
+      - description: challenge payload
+        in: body
+        name: challenge
         required: true
-        type: string
-      - description: code
-        in: path
-        name: code
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/dto.IdentityChallengeVerifyDTO'
       produces:
       - application/json
       responses:

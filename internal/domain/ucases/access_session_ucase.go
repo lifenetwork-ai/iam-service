@@ -36,21 +36,6 @@ func (u *sessionUseCase) GetByID(
 	return nil, nil
 }
 
-func (u *sessionUseCase) Create(
-	ctx context.Context,
-	payload dto.CreateAccessSessionPayloadDTO,
-) (*dto.AccessSessionDTO, *dto.ErrorDTOResponse) {
-	return nil, nil
-}
-
-func (u *sessionUseCase) Update(
-	ctx context.Context,
-	id string,
-	payloads dto.UpdateAccessSessionPayloadDTO,
-) (*dto.AccessSessionDTO, *dto.ErrorDTOResponse) {
-	return nil, nil
-}
-
 func (u *sessionUseCase) Delete(
 	ctx context.Context,
 	id string,

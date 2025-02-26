@@ -8,6 +8,7 @@ import (
 
 	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
 	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
+	"github.com/genefriendway/human-network-iam/packages/utils"
 )
 
 type sessionRepository struct {
@@ -43,8 +44,8 @@ func (r *sessionRepository) Get(
 	return entities, nil
 }
 
-// GetByID retrieves an session based on the provided ID
-func (r *sessionRepository) GetByID(
+// FindByID retrieves an session based on the provided ID
+func (r *sessionRepository) FindByID(
 	ctx context.Context,
 	id string,
 ) (*entities.AccessSession, error) {
@@ -52,21 +53,50 @@ func (r *sessionRepository) GetByID(
 
 	// Execute query
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&entity).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
 		return nil, fmt.Errorf("failed to retrieve session: %w", err)
 	}
 
 	return &entity, nil
 }
 
-// GetByCode retrieves an session based on the provided code
-func (r *sessionRepository) GetByCode(
+// FindByAccessToken retrieves an session based on the provided code
+func (r *sessionRepository) FindByAccessToken(
 	ctx context.Context,
-	code string,
+	accessToken string,
 ) (*entities.AccessSession, error) {
 	var entity entities.AccessSession
 
+	tokenHashed := utils.HashToken(accessToken)
 	// Execute query
-	if err := r.db.WithContext(ctx).Where("code = ?", code).First(&entity).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("access_token = ?", tokenHashed).First(&entity).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("failed to retrieve session: %w", err)
+	}
+
+	return &entity, nil
+}
+
+// FindByRefreshToken retrieves an session based on the provided code
+func (r *sessionRepository) FindByRefreshToken(
+	ctx context.Context,
+	refreshToken string,
+) (*entities.AccessSession, error) {
+	var entity entities.AccessSession
+
+	tokenHashed := utils.HashToken(refreshToken)
+	// Execute query
+	if err := r.db.WithContext(ctx).Where("refresh_token = ?", tokenHashed).First(&entity).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
 		return nil, fmt.Errorf("failed to retrieve session: %w", err)
 	}
 
@@ -76,27 +106,35 @@ func (r *sessionRepository) GetByCode(
 // Create creates a new session
 func (r *sessionRepository) Create(
 	ctx context.Context,
-	entity entities.AccessSession,
+	entity *entities.AccessSession,
 ) (*entities.AccessSession, error) {
+	if entity.AccessToken != "" {
+		entity.AccessToken = utils.HashToken(entity.AccessToken)
+	}
+
+	if entity.RefreshToken != "" {
+		entity.RefreshToken = utils.HashToken(entity.RefreshToken)
+	}
+
 	// Execute query
-	if err := r.db.WithContext(ctx).Create(&entity).Error; err != nil {
+	if err := r.db.WithContext(ctx).Create(entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
-	return &entity, nil
+	return entity, nil
 }
 
 // Update updates an existing session
 func (r *sessionRepository) Update(
 	ctx context.Context,
-	entity entities.AccessSession,
+	entity *entities.AccessSession,
 ) (*entities.AccessSession, error) {
 	// Execute query
-	if err := r.db.WithContext(ctx).Save(&entity).Error; err != nil {
+	if err := r.db.WithContext(ctx).Save(entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to update session: %w", err)
 	}
 
-	return &entity, nil
+	return entity, nil
 }
 
 // Delete deletes an existing session

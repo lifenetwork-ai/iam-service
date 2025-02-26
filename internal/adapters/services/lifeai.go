@@ -1,4 +1,4 @@
-package lifeai_service
+package services
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	types "github.com/genefriendway/human-network-iam/internal/adapters/services/types"
 )
 
 type LifeAIServiceSetting struct {
@@ -15,7 +17,7 @@ type LifeAIServiceSetting struct {
 }
 
 type LifeAIService interface {
-	GetProfile(ctx context.Context, authHeader string) (*LifeAIProfile, error)
+	GetProfile(ctx context.Context, authHeader string) (*types.LifeAIProfile, error)
 }
 
 func NewLifeAIService(endpoint string) LifeAIService {
@@ -28,7 +30,7 @@ func NewLifeAIService(endpoint string) LifeAIService {
 func (c *LifeAIServiceSetting) GetProfile(
 	ctx context.Context,
 	authHeader string,
-) (*LifeAIProfile, error) {
+) (*types.LifeAIProfile, error) {
 	url := fmt.Sprintf("%s/api/v1/user-profile/", c.endpoint)
 
 	// Create the request
@@ -57,7 +59,7 @@ func (c *LifeAIServiceSetting) GetProfile(
 	}
 
 	// Parse the response body
-	var response LifeAIProfile
+	var response types.LifeAIProfile
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}

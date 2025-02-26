@@ -19,3 +19,11 @@ func GetLifeAIConfiguration() *LifeAIConfiguration {
 func GetAppName() string {
 	return configuration.AppName
 }
+
+func GetJwtConfig() *JwtConfiguration {
+	return &configuration.JwtConfig
+}
+
+func IsDebugMode() bool {
+	return configuration.Env == "DEV"
+}

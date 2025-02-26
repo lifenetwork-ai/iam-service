@@ -14,24 +14,29 @@ type AccessSessionRepository interface {
 		keyword string,
 	) ([]entities.AccessSession, error)
 
-	GetByID(
+	FindByID(
 		ctx context.Context,
 		id string,
 	) (*entities.AccessSession, error)
 
-	GetByCode(
+	FindByAccessToken(
 		ctx context.Context,
-		code string,
+		accessToken string,
+	) (*entities.AccessSession, error)
+
+	FindByRefreshToken(
+		ctx context.Context,
+		refreshToken string,
 	) (*entities.AccessSession, error)
 
 	Create(
 		ctx context.Context,
-		entity entities.AccessSession,
+		entity *entities.AccessSession,
 	) (*entities.AccessSession, error)
 
 	Update(
 		ctx context.Context,
-		entity entities.AccessSession,
+		entity *entities.AccessSession,
 	) (*entities.AccessSession, error)
 
 	SoftDelete(

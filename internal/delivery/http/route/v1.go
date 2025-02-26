@@ -81,7 +81,7 @@ func RegisterRoutes(
 	)
 	userRouter.GET(
 		"/me",
-		middleware.RequestAuthenticationMiddleware(),
+		middleware.RequestHybridAuthenticationMiddleware(),
 		userHandler.Me,
 	)
 }

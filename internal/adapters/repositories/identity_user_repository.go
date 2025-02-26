@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 
+	cachingtypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
 	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
 	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
 	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
+	"github.com/genefriendway/human-network-iam/packages/logger"
 )
 
 type identityRepository struct {
@@ -27,17 +30,59 @@ func NewIdentityUserRepository(
 	}
 }
 
-func (r *identityRepository) GetByPhone(
+func (r *identityRepository) FindByID(
 	ctx context.Context,
-	phone string,
+	userID string,
 ) (*entities.IdentityUser, error) {
+	if userID == "" {
+		return nil, nil
+	}
+
 	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
 	}
 
+	cacheKey := &cachingtypes.Keyer{
+		Raw: fmt.Sprintf("identity_user_%s", userID),
+	}
+
+	// Find in cache, if not found, find in database
+	var cacheRequester interface{}
+	err := r.cache.RetrieveItem(cacheKey, &cacheRequester)
+	if err == nil {
+		if user, ok := cacheRequester.(entities.IdentityUser); ok {
+			return &user, nil
+		}
+	}
+
+	var entity entities.IdentityUser
+	err = r.db.Where("organization_id = ? AND id = ?", organizationId, userID).First(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
+	if err == nil {
+		err := r.cache.SaveItem(cacheKey, entity, 1*time.Hour)
+		if err != nil {
+			logger.GetLogger().Errorf("Failed to save cache: %v", err)
+		}
+	}
+
+	return &entity, err
+}
+
+func (r *identityRepository) FindByPhone(
+	ctx context.Context,
+	phone string,
+) (*entities.IdentityUser, error) {
 	if phone == "" {
 		return nil, nil
+	}
+
+	organizationId := ctx.Value("organizationId").(string)
+	if organizationId == "" {
+		return nil, fmt.Errorf("missing organization ID")
 	}
 
 	var entity entities.IdentityUser
@@ -49,17 +94,17 @@ func (r *identityRepository) GetByPhone(
 	return &entity, err
 }
 
-func (r *identityRepository) GetByEmail(
+func (r *identityRepository) FindByEmail(
 	ctx context.Context,
 	email string,
 ) (*entities.IdentityUser, error) {
+	if email == "" {
+		return nil, nil
+	}
+
 	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
-	}
-
-	if email == "" {
-		return nil, nil
 	}
 
 	var entity entities.IdentityUser
@@ -71,17 +116,17 @@ func (r *identityRepository) GetByEmail(
 	return &entity, err
 }
 
-func (r *identityRepository) GetByUsername(
+func (r *identityRepository) FindByUsername(
 	ctx context.Context,
 	username string,
 ) (*entities.IdentityUser, error) {
+	if username == "" {
+		return nil, nil
+	}
+
 	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
-	}
-
-	if username == "" {
-		return nil, nil
 	}
 
 	var entity entities.IdentityUser
@@ -93,17 +138,17 @@ func (r *identityRepository) GetByUsername(
 	return &entity, err
 }
 
-func (r *identityRepository) GetByLifeAIID(
+func (r *identityRepository) FindByLifeAIID(
 	ctx context.Context,
 	lifeAIID string,
 ) (*entities.IdentityUser, error) {
+	if lifeAIID == "" {
+		return nil, nil
+	}
+
 	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
-	}
-
-	if lifeAIID == "" {
-		return nil, nil
 	}
 
 	var entity entities.IdentityUser
@@ -115,17 +160,17 @@ func (r *identityRepository) GetByLifeAIID(
 	return &entity, err
 }
 
-func (r *identityRepository) GetByGoogleID(
+func (r *identityRepository) FindByGoogleID(
 	ctx context.Context,
 	googleID string,
 ) (*entities.IdentityUser, error) {
+	if googleID == "" {
+		return nil, nil
+	}
+
 	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
-	}
-
-	if googleID == "" {
-		return nil, nil
 	}
 
 	var entity entities.IdentityUser
@@ -137,17 +182,17 @@ func (r *identityRepository) GetByGoogleID(
 	return &entity, err
 }
 
-func (r *identityRepository) GetByFacebookID(
+func (r *identityRepository) FindByFacebookID(
 	ctx context.Context,
 	facebookID string,
 ) (*entities.IdentityUser, error) {
+	if facebookID == "" {
+		return nil, nil
+	}
+
 	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
-	}
-
-	if facebookID == "" {
-		return nil, nil
 	}
 
 	var entity entities.IdentityUser
@@ -159,17 +204,17 @@ func (r *identityRepository) GetByFacebookID(
 	return &entity, err
 }
 
-func (r *identityRepository) GetByAppleID(
+func (r *identityRepository) FindByAppleID(
 	ctx context.Context,
 	appleID string,
 ) (*entities.IdentityUser, error) {
+	if appleID == "" {
+		return nil, nil
+	}
+
 	organizationId := ctx.Value("organizationId").(string)
 	if organizationId == "" {
 		return nil, fmt.Errorf("missing organization ID")
-	}
-
-	if appleID == "" {
-		return nil, nil
 	}
 
 	var entity entities.IdentityUser
@@ -192,6 +237,18 @@ func (r *identityRepository) Create(
 
 	entity.OrganizationId = organizationId
 	err := r.db.Create(entity).Error
+
+	if err == nil {
+		// Save to cache for 1 hour
+		cacheKey := &cachingtypes.Keyer{
+			Raw: fmt.Sprintf("identity_user_%s", entity.ID),
+		}
+		cacheErr := r.cache.SaveItem(cacheKey, entity, 1*time.Hour)
+		if cacheErr != nil {
+			logger.GetLogger().Errorf("Failed to remove cache: %v", cacheErr)
+		}
+	}
+
 	return err
 }
 
@@ -206,6 +263,18 @@ func (r *identityRepository) Update(
 
 	entity.OrganizationId = organizationId
 	err := r.db.Save(entity).Error
+
+	if err == nil {
+		// Save to cache for 1 hour
+		cacheKey := &cachingtypes.Keyer{
+			Raw: fmt.Sprintf("identity_user_%s", entity.ID),
+		}
+		cacheErr := r.cache.SaveItem(cacheKey, entity, 1*time.Hour)
+		if cacheErr != nil {
+			logger.GetLogger().Errorf("Failed to remove cache: %v", cacheErr)
+		}
+	}
+
 	return err
 }
 
@@ -219,5 +288,17 @@ func (r *identityRepository) Delete(
 	}
 
 	err := r.db.Where("organization_id = ? AND id = ?", organizationId, userID).Delete(&entities.IdentityUser{}).Error
+
+	if err == nil {
+		// Remove from cache
+		cacheKey := &cachingtypes.Keyer{
+			Raw: fmt.Sprintf("identity_user_%s", userID),
+		}
+		cacheErr := r.cache.RemoveItem(cacheKey)
+		if cacheErr != nil {
+			logger.GetLogger().Errorf("Failed to remove cache: %v", cacheErr)
+		}
+	}
+
 	return err
 }

@@ -48,8 +48,7 @@ func (m *IdentityUser) ToDTO() dto.IdentityUserDTO {
 		Email:       m.Email,
 		Phone:       m.Phone,
 		Status:      m.Status,
-		LastLoginAt: m.LastLoginAt,
-		CreatedAt:   m.CreatedAt,
-		UpdatedAt:   m.UpdatedAt,
+		CreatedAt:   m.CreatedAt.Unix(),
+		UpdatedAt:   m.UpdatedAt.Unix(),
 	}
 }

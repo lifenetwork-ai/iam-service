@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 
 	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
 	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
 	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
+	"github.com/genefriendway/human-network-iam/packages/utils"
 )
 
 type organizationRepository struct {
@@ -90,6 +92,19 @@ func (r *organizationRepository) Create(
 	ctx context.Context,
 	entity entities.IdentityOrganization,
 ) (*entities.IdentityOrganization, error) {
+	// Ensure about value is safe string to prevent SQL injection
+	if entity.Name == "" {
+		entity.Name = utils.SafeString(entity.Name)
+	}
+
+	if entity.Code == "" {
+		entity.Code = strings.ToUpper(utils.SafeString(entity.Code))
+	}
+
+	if entity.Description == "" {
+		entity.Description = utils.SafeString(entity.Description)
+	}
+
 	// Execute query
 	if err := r.db.WithContext(ctx).Save(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to create organization: %w", err)
@@ -103,6 +118,19 @@ func (r *organizationRepository) Update(
 	ctx context.Context,
 	entity entities.IdentityOrganization,
 ) (*entities.IdentityOrganization, error) {
+	// Ensure about value is safe string to prevent SQL injection
+	if entity.Name == "" {
+		entity.Name = utils.SafeString(entity.Name)
+	}
+
+	if entity.Code == "" {
+		entity.Code = strings.ToUpper(utils.SafeString(entity.Code))
+	}
+
+	if entity.Description == "" {
+		entity.Description = utils.SafeString(entity.Description)
+	}
+
 	// Execute query
 	if err := r.db.WithContext(ctx).Save(&entity).Error; err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)

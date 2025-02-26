@@ -1,4 +1,4 @@
-package lifeai_service
+package services
 
 type LifeAIProfile struct {
 	ID      string `json:"user_profile_id"`

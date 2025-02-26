@@ -7,37 +7,42 @@ import (
 )
 
 type IdentityUserRepository interface {
-	GetByPhone(
+	FindByID(
+		ctx context.Context,
+		userID string,
+	) (*entities.IdentityUser, error)
+
+	FindByPhone(
 		ctx context.Context,
 		phone string,
 	) (*entities.IdentityUser, error)
 
-	GetByEmail(
+	FindByEmail(
 		ctx context.Context,
 		email string,
 	) (*entities.IdentityUser, error)
 
-	GetByUsername(
+	FindByUsername(
 		ctx context.Context,
 		username string,
 	) (*entities.IdentityUser, error)
 
-	GetByLifeAIID(
+	FindByLifeAIID(
 		ctx context.Context,
 		lifeAIID string,
 	) (*entities.IdentityUser, error)
 
-	GetByGoogleID(
+	FindByGoogleID(
 		ctx context.Context,
 		googleID string,
 	) (*entities.IdentityUser, error)
 
-	GetByFacebookID(
+	FindByFacebookID(
 		ctx context.Context,
 		facebookID string,
 	) (*entities.IdentityUser, error)
 
-	GetByAppleID(
+	FindByAppleID(
 		ctx context.Context,
 		appleID string,
 	) (*entities.IdentityUser, error)

@@ -1,13 +1,13 @@
-package email_service
+package services
 
 import (
 	"context"
 )
 
-type EmailService interface {
+type SMSService interface {
 	Send(ctx context.Context, email, subject, body string) error
 }
 
-func NewEmailService() EmailService {
+func NewSMSService() SMSService {
 	return nil
 }

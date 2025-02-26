@@ -6,15 +6,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	cachingTypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
 	repositories "github.com/genefriendway/human-network-iam/internal/adapters/repositories"
 	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 	"github.com/genefriendway/human-network-iam/packages/logger"
 	"github.com/genefriendway/human-network-iam/wire/providers"
-	"github.com/gin-gonic/gin"
 )
 
-// XHeaderValidationMiddleware returns a gin middleware for HTTP request logging
+// XHeaderValidationMiddleware returns a gin middleware for HTTP request checking X-* headers
 func XHeaderValidationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Ignore Swagger requests

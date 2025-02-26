@@ -4,21 +4,20 @@ import (
 	"sync"
 
 	"github.com/genefriendway/human-network-iam/conf"
-	email_service "github.com/genefriendway/human-network-iam/internal/adapters/services/email"
-	lifeai_service "github.com/genefriendway/human-network-iam/internal/adapters/services/lifeai"
-	sms_service "github.com/genefriendway/human-network-iam/internal/adapters/services/sms"
+	"github.com/genefriendway/human-network-iam/internal/adapters/services"
 	"github.com/genefriendway/human-network-iam/packages/logger"
 )
 
 var (
 	serviceOnce    sync.Once
-	lifeAIInstance lifeai_service.LifeAIService
-	emailInstance  email_service.EmailService
-	smsInstance    sms_service.SMSService
+	lifeAIInstance services.LifeAIService
+	emailInstance  services.EmailService
+	smsInstance    services.SMSService
+	jwtInstance    services.JWTService
 )
 
 // ProvideLifeAIService provides a singleton instance of LifeAIClient.
-func ProvideLifeAIService() lifeai_service.LifeAIService {
+func ProvideLifeAIService() services.LifeAIService {
 	serviceOnce.Do(func() {
 		// Get LifeAI endpoint from config
 		config := conf.GetConfiguration()
@@ -27,16 +26,21 @@ func ProvideLifeAIService() lifeai_service.LifeAIService {
 		logger.GetLogger().Infof("Initializing LifeAI client with endpoint: %s", lifeAIEndpoint)
 
 		// Create service instances
-		lifeAIInstance = lifeai_service.NewLifeAIService(lifeAIEndpoint)
-		emailInstance = email_service.NewEmailService()
-		smsInstance = sms_service.NewSMSService()
+		lifeAIInstance = services.NewLifeAIService(lifeAIEndpoint)
+		emailInstance = services.NewEmailService()
+		smsInstance = services.NewSMSService()
+		jwtInstance = services.NewJWTService(
+			config.JwtConfig.Secret,
+			config.JwtConfig.AccessLifetime,
+			config.JwtConfig.RefreshLifetime,
+		)
 	})
 
 	return lifeAIInstance
 }
 
 // ProvideEmailService provides a singleton instance of EmailService.
-func ProvideEmailService() email_service.EmailService {
+func ProvideEmailService() services.EmailService {
 	serviceOnce.Do(func() {
 		// Get email service configuration from config
 		config := conf.GetConfiguration()
@@ -45,16 +49,21 @@ func ProvideEmailService() email_service.EmailService {
 		logger.GetLogger().Infof("Initializing LifeAI client with endpoint: %s", lifeAIEndpoint)
 
 		// Create service instances
-		lifeAIInstance = lifeai_service.NewLifeAIService(lifeAIEndpoint)
-		emailInstance = email_service.NewEmailService()
-		smsInstance = sms_service.NewSMSService()
+		lifeAIInstance = services.NewLifeAIService(lifeAIEndpoint)
+		emailInstance = services.NewEmailService()
+		smsInstance = services.NewSMSService()
+		jwtInstance = services.NewJWTService(
+			config.JwtConfig.Secret,
+			config.JwtConfig.AccessLifetime,
+			config.JwtConfig.RefreshLifetime,
+		)
 	})
 
 	return emailInstance
 }
 
 // ProvideSMSService provides a singleton instance of SMSService.
-func ProvideSMSService() sms_service.SMSService {
+func ProvideSMSService() services.SMSService {
 	serviceOnce.Do(func() {
 		// Get SMS service configuration from config
 		config := conf.GetConfiguration()
@@ -63,10 +72,38 @@ func ProvideSMSService() sms_service.SMSService {
 		logger.GetLogger().Infof("Initializing LifeAI client with endpoint: %s", lifeAIEndpoint)
 
 		// Create service instances
-		lifeAIInstance = lifeai_service.NewLifeAIService(lifeAIEndpoint)
-		emailInstance = email_service.NewEmailService()
-		smsInstance = sms_service.NewSMSService()
+		lifeAIInstance = services.NewLifeAIService(lifeAIEndpoint)
+		emailInstance = services.NewEmailService()
+		smsInstance = services.NewSMSService()
+		jwtInstance = services.NewJWTService(
+			config.JwtConfig.Secret,
+			config.JwtConfig.AccessLifetime,
+			config.JwtConfig.RefreshLifetime,
+		)
 	})
 
 	return smsInstance
+}
+
+// ProvideJWTService provides a singleton instance of JWTService.
+func ProvideJWTService() services.JWTService {
+	serviceOnce.Do(func() {
+		// Get JWT service configuration from config
+		config := conf.GetConfiguration()
+		lifeAIEndpoint := config.LifeAIConfig.BackendURL
+
+		logger.GetLogger().Infof("Initializing LifeAI client with endpoint: %s", lifeAIEndpoint)
+
+		// Create service instances
+		lifeAIInstance = services.NewLifeAIService(lifeAIEndpoint)
+		emailInstance = services.NewEmailService()
+		smsInstance = services.NewSMSService()
+		jwtInstance = services.NewJWTService(
+			config.JwtConfig.Secret,
+			config.JwtConfig.AccessLifetime,
+			config.JwtConfig.RefreshLifetime,
+		)
+	})
+
+	return jwtInstance
 }

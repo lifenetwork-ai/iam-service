@@ -19,17 +19,6 @@ type AccessSessionUseCase interface {
 		id string,
 	) (*dto.AccessSessionDTO, *dto.ErrorDTOResponse)
 
-	Create(
-		ctx context.Context,
-		payload dto.CreateAccessSessionPayloadDTO,
-	) (*dto.AccessSessionDTO, *dto.ErrorDTOResponse)
-
-	Update(
-		ctx context.Context,
-		id string,
-		payload dto.UpdateAccessSessionPayloadDTO,
-	) (*dto.AccessSessionDTO, *dto.ErrorDTOResponse)
-
 	Delete(
 		ctx context.Context,
 		id string,

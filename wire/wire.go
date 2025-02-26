@@ -8,12 +8,15 @@ import (
 	repositories_interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
 	ucases "github.com/genefriendway/human-network-iam/internal/domain/ucases"
 	ucases_interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
+	"github.com/genefriendway/human-network-iam/wire/providers"
 )
 
 // Struct to hold all repositories
 type repos struct {
 	IdentityOrganizationRepo repositories_interfaces.IdentityOrganizationRepository
 	IdentityUserRepo         repositories_interfaces.IdentityUserRepository
+
+	AccessSessionRepo repositories_interfaces.AccessSessionRepository
 }
 
 // Initialize repositories (only using cache where needed)
@@ -22,6 +25,8 @@ func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *re
 	return &repos{
 		IdentityOrganizationRepo: repositories.NewIdentityOrganizationRepository(db, cacheRepo),
 		IdentityUserRepo:         repositories.NewIdentityUserRepository(db, cacheRepo),
+
+		AccessSessionRepo: repositories.NewAccessSessionRepository(db),
 	}
 }
 
@@ -38,6 +43,13 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 	// Return all use cases
 	return &UseCases{
 		IdentityOrganizationUCase: ucases.NewIdentityOrganizationUseCase(repos.IdentityOrganizationRepo),
-		IdentityUserUCase:         ucases.NewIdentityUserUseCase(repos.IdentityUserRepo),
+		IdentityUserUCase: ucases.NewIdentityUserUseCase(
+			repos.IdentityUserRepo,
+			repos.AccessSessionRepo,
+			cacheRepo,
+			providers.ProvideEmailService(),
+			providers.ProvideSMSService(),
+			providers.ProvideJWTService(),
+		),
 	}
 }

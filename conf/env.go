@@ -53,6 +53,12 @@ type SmsConfiguration struct {
 	SmsPassword string `mapstructure:"SMS_PASSWORD"`
 }
 
+type JwtConfiguration struct {
+	Secret          string `mapstructure:"JWT_SECRET"`
+	AccessLifetime  int64  `mapstructure:"JWT_ACCESS_TOKEN_LIFETIME"`	//second
+	RefreshLifetime int64  `mapstructure:"JWT_REFRESH_TOKEN_LIFETIME"`	//second
+}
+
 type Configuration struct {
 	Database          DatabaseConfiguration       `mapstructure:",squash"`
 	Redis             RedisConfiguration          `mapstructure:",squash"`
@@ -68,30 +74,31 @@ type Configuration struct {
 	CacheType         string                      `mapstructure:"CACHE_TYPE"`
 	EmailConfig       EmailConfiguration          `mapstructure:",squash"`
 	SmsConfig         SmsConfiguration            `mapstructure:",squash"`
+	JwtConfig         JwtConfiguration            `mapstructure:",squash"`
 }
 
 var configuration Configuration
 
 var defaultConfigurations = map[string]any{
-	"REDIS_ADDRESS":             "localhost:6379",
-	"REDIS_TTL":                 "60",
-	"APP_PORT":                  "9090",
-	"ENV_FILE":                  ".env",
-	"ENV":                       "DEV",
-	"LOG_LEVEL":                 "debug",
-	"DB_USER":                   "db_master",
-	"DB_PASSWORD":               "123456aA",
-	"DB_HOST":                   "localhost",
-	"DB_PORT":                   "5432",
-	"DB_NAME":                   "human-network-iam",
-	"MNEMONIC":                  "",
-	"PASSPHRASE":                "",
-	"SALT":                      "",
-	"ADMIN_EMAIL":               "",
-	"ADMIN_PASSWORD":            "",
-	"JWT_SECRET":                "",
-	"SECURE_GENOM_API_BASE_URL": "https://secure-genom.humannetwork.life",
-	"LIFE_AI_BACKEND_URL":       "https://nightly.lifenetwork.ai",
+	"REDIS_ADDRESS":              "localhost:6379",
+	"REDIS_TTL":                  "60",
+	"APP_PORT":                   "9090",
+	"ENV_FILE":                   ".env",
+	"ENV":                        "DEV",
+	"LOG_LEVEL":                  "debug",
+	"DB_USER":                    "db_master",
+	"DB_PASSWORD":                "123456aA",
+	"DB_HOST":                    "localhost",
+	"DB_PORT":                    "5432",
+	"DB_NAME":                    "human-network-iam",
+	"MNEMONIC":                   "",
+	"PASSPHRASE":                 "",
+	"SALT":                       "",
+	"JWT_SECRET":                 "Abc@13579",
+	"JWT_ACCESS_TOKEN_LIFETIME":  "3600",  // 1 hour
+	"JWT_REFRESH_TOKEN_LIFETIME": "86400", // 24 hours
+	"SECURE_GENOM_API_BASE_URL":  "https://secure-genom.humannetwork.life",
+	"LIFE_AI_BACKEND_URL":        "https://nightly.lifenetwork.ai",
 }
 
 // loadDefaultConfigs sets default values for critical configurations

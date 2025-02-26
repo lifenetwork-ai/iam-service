@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	cachingtypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
+	cachingTypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
 	repositories "github.com/genefriendway/human-network-iam/internal/adapters/repositories"
 	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
@@ -17,8 +17,8 @@ import (
 	"github.com/genefriendway/human-network-iam/wire/providers"
 )
 
-// RequestAuthenticationMiddleware returns a gin middleware for HTTP request authentication
-func RequestAuthenticationMiddleware() gin.HandlerFunc {
+// RequestHybridAuthenticationMiddleware returns a gin middleware for HTTP request authentication with supporting 3rd party service
+func RequestHybridAuthenticationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Dependency injection
 		dbConnection := providers.ProvideDBConnection()
@@ -60,7 +60,7 @@ func RequestAuthenticationMiddleware() gin.HandlerFunc {
 		// Query Redis to find profile with key is tokenMd5
 		token := tokenParts[1]
 		var requester *entities.IdentityUser = nil
-		cacheKey := &cachingtypes.Keyer{
+		cacheKey := &cachingTypes.Keyer{
 			Raw: fmt.Sprintf("middleware_%x", sha256.Sum256([]byte(token))),
 		}
 

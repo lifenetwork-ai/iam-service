@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	dto "github.com/genefriendway/human-network-iam/internal/delivery/dto"
-	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
 	interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
 	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
 	"github.com/genefriendway/human-network-iam/packages/logger"
@@ -133,20 +132,60 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
-// @Param session_id path string true "session_id"
-// @Param code path string true "code"
+// @Param challenge body dto.IdentityChallengeVerifyDTO true "challenge payload"
 // @Success 200 {object} response.SuccessResponse "Successful verify the challenge"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-verify [post]
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
-	httpresponse.Error(
-		ctx,
-		http.StatusNotImplemented,
-		"MSG_NOT_IMPLEMENTED",
-		"Not implemented",
-		nil,
-	)
+	var reqPayload dto.IdentityChallengeVerifyDTO
+	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_PAYLOAD",
+			"Invalid payload",
+			err,
+		)
+		return
+	}
+
+	if reqPayload.SessionID == "" {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_SESSION_ID_IS_REQUIRED",
+			"Session ID is required",
+			nil,
+		)
+		return
+	}
+
+	if reqPayload.Code == "" {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_CHALLENGE_CODE_IS_REQUIRED",
+			"Challenge code is required",
+			nil,
+		)
+		return
+	}
+
+	auth, err := h.ucase.ChallengeVerify(ctx, reqPayload.SessionID, reqPayload.Code)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusInternalServerError,
+			"MSG_FAILED_TO_VERIFY_CHALLENGE",
+			"Failed to verify the challenge",
+			err,
+		)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, auth)
 }
 
 // Login to authenticate user.
@@ -266,31 +305,19 @@ func (h *userHandler) RefreshToken(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
 func (h *userHandler) Me(ctx *gin.Context) {
-	requesterValue, exists := ctx.Get("requester")
-	if !exists {
+	requester, err := h.ucase.Profile(ctx)
+	if err != nil {
 		httpresponse.Error(
 			ctx,
 			http.StatusInternalServerError,
-			"MSG_REQUESTER_NOT_FOUND",
-			"Requester not found",
-			nil,
+			"MSG_FAILED_TO_GET_USER_PROFILE",
+			"Failed to get user profile",
+			err,
 		)
 		return
 	}
 
-	requester, ok := requesterValue.(*entities.IdentityUser)
-	if !ok {
-		httpresponse.Error(
-			ctx,
-			http.StatusInternalServerError,
-			"MSG_REQUESTER_TYPE_ASSERTION_FAILED",
-			"Requester type assertion failed",
-			nil,
-		)
-		return
-	}
-	requesterDTO := requester.ToDTO()
-	httpresponse.Success(ctx, http.StatusOK, requesterDTO)
+	httpresponse.Success(ctx, http.StatusOK, *requester)
 }
 
 // Logout to de-authenticate user.
