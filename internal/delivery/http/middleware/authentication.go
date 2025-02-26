@@ -43,7 +43,8 @@ func RequestAuthenticationMiddleware() gin.HandlerFunc {
 
 		// Check if the token is a Bearer token
 		tokenParts := strings.Split(authHeader, " ")
-		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+		tokenPrefix := tokenParts[0]
+		if len(tokenParts) != 2 || (tokenPrefix != "Bearer" && tokenPrefix != "Token") {
 			httpresponse.Error(
 				c,
 				http.StatusUnauthorized,
