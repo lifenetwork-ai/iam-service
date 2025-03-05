@@ -68,9 +68,10 @@ func cacheAuthentication(
 	cacheRepo := providers.ProvideCacheRepository(ctx)
 
 	// Query Redis to find profile with key is tokenMd5
+	organizationId := ctx.Value("organizationId").(string)
 	var requester *entities.IdentityUser = nil
 	cacheKey := &cachingtypes.Keyer{
-		Raw: fmt.Sprintf("middleware_%x", sha256.Sum256([]byte(token))),
+		Raw: fmt.Sprintf("%s_%x", organizationId, sha256.Sum256([]byte(token))),
 	}
 
 	var cacheRequester interface{}
@@ -97,8 +98,9 @@ func saveToCache(
 	cacheRepo := providers.ProvideCacheRepository(ctx)
 
 	// Cache the user to memory cache
+	organizationId := ctx.Value("organizationId").(string)
 	cacheKey := &cachingtypes.Keyer{
-		Raw: fmt.Sprintf("middleware_%x", sha256.Sum256([]byte(token))),
+		Raw: fmt.Sprintf("%s_%x", organizationId, sha256.Sum256([]byte(token))),
 	}
 
 	if err := cacheRepo.SaveItem(cacheKey, *requester, 10*time.Minute); err != nil {
@@ -252,7 +254,7 @@ func jwtAuthentication(
 	}
 
 	if session == nil {
-		logger.GetLogger().Errorf("Invalid session by access token: %v", session)
+		logger.GetLogger().Errorf("Invalid session by access token")
 		return nil
 	}
 
