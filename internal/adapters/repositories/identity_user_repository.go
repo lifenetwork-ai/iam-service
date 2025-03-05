@@ -138,11 +138,11 @@ func (r *identityRepository) FindByUsername(
 	return &entity, err
 }
 
-func (r *identityRepository) FindByLifeAIID(
+func (r *identityRepository) FindBySelfAuthenticateID(
 	ctx context.Context,
-	lifeAIID string,
+	selfAuthID string,
 ) (*entities.IdentityUser, error) {
-	if lifeAIID == "" {
+	if selfAuthID == "" {
 		return nil, nil
 	}
 
@@ -152,7 +152,7 @@ func (r *identityRepository) FindByLifeAIID(
 	}
 
 	var entity entities.IdentityUser
-	err := r.db.Where("organization_id = ? AND lifeai_id = ?", organizationId, lifeAIID).First(&entity).Error
+	err := r.db.Where("organization_id = ? AND self_authenticate_id = ?", organizationId, selfAuthID).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

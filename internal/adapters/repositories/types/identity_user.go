@@ -27,9 +27,9 @@ type IdentityUserRepository interface {
 		username string,
 	) (*entities.IdentityUser, error)
 
-	FindByLifeAIID(
+	FindBySelfAuthenticateID(
 		ctx context.Context,
-		lifeAIID string,
+		selfAuthID string,
 	) (*entities.IdentityUser, error)
 
 	FindByGoogleID(

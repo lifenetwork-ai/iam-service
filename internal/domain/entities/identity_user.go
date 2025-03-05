@@ -24,10 +24,10 @@ type IdentityUser struct {
 	LastLoginAt    time.Time `json:"last_login_at"`
 
 	// External ID
-	LifeAIID   string `json:"lifeai_id" gorm:"column:lifeai_id"`
-	GoogleID   string `json:"google_id"`
-	FacebookID string `json:"facebook_id"`
-	AppleID    string `json:"apple_id"`
+	SelfAuthenticateID string `json:"self_authenticate_id" gorm:"column:self_authenticate_id"`
+	GoogleID           string `json:"google_id"`
+	FacebookID         string `json:"facebook_id"`
+	AppleID            string `json:"apple_id"`
 
 	// Audit fields
 	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`

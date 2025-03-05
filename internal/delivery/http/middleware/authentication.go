@@ -1,8 +1,12 @@
 package middleware
 
 import (
+	"bytes"
+	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -97,44 +101,96 @@ func saveToCache(
 		Raw: fmt.Sprintf("middleware_%x", sha256.Sum256([]byte(token))),
 	}
 
-	if err := cacheRepo.SaveItem(cacheKey, *requester, 30*time.Minute); err != nil {
+	if err := cacheRepo.SaveItem(cacheKey, *requester, 10*time.Minute); err != nil {
 		logger.GetLogger().Errorf("Failed to cache user: %v", err)
 	}
 }
 
-func lifeAIAuthentication(
+func getOrganizationProfile(
+	ctx context.Context,
+	organization *entities.IdentityOrganization,
+	authHeader string,
+) (map[string]interface{}, error) {
+	if (organization == nil) || (organization.AuthenticateUrl == "") {
+		return nil, fmt.Errorf("invalid organization or authenticate URL")
+	}
+
+	// Create the request
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, organization.AuthenticateUrl, bytes.NewBuffer([]byte{}))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add Authorization header
+	req.Header.Set("Authorization", authHeader)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Version-Management", "1.0.20|web")
+
+	// Make the request
+	httpClient := &http.Client{}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Handle non-200 responses
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected status code: %d, error: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	// Parse the response body
+	var response map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	return response, nil
+}
+
+func selfAuthentication(
 	ctx *gin.Context,
+	organization *entities.IdentityOrganization,
 	authHeader string,
 ) *entities.IdentityUser {
-	// Check if request is using LifeAI token
+	// Check if request is using self organization token
 	// Dependency injection
 	dbConnection := providers.ProvideDBConnection()
 	cacheRepo := providers.ProvideCacheRepository(ctx)
-	lifeAIService := providers.ProvideLifeAIService()
 
-	// Try to get user from database if not found in cache
-	profile, err := lifeAIService.GetProfile(ctx, authHeader)
+	profile, err := getOrganizationProfile(ctx, organization, authHeader)
 	if err != nil {
-		logger.GetLogger().Errorf("Failed to get profile from LifeAI: %v", err)
+		logger.GetLogger().Errorf("Failed to get profile from organization: %v", err)
 		return nil
 	}
 
-	if profile == nil || profile.ID == "" || (profile.Email == "" && profile.Phone == "") {
+	if profile == nil {
+		logger.GetLogger().Errorf("Invalid profile from organization: %v", profile)
+		return nil
+	}
+
+	selfID := fmt.Sprintf("%v", profile["id"])
+	Email := fmt.Sprintf("%v", profile["email"])
+	Phone := fmt.Sprintf("%v", profile["phone"])
+
+	if selfID == "" || (Email == "" && Phone == "") {
 		logger.GetLogger().Errorf("Invalid profile from LifeAI: %v", profile)
 		return nil
 	}
 
 	// Check profile is exist or not -> if not exist, create new user
 	userRepo := repositories.NewIdentityUserRepository(dbConnection, cacheRepo)
-	userByID, err := userRepo.FindByLifeAIID(ctx, profile.ID)
+	userByID, err := userRepo.FindBySelfAuthenticateID(ctx, selfID)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get user with LifeAI profile by ID: %v", err)
 		return nil
 	}
 
 	requester := userByID
-	if requester == nil && profile.Phone != "" {
-		userByPhone, err := userRepo.FindByPhone(ctx, profile.Phone)
+	if requester == nil && Phone != "" {
+		userByPhone, err := userRepo.FindByPhone(ctx, Phone)
 		if err != nil {
 			logger.GetLogger().Errorf("Failed to get user with LifeAI profile by phone: %v", err)
 			return nil
@@ -142,8 +198,8 @@ func lifeAIAuthentication(
 		requester = userByPhone
 	}
 
-	if requester == nil && profile.Email != "" {
-		userByEmail, err := userRepo.FindByEmail(ctx, profile.Email)
+	if requester == nil && Email != "" {
+		userByEmail, err := userRepo.FindByEmail(ctx, Email)
 		if err != nil {
 			logger.GetLogger().Errorf("Failed to get user with LifeAI profile by email: %v", err)
 			return nil
@@ -154,17 +210,17 @@ func lifeAIAuthentication(
 	if requester == nil {
 		// Create new user
 		username := func() string {
-			if profile.Phone != "" {
-				return profile.Phone
+			if Phone != "" {
+				return Phone
 			}
-			return profile.Email
+			return Email
 		}()
 
 		newIdentityUser := &entities.IdentityUser{
-			UserName: username,
-			Email:    profile.Email,
-			Phone:    profile.Phone,
-			LifeAIID: profile.ID,
+			UserName:           username,
+			Email:              Email,
+			Phone:              Phone,
+			SelfAuthenticateID: selfID,
 		}
 
 		if err := userRepo.Create(ctx, newIdentityUser); err != nil {
@@ -177,7 +233,7 @@ func lifeAIAuthentication(
 	return requester
 }
 
-func selfAuthentication(
+func jwtAuthentication(
 	ctx *gin.Context,
 	token string,
 ) *entities.IdentityUser {
@@ -247,8 +303,7 @@ func RequestAuthenticationMiddleware() gin.HandlerFunc {
 		// Query Redis to find profile with key is tokenMd5
 		requester := cacheAuthentication(ctx, token)
 		if requester == nil {
-			requester = selfAuthentication(ctx, token)
-
+			requester = jwtAuthentication(ctx, token)
 			saveToCache(ctx, requester, token)
 		}
 
@@ -277,7 +332,7 @@ func RequestAuthenticationMiddleware() gin.HandlerFunc {
 func RequestHybridAuthenticationMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Get the token from the header
-		isOK, _, token := validateAuthorizationHeader(ctx)
+		isOK, authHeader, token := validateAuthorizationHeader(ctx)
 		if !isOK {
 			return
 		}
@@ -285,11 +340,13 @@ func RequestHybridAuthenticationMiddleware() gin.HandlerFunc {
 		// Query Redis to find profile with key is tokenMd5
 		requester := cacheAuthentication(ctx, token)
 		if requester == nil {
-			requester = selfAuthentication(ctx, token)
+			requester = jwtAuthentication(ctx, token)
 			if requester == nil {
-				requester = lifeAIAuthentication(ctx, token)
+				organization := ctx.Value("organization").(*entities.IdentityOrganization)
+				if organization != nil && organization.SelfAuthenticate {
+					requester = selfAuthentication(ctx, organization, authHeader)
+				}
 			}
-
 			saveToCache(ctx, requester, token)
 		}
 

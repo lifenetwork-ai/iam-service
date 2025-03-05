@@ -6,6 +6,5 @@ type LifeAIProfile struct {
 	Email   string `json:"email"`
 	Phone   string `json:"phone"`
 	Address string `json:"address"`
-	Avatar  string `json:"avatar"`
 	DoB     string `json:"dob"`
 }

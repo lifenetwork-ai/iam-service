@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS identity_organizations (
     description TEXT,
     parent_id UUID REFERENCES identity_organizations(id),
     parent_path TEXT,
+    self_authenticate BOOLEAN DEFAULT FALSE,
+    authenticate_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE
