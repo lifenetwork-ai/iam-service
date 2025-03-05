@@ -26,7 +26,7 @@ func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *re
 		IdentityOrganizationRepo: repositories.NewIdentityOrganizationRepository(db, cacheRepo),
 		IdentityUserRepo:         repositories.NewIdentityUserRepository(db, cacheRepo),
 
-		AccessSessionRepo: repositories.NewAccessSessionRepository(db),
+		AccessSessionRepo: repositories.NewAccessSessionRepository(db, cacheRepo),
 	}
 }
 

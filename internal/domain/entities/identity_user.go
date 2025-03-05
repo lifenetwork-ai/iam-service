@@ -42,13 +42,13 @@ func (m *IdentityUser) TableName() string {
 
 func (m *IdentityUser) ToDTO() dto.IdentityUserDTO {
 	return dto.IdentityUserDTO{
-		ID:          m.ID,
-		Name:        m.Name,
-		UserName:    m.UserName,
-		Email:       m.Email,
-		Phone:       m.Phone,
-		Status:      m.Status,
-		CreatedAt:   m.CreatedAt.Unix(),
-		UpdatedAt:   m.UpdatedAt.Unix(),
+		ID:        m.ID,
+		Name:      m.Name,
+		UserName:  m.UserName,
+		Email:     m.Email,
+		Phone:     m.Phone,
+		Status:    m.Status,
+		CreatedAt: m.CreatedAt.Unix(),
+		UpdatedAt: m.UpdatedAt.Unix(),
 	}
 }

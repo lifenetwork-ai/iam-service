@@ -94,5 +94,14 @@ func (c *JWTServiceSetting) ValidateToken(
 	ctx context.Context,
 	token string,
 ) (*JWTClaims, error) {
-	return nil, nil
+	claims := &JWTClaims{}
+	parsedToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(c.Secret), nil
+	})
+
+	if err != nil || !parsedToken.Valid {
+		return nil, err
+	}
+
+	return claims, nil
 }

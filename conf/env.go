@@ -55,8 +55,8 @@ type SmsConfiguration struct {
 
 type JwtConfiguration struct {
 	Secret          string `mapstructure:"JWT_SECRET"`
-	AccessLifetime  int64  `mapstructure:"JWT_ACCESS_TOKEN_LIFETIME"`	//second
-	RefreshLifetime int64  `mapstructure:"JWT_REFRESH_TOKEN_LIFETIME"`	//second
+	AccessLifetime  int64  `mapstructure:"JWT_ACCESS_TOKEN_LIFETIME"`  // second
+	RefreshLifetime int64  `mapstructure:"JWT_REFRESH_TOKEN_LIFETIME"` // second
 }
 
 type Configuration struct {

@@ -296,24 +296,24 @@ func (u *userUseCase) ChallengeVerify(
 	}
 
 	// Save JWT token to database
-	// session := &entities.AccessSession{
-	// 	OrganizationId:   jwtClaims.OrganizationId,
-	// 	UserId:           jwtClaims.UserId,
-	// 	AccessToken:      jwtToken.AccessToken,
-	// 	RefreshToken:     jwtToken.RefreshToken,
-	// 	AccessExpiredAt:  time.Unix(jwtToken.AccessTokenExpiry, 0),
-	// 	RefreshExpiredAt: time.Unix(jwtToken.RefreshTokenExpiry, 0),
-	// 	LastRevokedAt:    jwtToken.ClaimAt,
-	// }
-	// _, err = u.sessionRepo.Create(ctx, session)
-	// if err != nil {
-	// 	return nil, &dto.ErrorDTOResponse{
-	// 		Status:  http.StatusInternalServerError,
-	// 		Code:    "MSG_SAVE_SESSION_FAILED",
-	// 		Message: "Save session failed",
-	// 		Details: []interface{}{err.Error()},
-	// 	}
-	// }
+	session := &entities.AccessSession{
+		OrganizationId:   jwtClaims.OrganizationId,
+		UserId:           jwtClaims.UserId,
+		AccessToken:      jwtToken.AccessToken,
+		RefreshToken:     jwtToken.RefreshToken,
+		AccessExpiredAt:  time.Unix(jwtToken.AccessTokenExpiry, 0),
+		RefreshExpiredAt: time.Unix(jwtToken.RefreshTokenExpiry, 0),
+		LastRevokedAt:    jwtToken.ClaimAt,
+	}
+	_, err = u.sessionRepo.Create(ctx, session)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_SAVE_SESSION_FAILED",
+			Message: "Save session failed",
+			Details: []interface{}{err.Error()},
+		}
+	}
 
 	// Return JWT token
 	return &dto.IdentityUserAuthDTO{
@@ -367,9 +367,98 @@ func (u *userUseCase) LogOut(
 
 func (u *userUseCase) RefreshToken(
 	ctx context.Context,
+	accessToken string,
 	refreshToken string,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
-	return nil, nil
+	session, err := u.sessionRepo.FindByAccessToken(ctx, accessToken)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_INVALID_ACCESS_TOKEN",
+			Message: "Invalid access token",
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	if session == nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusNotFound,
+			Code:    "MSG_SESSION_NOT_FOUND",
+			Message: "Session not found",
+			Details: []interface{}{map[string]string{
+				"field": "session", "error": "Session not found",
+			}},
+		}
+	}
+
+	refreshTokenHash := utils.HashToken(refreshToken)
+	if session.RefreshToken != refreshTokenHash {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_REFRESH_TOKEN_MISSMATCH",
+			Message: "Refresh token missmatch",
+			Details: []interface{}{map[string]string{
+				"field": "refresh_token", "error": "Refresh token missmatch",
+			}},
+		}
+	}
+
+	// Generate new JWT token
+	jwtClaims, err := u.jwtService.ValidateToken(ctx, accessToken)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_INVALID_ACCESS_TOKEN",
+			Message: "Invalid access token",
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	jwtToken, err := u.jwtService.GenerateToken(ctx, *jwtClaims)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_GENERATE_TOKEN_FAILED",
+			Message: "Generate token failed",
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	// Save JWT token to database
+	session.AccessToken = jwtToken.AccessToken
+	session.RefreshToken = jwtToken.RefreshToken
+	session.AccessExpiredAt = time.Unix(jwtToken.AccessTokenExpiry, 0)
+	session.RefreshExpiredAt = time.Unix(jwtToken.RefreshTokenExpiry, 0)
+	session.LastRevokedAt = jwtToken.ClaimAt
+	_, err = u.sessionRepo.Update(ctx, session)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_SAVE_SESSION_FAILED",
+			Message: "Save session failed",
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	requester, err := u.userRepo.FindByID(ctx, jwtClaims.UserId)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "INTERNAL_SERVER_ERROR",
+			Message: "Internal server error",
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	// Return JWT token
+	return &dto.IdentityUserAuthDTO{
+		AccessToken:      jwtToken.AccessToken,
+		RefreshToken:     jwtToken.RefreshToken,
+		AccessExpiresAt:  jwtToken.AccessTokenExpiry,
+		RefreshExpiresAt: jwtToken.RefreshTokenExpiry,
+		LastLoginAt:      jwtToken.ClaimAt.Unix(),
+		User:             requester.ToDTO(),
+	}, nil
 }
 
 func (u *userUseCase) Profile(

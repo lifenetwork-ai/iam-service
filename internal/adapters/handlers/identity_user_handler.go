@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -284,13 +285,75 @@ func (h *userHandler) LoginWithApple(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/refresh-token [post]
 func (h *userHandler) RefreshToken(ctx *gin.Context) {
-	httpresponse.Error(
-		ctx,
-		http.StatusNotImplemented,
-		"MSG_NOT_IMPLEMENTED",
-		"Not implemented",
-		nil,
-	)
+	// Get the Bearer token from the Authorization header
+	authHeader := ctx.GetHeader("Authorization")
+	if authHeader == "" {
+		httpresponse.Error(
+			ctx,
+			http.StatusUnauthorized,
+			"UNAUTHORIZED",
+			"Authorization header is required",
+			[]map[string]string{{
+				"field": "Authorization",
+				"error": "Authorization header is required",
+			}},
+		)
+		return
+	}
+
+	// Check if the token is a Bearer token
+	tokenParts := strings.Split(authHeader, " ")
+	tokenPrefix := tokenParts[0]
+	if len(tokenParts) != 2 || (tokenPrefix != "Bearer" && tokenPrefix != "Token") {
+		httpresponse.Error(
+			ctx,
+			http.StatusUnauthorized,
+			"UNAUTHORIZED",
+			"Authorization header is required",
+			[]map[string]string{{
+				"field": "Authorization",
+				"error": "Invalid authorization header format",
+			}},
+		)
+		return
+	}
+
+	payload := dto.IdentityRefreshTokenDTO{}
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_PAYLOAD",
+			"Invalid payload",
+			err,
+		)
+		return
+	}
+
+	if payload.RefreshToken == "" {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_REFRESH_TOKEN_IS_REQUIRED",
+			"Refresh token is required",
+			nil,
+		)
+		return
+	}
+
+	auth, err := h.ucase.RefreshToken(ctx, tokenParts[1], payload.RefreshToken)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusInternalServerError,
+			"MSG_FAILED_TO_REFRESH_TOKEN",
+			"Failed to refresh token",
+			err,
+		)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, auth)
 }
 
 // Me to get user profile.

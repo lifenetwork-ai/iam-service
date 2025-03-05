@@ -60,18 +60,45 @@ func RegisterRoutes(
 	// SECTION: organizations
 	userRouter := v1.Group("users")
 	userHandler := handlers.NewIdentityUserHandler(userUCase)
-	userRouter.POST("/challenge-with-phone", userHandler.ChallengeWithPhone)
-	userRouter.POST("/challenge-with-email", userHandler.ChallengeWithEmail)
-	userRouter.POST("/challenge-verify", userHandler.ChallengeVerify)
-	userRouter.POST("/login-with-google", userHandler.LoginWithGoogle)
-	userRouter.POST("/login-with-facebook", userHandler.LoginWithFacebook)
-	userRouter.POST("/login-with-apple", userHandler.LoginWithApple)
+	userRouter.POST(
+		"/challenge-with-phone",
+		userHandler.ChallengeWithPhone,
+	)
+
+	userRouter.POST(
+		"/challenge-with-email",
+		userHandler.ChallengeWithEmail,
+	)
+
+	userRouter.POST(
+		"/challenge-verify",
+		userHandler.ChallengeVerify,
+	)
+
+	userRouter.POST(
+		"/login-with-google",
+		userHandler.LoginWithGoogle,
+	)
+
+	userRouter.POST(
+		"/login-with-facebook",
+		userHandler.LoginWithFacebook,
+	)
+
+	userRouter.POST(
+		"/login-with-apple",
+		userHandler.LoginWithApple,
+	)
+
 	// userRouter.POST("/register", userHandler.Register)
 
-	userRouter.POST("/login", userHandler.Login)
+	userRouter.POST(
+		"/login",
+		userHandler.Login,
+	)
+
 	userRouter.POST(
 		"/refresh-token",
-		middleware.RequestAuthenticationMiddleware(),
 		userHandler.RefreshToken,
 	)
 	userRouter.POST(

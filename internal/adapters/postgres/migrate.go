@@ -64,6 +64,7 @@ func RunMigrations(db *gorm.DB, basePath string) error {
 	scriptFiles := []string{
 		"01_identity_user.sql",
 		"01_identity_organization.sql",
+		"01_access_session.sql",
 	}
 
 	// Iterate over scripts and execute each

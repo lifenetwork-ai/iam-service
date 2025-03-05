@@ -2,17 +2,17 @@ package dto
 
 // IdentityUserDTO represents an User.
 type IdentityUserDTO struct {
-	ID          string `json:"id"`
-	UserName    string `json:"user_name"`
-	Email       string `json:"email"`
-	Phone       string `json:"phone"`
-	Status      bool   `json:"status"`
-	Name        string `json:"name"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	FullName    string `json:"full_name"`
-	CreatedAt   int64  `json:"created_at"`
-	UpdatedAt   int64  `json:"updated_at"`
+	ID        string `json:"id"`
+	UserName  string `json:"user_name"`
+	Email     string `json:"email"`
+	Phone     string `json:"phone"`
+	Status    bool   `json:"status"`
+	Name      string `json:"name"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	FullName  string `json:"full_name"`
+	CreatedAt int64  `json:"created_at"`
+	UpdatedAt int64  `json:"updated_at"`
 }
 
 // IdentityUserChallengeDTO represents a challenge for identity verification.

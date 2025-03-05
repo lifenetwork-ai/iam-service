@@ -52,6 +52,7 @@ type IdentityUserUseCase interface {
 
 	RefreshToken(
 		ctx context.Context,
+		accessToken string,
 		refreshToken string,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
 
