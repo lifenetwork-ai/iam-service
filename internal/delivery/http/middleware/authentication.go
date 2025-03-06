@@ -173,9 +173,39 @@ func selfAuthentication(
 		return nil
 	}
 
-	selfID := fmt.Sprintf("%v", profile["id"])
-	Email := fmt.Sprintf("%v", profile["email"])
-	Phone := fmt.Sprintf("%v", profile["phone"])
+	profileId, ok := profile["id"]
+	if !ok {
+		logger.GetLogger().Errorf("Profile ID not found in organization response: %v", profile)
+		return nil
+	}
+
+	email, ok := profile["email"]
+	if !ok {
+		logger.GetLogger().Debugf("Email not found in organization response: %v", profile)
+		email = ""
+	}
+
+	phone, ok := profile["phone"]
+	if !ok {
+		logger.GetLogger().Debugf("Phone not found in organization response: %v", profile)
+		phone = ""
+	}
+
+	selfID := strings.TrimSpace(fmt.Sprintf("%v", profileId))
+	Email := strings.TrimSpace(fmt.Sprintf("%v", email))
+	Phone := strings.TrimSpace(fmt.Sprintf("%v", phone))
+
+	// Try to fix invalid email or phone
+	EmailUpper := strings.ToUpper(Email)
+	if EmailUpper == "NIL" || EmailUpper == "<NIL>" || EmailUpper == "NULL" || EmailUpper == "<NULL>" {
+		Email = ""
+	}
+
+	// Try to fix invalid email or phone
+	PhoneUpper := strings.ToUpper(Phone)
+	if PhoneUpper == "NIL" || PhoneUpper == "<NIL>" || PhoneUpper == "NULL" || PhoneUpper == "<NULL>" {
+		Phone = ""
+	}
 
 	if selfID == "" || (Email == "" && Phone == "") {
 		logger.GetLogger().Errorf("Invalid profile from LifeAI: %v", profile)
