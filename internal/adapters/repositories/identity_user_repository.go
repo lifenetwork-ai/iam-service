@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"time"
@@ -231,11 +232,20 @@ func (r *identityRepository) Create(
 	entity *entities.IdentityUser,
 ) error {
 	organizationId := ctx.Value("organizationId").(string)
-	if organizationId == "" {
+	organization := ctx.Value("organization").(*entities.IdentityOrganization)
+	if organizationId == "" || organization.Code == "" {
 		return fmt.Errorf("missing organization ID")
 	}
-
 	entity.OrganizationId = organizationId
+
+	if entity.UserName == "" {
+		return fmt.Errorf("missing username")
+	}
+
+	// Create wallet seed for user
+	walletSeed := fmt.Sprintf("%s_%s", organization.Code, entity.UserName)
+	entity.Seed = fmt.Sprintf("%x", sha256.Sum256([]byte(walletSeed)))
+
 	err := r.db.Create(entity).Error
 
 	if err == nil {

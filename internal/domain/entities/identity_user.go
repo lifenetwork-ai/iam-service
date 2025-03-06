@@ -11,6 +11,7 @@ import (
 // Represent a IdentityUser in the IAM system.
 type IdentityUser struct {
 	ID             string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	Seed           string    `json:"seed"`
 	OrganizationId string    `json:"organization_id" gorm:"type:uuid;not null"`
 	UserName       string    `json:"user_name" gorm:"not null"`
 	Email          string    `json:"email" gorm:"not null"`
@@ -43,6 +44,7 @@ func (m *IdentityUser) TableName() string {
 func (m *IdentityUser) ToDTO() dto.IdentityUserDTO {
 	return dto.IdentityUserDTO{
 		ID:        m.ID,
+		Seed:      m.Seed,
 		Name:      m.Name,
 		UserName:  m.UserName,
 		Email:     m.Email,

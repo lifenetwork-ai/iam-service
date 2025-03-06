@@ -3,6 +3,7 @@ package dto
 // IdentityUserDTO represents an User.
 type IdentityUserDTO struct {
 	ID        string `json:"id"`
+	Seed      string `json:"seed"`
 	UserName  string `json:"user_name"`
 	Email     string `json:"email"`
 	Phone     string `json:"phone"`

@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -95,7 +96,11 @@ func (u *userUseCase) ChallengeWithEmail(
 
 	if user == nil {
 		// Create user with email
-		user = &entities.IdentityUser{Email: email}
+		user = &entities.IdentityUser{
+			UserName: strings.TrimSpace(email),
+			Email:    strings.TrimSpace(email),
+		}
+
 		err = u.userRepo.Create(ctx, user)
 		if err != nil {
 			return nil, &dto.ErrorDTOResponse{
