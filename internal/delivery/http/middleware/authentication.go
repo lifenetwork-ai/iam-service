@@ -207,7 +207,7 @@ func selfAuthentication(
 		Phone = ""
 	}
 
-	if selfID == "" || (Email == "" && Phone == "") {
+	if selfID == "" {
 		logger.GetLogger().Errorf("Invalid profile from LifeAI: %v", profile)
 		return nil
 	}
@@ -245,7 +245,12 @@ func selfAuthentication(
 			if Phone != "" {
 				return Phone
 			}
-			return Email
+
+			if Email != "" {
+				return Email
+			}
+
+			return selfID
 		}()
 
 		newIdentityUser := &entities.IdentityUser{
