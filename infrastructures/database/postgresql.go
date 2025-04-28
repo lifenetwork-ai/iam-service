@@ -2,14 +2,15 @@ package database
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	"github.com/genefriendway/human-network-iam/conf"
 	"github.com/genefriendway/human-network-iam/infrastructures/interfaces"
+	"github.com/genefriendway/human-network-iam/packages/logger"
 )
 
 // postgreSQL implements SQLDBConnection interface
@@ -42,19 +43,13 @@ func (pgsql *postgreSQL) getDBConnectionURL() string {
 }
 
 func (pgsql *postgreSQL) Connect() *gorm.DB {
-	return pgsql.ConnectWithLogger(logger.Silent)
-}
-
-func (pgsql *postgreSQL) ConnectWithLogger(logLevel logger.LogLevel) *gorm.DB {
 	// Get the PostgreSQL connection URL
 	dbUrl := pgsql.getDBConnectionURL()
 	var db *gorm.DB
 	var err error
 
 	// Open the database connection with a custom log level
-	db, err = gorm.Open(postgres.Open(dbUrl), &gorm.Config{
-		Logger: logger.Default.LogMode(logLevel),
-	})
+	db, err = gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -66,9 +61,25 @@ func (pgsql *postgreSQL) ConnectWithLogger(logLevel logger.LogLevel) *gorm.DB {
 	}
 
 	// Configure the connection pool
-	sqlDB.SetMaxIdleConns(10)           // Maximum number of idle connections
-	sqlDB.SetMaxOpenConns(100)          // Maximum number of open connections
-	sqlDB.SetConnMaxLifetime(time.Hour) // Maximum amount of time a connection may be reused
+	config := pgsql.config
+	dbMaxOpenConnsInt, err := strconv.Atoi(config.DbMaxOpenConns)
+	if err != nil {
+		logger.GetLogger().Fatalf("Failed to convert db max open connections to int: %v", err)
+	}
+
+	dbMaxIdleConnsInt, err := strconv.Atoi(config.DbMaxIdleConns)
+	if err != nil {
+		logger.GetLogger().Fatalf("failed to convert db max idle connection time to int: %v", err)
+	}
+
+	dbConnMaxLifetimeInMinuteInt, err := strconv.Atoi(config.DbConnMaxLifetimeInMinute)
+	if err != nil {
+		logger.GetLogger().Fatalf("failed to convert db max connection lifetime to int: %v", err)
+	}
+
+	sqlDB.SetMaxIdleConns(dbMaxIdleConnsInt)                                            // Maximum number of idle connections
+	sqlDB.SetMaxOpenConns(dbMaxOpenConnsInt)                                            // Maximum number of open connections
+	sqlDB.SetConnMaxLifetime(time.Duration(dbConnMaxLifetimeInMinuteInt) * time.Minute) // Maximum amount of time a connection may be reused
 
 	return db
 }

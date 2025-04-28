@@ -6,9 +6,43 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"github.com/genefriendway/human-network-iam/packages/logger/types"
 )
+
+// Level defines the severity level for logging.
+type Level string
+
+const (
+	DebugLevel Level = "debug"
+	InfoLevel  Level = "info"
+	WarnLevel  Level = "warn"
+	ErrorLevel Level = "error"
+	FatalLevel Level = "fatal"
+	PanicLevel Level = "panic"
+)
+
+// Logger interface defines common logging operations.
+type Logger interface {
+	// Level management
+	SetLogLevel(level Level)
+	GetLogLevel() Level
+
+	// Basic logging methods
+	Debug(message string)
+	Debugf(format string, values ...any)
+	Info(message string)
+	Infof(format string, values ...any)
+	Warn(message string)
+	Warnf(format string, values ...any)
+	Error(message string)
+	Errorf(format string, values ...any)
+	Fatal(message string)
+	Fatalf(format string, values ...any)
+	Panic(message string)
+	Panicf(format string, values ...any)
+
+	// Contextual logging
+	WithFields(fields map[string]any) Logger
+}
 
 type zapLogger struct {
 	sugaredLogger *zap.SugaredLogger
@@ -21,19 +55,19 @@ var (
 )
 
 // mapLogLevel maps interfaces.Level to zapcore.Level.
-func mapLogLevel(level types.Level) zapcore.Level {
+func mapLogLevel(level Level) zapcore.Level {
 	switch level {
-	case types.DebugLevel:
+	case DebugLevel:
 		return zapcore.DebugLevel
-	case types.InfoLevel:
+	case InfoLevel:
 		return zapcore.InfoLevel
-	case types.WarnLevel:
+	case WarnLevel:
 		return zapcore.WarnLevel
-	case types.ErrorLevel:
+	case ErrorLevel:
 		return zapcore.ErrorLevel
-	case types.FatalLevel:
+	case FatalLevel:
 		return zapcore.FatalLevel
-	case types.PanicLevel:
+	case PanicLevel:
 		return zapcore.PanicLevel
 	default:
 		return zapcore.InfoLevel
@@ -54,7 +88,7 @@ func customLevelEncoder(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) 
 }
 
 // newZapLogger initializes a new zap-based logger instance.
-func newZapLogger(level types.Level) *zapLogger {
+func newZapLogger(level Level) *zapLogger {
 	atomicLevel := zap.NewAtomicLevelAt(mapLogLevel(level))
 
 	encoderConfig := zapcore.EncoderConfig{
@@ -82,32 +116,32 @@ func newZapLogger(level types.Level) *zapLogger {
 }
 
 // GetLogger returns the singleton logger instance.
-func GetLogger() types.Logger {
+func GetLogger() Logger {
 	once.Do(func() {
-		instance = newZapLogger(types.InfoLevel)
+		instance = newZapLogger(InfoLevel)
 	})
 	return instance
 }
 
 // SetLogger replaces the singleton logger instance.
-func SetLogger(customLogger types.Logger) {
+func SetLogger(customLogger Logger) {
 	instance = customLogger.(*zapLogger)
 }
 
 // SetLogLevel sets the log level dynamically.
-func SetLogLevel(level types.Level) {
+func SetLogLevel(level Level) {
 	if instance != nil {
 		instance.currentLevel.SetLevel(mapLogLevel(level))
 	}
 }
 
 // Logger Interface Implementation
-func (z *zapLogger) SetLogLevel(level types.Level) {
+func (z *zapLogger) SetLogLevel(level Level) {
 	SetLogLevel(level)
 }
 
-func (z *zapLogger) GetLogLevel() types.Level {
-	return types.Level(z.currentLevel.String())
+func (z *zapLogger) GetLogLevel() Level {
+	return Level(z.currentLevel.String())
 }
 
 // Individual Log Methods
@@ -138,7 +172,7 @@ func (z *zapLogger) Panicf(format string, values ...interface{}) {
 }
 
 // WithFields creates a new logger instance with additional fields.
-func (z *zapLogger) WithFields(fields map[string]interface{}) types.Logger {
+func (z *zapLogger) WithFields(fields map[string]interface{}) Logger {
 	return &zapLogger{
 		sugaredLogger: z.sugaredLogger.With(fields),
 		currentLevel:  z.currentLevel,

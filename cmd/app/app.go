@@ -15,8 +15,7 @@ import (
 	"github.com/genefriendway/human-network-iam/conf"
 	middleware "github.com/genefriendway/human-network-iam/internal/delivery/http/middleware"
 	routev1 "github.com/genefriendway/human-network-iam/internal/delivery/http/route"
-	pkglogger "github.com/genefriendway/human-network-iam/packages/logger"
-	pkglogtypes "github.com/genefriendway/human-network-iam/packages/logger/types"
+	"github.com/genefriendway/human-network-iam/packages/logger"
 	"github.com/genefriendway/human-network-iam/wire"
 	"github.com/genefriendway/human-network-iam/wire/providers"
 )
@@ -65,31 +64,31 @@ func initializeLoggerAndMode(config *conf.Configuration) {
 	}
 
 	// Determine the log level from the configuration
-	var logLevel pkglogtypes.Level
+	var logLevel logger.Level
 	switch strings.ToLower(config.LogLevel) {
 	case "debug":
-		logLevel = pkglogtypes.DebugLevel
+		logLevel = logger.DebugLevel
 		gin.SetMode(gin.DebugMode) // Development mode
 	case "info":
-		logLevel = pkglogtypes.InfoLevel
+		logLevel = logger.InfoLevel
 		gin.SetMode(gin.ReleaseMode) // Production mode
 	default:
 		// Default to info level if unspecified or invalid
-		logLevel = pkglogtypes.InfoLevel
+		logLevel = logger.InfoLevel
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	// Set the log level in the logger package
-	pkglogger.SetLogLevel(logLevel)
+	logger.SetLogLevel(logLevel)
 
 	// Retrieve the initialized logger
-	appLogger := pkglogger.GetLogger()
+	appLogger := logger.GetLogger()
 
 	// Log application startup details
 	appLogger.Infof("Application '%s' started with log level '%s' in '%s' mode", config.AppName, logLevel, config.Env)
 
 	// Log additional details for debugging
-	if logLevel == pkglogtypes.DebugLevel {
+	if logLevel == logger.DebugLevel {
 		appLogger.Debug("Debugging mode enabled. Verbose logging is active.")
 	}
 }
@@ -120,10 +119,10 @@ func startServer(
 
 	go func() {
 		if err := r.Run(fmt.Sprintf("0.0.0.0:%v", config.AppPort)); err != nil {
-			pkglogger.GetLogger().Fatalf("Failed to run gin router: %v", err)
+			logger.GetLogger().Fatalf("Failed to run gin router: %v", err)
 		}
 
-		pkglogger.GetLogger().Infof("Server started on port %v", config.AppPort)
+		logger.GetLogger().Infof("Server started on port %v", config.AppPort)
 	}()
 }
 
@@ -131,6 +130,6 @@ func waitForShutdownSignal(cancel context.CancelFunc) {
 	sigC := make(chan os.Signal, 1)
 	signal.Notify(sigC, syscall.SIGTERM, syscall.SIGINT)
 	<-sigC
-	pkglogger.GetLogger().Debug("Shutting down gracefully...")
+	logger.GetLogger().Debug("Shutting down gracefully...")
 	cancel()
 }

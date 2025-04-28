@@ -11,7 +11,7 @@ import (
 
 	"github.com/genefriendway/human-network-iam/conf"
 	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
-	pkglogger "github.com/genefriendway/human-network-iam/packages/logger"
+	"github.com/genefriendway/human-network-iam/packages/logger"
 )
 
 // redisCacheClient implements CacheClient interface
@@ -25,7 +25,7 @@ func NewRedisCacheClient() infrainterfaces.CacheClient {
 	config := conf.GetRedisConfiguration()
 	ttl, err := time.ParseDuration(config.RedisTtl)
 	if err != nil {
-		pkglogger.GetLogger().Warnf("Invalid REDIS_TTL format (%s), using default 10m", config.RedisTtl)
+		logger.GetLogger().Warnf("Invalid REDIS_TTL format (%s), using default 10m", config.RedisTtl)
 		ttl = 10 * time.Minute
 	}
 
@@ -47,13 +47,13 @@ func (r *redisCacheClient) Set(ctx context.Context, key string, value interface{
 
 	data, err := json.Marshal(value)
 	if err != nil {
-		pkglogger.GetLogger().Errorf("Failed to marshal cache value for key: %s", key)
+		logger.GetLogger().Errorf("Failed to marshal cache value for key: %s", key)
 		return err
 	}
 
 	err = r.client.Set(ctx, key, data, expiration).Err()
 	if err != nil {
-		pkglogger.GetLogger().Errorf("Failed to set cache in Redis for key: %s", key)
+		logger.GetLogger().Errorf("Failed to set cache in Redis for key: %s", key)
 	}
 	return err
 }
@@ -70,13 +70,13 @@ func (r *redisCacheClient) Get(ctx context.Context, key string, dest interface{}
 		if err == redis.Nil {
 			return fmt.Errorf("cache miss for key: %s", key)
 		}
-		pkglogger.GetLogger().Errorf("Failed to get cache from Redis for key: %s", key)
+		logger.GetLogger().Errorf("Failed to get cache from Redis for key: %s", key)
 		return err
 	}
 
 	err = json.Unmarshal([]byte(data), dest)
 	if err != nil {
-		pkglogger.GetLogger().Errorf("Failed to unmarshal cache value for key: %s", key)
+		logger.GetLogger().Errorf("Failed to unmarshal cache value for key: %s", key)
 	}
 	return err
 }
@@ -85,7 +85,7 @@ func (r *redisCacheClient) Get(ctx context.Context, key string, dest interface{}
 func (r *redisCacheClient) Del(ctx context.Context, key string) error {
 	err := r.client.Del(ctx, key).Err()
 	if err != nil {
-		pkglogger.GetLogger().Errorf("Failed to delete cache from Redis for key: %s", key)
+		logger.GetLogger().Errorf("Failed to delete cache from Redis for key: %s", key)
 	}
 	return err
 }
