@@ -95,6 +95,7 @@ func initializeLoggerAndMode(config *conf.Configuration) {
 
 func initializeRouter() *gin.Engine {
 	r := gin.New()
+	r.Use(middleware.RequestTracingMiddleware())
 	r.Use(middleware.DefaultPagination())
 	r.Use(middleware.RequestLoggerMiddleware())
 	r.Use(middleware.RequestDataGuardMiddleware())
