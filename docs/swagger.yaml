@@ -1,1310 +1,2012 @@
 definitions:
-  constants.IdentifierType:
-    enum:
-    - email
-    - username
-    - phone
-    type: string
-    x-enum-varnames:
-    - IdentifierEmail
-    - IdentifierUsername
-    - IdentifierPhone
-  domain.Account:
-    properties:
-      api_key:
-        description: Nullable, used for API-based roles
-        type: string
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        description: UUID primary key
-        type: string
-      oauth_id:
-        description: Nullable, stores ID from OAuth provider
-        type: string
-      oauth_provider:
-        description: Nullable, stores OAuth provider name (e.g., Google, Facebook)
-        type: string
-      password_hash:
-        description: Nullable for OAuth or API Key accounts
-        type: string
-      role:
-        type: string
-      updated_at:
-        type: string
-      username:
-        type: string
-    type: object
-  domain.DataAccessRequest:
-    properties:
-      created_at:
-        description: Automatically set creation timestamp
-        type: string
-      file_id:
-        description: ID of the file being accessed
-        type: string
-      file_info:
-        allOf:
-        - $ref: '#/definitions/domain.FileInfo'
-        description: Details of the file being accessed
-      id:
-        type: string
-      reason_for_rejection:
-        description: Reason for rejection (optional)
-        type: string
-      reason_for_request:
-        description: Reason for the request
-        type: string
-      request_account_id:
-        description: Account whose data is being requested
-        type: string
-      requesters:
-        description: Linked requesters
-        items:
-          $ref: '#/definitions/domain.DataAccessRequestRequester'
-        type: array
-      status:
-        description: Request status (PENDING, APPROVED, REJECTED)
-        type: string
-      updated_at:
-        description: Automatically update timestamp on changes
-        type: string
-    type: object
-  domain.DataAccessRequestRequester:
+  dto.AccessPermissionDTO:
     properties:
       id:
-        type: integer
-      request_id:
-        description: Reference to data access request
-        type: string
-      requester_account:
-        allOf:
-        - $ref: '#/definitions/domain.Account'
-        description: Linked requester account                             // Automatically
-          set creation timestamp
-      requester_account_id:
-        description: ID of the requester account
-        type: string
-      validation_message:
-        type: string
-      validation_status:
         type: string
     type: object
-  domain.DataAccessRequestRequesterTest:
+  dto.AccessPolicyDTO:
     properties:
       id:
-        description: Base requester information from data_access_request_requesters
-          table
-        type: integer
-      request:
-        allOf:
-        - $ref: '#/definitions/domain.DataAccessRequest'
-        description: Relationships
-      request_id:
-        type: string
-      requester_account:
-        $ref: '#/definitions/domain.Account'
-      requester_account_id:
-        type: string
-      validation_message:
-        type: string
-      validation_status:
         type: string
     type: object
-  domain.FileInfo:
-    properties:
-      created_at:
-        description: Automatically set creation timestamp
-        type: string
-      id:
-        description: Unique identifier for the file
-        type: string
-      name:
-        description: File name
-        type: string
-      owner:
-        $ref: '#/definitions/domain.Account'
-      owner_id:
-        description: Owner ID, references accounts table
-        type: string
-      share_count:
-        description: Number of shares, must be >= 0
-        type: integer
-      updated_at:
-        description: Automatically update timestamp on changes
-        type: string
-    type: object
-  dto.AccountDTO:
-    properties:
-      api_key:
-        description: Nullable
-        type: string
-      email:
-        type: string
-      id:
-        type: string
-      oauth_id:
-        description: Nullable
-        type: string
-      oauth_provider:
-        description: Nullable
-        type: string
-      private_key:
-        description: Nullable
-        type: string
-      public_key:
-        description: Nullable
-        type: string
-      role:
-        description: USER, PARTNER, CUSTOMER, VALIDATOR
-        type: string
-      username:
-        type: string
-    type: object
-  dto.AccountDetailDTO:
-    properties:
-      account:
-        $ref: '#/definitions/dto.AccountDTO'
-      company_name:
-        type: string
-      contact_name:
-        type: string
-      first_name:
-        type: string
-      industry:
-        type: string
-      last_name:
-        type: string
-      organization_name:
-        type: string
-      phone_number:
-        type: string
-      validation_organization:
-        type: string
-    type: object
-  dto.AssignPolicyPayloadDTO:
-    properties:
-      policy_id:
-        type: string
-    required:
-    - policy_id
-    type: object
-  dto.DataAccessRequestDTO:
-    properties:
-      created_at:
-        description: Timestamp of when the request was created
-        type: string
-      file_info:
-        allOf:
-        - $ref: '#/definitions/dto.FileInfoDTO'
-        description: Details of the file being accessed
-      id:
-        description: Unique identifier for the request
-        type: string
-      reason_for_rejection:
-        description: Optional reason for rejection
-        type: string
-      reason_for_request:
-        description: Reason for the request
-        type: string
-      request_account_id:
-        description: ID of the account being accessed
-        type: string
-      requester_id:
-        description: ID of the account making the request
-        type: string
-      requesters:
-        description: List of accounts making the request
-        items:
-          $ref: '#/definitions/dto.AccountDTO'
-        type: array
-      status:
-        description: Status of the request (PENDING, APPROVED, REJECTED)
-        type: string
-      updated_at:
-        description: Timestamp of when the request was last updated
-        type: string
-    type: object
-  dto.FileInfoDTO:
+  dto.AccessSessionDTO:
     properties:
       id:
-        description: Unique identifier for the file
-        type: string
-      name:
-        description: File name
-        type: string
-      owner:
-        allOf:
-        - $ref: '#/definitions/dto.AccountDTO'
-        description: Owner account
-      owner_id:
-        description: Owner ID
-        type: string
-      share_count:
-        description: Number of shares
-        type: integer
-    type: object
-  dto.FileInfoPayloadDTO:
-    properties:
-      id:
-        description: File ID
-        type: string
-      name:
-        description: File name
-        type: string
-      owner_id:
-        description: Owner ID
-        type: string
-      share_count:
-        description: Number of shares
-        minimum: 0
-        type: integer
-    required:
-    - id
-    - name
-    - owner_id
-    - share_count
-    type: object
-  dto.LoginPayloadDTO:
-    properties:
-      identifier:
-        description: Identifier (email, username, or phone number)
-        type: string
-      identifier_type:
-        allOf:
-        - $ref: '#/definitions/constants.IdentifierType'
-        description: 'Type of identifier: "email", "username", or "phone"'
-      password:
-        description: User password
-        type: string
-    required:
-    - identifier
-    - identifier_type
-    - password
-    type: object
-  dto.LogoutPayloadDTO:
-    properties:
-      refresh_token:
-        type: string
-    required:
-    - refresh_token
-    type: object
-  dto.PermissionDTO:
-    properties:
-      action:
-        description: The action this permission allows
-        type: string
-      created_at:
-        description: Timestamp of permission creation
-        type: string
-      description:
-        description: Optional description of the permission
-        type: string
-      id:
-        description: Unique ID for the permission
-        type: string
-      policy_id:
-        description: Foreign key referencing IAMPolicy
-        type: string
-      resource:
-        description: The resource this permission applies to
-        type: string
-      updated_at:
-        description: Timestamp of last update
         type: string
     type: object
-  dto.PermissionPayloadDTO:
-    properties:
-      action:
-        description: The action the permission allows
-        type: string
-      description:
-        description: Optional description of the permission
-        type: string
-      policy_id:
-        description: Either PolicyID or PolicyName is required
-        type: string
-      policy_name:
-        description: Either PolicyID or PolicyName is required
-        type: string
-      resource:
-        description: The resource the permission applies to
-        type: string
-    required:
-    - action
-    - resource
-    type: object
-  dto.PolicyDTO:
-    properties:
-      created_at:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  dto.PolicyPayloadDTO:
-    properties:
-      description:
-        description: Optional description
-        type: string
-      name:
-        description: Name of the policy
-        type: string
-    required:
-    - name
-    type: object
-  dto.PolicyWithPermissionsDTO:
-    properties:
-      permissions:
-        items:
-          $ref: '#/definitions/dto.PermissionDTO'
-        type: array
-      policy:
-        $ref: '#/definitions/dto.PolicyDTO'
-    type: object
-  dto.ReencryptionKeyDTO:
-    properties:
-      pub_x:
-        type: string
-      rk_key:
-        type: string
-      validator_id:
-        type: string
-      validator_public_key:
-        type: string
-    required:
-    - pub_x
-    - rk_key
-    - validator_id
-    - validator_public_key
-    type: object
-  dto.ReencryptionKeyInfoPayloadDTO:
-    properties:
-      reencryption_key_info:
-        items:
-          $ref: '#/definitions/dto.ReencryptionKeyDTO'
-        type: array
-    required:
-    - reencryption_key_info
-    type: object
-  dto.RefreshTokenPayloadDTO:
-    properties:
-      refresh_token:
-        type: string
-    required:
-    - refresh_token
-    type: object
-  dto.RegisterPayloadDTO:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-      username:
-        type: string
-    required:
-    - email
-    - password
-    - username
-    type: object
-  dto.RejectRequestPayloadDTO:
-    properties:
-      reason:
-        description: Reason for rejecting the data access request
-        type: string
-    required:
-    - reason
-    type: object
-  dto.RequesterRequestDTO:
-    properties:
-      created_at:
-        description: Timestamp of when the request was created
-        type: string
-      file_info:
-        allOf:
-        - $ref: '#/definitions/dto.FileInfoDTO'
-        description: Details of the file being accessed
-      id:
-        description: Unique identifier for the request
-        type: string
-      reason_for_rejection:
-        description: Optional reason for rejection
-        type: string
-      reason_for_request:
-        description: Reason for the request
-        type: string
-      request_account_id:
-        description: ID of the account being accessed
-        type: string
-      requester_id:
-        type: string
-      requesters:
-        description: List of accounts making the request
-        items:
-          $ref: '#/definitions/dto.AccountDTO'
-        type: array
-      status:
-        description: Status of the request (PENDING, APPROVED, REJECTED)
-        type: string
-      updated_at:
-        description: Timestamp of when the request was last updated
-        type: string
-      validation_message:
-        type: string
-      validation_status:
-        type: string
-    type: object
-  dto.RoleDetailsPayloadDTO:
-    properties:
-      company_name:
-        description: Partner fields
-        type: string
-      contact_name:
-        type: string
-      first_name:
-        description: Common fields
-        type: string
-      industry:
-        type: string
-      last_name:
-        type: string
-      organization_name:
-        description: Customer fields
-        type: string
-      phone_number:
-        type: string
-      validation_organization:
-        description: Validator fields
-        type: string
-    type: object
-  dto.TokenPairDTO:
-    properties:
-      access_token:
-        description: The JWT Access Token
-        type: string
-      refresh_token:
-        description: The plain Refresh Token
-        type: string
-    type: object
-  dto.UpdateRolePayloadDTO:
-    properties:
-      role:
-        description: USER, PARTNER, CUSTOMER, VALIDATOR
-        type: string
-      role_details:
-        allOf:
-        - $ref: '#/definitions/dto.RoleDetailsPayloadDTO'
-        description: Role-specific details
-    required:
-    - role
-    type: object
-  dto.ValidationRequestDTO:
-    properties:
-      msg:
-        type: string
-      request_id:
-        type: string
-      status:
-        type: string
-    required:
-    - request_id
-    - status
-    type: object
-  response.GeneralError:
+  dto.CreateAccessPermissionPayloadDTO:
     properties:
       code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.CreateAccessPolicyPayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.CreateIdentityGroupPayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.CreateIdentityOrganizationPayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.CreateIdentityRolePayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.CreateIdentityServicePayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.IdentityChallengeVerifyDTO:
+    properties:
+      code:
+        type: string
+      session_id:
+        type: string
+    type: object
+  dto.IdentityChallengeWithEmailDTO:
+    properties:
+      email:
+        type: string
+    type: object
+  dto.IdentityChallengeWithPhoneDTO:
+    properties:
+      phone:
+        type: string
+    type: object
+  dto.IdentityGroupDTO:
+    properties:
+      id:
+        type: string
+    type: object
+  dto.IdentityOrganizationDTO:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.IdentityRefreshTokenDTO:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  dto.IdentityRoleDTO:
+    properties:
+      id:
+        type: string
+    type: object
+  dto.IdentityServiceDTO:
+    properties:
+      id:
+        type: string
+    type: object
+  dto.IdentityUserLoginDTO:
+    properties:
+      password:
+        type: string
+      user_name:
+        type: string
+    type: object
+  dto.PaginationDTOResponse:
+    properties:
+      data:
+        items: {}
+        type: array
+      next_page:
         type: integer
+      page:
+        type: integer
+      size:
+        type: integer
+      total:
+        type: integer
+    type: object
+  dto.UpdateAccessPermissionPayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.UpdateAccessPolicyPayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.UpdateIdentityGroupPayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.UpdateIdentityOrganizationPayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.UpdateIdentityRolePayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  dto.UpdateIdentityServicePayloadDTO:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  response.ErrorResponse:
+    properties:
+      code:
+        type: string
       errors:
         items:
-          type: string
+          additionalProperties: true
+          type: object
         type: array
       message:
         type: string
+      status:
+        type: integer
+    type: object
+  response.SuccessResponse:
+    properties:
+      code:
+        type: string
+      data:
+        additionalProperties: true
+        type: object
+      message:
+        type: string
+      status:
+        type: integer
     type: object
 info:
   contact: {}
 paths:
-  /api/v1/account/api-key:
-    put:
-      consumes:
-      - application/json
-      description: Generate or update the API key for an account.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: API key updated successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "404":
-          description: Account not found
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Create or update API key
-      tags:
-      - account
-  /api/v1/account/me:
+  /api/v1/groups:
     get:
       consumes:
       - application/json
-      description: This endpoint retrieves the details of the currently authenticated
-        user using the provided access token.
+      description: Get groups
       parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
         in: header
         name: Authorization
         required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Keyword
+        in: query
+        name: keyword
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: User details
+          description: Successful retrieval of groups
           schema:
-            $ref: '#/definitions/dto.AccountDetailDTO'
-        "401":
-          description: Unauthorized
+            $ref: '#/definitions/dto.PaginationDTOResponse'
+        "400":
+          description: Invalid page number or size
           schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Insufficient permissions
-          schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get current user details
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve groups
       tags:
-      - account
-  /api/v1/account/role:
-    put:
+      - groups
+    post:
       consumes:
       - application/json
-      description: Update the role of an account and save associated role-specific
-        details.
+      description: Create a new group
       parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
         in: header
         name: Authorization
         required: true
         type: string
-      - description: Payload containing role and role-specific details
+      - description: group payload
         in: body
-        name: payload
+        name: group
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateRolePayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Account role updated successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Insufficient permissions
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "404":
-          description: Account not found
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Update account role and role-specific details
-      tags:
-      - account
-  /api/v1/auth/login:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint authenticates the user by email, username, or phone
-        number, and returns an access token and refresh token.
-      parameters:
-      - description: 'User credentials (identifier, password, and identifier_type
-          (e.g: email, username, phone))'
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.LoginPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 'Login successful: {\"access_token\": \"...\", \"refresh_token\":
-            \"...\"}'
-          schema:
-            $ref: '#/definitions/dto.TokenPairDTO'
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Invalid credentials
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Authenticate user
-      tags:
-      - authentication
-  /api/v1/auth/logout:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint invalidates the refresh token, effectively logging
-        the user out.
-      parameters:
-      - description: Logout payload containing the refresh token
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.LogoutPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 'Logout successful: {\"success\": true}'
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Invalid or expired refresh token
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Logout user
-      tags:
-      - authentication
-  /api/v1/auth/refresh-tokens:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint generates a new pair of access and refresh tokens
-        using a valid refresh token.
-      parameters:
-      - description: Refresh token payload
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RefreshTokenPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Tokens refreshed successfully
-          schema:
-            $ref: '#/definitions/dto.TokenPairDTO'
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Invalid or expired refresh token
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Refresh tokens
-      tags:
-      - authentication
-  /api/v1/auth/register:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint registers a new account and its associated role-specific
-        details.
-      parameters:
-      - description: User registration details
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RegisterPayloadDTO'
+          $ref: '#/definitions/dto.CreateIdentityGroupPayloadDTO'
       produces:
       - application/json
       responses:
         "201":
-          description: 'Registration successful: {\"success\": true}'
+          description: Successful creation of group
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/dto.IdentityGroupDTO'
         "400":
-          description: Invalid payload
+          description: Invalid request payload
           schema:
-            $ref: '#/definitions/response.GeneralError'
-        "409":
-          description: Account already exists
-          schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Register a new account
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create a new group
       tags:
-      - authentication
-  /api/v1/data-access:
-    get:
+      - groups
+  /api/v1/groups/{group_id}:
+    delete:
       consumes:
       - application/json
-      description: Fetches a list of data access requests for the authenticated user
-        filtered by status.
+      description: Delete an existing group
       parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
         in: header
         name: Authorization
         required: true
         type: string
-      - description: Request status to filter by (e.g., 'PENDING', 'APPROVED', 'REJECTED')
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of data access requests
-          schema:
-            items:
-              $ref: '#/definitions/dto.DataAccessRequestDTO'
-            type: array
-        "400":
-          description: Invalid status
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get data access requests by status
-      tags:
-      - data-access
-  /api/v1/data-access/{requestID}/approve:
-    put:
-      consumes:
-      - application/json
-      description: Approves a pending data access request for the authenticated user
-        and includes re-encryption key information.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: ID of the request being approved
+      - description: group ID
         in: path
-        name: requestID
-        required: true
-        type: string
-      - description: Payload containing re-encryption key information
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.ReencryptionKeyInfoPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Request approved successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Approve a data access request
-      tags:
-      - data-access
-  /api/v1/data-access/{requestID}/reject:
-    put:
-      consumes:
-      - application/json
-      description: Rejects a pending data access request for the authenticated user.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: ID of the request being rejected
-        in: path
-        name: requestID
-        required: true
-        type: string
-      - description: Payload with rejection reason
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RejectRequestPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Request rejected successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Reject a data access request
-      tags:
-      - data-access
-  /api/v1/data-access/validator/get-requests:
-    get:
-      consumes:
-      - application/json
-      description: Fetches a list of data access requests for the authenticated validator
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Request status filter (PENDING, INVALID, VALID)
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of validator requests
-          schema:
-            items:
-              $ref: '#/definitions/dto.RequesterRequestDTO'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden - Not a validator
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get validator requests
-      tags:
-      - data-access
-  /api/v1/data-access/validator/requests/detail/{requestID}:
-    get:
-      consumes:
-      - application/json
-      description: Fetches detailed information about a specific validation request
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Request ID to get details for
-        in: path
-        name: requestID
+        name: group_id
         required: true
         type: string
       produces:
       - application/json
       responses:
-        "200":
-          description: Request details retrieved successfully
-          schema:
-            $ref: '#/definitions/domain.DataAccessRequestRequesterTest'
+        "204":
+          description: Successful deletion of group
         "400":
           description: Invalid request ID
           schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden - Not a validator
-          schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
         "404":
-          description: Request not found
+          description: group not found
           schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get validator request detail
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete an existing group
       tags:
-      - data-access
-  /api/v1/data-access/validator/validate:
-    post:
-      consumes:
-      - application/json
-      description: Updates the validation status of a file (VALID or INVALID)
-      parameters:
-      - description: Bearer access token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Validation status details
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.ValidationRequestDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Validation status updated successfully
-          schema:
-            properties:
-              message:
-                type: string
-            type: object
-        "400":
-          description: Invalid payload or status
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden - Not a validator
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Set file validation status
-      tags:
-      - data-access
-  /api/v1/iam/accounts/{accountID}/policies:
-    post:
-      consumes:
-      - application/json
-      description: Maps a specified policy to an account by accountID.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Account ID to assign the policy to
-        in: path
-        name: accountID
-        required: true
-        type: string
-      - description: Payload containing the policy ID
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.AssignPolicyPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Policy assigned successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload or missing policy
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "404":
-          description: Account or policy not found
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Assign a policy to an account
-      tags:
-      - IAM
-  /api/v1/iam/policies:
+      - groups
     get:
       consumes:
       - application/json
-      description: Fetches a list of IAM policies along with their associated permissions.
+      description: Get group by ID
       parameters:
-      - description: Bearer access token
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
         in: header
         name: Authorization
+        required: true
+        type: string
+      - description: group ID
+        in: path
+        name: group_id
         required: true
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: List of policies with permissions
+          description: Successful retrieval of group
           schema:
-            items:
-              $ref: '#/definitions/dto.PolicyWithPermissionsDTO'
-            type: array
-        "401":
-          description: Unauthorized
+            $ref: '#/definitions/dto.IdentityGroupDTO'
+        "400":
+          description: Invalid request ID
           schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Insufficient permissions
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: group not found
           schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get policies with permissions
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve group by ID
       tags:
-      - IAM
-    post:
+      - groups
+    put:
       consumes:
       - application/json
-      description: Adds a new IAM policy to the system. Only accessible to Admins.
+      description: Update an existing group
       parameters:
-      - description: Bearer access token
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
         in: header
         name: Authorization
         required: true
         type: string
-      - description: Payload for creating policy
+      - description: group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      - description: group payload
         in: body
-        name: payload
+        name: group
         required: true
         schema:
-          $ref: '#/definitions/dto.PolicyPayloadDTO'
+          $ref: '#/definitions/dto.UpdateIdentityGroupPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful update of group
+          schema:
+            $ref: '#/definitions/dto.IdentityGroupDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: group not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update an existing group
+      tags:
+      - groups
+  /api/v1/organizations:
+    get:
+      consumes:
+      - application/json
+      description: Get organizations
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of organizations
+          schema:
+            $ref: '#/definitions/dto.PaginationDTOResponse'
+        "400":
+          description: Invalid page number or size
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve organizations
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Create a new organization
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: organization payload
+        in: body
+        name: organization
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateIdentityOrganizationPayloadDTO'
       produces:
       - application/json
       responses:
         "201":
-          description: Policy created successfully
+          description: Successful creation of organization
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/dto.IdentityOrganizationDTO'
         "400":
-          description: Invalid payload
+          description: Invalid request payload
           schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create a new organization
+      tags:
+      - organizations
+  /api/v1/organizations/{organization_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing organization
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successful deletion of organization
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: organization not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete an existing organization
+      tags:
+      - organizations
+    get:
+      consumes:
+      - application/json
+      description: Get organization by ID
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of organization
+          schema:
+            $ref: '#/definitions/dto.IdentityOrganizationDTO'
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: organization not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve organization by ID
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      description: Update an existing organization
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: organization payload
+        in: body
+        name: organization
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateIdentityOrganizationPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful update of organization
+          schema:
+            $ref: '#/definitions/dto.IdentityOrganizationDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: organization not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update an existing organization
+      tags:
+      - organizations
+  /api/v1/permissions:
+    get:
+      consumes:
+      - application/json
+      description: Get permissions
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of permissions
+          schema:
+            $ref: '#/definitions/dto.PaginationDTOResponse'
+        "400":
+          description: Invalid page number or size
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve permissions
+      tags:
+      - permissions
+    post:
+      consumes:
+      - application/json
+      description: Create a new permission
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: permission payload
+        in: body
+        name: permission
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAccessPermissionPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successful creation of permission
+          schema:
+            $ref: '#/definitions/dto.AccessPermissionDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create a new permission
+      tags:
+      - permissions
+  /api/v1/permissions/{permission_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing permission
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: permission ID
+        in: path
+        name: permission_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successful deletion of permission
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: permission not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete an existing permission
+      tags:
+      - permissions
+    get:
+      consumes:
+      - application/json
+      description: Get permission by ID
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: permission ID
+        in: path
+        name: permission_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of permission
+          schema:
+            $ref: '#/definitions/dto.AccessPermissionDTO'
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: permission not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve permission by ID
+      tags:
+      - permissions
+    put:
+      consumes:
+      - application/json
+      description: Update an existing permission
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: permission ID
+        in: path
+        name: permission_id
+        required: true
+        type: string
+      - description: permission payload
+        in: body
+        name: permission
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAccessPermissionPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful update of permission
+          schema:
+            $ref: '#/definitions/dto.AccessPermissionDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: permission not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update an existing permission
+      tags:
+      - permissions
+  /api/v1/policies:
+    get:
+      consumes:
+      - application/json
+      description: Get policies
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of policies
+          schema:
+            $ref: '#/definitions/dto.PaginationDTOResponse'
+        "400":
+          description: Invalid page number or size
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve policies
+      tags:
+      - policies
+    post:
+      consumes:
+      - application/json
+      description: Create a new policy
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: policy payload
+        in: body
+        name: policy
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAccessPolicyPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successful creation of policy
+          schema:
+            $ref: '#/definitions/dto.AccessPolicyDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       summary: Create a new policy
       tags:
-      - IAM
-  /api/v1/iam/policies/permissions:
-    post:
+      - policies
+  /api/v1/policies/{policy_id}:
+    delete:
       consumes:
       - application/json
-      description: Adds a new permission to an existing IAM policy.
+      description: Delete an existing policy
       parameters:
-      - description: Bearer access token
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
         in: header
         name: Authorization
         required: true
         type: string
-      - description: Payload for assigning permission
-        in: body
-        name: payload
+      - description: policy ID
+        in: path
+        name: policy_id
         required: true
-        schema:
-          $ref: '#/definitions/dto.PermissionPayloadDTO'
+        type: string
       produces:
       - application/json
       responses:
-        "201":
-          description: Permission assigned successfully
-          schema:
-            additionalProperties: true
-            type: object
+        "204":
+          description: Successful deletion of policy
         "400":
-          description: Invalid payload or missing policy
+          description: Invalid request ID
           schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
         "404":
-          description: Policy not found
+          description: policy not found
           schema:
-            $ref: '#/definitions/response.GeneralError'
-        "409":
-          description: Permission already exists
-          schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Assign a permission to a policy
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete an existing policy
       tags:
-      - IAM
-  /api/v1/notifications/data-upload:
-    post:
-      consumes:
-      - application/json
-      description: This webhook receives raw payload data when a user successfully
-        uploads data.
-      parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Payload containing file information
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.FileInfoPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Notification received successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid payload
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Notify about successful data upload
-      tags:
-      - notifications
-  /api/v1/validators/active:
+      - policies
     get:
       consumes:
       - application/json
-      description: Fetches a list of active validators. Optionally, a comma-separated
-        list of validator IDs can be provided to filter the results.
+      description: Get policy by ID
       parameters:
-      - description: Bearer access token (e.g., 'Bearer <token>')
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
         in: header
         name: Authorization
         required: true
         type: string
-      - description: Comma-separated list of validator IDs to filter results (e.g.,
-          'id1,id2,id3')
-        in: query
-        name: validator_ids
+      - description: policy ID
+        in: path
+        name: policy_id
+        required: true
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: List of active validators
+          description: Successful retrieval of policy
           schema:
-            items:
-              $ref: '#/definitions/dto.AccountDetailDTO'
-            type: array
+            $ref: '#/definitions/dto.AccessPolicyDTO'
         "400":
-          description: Bad request
+          description: Invalid request ID
           schema:
-            $ref: '#/definitions/response.GeneralError'
-        "401":
-          description: Unauthorized
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: policy not found
           schema:
-            $ref: '#/definitions/response.GeneralError'
-        "403":
-          description: Insufficient permissions
-          schema:
-            $ref: '#/definitions/response.GeneralError'
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.GeneralError'
-      summary: Get Active Validators
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve policy by ID
       tags:
-      - validators
+      - policies
+    put:
+      consumes:
+      - application/json
+      description: Update an existing policy
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: policy ID
+        in: path
+        name: policy_id
+        required: true
+        type: string
+      - description: policy payload
+        in: body
+        name: policy
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAccessPolicyPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful update of policy
+          schema:
+            $ref: '#/definitions/dto.AccessPolicyDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: policy not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update an existing policy
+      tags:
+      - policies
+  /api/v1/roles:
+    get:
+      consumes:
+      - application/json
+      description: Get roles
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of roles
+          schema:
+            $ref: '#/definitions/dto.PaginationDTOResponse'
+        "400":
+          description: Invalid page number or size
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve roles
+      tags:
+      - roles
+    post:
+      consumes:
+      - application/json
+      description: Create a new role
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: role payload
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateIdentityRolePayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successful creation of role
+          schema:
+            $ref: '#/definitions/dto.IdentityRoleDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create a new role
+      tags:
+      - roles
+  /api/v1/roles/{role_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing role
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successful deletion of role
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: role not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete an existing role
+      tags:
+      - roles
+    get:
+      consumes:
+      - application/json
+      description: Get role by ID
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of role
+          schema:
+            $ref: '#/definitions/dto.IdentityRoleDTO'
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: role not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve role by ID
+      tags:
+      - roles
+    put:
+      consumes:
+      - application/json
+      description: Update an existing role
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      - description: role payload
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateIdentityRolePayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful update of role
+          schema:
+            $ref: '#/definitions/dto.IdentityRoleDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: role not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update an existing role
+      tags:
+      - roles
+  /api/v1/services:
+    get:
+      consumes:
+      - application/json
+      description: Get services
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of services
+          schema:
+            $ref: '#/definitions/dto.PaginationDTOResponse'
+        "400":
+          description: Invalid page number or size
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve services
+      tags:
+      - services
+    post:
+      consumes:
+      - application/json
+      description: Create a new service
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: service payload
+        in: body
+        name: service
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateIdentityServicePayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successful creation of service
+          schema:
+            $ref: '#/definitions/dto.IdentityServiceDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create a new service
+      tags:
+      - services
+  /api/v1/services/{service_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing service
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Service ID
+        in: path
+        name: service_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successful deletion of service
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: service not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete an existing service
+      tags:
+      - services
+    get:
+      consumes:
+      - application/json
+      description: Get service by ID
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: service ID
+        in: path
+        name: service_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of service
+          schema:
+            $ref: '#/definitions/dto.IdentityServiceDTO'
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: service not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve service by ID
+      tags:
+      - services
+    put:
+      consumes:
+      - application/json
+      description: Update an existing service
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Service ID
+        in: path
+        name: service_id
+        required: true
+        type: string
+      - description: service payload
+        in: body
+        name: service
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateIdentityServicePayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful update of service
+          schema:
+            $ref: '#/definitions/dto.IdentityServiceDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: service not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update an existing service
+      tags:
+      - services
+  /api/v1/sessions:
+    get:
+      consumes:
+      - application/json
+      description: Get sessions
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of sessions
+          schema:
+            $ref: '#/definitions/dto.PaginationDTOResponse'
+        "400":
+          description: Invalid page number or size
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve sessions
+      tags:
+      - sessions
+  /api/v1/sessions/{session_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing session
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: session ID
+        in: path
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successful deletion of session
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: session not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete an existing session
+      tags:
+      - sessions
+    get:
+      consumes:
+      - application/json
+      description: Get session by ID
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: session ID
+        in: path
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful retrieval of session
+          schema:
+            $ref: '#/definitions/dto.AccessSessionDTO'
+        "400":
+          description: Invalid request ID
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: session not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Retrieve session by ID
+      tags:
+      - sessions
+  /api/v1/users/challenge-verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify the challenge
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: challenge payload
+        in: body
+        name: challenge
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityChallengeVerifyDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful verify the challenge
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Verify the challenge
+      tags:
+      - users
+  /api/v1/users/challenge-with-email:
+    post:
+      consumes:
+      - application/json
+      description: Login with email and otp
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: challenge payload
+        in: body
+        name: challenge
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityChallengeWithEmailDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful make a challenge with Email and OTP
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Login with email and otp
+      tags:
+      - users
+  /api/v1/users/challenge-with-phone:
+    post:
+      consumes:
+      - application/json
+      description: Login with phone and otp
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: challenge payload
+        in: body
+        name: challenge
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityChallengeWithPhoneDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful make a challenge with Phone and OTP
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Login with phone and otp
+      tags:
+      - users
+  /api/v1/users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: login payload
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserLoginDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful authenticate user
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Authenticate user
+      tags:
+      - users
+  /api/v1/users/login-with-apple:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with Apple
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful authenticate user with Apple
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Authenticate user with Apple
+      tags:
+      - users
+  /api/v1/users/login-with-facebook:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with Facebook
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful authenticate user with Facebook
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Authenticate user with Facebook
+      tags:
+      - users
+  /api/v1/users/login-with-google:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with Google
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful authenticate user with Google
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Authenticate user with Google
+      tags:
+      - users
+  /api/v1/users/logout:
+    post:
+      consumes:
+      - application/json
+      description: De-authenticate user
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful de-authenticate user
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: De-authenticate user
+      tags:
+      - users
+  /api/v1/users/me:
+    get:
+      consumes:
+      - application/json
+      description: Get user profile
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful get user profile
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get user profile
+      tags:
+      - users
+  /api/v1/users/refresh-token:
+    post:
+      consumes:
+      - application/json
+      description: Refresh token
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: refresh token payload
+        in: body
+        name: refresh_token
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityRefreshTokenDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful refresh token
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Refresh token
+      tags:
+      - users
 swagger: "2.0"

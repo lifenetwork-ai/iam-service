@@ -1,9 +1,9 @@
 package main
 
 import (
-	app "github.com/genefriendway/human-network-auth/cmd/app"
-	"github.com/genefriendway/human-network-auth/conf"
-	_ "github.com/genefriendway/human-network-auth/docs"
+	app "github.com/genefriendway/human-network-iam/cmd/app"
+	"github.com/genefriendway/human-network-iam/conf"
+	_ "github.com/genefriendway/human-network-iam/docs"
 )
 
 func main() {
