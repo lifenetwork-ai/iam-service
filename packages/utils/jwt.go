@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-
-	"github.com/genefriendway/human-network-iam/constants"
+	"github.com/lifenetwork-ai/iam-service/constants"
 )
 
 type Claims struct {

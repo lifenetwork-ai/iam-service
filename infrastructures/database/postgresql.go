@@ -8,9 +8,9 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/infrastructures/interfaces"
-	"github.com/genefriendway/human-network-iam/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 // postgreSQL implements SQLDBConnection interface

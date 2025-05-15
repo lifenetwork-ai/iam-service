@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
-	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 )
 
 type permissionRepository struct {

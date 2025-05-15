@@ -6,11 +6,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/internal/adapters/handlers"
-	middleware "github.com/genefriendway/human-network-iam/internal/delivery/http/middleware"
-	interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/handlers"
+	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 )
 
 func RegisterRoutes(

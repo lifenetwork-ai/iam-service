@@ -5,7 +5,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/genefriendway/human-network-iam/internal/delivery/dto"
+	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 )
 
 // Represent a AccessAction in the IAM system.

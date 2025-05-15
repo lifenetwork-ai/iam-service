@@ -2669,10 +2669,15 @@
         "dto.CreateIdentityOrganizationPayloadDTO": {
             "type": "object",
             "required": [
+                "authenticate_url",
                 "code",
-                "name"
+                "name",
+                "self_authenticate"
             ],
             "properties": {
+                "authenticate_url": {
+                    "type": "string"
+                },
                 "code": {
                     "type": "string"
                 },
@@ -2684,6 +2689,9 @@
                 },
                 "parent_id": {
                     "type": "string"
+                },
+                "self_authenticate": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2767,6 +2775,9 @@
         "dto.IdentityOrganizationDTO": {
             "type": "object",
             "properties": {
+                "authenticate_url": {
+                    "type": "string"
+                },
                 "code": {
                     "type": "string"
                 },
@@ -2781,6 +2792,9 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "self_authenticate": {
+                    "type": "boolean"
                 },
                 "updated_at": {
                     "type": "string"
@@ -2909,10 +2923,15 @@
         "dto.UpdateIdentityOrganizationPayloadDTO": {
             "type": "object",
             "required": [
+                "authenticate_url",
                 "code",
-                "name"
+                "name",
+                "self_authenticate"
             ],
             "properties": {
+                "authenticate_url": {
+                    "type": "string"
+                },
                 "code": {
                     "type": "string"
                 },
@@ -2924,6 +2943,9 @@
                 },
                 "parent_id": {
                     "type": "string"
+                },
+                "self_authenticate": {
+                    "type": "boolean"
                 }
             }
         },

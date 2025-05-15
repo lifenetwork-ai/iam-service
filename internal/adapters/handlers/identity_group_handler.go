@@ -5,11 +5,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-
-	dto "github.com/genefriendway/human-network-iam/internal/delivery/dto"
-	interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
-	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
-	"github.com/genefriendway/human-network-iam/packages/logger"
+	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type groupHandler struct {

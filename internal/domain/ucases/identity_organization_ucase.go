@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	repositories "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
-	dto "github.com/genefriendway/human-network-iam/internal/delivery/dto"
-	domain "github.com/genefriendway/human-network-iam/internal/domain/entities"
-	interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
-	"github.com/genefriendway/human-network-iam/packages/logger"
+	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type organizationUseCase struct {

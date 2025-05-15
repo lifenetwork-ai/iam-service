@@ -5,9 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/stretchr/testify/require"
-
-	"github.com/genefriendway/human-network-iam/conf"
 )
 
 func setupTestClient() *redisCacheClient {

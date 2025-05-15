@@ -2680,10 +2680,15 @@ const docTemplate = `{
         "dto.CreateIdentityOrganizationPayloadDTO": {
             "type": "object",
             "required": [
+                "authenticate_url",
                 "code",
-                "name"
+                "name",
+                "self_authenticate"
             ],
             "properties": {
+                "authenticate_url": {
+                    "type": "string"
+                },
                 "code": {
                     "type": "string"
                 },
@@ -2695,6 +2700,9 @@ const docTemplate = `{
                 },
                 "parent_id": {
                     "type": "string"
+                },
+                "self_authenticate": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2778,6 +2786,9 @@ const docTemplate = `{
         "dto.IdentityOrganizationDTO": {
             "type": "object",
             "properties": {
+                "authenticate_url": {
+                    "type": "string"
+                },
                 "code": {
                     "type": "string"
                 },
@@ -2792,6 +2803,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "self_authenticate": {
+                    "type": "boolean"
                 },
                 "updated_at": {
                     "type": "string"
@@ -2920,10 +2934,15 @@ const docTemplate = `{
         "dto.UpdateIdentityOrganizationPayloadDTO": {
             "type": "object",
             "required": [
+                "authenticate_url",
                 "code",
-                "name"
+                "name",
+                "self_authenticate"
             ],
             "properties": {
+                "authenticate_url": {
+                    "type": "string"
+                },
                 "code": {
                     "type": "string"
                 },
@@ -2935,6 +2954,9 @@ const docTemplate = `{
                 },
                 "parent_id": {
                     "type": "string"
+                },
+                "self_authenticate": {
+                    "type": "boolean"
                 }
             }
         },

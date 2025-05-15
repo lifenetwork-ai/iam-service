@@ -9,8 +9,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-
-	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
+	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 )
 
 // IsSQLInjection checks if the input contains common SQL injection patterns

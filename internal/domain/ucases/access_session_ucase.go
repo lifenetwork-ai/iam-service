@@ -3,9 +3,9 @@ package ucases
 import (
 	"context"
 
-	repositories "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
-	dto "github.com/genefriendway/human-network-iam/internal/delivery/dto"
-	interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
+	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 )
 
 type sessionUseCase struct {

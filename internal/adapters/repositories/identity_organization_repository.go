@@ -8,10 +8,10 @@ import (
 
 	"gorm.io/gorm"
 
-	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
-	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
-	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
-	"github.com/genefriendway/human-network-iam/packages/utils"
+	infrainterfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 type organizationRepository struct {

@@ -12,13 +12,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-
-	cachingtypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
-	repositories "github.com/genefriendway/human-network-iam/internal/adapters/repositories"
-	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
-	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
-	"github.com/genefriendway/human-network-iam/packages/logger"
-	"github.com/genefriendway/human-network-iam/wire/providers"
+	cachingtypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
+	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
+	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 func validateAuthorizationHeader(
@@ -65,7 +64,7 @@ func cacheAuthentication(
 	token string,
 ) *entities.IdentityUser {
 	// Dependency injection
-	cacheRepo := providers.ProvideCacheRepository(ctx)
+	cacheRepo := instances.CacheRepositoryInstance(ctx)
 
 	// Query Redis to find profile with key is tokenMd5
 	organizationId := ctx.Value("organizationId").(string)
@@ -95,7 +94,7 @@ func saveToCache(
 	}
 
 	// Dependency injection
-	cacheRepo := providers.ProvideCacheRepository(ctx)
+	cacheRepo := instances.CacheRepositoryInstance(ctx)
 
 	// Cache the user to memory cache
 	organizationId := ctx.Value("organizationId").(string)
@@ -159,8 +158,8 @@ func selfAuthentication(
 ) *entities.IdentityUser {
 	// Check if request is using self organization token
 	// Dependency injection
-	dbConnection := providers.ProvideDBConnection()
-	cacheRepo := providers.ProvideCacheRepository(ctx)
+	dbConnection := instances.DBConnectionInstance()
+	cacheRepo := instances.CacheRepositoryInstance(ctx)
 
 	profile, err := getOrganizationProfile(ctx, organization, authHeader)
 	if err != nil {
@@ -276,9 +275,9 @@ func jwtAuthentication(
 ) *entities.IdentityUser {
 	// Check if request is using self token
 	// Dependency injection
-	dbConnection := providers.ProvideDBConnection()
-	cacheRepo := providers.ProvideCacheRepository(ctx)
-	jwtService := providers.ProvideJWTService()
+	dbConnection := instances.DBConnectionInstance()
+	cacheRepo := instances.CacheRepositoryInstance(ctx)
+	jwtService := instances.JWTServiceInstance()
 
 	// Try to get user from database if not found in cache
 	sessionRepo := repositories.NewAccessSessionRepository(dbConnection, cacheRepo)

@@ -7,9 +7,8 @@ import (
 
 	"go.uber.org/mock/gomock"
 
+	"github.com/lifenetwork-ai/iam-service/infrastructures/mocks"
 	"github.com/stretchr/testify/require"
-
-	"github.com/genefriendway/human-network-iam/infrastructures/mocks"
 )
 
 func TestSaveItem(t *testing.T) {

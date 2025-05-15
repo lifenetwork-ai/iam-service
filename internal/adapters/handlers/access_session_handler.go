@@ -5,10 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-
-	interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
-	httpresponse "github.com/genefriendway/human-network-iam/packages/http/response"
-	"github.com/genefriendway/human-network-iam/packages/logger"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type sessionHandler struct {

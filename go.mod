@@ -1,4 +1,4 @@
-module github.com/genefriendway/human-network-iam
+module github.com/lifenetwork-ai/iam-service
 
 go 1.22.4
 

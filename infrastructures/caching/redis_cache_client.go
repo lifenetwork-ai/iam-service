@@ -7,11 +7,10 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
+	infrainterfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/redis/go-redis/v9"
-
-	"github.com/genefriendway/human-network-iam/conf"
-	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
-	"github.com/genefriendway/human-network-iam/packages/logger"
 )
 
 // redisCacheClient implements CacheClient interface

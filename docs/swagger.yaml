@@ -58,6 +58,8 @@ definitions:
     type: object
   dto.CreateIdentityOrganizationPayloadDTO:
     properties:
+      authenticate_url:
+        type: string
       code:
         type: string
       description:
@@ -66,9 +68,13 @@ definitions:
         type: string
       parent_id:
         type: string
+      self_authenticate:
+        type: boolean
     required:
+    - authenticate_url
     - code
     - name
+    - self_authenticate
     type: object
   dto.CreateIdentityRolePayloadDTO:
     properties:
@@ -122,6 +128,8 @@ definitions:
     type: object
   dto.IdentityOrganizationDTO:
     properties:
+      authenticate_url:
+        type: string
       code:
         type: string
       created_at:
@@ -132,6 +140,8 @@ definitions:
         type: string
       name:
         type: string
+      self_authenticate:
+        type: boolean
       updated_at:
         type: string
     type: object
@@ -215,6 +225,8 @@ definitions:
     type: object
   dto.UpdateIdentityOrganizationPayloadDTO:
     properties:
+      authenticate_url:
+        type: string
       code:
         type: string
       description:
@@ -223,9 +235,13 @@ definitions:
         type: string
       parent_id:
         type: string
+      self_authenticate:
+        type: boolean
     required:
+    - authenticate_url
     - code
     - name
+    - self_authenticate
     type: object
   dto.UpdateIdentityRolePayloadDTO:
     properties:

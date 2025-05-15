@@ -1,13 +1,13 @@
-package providers
+package instances
 
 import (
 	"sync"
 
 	"gorm.io/gorm"
 
-	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/infrastructures/database"
-	"github.com/genefriendway/human-network-iam/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/database"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 var (
@@ -15,8 +15,8 @@ var (
 	dbInstance *gorm.DB
 )
 
-// ProvideDatabase provides a singleton instance of the PostgreSQL database connection.
-func ProvideDBConnection() *gorm.DB {
+// DBConnectionInstance provides a singleton instance of the PostgreSQL database connection.
+func DBConnectionInstance() *gorm.DB {
 	dbOnce.Do(func() {
 		logger.GetLogger().Info("Initializing PostgreSQL database connection...")
 

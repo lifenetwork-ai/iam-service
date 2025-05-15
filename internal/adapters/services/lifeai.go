@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	types "github.com/genefriendway/human-network-iam/internal/adapters/services/types"
+	types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/types"
 )
 
 type LifeAIServiceSetting struct {

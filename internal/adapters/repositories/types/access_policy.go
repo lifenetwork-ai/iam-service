@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 )
 
 type AccessPolicyRepository interface {

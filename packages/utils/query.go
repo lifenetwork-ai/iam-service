@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/genefriendway/human-network-iam/constants"
+	"github.com/lifenetwork-ai/iam-service/constants"
 )
 
 // ParseOptionalUnixTimestamp parses a time string in UNIX timestamp format and returns a *time.Time.

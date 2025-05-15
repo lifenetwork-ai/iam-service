@@ -1,11 +1,11 @@
-package providers
+package instances
 
 import (
 	"sync"
 
-	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/internal/adapters/services"
-	"github.com/genefriendway/human-network-iam/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 var (
@@ -16,8 +16,8 @@ var (
 	jwtInstance    services.JWTService
 )
 
-// ProvideLifeAIService provides a singleton instance of LifeAIClient.
-func ProvideLifeAIService() services.LifeAIService {
+// LifeAIServiceInstance provides a singleton instance of LifeAIClient.
+func LifeAIServiceInstance() services.LifeAIService {
 	serviceOnce.Do(func() {
 		// Get LifeAI endpoint from config
 		config := conf.GetConfiguration()
@@ -39,8 +39,8 @@ func ProvideLifeAIService() services.LifeAIService {
 	return lifeAIInstance
 }
 
-// ProvideEmailService provides a singleton instance of EmailService.
-func ProvideEmailService() services.EmailService {
+// EmailServiceInstance provides a singleton instance of EmailService.
+func EmailServiceInstance() services.EmailService {
 	serviceOnce.Do(func() {
 		// Get email service configuration from config
 		config := conf.GetConfiguration()
@@ -62,8 +62,8 @@ func ProvideEmailService() services.EmailService {
 	return emailInstance
 }
 
-// ProvideSMSService provides a singleton instance of SMSService.
-func ProvideSMSService() services.SMSService {
+// SMSServiceInstance provides a singleton instance of SMSService.
+func SMSServiceInstance() services.SMSService {
 	serviceOnce.Do(func() {
 		// Get SMS service configuration from config
 		config := conf.GetConfiguration()
@@ -85,8 +85,8 @@ func ProvideSMSService() services.SMSService {
 	return smsInstance
 }
 
-// ProvideJWTService provides a singleton instance of JWTService.
-func ProvideJWTService() services.JWTService {
+// JWTServiceInstance provides a singleton instance of JWTService.
+func JWTServiceInstance() services.JWTService {
 	serviceOnce.Do(func() {
 		// Get JWT service configuration from config
 		config := conf.GetConfiguration()

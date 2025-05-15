@@ -7,12 +7,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-
-	cachingTypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
-	repositories "github.com/genefriendway/human-network-iam/internal/adapters/repositories"
-	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
-	"github.com/genefriendway/human-network-iam/packages/logger"
-	"github.com/genefriendway/human-network-iam/wire/providers"
+	cachingTypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
+	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 // XHeaderValidationMiddleware returns a gin middleware for HTTP request checking X-* headers
@@ -43,8 +42,8 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 		}
 
 		// Dependency injection
-		dbConnection := providers.ProvideDBConnection()
-		cacheRepo := providers.ProvideCacheRepository(c)
+		dbConnection := instances.DBConnectionInstance()
+		cacheRepo := instances.CacheRepositoryInstance(c)
 		organizationRepo := repositories.NewIdentityOrganizationRepository(dbConnection, cacheRepo)
 
 		// Query Redis to find profile with key is tokenMd5

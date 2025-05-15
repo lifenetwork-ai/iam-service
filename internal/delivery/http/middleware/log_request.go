@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/genefriendway/human-network-iam/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 // RequestLoggerMiddleware returns a gin middleware for HTTP request logging

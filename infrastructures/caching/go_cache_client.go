@@ -6,10 +6,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/constants"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
 	"github.com/patrickmn/go-cache"
-
-	"github.com/genefriendway/human-network-iam/constants"
-	"github.com/genefriendway/human-network-iam/infrastructures/interfaces"
 )
 
 type goCacheClient struct {

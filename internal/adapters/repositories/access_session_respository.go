@@ -7,12 +7,12 @@ import (
 
 	"gorm.io/gorm"
 
-	cachingtypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
-	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
-	interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
-	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
-	"github.com/genefriendway/human-network-iam/packages/logger"
-	"github.com/genefriendway/human-network-iam/packages/utils"
+	cachingtypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
+	infrainterfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 type sessionRepository struct {

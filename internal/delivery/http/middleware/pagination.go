@@ -5,8 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/genefriendway/human-network-iam/constants"
+	"github.com/lifenetwork-ai/iam-service/constants"
 )
 
 // Default Create a new pagination middleware with default values

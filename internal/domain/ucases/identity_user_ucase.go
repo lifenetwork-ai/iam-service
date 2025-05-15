@@ -7,16 +7,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/genefriendway/human-network-iam/conf"
-	cachingTypes "github.com/genefriendway/human-network-iam/infrastructures/caching/types"
-	infra_interfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
-	repositories "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
-	"github.com/genefriendway/human-network-iam/internal/adapters/services"
-	dto "github.com/genefriendway/human-network-iam/internal/delivery/dto"
-	entities "github.com/genefriendway/human-network-iam/internal/domain/entities"
-	ucase_interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
-	"github.com/genefriendway/human-network-iam/packages/utils"
+	"github.com/lifenetwork-ai/iam-service/conf"
+	cachingTypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
+	infra_interfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
+	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	ucase_interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 type userUseCase struct {

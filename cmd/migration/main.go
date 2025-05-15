@@ -4,13 +4,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/genefriendway/human-network-iam/internal/adapters/postgres"
-	"github.com/genefriendway/human-network-iam/wire/providers"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/postgres"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 func main() {
 	// Initialize database connection
-	db := providers.ProvideDBConnection()
+	db := instances.DBConnectionInstance()
 
 	// Get migration scripts path (default or CLI argument)
 	basePath := "internal/adapters/postgres/scripts"

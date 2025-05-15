@@ -9,15 +9,14 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lifenetwork-ai/iam-service/conf"
+	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
+	routev1 "github.com/lifenetwork-ai/iam-service/internal/delivery/http/route"
+	"github.com/lifenetwork-ai/iam-service/internal/wire"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	swaggerfiles "github.com/swaggo/files"
 	ginswagger "github.com/swaggo/gin-swagger"
-
-	"github.com/genefriendway/human-network-iam/conf"
-	middleware "github.com/genefriendway/human-network-iam/internal/delivery/http/middleware"
-	routev1 "github.com/genefriendway/human-network-iam/internal/delivery/http/route"
-	"github.com/genefriendway/human-network-iam/packages/logger"
-	"github.com/genefriendway/human-network-iam/wire"
-	"github.com/genefriendway/human-network-iam/wire/providers"
 )
 
 func RunApp(config *conf.Configuration) {
@@ -31,10 +30,10 @@ func RunApp(config *conf.Configuration) {
 	r := initializeRouter()
 
 	// Initialize database connection
-	db := providers.ProvideDBConnection()
+	db := instances.DBConnectionInstance()
 
 	// Initialize the cache repository
-	cacheRepository := providers.ProvideCacheRepository(ctx)
+	cacheRepository := instances.CacheRepositoryInstance(ctx)
 
 	// Initialize use cases
 	ucases := wire.InitializeUseCases(db, cacheRepository)

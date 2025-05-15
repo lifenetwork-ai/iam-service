@@ -1,13 +1,13 @@
-package providers
+package instances
 
 import (
 	"context"
 	"sync"
 
-	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/infrastructures/caching"
-	"github.com/genefriendway/human-network-iam/infrastructures/interfaces"
-	"github.com/genefriendway/human-network-iam/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 var (
@@ -15,8 +15,8 @@ var (
 	cacheRepo interfaces.CacheRepository
 )
 
-// ProvideCacheRepository provides a singleton instance of CacheRepository.
-func ProvideCacheRepository(ctx context.Context) interfaces.CacheRepository {
+// CacheRepositoryInstance provides a singleton instance of CacheRepository.
+func CacheRepositoryInstance(ctx context.Context) interfaces.CacheRepository {
 	cacheOnce.Do(func() {
 		cacheType := conf.GetCacheType()
 		switch cacheType {

@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/genefriendway/human-network-iam/constants"
-	"github.com/genefriendway/human-network-iam/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/constants"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 func SendWebhook(payload interface{}, webhookURL string) error {

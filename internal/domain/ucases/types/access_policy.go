@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/genefriendway/human-network-iam/internal/delivery/dto"
+	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 )
 
 type AccessPolicyUseCase interface {

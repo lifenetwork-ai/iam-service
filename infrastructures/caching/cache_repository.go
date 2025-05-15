@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/genefriendway/human-network-iam/conf"
-	"github.com/genefriendway/human-network-iam/infrastructures/caching/types"
+	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 )
 
 type cachingRepository struct {

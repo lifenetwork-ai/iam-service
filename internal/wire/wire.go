@@ -3,12 +3,12 @@ package wire
 import (
 	"gorm.io/gorm"
 
-	infrainterfaces "github.com/genefriendway/human-network-iam/infrastructures/interfaces"
-	repositories "github.com/genefriendway/human-network-iam/internal/adapters/repositories"
-	repositories_interfaces "github.com/genefriendway/human-network-iam/internal/adapters/repositories/types"
-	ucases "github.com/genefriendway/human-network-iam/internal/domain/ucases"
-	ucases_interfaces "github.com/genefriendway/human-network-iam/internal/domain/ucases/types"
-	"github.com/genefriendway/human-network-iam/wire/providers"
+	infrainterfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
+	repositories_interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
+	ucases_interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 // Struct to hold all repositories
@@ -47,9 +47,9 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 			repos.IdentityUserRepo,
 			repos.AccessSessionRepo,
 			cacheRepo,
-			providers.ProvideEmailService(),
-			providers.ProvideSMSService(),
-			providers.ProvideJWTService(),
+			instances.EmailServiceInstance(),
+			instances.SMSServiceInstance(),
+			instances.JWTServiceInstance(),
 		),
 	}
 }
