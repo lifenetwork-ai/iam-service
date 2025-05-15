@@ -1,0 +1,61 @@
+.PHONY: human-network-iam-service
+
+build: human-network-iam-service
+human-network-iam-service:
+	go build -o ./human-network-iam-service ./cmd/main.go
+clean:
+	rm -i -f human-network-iam-service
+
+run-test:
+	go test -v ./internal/infrastructures/caching/test
+	go test -v ./internal/util/test
+	go test -v ./test
+
+restart: stop clean build start
+	@echo "human-network-iam-service restarted!"
+
+build-service: clean build
+	@echo "Restart service with cmd: 'systemctl restart human-network-iam-service'"
+	systemctl restart human-network-iam-service
+
+run: build
+	@echo "Starting the human-network-iam-service..."
+	@env ./human-network-iam-service &
+	@echo "human-network-iam-service running!"
+
+stop:
+	@echo "Stopping the human-network-iam-service..."
+	@-pkill -SIGTERM -f "human-network-iam-service"
+	@echo "Stopped human-network-iam-service"
+
+lint:
+	golangci-lint run --fix
+
+swagger:
+	swag init -g cmd/main.go
+
+wiring: 
+	wire ./wire
+
+migrate:
+	go run cmd/migration/main.go
+
+
+DB_NAME=human-network-auth
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_PORT=5432
+DB_HOST=localhost
+
+
+docker-db-up:
+	docker run --name secure-genom-db \
+		-e POSTGRES_DB=$(DB_NAME) \
+		-e POSTGRES_USER=$(DB_USER) \
+		-e POSTGRES_PASSWORD=$(DB_PASSWORD) \
+		-p $(DB_PORT):5432 \
+		-d postgres:12
+
+docker-db-down:
+	docker stop secure-genom-db
+	docker rm secure-genom-db
