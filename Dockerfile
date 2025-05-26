@@ -31,7 +31,7 @@ COPY --from=builder /app/main .
 COPY --from=builder /app/migrate .
 
 # Copy migration scripts
-COPY --from=builder /app/internal/adapters/postgres/scripts ./scripts
+COPY --from=builder /app/internal/adapters/postgres/scripts /app/internal/adapters/postgres/scripts
 
 # Create a non-root user and switch to it
 RUN adduser -D appuser
