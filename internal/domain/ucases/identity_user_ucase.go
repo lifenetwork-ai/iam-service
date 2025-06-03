@@ -45,6 +45,13 @@ func NewIdentityUserUseCase(
 	}
 }
 
+type challengeSession struct {
+	Type  string `json:"type"`
+	Email string `json:"email,omitempty"`
+	Phone string `json:"phone,omitempty"`
+	OTP   string `json:"otp"`
+}
+
 func (u *userUseCase) ChallengeWithPhone(
 	ctx context.Context,
 	phone string,
@@ -94,14 +101,12 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	if user == nil {
-		// Create user with email
 		user = &entities.IdentityUser{
 			UserName: strings.TrimSpace(email),
 			Email:    strings.TrimSpace(email),
 		}
 
-		err = u.userRepo.Create(ctx, user)
-		if err != nil {
+		if err := u.userRepo.Create(ctx, user); err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "INTERNAL_SERVER_ERROR",
@@ -113,8 +118,7 @@ func (u *userUseCase) ChallengeWithEmail(
 
 	// Send email with OTP
 	otp := utils.GenerateOTP()
-	err = u.emailService.SendOTP(ctx, email, otp)
-	if err != nil {
+	if err := u.emailService.SendOTP(ctx, email, otp); err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_SENDING_OTP_FAILED",
@@ -124,17 +128,16 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	// Create challenge session
-	session := uuid.New().String()
+	sessionID := uuid.New().String()
 
 	// Save challenge session to cache for 5 minutes
-	cacheKey := &cachingTypes.Keyer{Raw: session}
-	cacheValue := map[string]string{
-		"type":  "email",
-		"email": email,
-		"otp":   otp,
+	cacheKey := &cachingTypes.Keyer{Raw: sessionID}
+	cacheValue := challengeSession{
+		Type:  "email",
+		Email: email,
+		OTP:   otp,
 	}
-	err = u.cacheRepo.SaveItem(cacheKey, cacheValue, 5*time.Minute)
-	if err != nil {
+	if err := u.cacheRepo.SaveItem(cacheKey, cacheValue, 5*time.Minute); err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_CACHING_FAILED",
@@ -145,7 +148,7 @@ func (u *userUseCase) ChallengeWithEmail(
 
 	// Return challenge session
 	return &dto.IdentityUserChallengeDTO{
-		SessionID:   session,
+		SessionID:   sessionID,
 		Receiver:    email,
 		ChallengeAt: time.Now().Unix(),
 	}, nil
@@ -157,8 +160,8 @@ func (u *userUseCase) ChallengeVerify(
 	code string,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
 	cacheKey := &cachingTypes.Keyer{Raw: sessionID}
-	var cacheValue interface{}
-	err := u.cacheRepo.RetrieveItem(cacheKey, &cacheValue)
+	var sessionValue challengeSession
+	err := u.cacheRepo.RetrieveItem(cacheKey, &sessionValue)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusNotFound,
@@ -168,71 +171,43 @@ func (u *userUseCase) ChallengeVerify(
 		}
 	}
 
-	sessionValue, ok := cacheValue.(map[string]string)
-	if !ok {
+	if sessionValue.OTP == "" {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_INVALID_CODE",
 			Message: "Invalid CODE",
-			Details: []interface{}{map[string]string{
-				"field": "session", "error": "Invalid session",
-			}},
+			Details: []interface{}{
+				map[string]string{"field": "otp", "error": "Missing OTP in session"},
+			},
 		}
 	}
 
-	otp, exists := sessionValue["otp"]
-	if !exists {
+	if !conf.IsDebugMode() && sessionValue.OTP != code {
 		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
+			Status:  http.StatusBadRequest,
 			Code:    "MSG_INVALID_CODE",
 			Message: "Invalid CODE",
-			Details: []interface{}{map[string]string{
-				"field": "otp", "error": "Invalid OTP",
-			}},
-		}
-	}
-
-	// Ignore OTP check in debug mode
-	if !conf.IsDebugMode() {
-		if otp != code {
-			return nil, &dto.ErrorDTOResponse{
-				Status:  http.StatusBadRequest,
-				Code:    "MSG_INVALID_CODE",
-				Message: "Invalid CODE",
-				Details: []interface{}{map[string]string{
-					"field": "code", "error": "Invalid code",
-				}},
-			}
-		}
-	}
-
-	challenge_type, exists := sessionValue["type"]
-	if !exists || (challenge_type != "email" && challenge_type != "phone") {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_INVALID_CODE",
-			Message: "Invalid CODE",
-			Details: []interface{}{map[string]string{
-				"field": "type", "error": "Invalid type",
-			}},
+			Details: []interface{}{
+				map[string]string{"field": "code", "error": "Invalid OTP code"},
+			},
 		}
 	}
 
 	var challengeUser *entities.IdentityUser
-	if challenge_type == "email" {
-		email, exists := sessionValue["email"]
-		if !exists {
+	switch sessionValue.Type {
+	case "email":
+		if sessionValue.Email == "" {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "MSG_INVALID_CODE",
 				Message: "Invalid CODE",
-				Details: []interface{}{map[string]string{
-					"field": "email", "error": "Not found email in session",
-				}},
+				Details: []interface{}{
+					map[string]string{"field": "email", "error": "Missing email in session"},
+				},
 			}
 		}
 
-		user, err := u.userRepo.FindByEmail(ctx, email)
+		user, err := u.userRepo.FindByEmail(ctx, sessionValue.Email)
 		if err != nil || user == nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
@@ -241,24 +216,21 @@ func (u *userUseCase) ChallengeVerify(
 				Details: []interface{}{err.Error()},
 			}
 		}
-
 		challengeUser = user
-	}
 
-	if challenge_type == "phone" {
-		phone, exists := sessionValue["phone"]
-		if !exists {
+	case "phone":
+		if sessionValue.Phone == "" {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "MSG_INVALID_CODE",
 				Message: "Invalid CODE",
-				Details: []interface{}{map[string]string{
-					"field": "phone", "error": "Not found phone in session",
-				}},
+				Details: []interface{}{
+					map[string]string{"field": "phone", "error": "Missing phone in session"},
+				},
 			}
 		}
 
-		user, err := u.userRepo.FindByPhone(ctx, phone)
+		user, err := u.userRepo.FindByPhone(ctx, sessionValue.Phone)
 		if err != nil || user == nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
@@ -267,8 +239,17 @@ func (u *userUseCase) ChallengeVerify(
 				Details: []interface{}{err.Error()},
 			}
 		}
-
 		challengeUser = user
+
+	default:
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_INVALID_TYPE",
+			Message: "Invalid challenge type",
+			Details: []interface{}{
+				map[string]string{"field": "type", "error": "Unsupported challenge type"},
+			},
+		}
 	}
 
 	if challengeUser == nil {
