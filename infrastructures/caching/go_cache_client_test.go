@@ -114,3 +114,58 @@ func TestGoCacheClient_Del(t *testing.T) {
 		require.Equal(t, "", dest)
 	})
 }
+
+func TestGoCacheClient_CacheMapValue(t *testing.T) {
+	client := NewGoCacheClient()
+	ctx := context.Background()
+	key := "GoCacheClient_Map_Key"
+
+	cacheValue := map[string]string{
+		"type":  "email",
+		"email": "user@example.com",
+		"otp":   "123456",
+	}
+
+	// Set
+	err := client.Set(ctx, key, cacheValue, 5*time.Minute)
+	require.NoError(t, err)
+
+	// Get
+	var result map[string]string
+	err = client.Get(ctx, key, &result)
+	require.NoError(t, err)
+	require.Equal(t, cacheValue, result)
+}
+
+func TestGoCacheClient_Expiration(t *testing.T) {
+	client := NewGoCacheClient()
+	ctx := context.Background()
+	key := "GoCacheClient_Expiration_Key"
+	value := "temp value"
+
+	setErr := client.Set(ctx, key, value, 1*time.Second)
+	require.NoError(t, setErr)
+
+	time.Sleep(2 * time.Second)
+
+	dest := ""
+	getErr := client.Get(ctx, key, &dest)
+	require.Error(t, getErr)
+	require.Equal(t, "item not found in cache", getErr.Error())
+}
+
+func TestGoCacheClient_Overwrite(t *testing.T) {
+	client := NewGoCacheClient()
+	ctx := context.Background()
+	key := "GoCacheClient_Overwrite_Key"
+	value1 := "first"
+	value2 := "second"
+
+	_ = client.Set(ctx, key, value1, 5*time.Minute)
+	_ = client.Set(ctx, key, value2, 5*time.Minute)
+
+	dest := ""
+	getErr := client.Get(ctx, key, &dest)
+	require.NoError(t, getErr)
+	require.Equal(t, value2, dest)
+}
