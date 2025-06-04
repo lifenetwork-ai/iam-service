@@ -8,8 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/conf"
-	cachingTypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
-	infra_interfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
@@ -19,37 +17,30 @@ import (
 )
 
 type userUseCase struct {
-	userRepo     repositories.IdentityUserRepository
-	sessionRepo  repositories.AccessSessionRepository
-	cacheRepo    infra_interfaces.CacheRepository
-	emailService services.EmailService
-	smsService   services.SMSService
-	jwtService   services.JWTService
+	userRepo             repositories.IdentityUserRepository
+	sessionRepo          repositories.AccessSessionRepository
+	challengeSessionRepo repositories.ChallengeSessionRepository
+	emailService         services.EmailService
+	smsService           services.SMSService
+	jwtService           services.JWTService
 }
 
 func NewIdentityUserUseCase(
 	userRepo repositories.IdentityUserRepository,
 	sessionRepo repositories.AccessSessionRepository,
-	cacheRepo infra_interfaces.CacheRepository,
+	challengeSessionRepo repositories.ChallengeSessionRepository,
 	emailService services.EmailService,
 	smsService services.SMSService,
 	jwtService services.JWTService,
 ) ucase_interfaces.IdentityUserUseCase {
 	return &userUseCase{
-		userRepo:     userRepo,
-		sessionRepo:  sessionRepo,
-		cacheRepo:    cacheRepo,
-		emailService: emailService,
-		smsService:   smsService,
-		jwtService:   jwtService,
+		userRepo:             userRepo,
+		sessionRepo:          sessionRepo,
+		challengeSessionRepo: challengeSessionRepo,
+		emailService:         emailService,
+		smsService:           smsService,
+		jwtService:           jwtService,
 	}
-}
-
-type challengeSession struct {
-	Type  string `json:"type"`
-	Email string `json:"email,omitempty"`
-	Phone string `json:"phone,omitempty"`
-	OTP   string `json:"otp"`
 }
 
 func (u *userUseCase) ChallengeWithPhone(
@@ -81,7 +72,7 @@ func (u *userUseCase) ChallengeWithEmail(
 			Status:  http.StatusBadRequest,
 			Code:    "INVALID_EMAIL",
 			Message: "Invalid email",
-			Details: []interface{}{
+			Details: []any{
 				map[string]string{
 					"field": "email",
 					"error": "Invalid email",
@@ -96,7 +87,7 @@ func (u *userUseCase) ChallengeWithEmail(
 			Status:  http.StatusInternalServerError,
 			Code:    "INTERNAL_SERVER_ERROR",
 			Message: "Internal server error",
-			Details: []interface{}{err.Error()},
+			Details: []any{err.Error()},
 		}
 	}
 
@@ -129,19 +120,16 @@ func (u *userUseCase) ChallengeWithEmail(
 
 	// Create challenge session
 	sessionID := uuid.New().String()
-
-	// Save challenge session to cache for 5 minutes
-	cacheKey := &cachingTypes.Keyer{Raw: sessionID}
-	cacheValue := challengeSession{
+	err = u.challengeSessionRepo.SaveChallenge(ctx, sessionID, &entities.ChallengeSession{
 		Type:  "email",
 		Email: email,
 		OTP:   otp,
-	}
-	if err := u.cacheRepo.SaveItem(cacheKey, cacheValue, 5*time.Minute); err != nil {
+	}, 5*time.Minute)
+	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "MSG_CACHING_FAILED",
-			Message: "Caching failed",
+			Code:    "MSG_SAVING_SESSION_FAILED",
+			Message: "Saving challenge session failed",
 			Details: []interface{}{err.Error()},
 		}
 	}
@@ -159,9 +147,19 @@ func (u *userUseCase) ChallengeVerify(
 	sessionID string,
 	code string,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
-	cacheKey := &cachingTypes.Keyer{Raw: sessionID}
-	var sessionValue challengeSession
-	err := u.cacheRepo.RetrieveItem(cacheKey, &sessionValue)
+	// cacheKey := &cachingTypes.Keyer{Raw: sessionID}
+	// var sessionValue challengeSession
+	// err := u.cacheRepo.RetrieveItem(cacheKey, &sessionValue)
+	// if err != nil {
+	// 	return nil, &dto.ErrorDTOResponse{
+	// 		Status:  http.StatusNotFound,
+	// 		Code:    "MSG_SESSION_NOT_FOUND",
+	// 		Message: "Session not found",
+	// 		Details: []interface{}{err.Error()},
+	// 	}
+	// }
+
+	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, sessionID)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusNotFound,
