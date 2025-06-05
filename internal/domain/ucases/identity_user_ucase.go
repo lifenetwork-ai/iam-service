@@ -163,9 +163,20 @@ func (u *userUseCase) ChallengeVerify(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusNotFound,
-			Code:    "MSG_SESSION_NOT_FOUND",
-			Message: "Session not found",
+			Code:    "MSG_CHALLENGE_SESSION_NOT_FOUND",
+			Message: "Challenge session not found",
 			Details: []interface{}{err.Error()},
+		}
+	}
+
+	if sessionValue == nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusNotFound,
+			Code:    "MSG_CHALLENGE_SESSION_NOT_FOUND",
+			Message: "Challenge session not found",
+			Details: []interface{}{
+				map[string]string{"field": "session", "error": "Session not found"},
+			},
 		}
 	}
 
@@ -206,14 +217,24 @@ func (u *userUseCase) ChallengeVerify(
 		}
 
 		user, err := u.userRepo.FindByEmail(ctx, sessionValue.Email)
-		if err != nil || user == nil {
+		if err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "INTERNAL_SERVER_ERROR",
-				Message: "Internal server error",
+				Message: "Database error",
 				Details: []interface{}{err.Error()},
 			}
 		}
+
+		if user == nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusNotFound,
+				Code:    "USER_NOT_FOUND",
+				Message: "User not found",
+				Details: []interface{}{},
+			}
+		}
+
 		challengeUser = user
 
 	case "phone":
@@ -229,12 +250,21 @@ func (u *userUseCase) ChallengeVerify(
 		}
 
 		user, err := u.userRepo.FindByPhone(ctx, sessionValue.Phone)
-		if err != nil || user == nil {
+		if err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "INTERNAL_SERVER_ERROR",
-				Message: "Internal server error",
+				Message: "Database error",
 				Details: []interface{}{err.Error()},
+			}
+		}
+
+		if user == nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusNotFound,
+				Code:    "USER_NOT_FOUND",
+				Message: "User not found",
+				Details: []interface{}{},
 			}
 		}
 		challengeUser = user
@@ -260,6 +290,19 @@ func (u *userUseCase) ChallengeVerify(
 			}},
 		}
 	}
+
+	// orgIDValue := ctx.Value("organizationId")
+	// orgID, ok := orgIDValue.(string)
+	// if !ok || orgID == "" {
+	// 	return nil, &dto.ErrorDTOResponse{
+	// 		Status:  http.StatusInternalServerError,
+	// 		Code:    "MSG_ORGANIZATION_NOT_FOUND",
+	// 		Message: "Organization not found",
+	// 		Details: []interface{}{
+	// 			map[string]string{"field": "organizationId", "error": "Organization not found"},
+	// 		},
+	// 	}
+	// }
 
 	// Generate JWT token
 	jwtClaims := services.JWTClaims{
