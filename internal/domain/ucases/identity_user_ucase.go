@@ -291,19 +291,6 @@ func (u *userUseCase) ChallengeVerify(
 		}
 	}
 
-	// orgIDValue := ctx.Value("organizationId")
-	// orgID, ok := orgIDValue.(string)
-	// if !ok || orgID == "" {
-	// 	return nil, &dto.ErrorDTOResponse{
-	// 		Status:  http.StatusInternalServerError,
-	// 		Code:    "MSG_ORGANIZATION_NOT_FOUND",
-	// 		Message: "Organization not found",
-	// 		Details: []interface{}{
-	// 			map[string]string{"field": "organizationId", "error": "Organization not found"},
-	// 		},
-	// 	}
-	// }
-
 	// Generate JWT token
 	jwtClaims := services.JWTClaims{
 		OrganizationId: ctx.Value("organizationId").(string),
