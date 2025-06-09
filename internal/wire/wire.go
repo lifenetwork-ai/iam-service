@@ -16,7 +16,8 @@ type repos struct {
 	IdentityOrganizationRepo repositories_interfaces.IdentityOrganizationRepository
 	IdentityUserRepo         repositories_interfaces.IdentityUserRepository
 
-	AccessSessionRepo repositories_interfaces.AccessSessionRepository
+	AccessSessionRepo    repositories_interfaces.AccessSessionRepository
+	ChallengeSessionRepo repositories_interfaces.ChallengeSessionRepository
 }
 
 // Initialize repositories (only using cache where needed)
@@ -26,7 +27,8 @@ func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *re
 		IdentityOrganizationRepo: repositories.NewIdentityOrganizationRepository(db, cacheRepo),
 		IdentityUserRepo:         repositories.NewIdentityUserRepository(db, cacheRepo),
 
-		AccessSessionRepo: repositories.NewAccessSessionRepository(db, cacheRepo),
+		AccessSessionRepo:    repositories.NewAccessSessionRepository(db, cacheRepo),
+		ChallengeSessionRepo: repositories.NewChallengeSessionRepository(cacheRepo),
 	}
 }
 
@@ -46,7 +48,7 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
 			repos.IdentityUserRepo,
 			repos.AccessSessionRepo,
-			cacheRepo,
+			repos.ChallengeSessionRepo,
 			instances.EmailServiceInstance(),
 			instances.SMSServiceInstance(),
 			instances.JWTServiceInstance(),
