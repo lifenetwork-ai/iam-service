@@ -2,11 +2,10 @@ package repositories
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/testutil"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -15,35 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// MockCacheRepository implements infrainterfaces.CacheRepository for testing
-type MockCacheRepository struct {
-	items map[string]interface{}
-}
-
-func NewMockCacheRepository() *MockCacheRepository {
-	return &MockCacheRepository{
-		items: make(map[string]interface{}),
-	}
-}
-
-func (m *MockCacheRepository) SaveItem(key fmt.Stringer, value interface{}, ttl time.Duration) error {
-	m.items[key.String()] = value
-	return nil
-}
-
-func (m *MockCacheRepository) RetrieveItem(key fmt.Stringer, value interface{}) error {
-	if item, exists := m.items[key.String()]; exists {
-		reflect.ValueOf(value).Elem().Set(reflect.ValueOf(item))
-		return nil
-	}
-	return gorm.ErrRecordNotFound
-}
-
-func (m *MockCacheRepository) RemoveItem(key fmt.Stringer) error {
-	delete(m.items, key.String())
-	return nil
-}
 
 // TestIdentityUser is a simplified version of IdentityUser for testing
 type TestIdentityUser struct {
@@ -100,7 +70,7 @@ func TestIdentityUserRepository_CRUD(t *testing.T) {
 	db, cleanup := setupTestDB(t)
 	defer cleanup()
 
-	mockCache := NewMockCacheRepository()
+	mockCache := testutil.NewMockCache()
 	repo := NewIdentityUserRepository(db, mockCache)
 
 	ctx := context.WithValue(context.Background(), "organizationId", "test-org-id")
