@@ -68,7 +68,28 @@ func (u *organizationUseCase) GetByID(
 	ctx context.Context,
 	id string,
 ) (*dto.IdentityOrganizationDTO, *dto.ErrorDTOResponse) {
-	return nil, nil
+	organization, err := u.organizationRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Message: err.Error(),
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	if organization == nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusNotFound,
+			Code:    "MSG_ORGANIZATION_NOT_FOUND",
+			Message: "Organization not found",
+			Details: []interface{}{
+				map[string]string{"field": "id", "error": "Organization not found"},
+			},
+		}
+	}
+
+	dto := organization.ToDTO()
+	return &dto, nil
 }
 
 func (u *organizationUseCase) Create(
