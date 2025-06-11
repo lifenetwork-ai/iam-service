@@ -22,19 +22,16 @@ func NewChallengeSessionRepository(cache cachingTypes.CacheRepository) interface
 // SaveChallenge saves a challenge session in the cache with a specified TTL.
 func (r *challengeSessionRepository) SaveChallenge(_ context.Context, sessionID string, challenge *domain.ChallengeSession, ttl time.Duration) error {
 	cacheKey := &cachingTypes.Keyer{Raw: sessionID}
-	if err := r.cache.SaveItem(cacheKey, challenge, ttl); err != nil {
-		return err
-	}
-	return nil
+	return r.cache.SaveItem(cacheKey, challenge, ttl)
 }
 
 // GetChallenge retrieves a challenge session from the cache using the session ID.
 // If the session does not exist, it returns an error.
 func (r *challengeSessionRepository) GetChallenge(_ context.Context, sessionID string) (*domain.ChallengeSession, error) {
 	cacheKey := &cachingTypes.Keyer{Raw: sessionID}
-	var challenge domain.ChallengeSession
+	var challenge *domain.ChallengeSession
 	if err := r.cache.RetrieveItem(cacheKey, &challenge); err != nil {
 		return nil, err
 	}
-	return &challenge, nil
+	return challenge, nil
 }

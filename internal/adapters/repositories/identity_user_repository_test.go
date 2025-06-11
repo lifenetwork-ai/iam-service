@@ -3,16 +3,17 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	"github.com/google/uuid"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // MockCacheRepository implements infrainterfaces.CacheRepository for testing
@@ -33,7 +34,7 @@ func (m *MockCacheRepository) SaveItem(key fmt.Stringer, value interface{}, ttl 
 
 func (m *MockCacheRepository) RetrieveItem(key fmt.Stringer, value interface{}) error {
 	if item, exists := m.items[key.String()]; exists {
-		value = item
+		reflect.ValueOf(value).Elem().Set(reflect.ValueOf(item))
 		return nil
 	}
 	return gorm.ErrRecordNotFound
