@@ -210,7 +210,7 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
 
 		sessionID := ValidSessionID
-		code := ValidCode // FIXED: was ValidSessionID
+		code := ValidCode
 		expectedSessionValue := entities.ChallengeSession{
 			Type:  "email",
 			Email: "email",
@@ -249,7 +249,7 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
 
 		sessionID := ValidSessionID
-		code := ValidCode // FIXED: was ValidSessionID
+		code := ValidCode
 		expectedSessionValue := entities.ChallengeSession{
 			Type:  "email",
 			Email: ValidEmail,
@@ -304,7 +304,6 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		sessionID := "non-existent-session-id"
 		code := "123456"
 
-		// FIXED: Return error instead of nil, nil
 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(nil, errors.New("session not found"))
 
 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
@@ -341,7 +340,7 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		expectedSessionValue := entities.ChallengeSession{
 			Type:  "email",
 			Email: "email",
-			OTP:   ValidCode, // FIXED: was empty code
+			OTP:   ValidCode,
 		}
 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
@@ -377,7 +376,7 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		expectedSessionValue := entities.ChallengeSession{
 			Type:  "email",
 			Email: "email",
-			OTP:   ValidCode, // FIXED: was "123456"
+			OTP:   ValidCode,
 		}
 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
 
