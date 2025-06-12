@@ -1,6 +1,6 @@
 module github.com/lifenetwork-ai/iam-service
 
-go 1.22
+go 1.22.4
 
 require (
 	github.com/cosmos/go-bip39 v1.0.0
