@@ -129,7 +129,7 @@ func (r *identityRepository) FindByUsername(
 	}
 
 	var entity entities.IdentityUser
-	err := r.db.Where("organization_id = ? AND username = ?", organizationId, username).First(&entity).Error
+	err := r.db.Where("organization_id = ? AND user_name = ?", organizationId, username).First(&entity).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

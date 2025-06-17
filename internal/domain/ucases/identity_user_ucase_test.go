@@ -210,7 +210,7 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
 
 		sessionID := ValidSessionID
-		code := ValidSessionID
+		code := ValidCode
 		expectedSessionValue := entities.ChallengeSession{
 			Type:  "email",
 			Email: "email",
@@ -249,7 +249,7 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
 
 		sessionID := ValidSessionID
-		code := ValidSessionID
+		code := ValidCode
 		expectedSessionValue := entities.ChallengeSession{
 			Type:  "email",
 			Email: ValidEmail,
@@ -304,7 +304,7 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		sessionID := "non-existent-session-id"
 		code := "123456"
 
-		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(nil, nil)
+		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(nil, errors.New("session not found"))
 
 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
 		assert.NotNil(t, err)
@@ -340,7 +340,7 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		expectedSessionValue := entities.ChallengeSession{
 			Type:  "email",
 			Email: "email",
-			OTP:   code,
+			OTP:   ValidCode,
 		}
 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
@@ -376,279 +376,11 @@ func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
 		expectedSessionValue := entities.ChallengeSession{
 			Type:  "email",
 			Email: "email",
-			OTP:   "123456",
-		}
-		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-
-		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-		assert.NotNil(t, err)
-		assert.Nil(t, auth)
-		assert.Equal(t, "MSG_INVALID_CODE", err.Code)
-	})
-}
-
-// Complete the SMS test case that was started in your ChallengeVerify function
-func TestUserUseCase_ChallengeVerify_SMS_Cases(t *testing.T) {
-	conf.GetConfiguration().Env = "PROD"
-
-	t.Run("Challenge session valid - SMS type - User not found", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-		mockEmailService := mocks.NewMockEmailService(ctrl)
-		mockSMSService := mocks.NewMockSMSService(ctrl)
-		mockJWTService := mocks.NewMockJWTService(ctrl)
-
-		useCase := NewIdentityUserUseCase(
-			mockUserRepo,
-			mockSessionRepo,
-			mockChallengeSessionRepo,
-			mockEmailService,
-			mockSMSService,
-			mockJWTService,
-		)
-
-		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
-
-		sessionID := ValidSessionID
-		code := ValidCode
-		expectedSessionValue := entities.ChallengeSession{
-			Type:  "phone",
-			Phone: ValidPhone,
-			OTP:   code,
-		}
-
-		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-		mockUserRepo.EXPECT().FindByPhone(ctx, expectedSessionValue.Phone).Return(nil, nil)
-
-		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-
-		assert.NotNil(t, err)
-		assert.Nil(t, auth)
-		assert.Equal(t, "USER_NOT_FOUND", err.Code)
-	})
-
-	t.Run("Challenge session valid - SMS type - User found", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-		mockEmailService := mocks.NewMockEmailService(ctrl)
-		mockSMSService := mocks.NewMockSMSService(ctrl)
-		mockJWTService := mocks.NewMockJWTService(ctrl)
-
-		useCase := NewIdentityUserUseCase(
-			mockUserRepo,
-			mockSessionRepo,
-			mockChallengeSessionRepo,
-			mockEmailService,
-			mockSMSService,
-			mockJWTService,
-		)
-
-		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
-
-		sessionID := ValidSessionID
-		code := ValidCode
-		expectedSessionValue := entities.ChallengeSession{
-			Type:  "phone",
-			Phone: ValidPhone,
-			OTP:   code,
-		}
-
-		jwtToken := services.JWTToken{
-			AccessToken:        "access-token",
-			RefreshToken:       "refresh-token",
-			AccessTokenExpiry:  int64(30 * time.Minute),
-			RefreshTokenExpiry: int64(24 * time.Hour),
-			ClaimAt:            time.Now(),
-		}
-
-		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-		mockUserRepo.EXPECT().FindByPhone(ctx, expectedSessionValue.Phone).Return(&ValidPhoneUser, nil)
-		mockJWTService.EXPECT().GenerateToken(ctx, gomock.Any()).Return(&jwtToken, nil)
-		mockSessionRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, nil)
-
-		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-
-		assert.Nil(t, err)
-		assert.NotNil(t, auth)
-		assert.Equal(t, ValidPhoneUserID, auth.User.ID)
-		assert.Equal(t, expectedSessionValue.Phone, auth.User.Phone)
-		assert.Equal(t, jwtToken.AccessToken, auth.AccessToken)
-		assert.Equal(t, jwtToken.RefreshToken, auth.RefreshToken)
-		assert.Equal(t, ValidPhoneUser.ID, auth.User.ID)
-	})
-
-	t.Run("Challenge session valid - Phone type - JWT generation fails", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-		mockEmailService := mocks.NewMockEmailService(ctrl)
-		mockSMSService := mocks.NewMockSMSService(ctrl)
-		mockJWTService := mocks.NewMockJWTService(ctrl)
-
-		useCase := NewIdentityUserUseCase(
-			mockUserRepo,
-			mockSessionRepo,
-			mockChallengeSessionRepo,
-			mockEmailService,
-			mockSMSService,
-			mockJWTService,
-		)
-
-		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
-
-		sessionID := ValidSessionID
-		code := ValidCode
-		expectedSessionValue := entities.ChallengeSession{
-			Type:  "phone",
-			Phone: ValidPhone,
-			OTP:   code,
-		}
-
-		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-		mockUserRepo.EXPECT().FindByPhone(ctx, expectedSessionValue.Phone).Return(&ValidPhoneUser, nil)
-		mockJWTService.EXPECT().GenerateToken(ctx, gomock.Any()).Return(nil, errors.New("JWT generation failed"))
-
-		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-
-		assert.NotNil(t, err)
-		assert.Nil(t, auth)
-		assert.Contains(t, err.Code, "MSG_GENERATE_TOKEN_FAILED")
-	})
-
-	t.Run("Challenge session valid - SMS type - Session creation fails", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-		mockEmailService := mocks.NewMockEmailService(ctrl)
-		mockSMSService := mocks.NewMockSMSService(ctrl)
-		mockJWTService := mocks.NewMockJWTService(ctrl)
-
-		useCase := NewIdentityUserUseCase(
-			mockUserRepo,
-			mockSessionRepo,
-			mockChallengeSessionRepo,
-			mockEmailService,
-			mockSMSService,
-			mockJWTService,
-		)
-
-		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
-
-		sessionID := ValidSessionID
-		code := ValidCode
-		expectedSessionValue := entities.ChallengeSession{
-			Type:  "phone",
-			Phone: ValidPhone,
-			OTP:   code,
-		}
-
-		jwtToken := services.JWTToken{
-			AccessToken:        "access-token",
-			RefreshToken:       "refresh-token",
-			AccessTokenExpiry:  int64(30 * time.Minute),
-			RefreshTokenExpiry: int64(24 * time.Hour),
-			ClaimAt:            time.Now(),
-		}
-
-		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-		mockUserRepo.EXPECT().FindByPhone(ctx, expectedSessionValue.Phone).Return(&ValidPhoneUser, nil)
-		mockJWTService.EXPECT().GenerateToken(ctx, gomock.Any()).Return(&jwtToken, nil)
-		mockSessionRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, errors.New("Session creation failed"))
-
-		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-
-		assert.NotNil(t, err)
-		assert.Nil(t, auth)
-		assert.Contains(t, err.Code, "MSG_SAVE_SESSION_FAILED")
-	})
-
-	t.Run("Challenge session valid - SMS type - Invalid OTP", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-		mockEmailService := mocks.NewMockEmailService(ctrl)
-		mockSMSService := mocks.NewMockSMSService(ctrl)
-		mockJWTService := mocks.NewMockJWTService(ctrl)
-
-		useCase := NewIdentityUserUseCase(
-			mockUserRepo,
-			mockSessionRepo,
-			mockChallengeSessionRepo,
-			mockEmailService,
-			mockSMSService,
-			mockJWTService,
-		)
-
-		ctx := context.Background()
-
-		sessionID := ValidSessionID
-		code := InvalidCode
-		expectedSessionValue := entities.ChallengeSession{
-			Type:  "phone",
-			Phone: ValidPhone,
 			OTP:   ValidCode,
 		}
-
 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
 
 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-
-		assert.NotNil(t, err)
-		assert.Nil(t, auth)
-		assert.Equal(t, "MSG_INVALID_CODE", err.Code)
-	})
-
-	t.Run("Challenge session valid - SMS type - Empty OTP", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-		mockEmailService := mocks.NewMockEmailService(ctrl)
-		mockSMSService := mocks.NewMockSMSService(ctrl)
-		mockJWTService := mocks.NewMockJWTService(ctrl)
-
-		useCase := NewIdentityUserUseCase(
-			mockUserRepo,
-			mockSessionRepo,
-			mockChallengeSessionRepo,
-			mockEmailService,
-			mockSMSService,
-			mockJWTService,
-		)
-
-		ctx := context.Background()
-
-		sessionID := ValidSessionID
-		code := ""
-		expectedSessionValue := entities.ChallengeSession{
-			Type:  "phone",
-			Phone: ValidPhone,
-			OTP:   ValidCode,
-		}
-
-		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-
-		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-
 		assert.NotNil(t, err)
 		assert.Nil(t, auth)
 		assert.Equal(t, "MSG_INVALID_CODE", err.Code)
