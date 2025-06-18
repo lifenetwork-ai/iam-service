@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/testutil"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/testutil"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

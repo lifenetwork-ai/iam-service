@@ -15,6 +15,8 @@ import (
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
+var sessionCacheDuration = 30 * time.Minute // Duration for which session data is cached
+
 type sessionRepository struct {
 	db    *gorm.DB
 	cache infrainterfaces.CacheRepository
@@ -77,7 +79,7 @@ func (r *sessionRepository) FindByID(
 	}
 
 	// Cache the result
-	if err := r.cache.SaveItem(cacheKey, entity, 30*time.Minute); err != nil {
+	if err := r.cache.SaveItem(cacheKey, entity, sessionCacheDuration); err != nil {
 		logger.GetLogger().Errorf("Failed to cache session: %v", err)
 	}
 
@@ -111,7 +113,7 @@ func (r *sessionRepository) FindByAccessToken(
 	}
 
 	// Cache the result
-	if err := r.cache.SaveItem(cacheKey, entity, 30*time.Minute); err != nil {
+	if err := r.cache.SaveItem(cacheKey, entity, sessionCacheDuration); err != nil {
 		logger.GetLogger().Errorf("Failed to cache session: %v", err)
 	}
 
@@ -145,7 +147,7 @@ func (r *sessionRepository) FindByRefreshToken(
 	}
 
 	// Cache the result
-	if err := r.cache.SaveItem(cacheKey, entity, 30*time.Minute); err != nil {
+	if err := r.cache.SaveItem(cacheKey, entity, sessionCacheDuration); err != nil {
 		logger.GetLogger().Errorf("Failed to cache session: %v", err)
 	}
 
