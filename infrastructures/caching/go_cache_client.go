@@ -44,9 +44,15 @@ func (c *goCacheClient) Get(ctx context.Context, key string, dest interface{}) e
 	}
 
 	cachedVal := reflect.ValueOf(cachedValue)
+	destType := destVal.Elem().Type()
 
-	if cachedVal.Type().AssignableTo(destVal.Elem().Type()) {
+	if cachedVal.Type().AssignableTo(destType) {
 		destVal.Elem().Set(cachedVal)
+		return nil
+	}
+
+	if cachedVal.Kind() == reflect.Ptr && cachedVal.Elem().Type().AssignableTo(destType) {
+		destVal.Elem().Set(cachedVal.Elem())
 		return nil
 	}
 
