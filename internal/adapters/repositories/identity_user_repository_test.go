@@ -73,8 +73,8 @@ func TestIdentityUserRepository_CRUD(t *testing.T) {
 	mockCache := testutil.NewMockCache()
 	repo := NewIdentityUserRepository(db, mockCache)
 
-	ctx := context.WithValue(context.Background(), "organizationId", "test-org-id")
-	ctx = context.WithValue(ctx, "organization", &entities.IdentityOrganization{
+	ctx := context.WithValue(context.Background(), "organizationId", "test-org-id") // nolint: staticcheck
+	ctx = context.WithValue(ctx, "organization", &entities.IdentityOrganization{    // nolint: staticcheck
 		Code: "TEST",
 	})
 

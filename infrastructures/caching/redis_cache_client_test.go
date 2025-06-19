@@ -324,7 +324,7 @@ func TestRedisCacheWithContainer(t *testing.T) {
 		Started:          true,
 	})
 	require.NoError(t, err)
-	defer redisContainer.Terminate(ctx)
+	defer redisContainer.Terminate(ctx) // nolint: errcheck
 
 	// Get connection details
 	mappedPort, err := redisContainer.MappedPort(ctx, "6379")
