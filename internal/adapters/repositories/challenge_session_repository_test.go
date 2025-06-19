@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/testutil"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // sessionKey implements fmt.Stringer for the cache key

@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	mocks "github.com/lifenetwork-ai/iam-service/internal/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 var (

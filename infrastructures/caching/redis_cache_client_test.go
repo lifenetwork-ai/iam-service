@@ -271,11 +271,11 @@ func (suite *RedisCacheTestSuite) TestContextCancellation() {
 		value := "test_value"
 		expiration := 5 * time.Minute
 
-		// Create a context that will be cancelled
+		// Create a context that will be canceled
 		cancelCtx, cancel := context.WithCancel(suite.ctx)
 		cancel() // Cancel immediately
 
-		// Operations should handle cancelled context gracefully
+		// Operations should handle canceled context gracefully
 		err := suite.client.Set(cancelCtx, key, value, expiration)
 		require.Error(suite.T(), err)
 		require.Contains(suite.T(), err.Error(), "context")
