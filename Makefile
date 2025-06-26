@@ -60,13 +60,16 @@ docker-db-down:
 	docker stop secure-genom-db
 	docker rm secure-genom-db
 
+.PHONY: mocks clean-mocks
+
 mocks: 
 	@echo "Generating mocks..."
-	@mkdir -p mocks
+	@mkdir -p internal/mocks
 	@find . -name "*.go" -not -path "./mocks/*" -not -path "./vendor/*" -exec grep -l "type.*interface" {} \; | \
 	while read file; do \
 		echo "Processing $$file"; \
-		mockgen -source="$$file" -package=mocks -destination="mocks/mock_$$(basename $$file)"; \
+		dir_path=$$(dirname $$file | sed 's|./||' | sed 's|/|_|g'); \
+		mockgen -source="$$file" -package=mocks -destination="internal/mocks/mock_$${dir_path}_$$(basename $$file)"; \
 	done
 	@echo "Done generating mocks"
 

@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/testutil"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/testutil"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,8 +73,8 @@ func TestIdentityUserRepository_CRUD(t *testing.T) {
 	mockCache := testutil.NewMockCache()
 	repo := NewIdentityUserRepository(db, mockCache)
 
-	ctx := context.WithValue(context.Background(), "organizationId", "test-org-id")
-	ctx = context.WithValue(ctx, "organization", &entities.IdentityOrganization{
+	ctx := context.WithValue(context.Background(), "organizationId", "test-org-id") // nolint: staticcheck
+	ctx = context.WithValue(ctx, "organization", &entities.IdentityOrganization{    // nolint: staticcheck
 		Code: "TEST",
 	})
 
