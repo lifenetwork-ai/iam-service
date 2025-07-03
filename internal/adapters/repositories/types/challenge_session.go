@@ -10,4 +10,5 @@ import (
 type ChallengeSessionRepository interface {
 	SaveChallenge(ctx context.Context, sessionID string, challenge *domain.ChallengeSession, ttl time.Duration) error
 	GetChallenge(ctx context.Context, sessionID string) (*domain.ChallengeSession, error)
+	DeleteChallenge(ctx context.Context, sessionID string) error
 }

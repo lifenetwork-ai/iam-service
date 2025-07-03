@@ -58,6 +58,11 @@ type JwtConfiguration struct {
 	RefreshLifetime int64  `mapstructure:"JWT_REFRESH_TOKEN_LIFETIME"` // second
 }
 
+type KratosConfiguration struct {
+	PublicEndpoint string `mapstructure:"KRATOS_PUBLIC_ENDPOINT"`
+	AdminEndpoint  string `mapstructure:"KRATOS_ADMIN_ENDPOINT"`
+}
+
 type Configuration struct {
 	Database     DatabaseConfiguration     `mapstructure:",squash"`
 	Redis        RedisConfiguration        `mapstructure:",squash"`
@@ -73,6 +78,7 @@ type Configuration struct {
 	EmailConfig  EmailConfiguration        `mapstructure:",squash"`
 	SmsConfig    SmsConfiguration          `mapstructure:",squash"`
 	JwtConfig    JwtConfiguration          `mapstructure:",squash"`
+	KratosConfig KratosConfiguration       `mapstructure:",squash"`
 }
 
 var configuration Configuration
@@ -99,6 +105,8 @@ var defaultConfigurations = map[string]any{
 	"JWT_ACCESS_TOKEN_LIFETIME":      "3600",  // 1 hour
 	"JWT_REFRESH_TOKEN_LIFETIME":     "86400", // 24 hours
 	"LIFE_AI_BACKEND_URL":            "https://nightly.lifenetwork.ai",
+	"KRATOS_PUBLIC_ENDPOINT":         "https://auth.develop.lifenetwork.ai",                                             // Default Kratos public API endpoint
+	"KRATOS_ADMIN_ENDPOINT":          "https://human-network-kratos-admin-develop-802449703053.asia-southeast1.run.app", // Default Kratos admin API endpoint
 }
 
 // loadDefaultConfigs sets default values for critical configurations
@@ -137,4 +145,8 @@ func init() {
 	}
 
 	log.Println("Configuration loaded successfully")
+}
+
+func GetKratosConfig() *KratosConfiguration {
+	return &configuration.KratosConfig
 }

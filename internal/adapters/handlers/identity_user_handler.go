@@ -402,3 +402,120 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 		nil,
 	)
 }
+
+// Register to register user.
+// @Summary Register a new user
+// @Description Register a new user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, tenant is required, if both are provided, email will be used"
+// @Success 200 {object} response.SuccessResponse "Successful user registration"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} response.ErrorResponse "Internal server error"
+// @Router /api/v1/users/register [post]
+func (h *userHandler) Register(ctx *gin.Context) {
+	var reqPayload dto.IdentityUserRegisterDTO
+	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_PAYLOAD",
+			"Invalid payload",
+			err,
+		)
+		return
+	}
+
+	// Validate that at least one contact method is provided
+	if reqPayload.Email == "" && reqPayload.Phone == "" {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_CONTACT_METHOD_REQUIRED",
+			"Either email or phone must be provided",
+			[]map[string]string{
+				{
+					"field": "email,phone",
+					"error": "At least one contact method (email or phone) must be provided",
+				},
+			},
+		)
+		return
+	}
+
+	// Validate tenant is provided
+	if reqPayload.Tenant == "" {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_TENANT_REQUIRED",
+			"Tenant is required",
+			[]map[string]string{
+				{
+					"field": "tenant",
+					"error": "Tenant must be provided",
+				},
+			},
+		)
+		return
+	}
+
+	// Call the use case to handle registration
+	auth, err := h.ucase.Register(ctx, reqPayload)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			err.Status,
+			err.Code,
+			err.Message,
+			err.Details,
+		)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, auth)
+}
+
+// VerifyRegister to verify the registration.
+// @Summary Verify the registration
+// @Description Verify the registration
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param X-Organization-Id header string true "Organization ID"
+// @Param verify-register body dto.IdentityUserVerifyRegisterDTO true "verify-register payload"
+// @Success 200 {object} response.SuccessResponse "Successful verify the registration"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} response.ErrorResponse "Internal server error"
+// @Router /api/v1/users/verify-register [post]
+func (h *userHandler) VerifyRegister(ctx *gin.Context) {
+	var reqPayload dto.IdentityUserVerifyRegisterDTO
+	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_PAYLOAD",
+			"Invalid payload",
+			err,
+		)
+		return
+	}
+
+	auth, err := h.ucase.VerifyRegister(ctx, reqPayload.FlowID, reqPayload.Code)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			err.Status,
+			err.Code,
+			err.Message,
+			err.Details,
+		)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, auth)
+}

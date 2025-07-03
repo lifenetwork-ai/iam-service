@@ -110,4 +110,12 @@ func RegisterRoutes(
 		middleware.RequestHybridAuthenticationMiddleware(),
 		userHandler.Me,
 	)
+	userRouter.POST(
+		"/register",
+		userHandler.Register,
+	)
+	userRouter.POST(
+		"/verify-register",
+		userHandler.VerifyRegister,
+	)
 }

@@ -12,6 +12,7 @@ type IdentityUserDTO struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	FullName  string `json:"full_name"`
+	Tenant    string `json:"tenant"`
 	CreatedAt int64  `json:"created_at"`
 	UpdatedAt int64  `json:"updated_at"`
 }
@@ -25,12 +26,14 @@ type IdentityUserChallengeDTO struct {
 
 // IdentityUserAuthDTO represents the response for a successful login.
 type IdentityUserAuthDTO struct {
-	AccessToken      string          `json:"access_token"`
-	RefreshToken     string          `json:"refresh_token"`
-	AccessExpiresAt  int64           `json:"access_expires_at"`
-	RefreshExpiresAt int64           `json:"refresh_expires_at"`
-	LastLoginAt      int64           `json:"last_login_at"`
-	User             IdentityUserDTO `json:"user"`
+	AccessToken        string                    `json:"access_token"`
+	RefreshToken       string                    `json:"refresh_token"`
+	AccessExpiresAt    int64                     `json:"access_expires_at"`
+	RefreshExpiresAt   int64                     `json:"refresh_expires_at"`
+	LastLoginAt        int64                     `json:"last_login_at"`
+	User               IdentityUserDTO           `json:"user"`
+	VerificationNeeded bool                      `json:"verification_needed,omitempty"`
+	VerificationFlow   *IdentityUserChallengeDTO `json:"verification_flow,omitempty"`
 }
 
 // IdentityChallengeWithPhoneDTO represents the request for a phone challenge.
@@ -49,10 +52,14 @@ type IdentityChallengeVerifyDTO struct {
 }
 
 type IdentityUserRegisterDTO struct {
-	UserName string `json:"user_name"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Password string `json:"password"`
+	Email  string `json:"email" validate:"omitempty,email"`
+	Phone  string `json:"phone" validate:"omitempty"`
+	Tenant string `json:"tenant" validate:"required"`
+}
+
+type IdentityUserVerifyRegisterDTO struct {
+	FlowID string `json:"flow_id" binding:"required"`
+	Code   string `json:"code" binding:"required"`
 }
 
 // IdentityUserLoginDTO represents the request for a user login.

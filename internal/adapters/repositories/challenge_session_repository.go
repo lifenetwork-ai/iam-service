@@ -35,3 +35,9 @@ func (r *challengeSessionRepository) GetChallenge(_ context.Context, sessionID s
 	}
 	return challenge, nil
 }
+
+// DeleteChallenge deletes a challenge session from the cache using the session ID.
+func (r *challengeSessionRepository) DeleteChallenge(_ context.Context, sessionID string) error {
+	cacheKey := &cachingTypes.Keyer{Raw: sessionID}
+	return r.cache.RemoveItem(cacheKey)
+}

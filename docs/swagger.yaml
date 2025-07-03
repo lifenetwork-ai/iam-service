@@ -167,6 +167,27 @@ definitions:
       user_name:
         type: string
     type: object
+  dto.IdentityUserRegisterDTO:
+    properties:
+      email:
+        type: string
+      phone:
+        type: string
+      tenant:
+        type: string
+    required:
+    - tenant
+    type: object
+  dto.IdentityUserVerifyRegisterDTO:
+    properties:
+      code:
+        type: string
+      flow_id:
+        type: string
+    required:
+    - code
+    - flow_id
+    type: object
   dto.PaginationDTOResponse:
     properties:
       data:
@@ -2023,6 +2044,77 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Refresh token
+      tags:
+      - users
+  /api/v1/users/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Only email or phone must be provided, tenant is required, if
+          both are provided, email will be used
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserRegisterDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful user registration
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - users
+  /api/v1/users/verify-register:
+    post:
+      consumes:
+      - application/json
+      description: Verify the registration
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: verify-register payload
+        in: body
+        name: verify-register
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserVerifyRegisterDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful verify the registration
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Verify the registration
       tags:
       - users
 swagger: "2.0"

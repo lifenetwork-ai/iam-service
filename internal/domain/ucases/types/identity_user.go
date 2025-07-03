@@ -40,6 +40,12 @@ type IdentityUserUseCase interface {
 		payload dto.IdentityUserRegisterDTO,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
 
+	VerifyRegister(
+		ctx context.Context,
+		flowID string,
+		code string,
+	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
+
 	LogIn(
 		ctx context.Context,
 		username string,

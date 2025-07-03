@@ -6,9 +6,9 @@ import (
 	infrainterfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	repositories_interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
 	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	ucases_interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
-	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 // Struct to hold all repositories
@@ -46,12 +46,8 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 	return &UseCases{
 		IdentityOrganizationUCase: ucases.NewIdentityOrganizationUseCase(repos.IdentityOrganizationRepo),
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
-			repos.IdentityUserRepo,
-			repos.AccessSessionRepo,
 			repos.ChallengeSessionRepo,
-			instances.EmailServiceInstance(),
-			instances.SMSServiceInstance(),
-			instances.JWTServiceInstance(),
+			services.NewKratosService(),
 		),
 	}
 }
