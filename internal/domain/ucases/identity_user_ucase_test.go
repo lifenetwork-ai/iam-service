@@ -1,388 +1,316 @@
 package ucases
 
-// import (
-// 	"context"
-// 	"errors"
-// 	"net/http"
-// 	"testing"
-// 	"time"
+import (
+	"context"
+	"errors"
+	"net/http"
+	"testing"
+	"time"
 
-// 	"go.uber.org/mock/gomock"
+	client "github.com/ory/kratos-client-go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
-// 	"github.com/lifenetwork-ai/iam-service/conf"
-// 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
-// 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
-// 	"github.com/lifenetwork-ai/iam-service/internal/mocks"
-// 	"github.com/stretchr/testify/assert"
-// )
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	mock_types "github.com/lifenetwork-ai/iam-service/mocks/adapters/repositories/types"
+	mock_services "github.com/lifenetwork-ai/iam-service/mocks/adapters/services"
+)
 
-// const (
-// 	ValidSessionID   = "valid-session-id"
-// 	InvalidSessionID = "invalid-session-id"
-// 	ValidCode        = "123456"
-// 	InvalidCode      = "654321"
-// 	ValidEmail       = "email"
-// 	ValidUserName    = "username"
-// 	ValidUserID      = "valid-user-id"
+func setupTestUseCase(t *testing.T) (*userUseCase, *mock_types.MockChallengeSessionRepository, *mock_services.MockKratosService, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockChallengeRepo := mock_types.NewMockChallengeSessionRepository(ctrl)
+	mockKratosService := mock_services.NewMockKratosService(ctrl)
 
-// 	ValidPhone       = "+1234567890"
-// 	InvalidPhone     = "invalid-phone"
-// 	ValidPhoneUserID = "valid-phone-user-id"
-// )
+	useCase := &userUseCase{
+		challengeSessionRepo: mockChallengeRepo,
+		kratosService:        mockKratosService,
+	}
 
-// var (
-// 	ValidEmailUser = entities.IdentityUser{
-// 		ID:       ValidUserID,
-// 		Email:    ValidEmail,
-// 		UserName: ValidUserName,
-// 	}
+	return useCase, mockChallengeRepo, mockKratosService, ctrl
+}
 
-// 	ValidPhoneUser = entities.IdentityUser{
-// 		ID:    ValidPhoneUserID,
-// 		Phone: ValidPhone,
-// 	}
-// )
+func TestChallengeWithPhone(t *testing.T) {
+	tests := []struct {
+		name           string
+		phone          string
+		mockSetup      func(*mock_types.MockChallengeSessionRepository, *mock_services.MockKratosService)
+		expectedStatus int
+		expectedCode   string
+	}{
+		{
+			name:  "Success",
+			phone: "+819012345678",
+			mockSetup: func(repo *mock_types.MockChallengeSessionRepository, svc *mock_services.MockKratosService) {
+				flow := &client.LoginFlow{Id: "flow-id"}
+				svc.EXPECT().InitializeLoginFlow(gomock.Any()).Return(flow, nil)
+				svc.EXPECT().SubmitLoginFlow(gomock.Any(), flow, "code", gomock.Any(), nil, nil).Return(nil, nil)
+				repo.EXPECT().SaveChallenge(gomock.Any(), "flow-id", gomock.Any(), 5*time.Minute).Return(nil)
+			},
+		},
+		{
+			name:           "Invalid Phone",
+			phone:          "invalid",
+			expectedStatus: http.StatusBadRequest,
+			expectedCode:   "INVALID_PHONE_NUMBER",
+		},
+		{
+			name:  "Kratos Flow Error",
+			phone: "+8109012345678",
+			mockSetup: func(repo *mock_types.MockChallengeSessionRepository, svc *mock_services.MockKratosService) {
+				svc.EXPECT().InitializeLoginFlow(gomock.Any()).Return(nil, errors.New("kratos error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedCode:   "VERIFICATION_FLOW_FAILED",
+		},
+	}
 
-// func TestUserUseCase_ChallengeWithEmail_OTP(t *testing.T) {
-// 	tests := []struct {
-// 		name              string
-// 		email             string
-// 		userExists        bool
-// 		emailServiceError error
-// 		sessionSaveError  error
-// 		expectedSuccess   bool
-// 		expectedErrorCode string
-// 		expectedStatus    int
-// 	}{
-// 		{
-// 			name:              "Invalid email format",
-// 			email:             "invalid-email",
-// 			expectedSuccess:   false,
-// 			expectedErrorCode: "INVALID_EMAIL",
-// 			expectedStatus:    http.StatusBadRequest,
-// 		},
-// 		{
-// 			name:              "Valid email - existing user - OTP sent successfully",
-// 			email:             "existing@example.com",
-// 			userExists:        true,
-// 			emailServiceError: nil,
-// 			sessionSaveError:  nil,
-// 			expectedSuccess:   true,
-// 		},
-// 		{
-// 			name:              "Valid email - new user - OTP sent successfully",
-// 			email:             "newuser@example.com",
-// 			userExists:        false,
-// 			emailServiceError: nil,
-// 			sessionSaveError:  nil,
-// 			expectedSuccess:   true,
-// 		},
-// 		{
-// 			name:              "Email service fails to send OTP",
-// 			email:             "test@example.com",
-// 			userExists:        true,
-// 			emailServiceError: errors.New("SMTP server unavailable"),
-// 			expectedSuccess:   false,
-// 			expectedErrorCode: "MSG_SENDING_OTP_FAILED",
-// 			expectedStatus:    http.StatusInternalServerError,
-// 		},
-// 		{
-// 			name:              "OTP session save fails",
-// 			email:             "test@example.com",
-// 			userExists:        true,
-// 			emailServiceError: nil,
-// 			sessionSaveError:  errors.New("Redis connection failed"),
-// 			expectedSuccess:   false,
-// 			expectedErrorCode: "MSG_SAVING_SESSION_FAILED",
-// 			expectedStatus:    http.StatusInternalServerError,
-// 		},
-// 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			useCase, mockRepo, mockSvc, ctrl := setupTestUseCase(t)
+			defer ctrl.Finish()
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
+			if tt.mockSetup != nil {
+				tt.mockSetup(mockRepo, mockSvc)
+			}
 
-// 			mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-// 			mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-// 			mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-// 			mockEmailService := mocks.NewMockEmailService(ctrl)
-// 			mockSMSService := mocks.NewMockSMSService(ctrl)
-// 			mockJWTService := mocks.NewMockJWTService(ctrl)
+			result, err := useCase.ChallengeWithPhone(context.Background(), tt.phone)
 
-// 			if tt.email != "invalid-email" {
-// 				if tt.userExists {
-// 					existingUser := &entities.IdentityUser{
-// 						ID:       "user-123",
-// 						Email:    tt.email,
-// 						UserName: tt.email,
-// 					}
-// 					mockUserRepo.EXPECT().
-// 						FindByEmail(gomock.Any(), tt.email).
-// 						Return(existingUser, nil)
-// 				} else {
-// 					mockUserRepo.EXPECT().
-// 						FindByEmail(gomock.Any(), tt.email).
-// 						Return(nil, nil)
-// 					mockUserRepo.EXPECT().
-// 						Create(gomock.Any(), gomock.Any()).
-// 						DoAndReturn(func(ctx context.Context, user *entities.IdentityUser) error {
-// 							assert.Equal(t, tt.email, user.Email)
-// 							assert.Equal(t, tt.email, user.UserName)
-// 							return nil
-// 						})
-// 				}
+			if tt.expectedStatus != 0 {
+				require.NotNil(t, err)
+				assert.Equal(t, tt.expectedStatus, err.Status)
+				assert.Equal(t, tt.expectedCode, err.Code)
+				assert.Nil(t, result)
+			} else {
+				require.Nil(t, err)
+				require.NotNil(t, result)
+				assert.Equal(t, "flow-id", result.FlowID)
+				assert.Equal(t, tt.phone, result.Receiver)
+			}
+		})
+	}
+}
 
-// 				var capturedOTP string
-// 				mockEmailService.EXPECT().
-// 					SendOTP(gomock.Any(), tt.email, gomock.Any()).
-// 					DoAndReturn(func(ctx context.Context, email, otp string) error {
-// 						capturedOTP = otp
-// 						return tt.emailServiceError
-// 					})
+func TestVerifyLogin(t *testing.T) {
+	tests := []struct {
+		name           string
+		mockSetup      func(*mock_types.MockChallengeSessionRepository, *mock_services.MockKratosService)
+		expectedStatus int
+		expectedCode   string
+	}{
+		{
+			name: "Success",
+			mockSetup: func(repo *mock_types.MockChallengeSessionRepository, svc *mock_services.MockKratosService) {
+				flow := &client.LoginFlow{Id: "flow-id"}
+				session := &entities.ChallengeSession{Phone: "+1234567890", Flow: "flow-id"}
+				loginResult := &client.SuccessfulNativeLogin{
+					SessionToken: stringPtr("token"),
+					Session: client.Session{
+						ExpiresAt: timePtr(time.Now().Add(time.Hour)),
+						Identity: &client.Identity{
+							Id:     "user-id",
+							Traits: map[string]interface{}{"username": "test"},
+						},
+					},
+				}
 
-// 				if tt.emailServiceError == nil {
-// 					mockChallengeSessionRepo.EXPECT().
-// 						SaveChallenge(gomock.Any(), gomock.Any(), gomock.Any(), 5*time.Minute).
-// 						DoAndReturn(func(ctx context.Context, sessionID string, session *entities.ChallengeSession, ttl time.Duration) error {
-// 							assert.Equal(t, "email", session.Type)
-// 							assert.Equal(t, tt.email, session.Email)
-// 							assert.Equal(t, capturedOTP, session.OTP)
-// 							assert.NotEmpty(t, session.OTP)
-// 							return tt.sessionSaveError
-// 						})
-// 				}
-// 			}
+				svc.EXPECT().GetLoginFlow(gomock.Any(), "flow-id").Return(flow, nil)
+				repo.EXPECT().GetChallenge(gomock.Any(), "flow-id").Return(session, nil)
+				svc.EXPECT().SubmitLoginFlow(gomock.Any(), flow, "code", &session.Phone, nil, stringPtr("123456")).Return(loginResult, nil)
+			},
+		},
+		{
+			name: "Session Not Found",
+			mockSetup: func(repo *mock_types.MockChallengeSessionRepository, svc *mock_services.MockKratosService) {
+				flow := &client.LoginFlow{Id: "flow-id"}
+				svc.EXPECT().GetLoginFlow(gomock.Any(), "flow-id").Return(flow, nil)
+				repo.EXPECT().GetChallenge(gomock.Any(), "flow-id").Return(nil, errors.New("not found"))
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedCode:   "MSG_CHALLENGE_SESSION_NOT_FOUND",
+		},
+		{
+			name: "Nil Session",
+			mockSetup: func(repo *mock_types.MockChallengeSessionRepository, svc *mock_services.MockKratosService) {
+				flow := &client.LoginFlow{Id: "flow-id"}
+				svc.EXPECT().GetLoginFlow(gomock.Any(), "flow-id").Return(flow, nil)
+				repo.EXPECT().GetChallenge(gomock.Any(), "flow-id").Return(nil, nil)
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedCode:   "MSG_CHALLENGE_SESSION_NOT_FOUND",
+		},
+	}
 
-// 			useCase := NewIdentityUserUseCase(
-// 				mockUserRepo,
-// 				mockSessionRepo,
-// 				mockChallengeSessionRepo,
-// 				mockEmailService,
-// 				mockSMSService,
-// 				mockJWTService,
-// 			)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			useCase, mockRepo, mockSvc, ctrl := setupTestUseCase(t)
+			defer ctrl.Finish()
 
-// 			ctx := context.Background()
-// 			result, err := useCase.ChallengeWithEmail(ctx, tt.email)
+			tt.mockSetup(mockRepo, mockSvc)
 
-// 			if tt.expectedSuccess {
-// 				assert.Nil(t, err)
-// 				assert.NotNil(t, result)
-// 				assert.Equal(t, tt.email, result.Receiver)
-// 				assert.NotEmpty(t, result.SessionID)
-// 				assert.True(t, result.ChallengeAt > 0)
-// 				assert.Len(t, result.SessionID, 36)
-// 				now := time.Now().Unix()
-// 				assert.True(t, result.ChallengeAt <= now && result.ChallengeAt >= now-5)
-// 			} else {
-// 				assert.NotNil(t, err)
-// 				assert.Nil(t, result)
-// 				assert.Equal(t, tt.expectedErrorCode, err.Code)
-// 				assert.Equal(t, tt.expectedStatus, err.Status)
-// 			}
-// 		})
-// 	}
-// }
+			result, err := useCase.VerifyLogin(context.Background(), "flow-id", "123456")
 
-// func TestUserUseCase_ChallengeVerify_Email(t *testing.T) {
-// 	conf.GetConfiguration().Env = "PROD"
-// 	t.Run("Challenge session valid - Email type - User not found", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		defer ctrl.Finish()
+			if tt.expectedStatus != 0 {
+				require.NotNil(t, err)
+				assert.Equal(t, tt.expectedStatus, err.Status)
+				assert.Equal(t, tt.expectedCode, err.Code)
+			} else {
+				require.Nil(t, err)
+				require.NotNil(t, result)
+				assert.Equal(t, "token", result.AccessToken)
+			}
+		})
+	}
+}
 
-// 		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-// 		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-// 		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-// 		mockEmailService := mocks.NewMockEmailService(ctrl)
-// 		mockSMSService := mocks.NewMockSMSService(ctrl)
-// 		mockJWTService := mocks.NewMockJWTService(ctrl)
+func TestProfile(t *testing.T) {
+	tests := []struct {
+		name           string
+		ctx            context.Context
+		mockSetup      func(*mock_services.MockKratosService)
+		expectedStatus int
+		expectedCode   string
+	}{
+		{
+			name: "Success",
+			ctx:  context.WithValue(context.Background(), "sessionToken", "valid-token"),
+			mockSetup: func(svc *mock_services.MockKratosService) {
+				session := &client.Session{
+					Identity: &client.Identity{
+						Id: "user-id",
+						Traits: map[string]interface{}{
+							"username": "testuser",
+							"email":    "test@example.com",
+						},
+					},
+				}
+				svc.EXPECT().WhoAmI(gomock.Any(), "valid-token").Return(session, nil)
+			},
+		},
+		{
+			name:           "Missing Token",
+			ctx:            context.Background(),
+			expectedStatus: http.StatusUnauthorized,
+			expectedCode:   "MSG_SESSION_TOKEN_MISSING",
+		},
+		{
+			name: "Invalid Session",
+			ctx:  context.WithValue(context.Background(), "sessionToken", "invalid-token"),
+			mockSetup: func(svc *mock_services.MockKratosService) {
+				svc.EXPECT().WhoAmI(gomock.Any(), "invalid-token").Return(nil, errors.New("invalid"))
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedCode:   "MSG_INVALID_SESSION",
+		},
+	}
 
-// 		useCase := NewIdentityUserUseCase(
-// 			mockUserRepo,
-// 			mockSessionRepo,
-// 			mockChallengeSessionRepo,
-// 			mockEmailService,
-// 			mockSMSService,
-// 			mockJWTService,
-// 		)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			useCase, _, mockSvc, ctrl := setupTestUseCase(t)
+			defer ctrl.Finish()
 
-// 		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
+			if tt.mockSetup != nil {
+				tt.mockSetup(mockSvc)
+			}
 
-// 		sessionID := ValidSessionID
-// 		code := ValidCode
-// 		expectedSessionValue := entities.ChallengeSession{
-// 			Type:  "email",
-// 			Email: "email",
-// 			OTP:   code,
-// 		}
+			result, err := useCase.Profile(tt.ctx)
 
-// 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-// 		mockUserRepo.EXPECT().FindByEmail(ctx, expectedSessionValue.Email).Return(nil, nil)
-// 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
+			if tt.expectedStatus != 0 {
+				require.NotNil(t, err)
+				assert.Equal(t, tt.expectedStatus, err.Status)
+				assert.Equal(t, tt.expectedCode, err.Code)
+			} else {
+				require.Nil(t, err)
+				require.NotNil(t, result)
+				assert.Equal(t, "user-id", result.ID)
+			}
+		})
+	}
+}
 
-// 		assert.NotNil(t, err)
-// 		assert.Nil(t, auth)
-// 		assert.Equal(t, "USER_NOT_FOUND", err.Code)
-// 	})
+func TestRefreshToken(t *testing.T) {
+	tests := []struct {
+		name           string
+		mockSetup      func(*mock_services.MockKratosService)
+		expectedStatus int
+		expectedCode   string
+	}{
+		{
+			name: "Success",
+			mockSetup: func(svc *mock_services.MockKratosService) {
+				session := &client.Session{
+					Id:        "session-id",
+					ExpiresAt: timePtr(time.Now().Add(time.Hour)),
+					IssuedAt:  timePtr(time.Now()),
+					Identity: &client.Identity{
+						Id:     "user-id",
+						Traits: map[string]interface{}{"username": "test"},
+					},
+				}
+				svc.EXPECT().GetSession(gomock.Any(), "access-token").Return(session, nil)
+			},
+		},
+		{
+			name: "Session Expired",
+			mockSetup: func(svc *mock_services.MockKratosService) {
+				session := &client.Session{
+					ExpiresAt: timePtr(time.Now().Add(-time.Hour)), // Expired
+				}
+				svc.EXPECT().GetSession(gomock.Any(), "access-token").Return(session, nil)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedCode:   "MSG_SESSION_EXPIRED",
+		},
+	}
 
-// 	t.Run("Challenge session valid - Email type - User found", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		defer ctrl.Finish()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			useCase, _, mockSvc, ctrl := setupTestUseCase(t)
+			defer ctrl.Finish()
 
-// 		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-// 		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-// 		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-// 		mockEmailService := mocks.NewMockEmailService(ctrl)
-// 		mockSMSService := mocks.NewMockSMSService(ctrl)
-// 		mockJWTService := mocks.NewMockJWTService(ctrl)
+			tt.mockSetup(mockSvc)
 
-// 		useCase := NewIdentityUserUseCase(
-// 			mockUserRepo,
-// 			mockSessionRepo,
-// 			mockChallengeSessionRepo,
-// 			mockEmailService,
-// 			mockSMSService,
-// 			mockJWTService,
-// 		)
+			result, err := useCase.RefreshToken(context.Background(), "access-token", "refresh-token")
 
-// 		ctx := context.WithValue(context.Background(), "organizationId", "org-123") // nolint:staticcheck
+			if tt.expectedStatus != 0 {
+				require.NotNil(t, err)
+				assert.Equal(t, tt.expectedStatus, err.Status)
+				assert.Equal(t, tt.expectedCode, err.Code)
+			} else {
+				require.Nil(t, err)
+				require.NotNil(t, result)
+			}
+		})
+	}
+}
 
-// 		sessionID := ValidSessionID
-// 		code := ValidCode
-// 		expectedSessionValue := entities.ChallengeSession{
-// 			Type:  "email",
-// 			Email: ValidEmail,
-// 			OTP:   code,
-// 		}
+func TestTraitExtraction(t *testing.T) {
+	tests := []struct {
+		name     string
+		traits   map[string]interface{}
+		key      string
+		expected string
+	}{
+		{"String value", map[string]interface{}{"key": "value"}, "key", "value"},
+		{"String pointer", map[string]interface{}{"key": stringPtr("value")}, "key", "value"},
+		{"Nil pointer", map[string]interface{}{"key": (*string)(nil)}, "key", "default"},
+		{"Missing key", map[string]interface{}{}, "key", "default"},
+		{"Number to string", map[string]interface{}{"key": 123}, "key", "123"},
+	}
 
-// 		jwtToken := services.JWTToken{
-// 			AccessToken:        "access-token",
-// 			RefreshToken:       "refresh-token",
-// 			AccessTokenExpiry:  int64(30 * time.Minute),
-// 			RefreshTokenExpiry: int64(24 * time.Hour),
-// 			ClaimAt:            time.Now(),
-// 		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractStringFromTraits(tt.traits, tt.key, "default")
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
 
-// 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-// 		mockUserRepo.EXPECT().FindByEmail(ctx, expectedSessionValue.Email).Return(&ValidEmailUser, nil)
-// 		mockJWTService.EXPECT().GenerateToken(ctx, gomock.Any()).Return(&jwtToken, nil)
-// 		mockSessionRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, nil)
-// 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
+// Helper functions
+func stringPtr(s string) *string {
+	return &s
+}
 
-// 		assert.Nil(t, err)
-// 		assert.NotNil(t, auth)
-// 		assert.Equal(t, ValidUserID, auth.User.ID)
-// 		assert.Equal(t, expectedSessionValue.Email, auth.User.Email)
-// 		assert.Equal(t, jwtToken.AccessToken, auth.AccessToken)
-// 		assert.Equal(t, jwtToken.RefreshToken, auth.RefreshToken)
-// 		assert.Equal(t, ValidEmailUser.ID, auth.User.ID)
-// 	})
-
-// 	t.Run("Challenge session not found", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		defer ctrl.Finish()
-
-// 		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-// 		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-// 		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-// 		mockEmailService := mocks.NewMockEmailService(ctrl)
-// 		mockSMSService := mocks.NewMockSMSService(ctrl)
-// 		mockJWTService := mocks.NewMockJWTService(ctrl)
-
-// 		useCase := NewIdentityUserUseCase(
-// 			mockUserRepo,
-// 			mockSessionRepo,
-// 			mockChallengeSessionRepo,
-// 			mockEmailService,
-// 			mockSMSService,
-// 			mockJWTService,
-// 		)
-
-// 		ctx := context.Background()
-
-// 		sessionID := "non-existent-session-id"
-// 		code := "123456"
-
-// 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(nil, errors.New("session not found"))
-
-// 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-// 		assert.NotNil(t, err)
-// 		assert.Nil(t, auth)
-// 		assert.Equal(t, "MSG_CHALLENGE_SESSION_NOT_FOUND", err.Code)
-// 		assert.Equal(t, http.StatusNotFound, err.Status)
-// 	})
-
-// 	t.Run("Valid session, empty otp", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		defer ctrl.Finish()
-
-// 		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-// 		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-// 		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-// 		mockEmailService := mocks.NewMockEmailService(ctrl)
-// 		mockSMSService := mocks.NewMockSMSService(ctrl)
-// 		mockJWTService := mocks.NewMockJWTService(ctrl)
-
-// 		useCase := NewIdentityUserUseCase(
-// 			mockUserRepo,
-// 			mockSessionRepo,
-// 			mockChallengeSessionRepo,
-// 			mockEmailService,
-// 			mockSMSService,
-// 			mockJWTService,
-// 		)
-
-// 		ctx := context.Background()
-
-// 		sessionID := ValidSessionID
-// 		code := ""
-// 		expectedSessionValue := entities.ChallengeSession{
-// 			Type:  "email",
-// 			Email: "email",
-// 			OTP:   ValidCode,
-// 		}
-// 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-// 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-// 		assert.NotNil(t, err)
-// 		assert.Nil(t, auth)
-// 		assert.Equal(t, "MSG_INVALID_CODE", err.Code)
-// 	})
-
-// 	t.Run("Valid session, invalid otp", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		defer ctrl.Finish()
-
-// 		mockUserRepo := mocks.NewMockIdentityUserRepository(ctrl)
-// 		mockSessionRepo := mocks.NewMockAccessSessionRepository(ctrl)
-// 		mockChallengeSessionRepo := mocks.NewMockChallengeSessionRepository(ctrl)
-// 		mockEmailService := mocks.NewMockEmailService(ctrl)
-// 		mockSMSService := mocks.NewMockSMSService(ctrl)
-// 		mockJWTService := mocks.NewMockJWTService(ctrl)
-
-// 		useCase := NewIdentityUserUseCase(
-// 			mockUserRepo,
-// 			mockSessionRepo,
-// 			mockChallengeSessionRepo,
-// 			mockEmailService,
-// 			mockSMSService,
-// 			mockJWTService,
-// 		)
-
-// 		ctx := context.Background()
-
-// 		sessionID := ValidSessionID
-// 		code := "invalid-code"
-// 		expectedSessionValue := entities.ChallengeSession{
-// 			Type:  "email",
-// 			Email: "email",
-// 			OTP:   ValidCode,
-// 		}
-// 		mockChallengeSessionRepo.EXPECT().GetChallenge(ctx, sessionID).Return(&expectedSessionValue, nil)
-
-// 		auth, err := useCase.ChallengeVerify(ctx, sessionID, code)
-// 		assert.NotNil(t, err)
-// 		assert.Nil(t, auth)
-// 		assert.Equal(t, "MSG_INVALID_CODE", err.Code)
-// 	})
-// }
+func timePtr(t time.Time) *time.Time {
+	return &t
+}
