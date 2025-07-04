@@ -47,19 +47,15 @@ type IdentityChallengeWithEmailDTO struct {
 }
 
 type IdentityChallengeVerifyDTO struct {
-	SessionID string `json:"session_id"`
-	Code      string `json:"code"`
+	SessionID string `json:"session_id" binding:"required"`
+	Code      string `json:"code" binding:"required"`
+	Type      string `json:"type" binding:"required,oneof=challenge registration login"`
 }
 
 type IdentityUserRegisterDTO struct {
 	Email  string `json:"email" validate:"omitempty,email"`
 	Phone  string `json:"phone" validate:"omitempty"`
 	Tenant string `json:"tenant" validate:"required"`
-}
-
-type IdentityUserVerifyRegisterDTO struct {
-	FlowID string `json:"flow_id" binding:"required"`
-	Code   string `json:"code" binding:"required"`
 }
 
 // IdentityUserLoginDTO represents the request for a user login.

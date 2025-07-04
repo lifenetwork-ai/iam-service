@@ -33,7 +33,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	ctx context.Context,
 	phone string,
 ) (*dto.IdentityUserChallengeDTO, *dto.ErrorDTOResponse) {
-	if !utils.IsPhoneNumber(phone) { // Fixed the logic - should be NOT valid
+	if !utils.IsPhoneNumber(phone) {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Code:    "INVALID_PHONE_NUMBER",
@@ -48,7 +48,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Initialize verification flow with Kratos
-	flow, err := u.kratosService.InitializeVerificationFlow(ctx)
+	flow, err := u.kratosService.InitializeLoginFlow(ctx)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -58,9 +58,19 @@ func (u *userUseCase) ChallengeWithPhone(
 		}
 	}
 
+	// Submit login flow to Kratos
+	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, "code", &phone, nil, nil)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "LOGIN_FAILED",
+			Message: "Login failed",
+			Details: []any{err.Error()},
+		}
+	}
+
 	// Create challenge session
-	sessionID := uuid.New().String()
-	err = u.challengeSessionRepo.SaveChallenge(ctx, sessionID, &entities.ChallengeSession{
+	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &entities.ChallengeSession{
 		Type:  "phone",
 		Phone: phone,
 		Flow:  flow.Id,
@@ -74,9 +84,8 @@ func (u *userUseCase) ChallengeWithPhone(
 		}
 	}
 
-	// Return challenge session
 	return &dto.IdentityUserChallengeDTO{
-		SessionID:   sessionID,
+		SessionID:   flow.Id,
 		Receiver:    phone,
 		ChallengeAt: time.Now().Unix(),
 	}, nil
@@ -172,6 +181,69 @@ func (u *userUseCase) VerifyRegister(
 			UserName: extractStringFromTraits(registrationResult.Identity.Traits.(map[string]interface{}), "username", ""),
 			Email:    extractStringFromTraits(registrationResult.Identity.Traits.(map[string]interface{}), "email", ""),
 			Phone:    extractStringFromTraits(registrationResult.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+		},
+	}, nil
+}
+
+func (u *userUseCase) VerifyLogin(
+	ctx context.Context,
+	flowID string,
+	code string,
+) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
+	// Get the login flow
+	flow, err := u.kratosService.GetLoginFlow(ctx, flowID)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_GET_FLOW_FAILED",
+			Message: "Failed to get login flow",
+		}
+	}
+
+	// Get the challenge session to retrieve the phone number
+	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, flowID)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusNotFound,
+			Code:    "MSG_CHALLENGE_SESSION_NOT_FOUND",
+			Message: "Challenge session not found",
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	if sessionValue == nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusNotFound,
+			Code:    "MSG_CHALLENGE_SESSION_NOT_FOUND",
+			Message: "Challenge session not found",
+			Details: []interface{}{
+				map[string]string{"field": "session", "error": "Session not found"},
+			},
+		}
+	}
+
+	// Submit login flow with code
+	loginResult, err := u.kratosService.SubmitLoginFlow(ctx, flow, "code", &sessionValue.Phone, nil, &code)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "LOGIN_FAILED",
+			Message: "Login failed",
+			Details: []any{err.Error()},
+		}
+	}
+
+	return &dto.IdentityUserAuthDTO{
+		AccessToken:      *loginResult.SessionToken,
+		RefreshToken:     "", // Kratos handles refresh internally
+		AccessExpiresAt:  loginResult.Session.ExpiresAt.Unix(),
+		RefreshExpiresAt: 0,
+		LastLoginAt:      time.Now().Unix(),
+		User: dto.IdentityUserDTO{
+			ID:       loginResult.Session.Identity.Id,
+			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "username", ""),
+			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "email", ""),
+			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
 		},
 	}, nil
 }
@@ -347,10 +419,16 @@ func (u *userUseCase) Register(
 	}
 
 	// Prepare traits for registration
-	traits := map[string]any{
-		"phone_number": payload.Phone,
-		"email":        payload.Email,
-		"tenant":       payload.Tenant,
+	traits := make(map[string]any)
+
+	if payload.Phone != "" {
+		traits["phone_number"] = payload.Phone
+	}
+	if payload.Email != "" {
+		traits["email"] = payload.Email
+	}
+	if payload.Tenant != "" {
+		traits["tenant"] = payload.Tenant
 	}
 
 	// Submit registration flow to Kratos
@@ -394,7 +472,7 @@ func (u *userUseCase) LogIn(
 	}
 
 	// Submit login flow to Kratos
-	session, err := u.kratosService.SubmitLoginFlow(ctx, flow, "password", &username, &password)
+	session, err := u.kratosService.SubmitLoginFlow(ctx, flow, "password", &username, &password, nil)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
@@ -448,7 +526,7 @@ func (u *userUseCase) LogOut(
 	}
 
 	// Revoke session in Kratos
-	err := u.kratosService.RevokeSession(ctx, sessionToken)
+	err := u.kratosService.Logout(ctx, sessionToken)
 	if err != nil {
 		return &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -457,7 +535,6 @@ func (u *userUseCase) LogOut(
 			Details: []interface{}{err.Error()},
 		}
 	}
-
 	return nil
 }
 
@@ -536,8 +613,8 @@ func (u *userUseCase) Profile(
 		}
 	}
 
-	// Get current session from Kratos
-	session, err := u.kratosService.GetSession(ctx, sessionToken)
+	// Get session using whoami endpoint
+	session, err := u.kratosService.WhoAmI(ctx, sessionToken)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
@@ -548,24 +625,26 @@ func (u *userUseCase) Profile(
 	}
 
 	// Extract user information from Kratos session
-	var userDTO dto.IdentityUserDTO
 	if traits, ok := session.Identity.Traits.(map[string]interface{}); ok {
-		userDTO = dto.IdentityUserDTO{
-			ID:       session.Identity.Id,
-			UserName: extractStringFromTraits(traits, "username", ""),
-			Email:    extractStringFromTraits(traits, "email", ""),
-			Phone:    extractStringFromTraits(traits, "phone", ""),
+		userDTO := dto.IdentityUserDTO{
+			ID:        session.Identity.Id,
+			UserName:  extractStringFromTraits(traits, "username", ""),
+			Email:     extractStringFromTraits(traits, "email", ""),
+			Phone:     extractStringFromTraits(traits, "phone_number", ""),
+			Status:    session.Active != nil && *session.Active,
+			Tenant:    extractStringFromTraits(traits, "tenant", ""),
+			CreatedAt: session.Identity.CreatedAt.Unix(),
+			UpdatedAt: session.Identity.UpdatedAt.Unix(),
 		}
-	} else {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_INVALID_SESSION",
-			Message: "Invalid session data from Kratos",
-			Details: []interface{}{"Unable to extract user traits"},
-		}
+		return &userDTO, nil
 	}
 
-	return &userDTO, nil
+	return nil, &dto.ErrorDTOResponse{
+		Status:  http.StatusInternalServerError,
+		Code:    "MSG_INVALID_SESSION",
+		Message: "Invalid session data from Kratos",
+		Details: []interface{}{"Unable to extract user traits"},
+	}
 }
 
 // Helper function to safely extract string values from traits map

@@ -2114,7 +2114,7 @@ const docTemplate = `{
         },
         "/api/v1/users/challenge-verify": {
             "post": {
-                "description": "Verify the challenge",
+                "description": "Verify either a login challenge or registration flow",
                 "consumes": [
                     "application/json"
                 ],
@@ -2124,7 +2124,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Verify the challenge",
+                "summary": "Verify the challenge or registration",
                 "parameters": [
                     {
                         "type": "string",
@@ -2134,7 +2134,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "challenge payload",
+                        "description": "verification payload",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
@@ -2145,7 +2145,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful verify the challenge",
+                        "description": "Successful verification",
                         "schema": {
                             "$ref": "#/definitions/response.SuccessResponse"
                         }
@@ -2465,13 +2465,38 @@ const docTemplate = `{
                         "name": "Authorization",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "Empty request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Successful de-authenticate user",
                         "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {}
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing token",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
@@ -2621,62 +2646,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful user registration",
+                        "description": "Successful user registration with verification flow",
                         "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/verify-register": {
-            "post": {
-                "description": "Verify the registration",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Verify the registration",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "verify-register payload",
-                        "name": "verify-register",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserVerifyRegisterDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful verify the registration",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2856,12 +2840,25 @@ const docTemplate = `{
         },
         "dto.IdentityChallengeVerifyDTO": {
             "type": "object",
+            "required": [
+                "code",
+                "session_id",
+                "type"
+            ],
             "properties": {
                 "code": {
                     "type": "string"
                 },
                 "session_id": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "challenge",
+                        "registration",
+                        "login"
+                    ]
                 }
             }
         },
@@ -2942,6 +2939,93 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.IdentityUserAuthDTO": {
+            "type": "object",
+            "properties": {
+                "access_expires_at": {
+                    "type": "integer"
+                },
+                "access_token": {
+                    "type": "string"
+                },
+                "last_login_at": {
+                    "type": "integer"
+                },
+                "refresh_expires_at": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.IdentityUserDTO"
+                },
+                "verification_flow": {
+                    "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
+                },
+                "verification_needed": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.IdentityUserChallengeDTO": {
+            "type": "object",
+            "properties": {
+                "challenge_at": {
+                    "type": "integer"
+                },
+                "receiver": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityUserDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "seed": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "boolean"
+                },
+                "tenant": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.IdentityUserLoginDTO": {
             "type": "object",
             "properties": {
@@ -2966,21 +3050,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tenant": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.IdentityUserVerifyRegisterDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "flow_id"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "flow_id": {
                     "type": "string"
                 }
             }

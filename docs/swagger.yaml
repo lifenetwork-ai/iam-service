@@ -110,6 +110,16 @@ definitions:
         type: string
       session_id:
         type: string
+      type:
+        enum:
+        - challenge
+        - registration
+        - login
+        type: string
+    required:
+    - code
+    - session_id
+    - type
     type: object
   dto.IdentityChallengeWithEmailDTO:
     properties:
@@ -160,6 +170,63 @@ definitions:
       id:
         type: string
     type: object
+  dto.IdentityUserAuthDTO:
+    properties:
+      access_expires_at:
+        type: integer
+      access_token:
+        type: string
+      last_login_at:
+        type: integer
+      refresh_expires_at:
+        type: integer
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/dto.IdentityUserDTO'
+      verification_flow:
+        $ref: '#/definitions/dto.IdentityUserChallengeDTO'
+      verification_needed:
+        type: boolean
+    type: object
+  dto.IdentityUserChallengeDTO:
+    properties:
+      challenge_at:
+        type: integer
+      receiver:
+        type: string
+      session_id:
+        type: string
+    type: object
+  dto.IdentityUserDTO:
+    properties:
+      created_at:
+        type: integer
+      email:
+        type: string
+      first_name:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      seed:
+        type: string
+      status:
+        type: boolean
+      tenant:
+        type: string
+      updated_at:
+        type: integer
+      user_name:
+        type: string
+    type: object
   dto.IdentityUserLoginDTO:
     properties:
       password:
@@ -177,16 +244,6 @@ definitions:
         type: string
     required:
     - tenant
-    type: object
-  dto.IdentityUserVerifyRegisterDTO:
-    properties:
-      code:
-        type: string
-      flow_id:
-        type: string
-    required:
-    - code
-    - flow_id
     type: object
   dto.PaginationDTOResponse:
     properties:
@@ -1735,14 +1792,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: Verify the challenge
+      description: Verify either a login challenge or registration flow
       parameters:
       - description: Organization ID
         in: header
         name: X-Organization-Id
         required: true
         type: string
-      - description: challenge payload
+      - description: verification payload
         in: body
         name: challenge
         required: true
@@ -1752,7 +1809,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Successful verify the challenge
+          description: Successful verification
           schema:
             $ref: '#/definitions/response.SuccessResponse'
         "400":
@@ -1763,7 +1820,7 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Verify the challenge
+      summary: Verify the challenge or registration
       tags:
       - users
   /api/v1/users/challenge-with-email:
@@ -1962,13 +2019,27 @@ paths:
         name: Authorization
         required: true
         type: string
+      - description: Empty request body
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
       produces:
       - application/json
       responses:
         "200":
           description: Successful de-authenticate user
           schema:
-            $ref: '#/definitions/response.SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data: {}
+              type: object
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -2068,9 +2139,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: Successful user registration
+          description: Successful user registration with verification flow
           schema:
-            $ref: '#/definitions/response.SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.IdentityUserAuthDTO'
+              type: object
         "400":
           description: Invalid request payload
           schema:
@@ -2080,41 +2156,6 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Register a new user
-      tags:
-      - users
-  /api/v1/users/verify-register:
-    post:
-      consumes:
-      - application/json
-      description: Verify the registration
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: verify-register payload
-        in: body
-        name: verify-register
-        required: true
-        schema:
-          $ref: '#/definitions/dto.IdentityUserVerifyRegisterDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful verify the registration
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Verify the registration
       tags:
       - users
 swagger: "2.0"

@@ -46,6 +46,12 @@ type IdentityUserUseCase interface {
 		code string,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
 
+	VerifyLogin(
+		ctx context.Context,
+		flowID string,
+		code string,
+	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
+
 	LogIn(
 		ctx context.Context,
 		username string,

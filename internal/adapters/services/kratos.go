@@ -20,16 +20,21 @@ type KratosService interface {
 
 	// Login flow
 	InitializeLoginFlow(ctx context.Context) (*kratos.LoginFlow, error)
-	SubmitLoginFlow(ctx context.Context, flow *kratos.LoginFlow, method string, identifier *string, password *string) (*kratos.SuccessfulNativeLogin, error)
+	SubmitLoginFlow(ctx context.Context, flow *kratos.LoginFlow, method string, identifier *string, password *string, code *string) (*kratos.SuccessfulNativeLogin, error)
+	GetLoginFlow(ctx context.Context, flowID string) (*kratos.LoginFlow, error)
 
 	// Verification flow
 	InitializeVerificationFlow(ctx context.Context) (*kratos.VerificationFlow, error)
 	GetVerificationFlow(ctx context.Context, flowID string) (*kratos.VerificationFlow, error)
 	SubmitVerificationFlow(ctx context.Context, flow *kratos.VerificationFlow, code string) (*kratos.VerificationFlow, error)
 
+	// Logout flow
+	Logout(ctx context.Context, sessionToken string) error
+
 	// Session management
 	GetSession(ctx context.Context, sessionToken string) (*kratos.Session, error)
 	RevokeSession(ctx context.Context, sessionToken string) error
+	WhoAmI(ctx context.Context, sessionToken string) (*kratos.Session, error)
 }
 
 // KratosResponse represents the structured response from Kratos API
@@ -125,6 +130,9 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 		}
 
 		result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
+		fmt.Println("result", result)
+		fmt.Println("resp", resp)
+		fmt.Println("err", err)
 		if err != nil {
 			if resp != nil && resp.StatusCode == 400 {
 				var kratosResp KratosResponse
@@ -239,6 +247,8 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 		return nil, fmt.Errorf("failed to parse flow data: %w", err)
 	}
 
+	fmt.Println("flowData", flowData)
+
 	// Extract traits from nodes
 	traits := make(map[string]interface{})
 	for _, node := range flowData.UI.Nodes {
@@ -246,7 +256,17 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 			name := node.Attributes.Name
 			if strings.HasPrefix(name, "traits.") {
 				traitKey := strings.TrimPrefix(name, "traits.")
-				traits[traitKey] = node.Attributes.Value
+				if node.Attributes.Value != nil {
+					// Check for empty string values
+					if strVal, ok := node.Attributes.Value.(string); ok {
+						if strVal != "" {
+							traits[traitKey] = strVal
+						}
+					} else {
+						// For non-string values, add them as is
+						traits[traitKey] = node.Attributes.Value
+					}
+				}
 			}
 		}
 	}
@@ -264,6 +284,9 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 		},
 	}
 	result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
+	fmt.Println("result", result)
+	fmt.Println("resp", resp)
+	fmt.Println("err", err)
 	if err != nil {
 		return nil, fmt.Errorf("failed to submit registration flow with code: %w", err)
 	}
@@ -286,12 +309,21 @@ func (k *kratosServiceImpl) InitializeLoginFlow(ctx context.Context) (*kratos.Lo
 	return flow, nil
 }
 
+func (k *kratosServiceImpl) GetLoginFlow(ctx context.Context, flowID string) (*kratos.LoginFlow, error) {
+	flow, _, err := k.client.FrontendAPI.GetLoginFlow(ctx).Id(flowID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get login flow: %w", err)
+	}
+	return flow, nil
+}
+
 func (k *kratosServiceImpl) SubmitLoginFlow(
 	ctx context.Context,
 	flow *kratos.LoginFlow,
 	method string,
 	identifier *string,
 	password *string,
+	code *string,
 ) (*kratos.SuccessfulNativeLogin, error) {
 	submitFlow := k.client.FrontendAPI.UpdateLoginFlow(ctx).Flow(flow.Id)
 
@@ -301,6 +333,7 @@ func (k *kratosServiceImpl) SubmitLoginFlow(
 		body.UpdateLoginFlowWithCodeMethod = &kratos.UpdateLoginFlowWithCodeMethod{
 			Method:     "code",
 			Identifier: identifier,
+			Code:       code,
 		}
 	case "password":
 		body.UpdateLoginFlowWithPasswordMethod = &kratos.UpdateLoginFlowWithPasswordMethod{
@@ -480,6 +513,26 @@ func (k *kratosServiceImpl) RevokeSession(ctx context.Context, sessionToken stri
 	_, err := k.client.FrontendAPI.DisableMySession(ctx, sessionToken).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to revoke session: %w", err)
+	}
+	return nil
+}
+
+func (k *kratosServiceImpl) WhoAmI(ctx context.Context, sessionToken string) (*kratos.Session, error) {
+	session, _, err := k.client.FrontendAPI.ToSession(ctx).XSessionToken(sessionToken).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get whoami session: %w", err)
+	}
+	return session, nil
+}
+
+func (k *kratosServiceImpl) Logout(ctx context.Context, sessionToken string) error {
+	_, err := k.client.FrontendAPI.PerformNativeLogout(ctx).
+		PerformNativeLogoutBody(kratos.PerformNativeLogoutBody{
+			SessionToken: sessionToken,
+		}).
+		Execute()
+	if err != nil {
+		return fmt.Errorf("failed to perform native logout: %w", err)
 	}
 	return nil
 }
