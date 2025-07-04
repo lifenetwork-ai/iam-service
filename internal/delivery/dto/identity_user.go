@@ -19,9 +19,9 @@ type IdentityUserDTO struct {
 
 // IdentityUserChallengeDTO represents a challenge for identity verification.
 type IdentityUserChallengeDTO struct {
-	SessionID   string `json:"session_id"`
-	Receiver    string `json:"receiver"`
-	ChallengeAt int64  `json:"challenge_at"`
+	FlowID      string `json:"flow_id" description:"The flow ID of the challenge"`
+	Receiver    string `json:"receiver" description:"The receiver of the challenge"`
+	ChallengeAt int64  `json:"challenge_at" description:"Time challenge was sent"`
 }
 
 // IdentityUserAuthDTO represents the response for a successful login.
@@ -41,15 +41,15 @@ type IdentityChallengeWithPhoneDTO struct {
 	Phone string `json:"phone"`
 }
 
-// IdentityChallengeWithEmailDTO represents the request for a phone challenge.
+// IdentityChallengeWithEmailDTO represents the request for a email challenge.
 type IdentityChallengeWithEmailDTO struct {
 	Email string `json:"email"`
 }
 
 type IdentityChallengeVerifyDTO struct {
-	SessionID string `json:"session_id" binding:"required"`
-	Code      string `json:"code" binding:"required"`
-	Type      string `json:"type" binding:"required,oneof=challenge registration login"`
+	FlowID string `json:"flow_id" binding:"required" description:"The flow ID of the challenge"`
+	Code   string `json:"code" binding:"required" description:"The code of the challenge"`
+	Type   string `json:"type" binding:"required,oneof=registration login" description:"The type of the challenge, can be registration or login"`
 }
 
 type IdentityUserRegisterDTO struct {
@@ -62,9 +62,4 @@ type IdentityUserRegisterDTO struct {
 type IdentityUserLoginDTO struct {
 	UserName string `json:"user_name"`
 	Password string `json:"password"`
-}
-
-// IdentityRefreshTokenDTO represents the request for a refresh token.
-type IdentityRefreshTokenDTO struct {
-	RefreshToken string `json:"refresh_token"`
 }

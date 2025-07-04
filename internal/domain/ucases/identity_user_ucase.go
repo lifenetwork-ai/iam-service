@@ -2,6 +2,9 @@ package ucases
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -29,6 +32,7 @@ func NewIdentityUserUseCase(
 	}
 }
 
+// ChallengeWithPhone challenges the user with a phone number
 func (u *userUseCase) ChallengeWithPhone(
 	ctx context.Context,
 	phone string,
@@ -85,12 +89,13 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	return &dto.IdentityUserChallengeDTO{
-		SessionID:   flow.Id,
+		FlowID:      flow.Id,
 		Receiver:    phone,
 		ChallengeAt: time.Now().Unix(),
 	}, nil
 }
 
+// ChallengeWithEmail challenges the user with an email
 func (u *userUseCase) ChallengeWithEmail(
 	ctx context.Context,
 	email string,
@@ -138,12 +143,13 @@ func (u *userUseCase) ChallengeWithEmail(
 
 	// Return challenge session
 	return &dto.IdentityUserChallengeDTO{
-		SessionID:   sessionID,
+		FlowID:      flow.Id,
 		Receiver:    email,
 		ChallengeAt: time.Now().Unix(),
 	}, nil
 }
 
+// VerifyRegister verifies the registration flow
 func (u *userUseCase) VerifyRegister(
 	ctx context.Context,
 	flowID string,
@@ -185,6 +191,7 @@ func (u *userUseCase) VerifyRegister(
 	}, nil
 }
 
+// VerifyLogin verifies the login flow
 func (u *userUseCase) VerifyLogin(
 	ctx context.Context,
 	flowID string,
@@ -357,42 +364,6 @@ func (u *userUseCase) ChallengeVerify(
 	}, nil
 }
 
-func (u *userUseCase) LogInWithGoogle(
-	ctx context.Context,
-) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
-	// Initialize OAuth2 flow with Kratos for Google
-	flow, err := u.kratosService.InitializeLoginFlow(ctx)
-	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "LOGIN_FLOW_FAILED",
-			Message: "Failed to initialize login flow",
-			Details: []any{err.Error()},
-		}
-	}
-
-	// Return the OAuth URL for the client to redirect to
-	// This is typically handled by returning the flow ID and letting the client handle the redirect
-	return nil, &dto.ErrorDTOResponse{
-		Status:  http.StatusNotImplemented,
-		Code:    "NOT_IMPLEMENTED",
-		Message: "OAuth login requires client-side redirect handling",
-		Details: []any{map[string]string{"flow_id": flow.Id}},
-	}
-}
-
-func (u *userUseCase) LogInWithFacebook(
-	ctx context.Context,
-) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
-	return u.LogInWithGoogle(ctx) // Same pattern as Google OAuth
-}
-
-func (u *userUseCase) LogInWithApple(
-	ctx context.Context,
-) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
-	return u.LogInWithGoogle(ctx) // Same pattern as Google OAuth
-}
-
 func (u *userUseCase) Register(
 	ctx context.Context,
 	payload dto.IdentityUserRegisterDTO,
@@ -446,7 +417,7 @@ func (u *userUseCase) Register(
 	return &dto.IdentityUserAuthDTO{
 		VerificationNeeded: true,
 		VerificationFlow: &dto.IdentityUserChallengeDTO{
-			SessionID:   flow.Id,
+			FlowID:      flow.Id,
 			Receiver:    payload.Phone,
 			ChallengeAt: time.Now().Unix(),
 		},
@@ -484,21 +455,16 @@ func (u *userUseCase) LogIn(
 
 	// Extract user information from Kratos session
 	var userDTO dto.IdentityUserDTO
-	if traits, ok := session.Session.Identity.Traits.(map[string]interface{}); ok {
-		userDTO = dto.IdentityUserDTO{
-			ID:       session.Session.Identity.Id,
-			UserName: extractStringFromTraits(traits, "username", ""),
-			Email:    extractStringFromTraits(traits, "email", ""),
-			Phone:    extractStringFromTraits(traits, "phone", ""),
-		}
-	} else {
+	userDTO, err = extractUserFromTraits(session.Session.Identity.Traits, "", "")
+	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_INVALID_SESSION",
-			Message: "Invalid session data from Kratos",
-			Details: []interface{}{"Unable to extract user traits"},
+			Message: "Invalid session data",
+			Details: []interface{}{err.Error()},
 		}
 	}
+	userDTO.ID = session.Session.Identity.Id
 
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
@@ -625,32 +591,89 @@ func (u *userUseCase) Profile(
 	}
 
 	// Extract user information from Kratos session
-	if traits, ok := session.Identity.Traits.(map[string]interface{}); ok {
-		userDTO := dto.IdentityUserDTO{
-			ID:        session.Identity.Id,
-			UserName:  extractStringFromTraits(traits, "username", ""),
-			Email:     extractStringFromTraits(traits, "email", ""),
-			Phone:     extractStringFromTraits(traits, "phone_number", ""),
-			Status:    session.Active != nil && *session.Active,
-			Tenant:    extractStringFromTraits(traits, "tenant", ""),
-			CreatedAt: session.Identity.CreatedAt.Unix(),
-			UpdatedAt: session.Identity.UpdatedAt.Unix(),
+	userDTO, err := extractUserFromTraits(session.Identity.Traits, "", "")
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_INVALID_SESSION",
+			Message: "Invalid session data",
+			Details: []interface{}{err.Error()},
 		}
-		return &userDTO, nil
 	}
-
-	return nil, &dto.ErrorDTOResponse{
-		Status:  http.StatusInternalServerError,
-		Code:    "MSG_INVALID_SESSION",
-		Message: "Invalid session data from Kratos",
-		Details: []interface{}{"Unable to extract user traits"},
-	}
+	userDTO.ID = session.Identity.Id
+	return &userDTO, nil
 }
 
-// Helper function to safely extract string values from traits map
-func extractStringFromTraits(traits map[string]interface{}, key, defaultValue string) string {
-	if value, ok := traits[key].(string); ok {
-		return value
+// safeExtractTraits safely converts interface{} to map[string]interface{}
+// Returns the map and a boolean indicating success
+func safeExtractTraits(traits interface{}) (map[string]interface{}, bool) {
+	if traits == nil {
+		return make(map[string]interface{}), false
 	}
-	return defaultValue
+
+	// Direct type assertion (most common case)
+	if traitsMap, ok := traits.(map[string]interface{}); ok {
+		return traitsMap, true
+	}
+
+	// Fallback: JSON marshal/unmarshal for complex cases
+	jsonBytes, err := json.Marshal(traits)
+	if err != nil {
+		log.Printf("Failed to marshal traits: %v", err)
+		return make(map[string]interface{}), false
+	}
+
+	var traitsMap map[string]interface{}
+	if err := json.Unmarshal(jsonBytes, &traitsMap); err != nil {
+		log.Printf("Failed to unmarshal traits: %v", err)
+		return make(map[string]interface{}), false
+	}
+
+	return traitsMap, true
+}
+
+// extractUserFromTraits safely extracts user data from traits
+func extractUserFromTraits(traits interface{}, fallbackEmail, fallbackPhone string) (dto.IdentityUserDTO, error) {
+	traitsMap, ok := safeExtractTraits(traits)
+	if !ok {
+		return dto.IdentityUserDTO{}, fmt.Errorf("unable to extract traits from interface{}")
+	}
+
+	return dto.IdentityUserDTO{
+		UserName: extractStringFromTraits(traitsMap, "username", ""),
+		Email:    extractStringFromTraits(traitsMap, "email", fallbackEmail),
+		Phone:    extractStringFromTraits(traitsMap, "phone_number", fallbackPhone),
+		Tenant:   extractStringFromTraits(traitsMap, "tenant", ""),
+	}, nil
+}
+
+// extractStringFromTraits extracts a string value from traits map
+// If the value is a pointer to a string, it dereferences it
+// If the value is nil, it returns the default value
+// If the value is not a string, it returns the default value
+func extractStringFromTraits(traits map[string]interface{}, key, defaultValue string) string {
+	if traits == nil {
+		return defaultValue
+	}
+
+	value, exists := traits[key]
+	if !exists {
+		return defaultValue
+	}
+
+	// Handle different types that might be stored
+	switch v := value.(type) {
+	case string:
+		return v
+	case *string:
+		if v != nil {
+			return *v
+		}
+		return defaultValue
+	case nil:
+		return defaultValue
+	default:
+		// Convert other types to string as fallback
+		return fmt.Sprintf("%v", v)
+	}
 }

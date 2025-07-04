@@ -131,7 +131,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
-// @Param challenge body dto.IdentityChallengeVerifyDTO true "verification payload"
+// @Param challenge body dto.IdentityChallengeVerifyDTO true "verification payload, type can be registration or login"
 // @Success 200 {object} response.SuccessResponse "Successful verification"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
@@ -155,11 +155,11 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 
 	switch reqPayload.Type {
 	case "challenge":
-		auth, err = h.ucase.ChallengeVerify(ctx, reqPayload.SessionID, reqPayload.Code)
+		auth, err = h.ucase.ChallengeVerify(ctx, reqPayload.FlowID, reqPayload.Code)
 	case "registration":
-		auth, err = h.ucase.VerifyRegister(ctx, reqPayload.SessionID, reqPayload.Code)
+		auth, err = h.ucase.VerifyRegister(ctx, reqPayload.FlowID, reqPayload.Code)
 	case "login":
-		auth, err = h.ucase.VerifyLogin(ctx, reqPayload.SessionID, reqPayload.Code)
+		auth, err = h.ucase.VerifyLogin(ctx, reqPayload.FlowID, reqPayload.Code)
 	default:
 		httpresponse.Error(
 			ctx,

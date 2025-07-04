@@ -2134,7 +2134,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "verification payload",
+                        "description": "verification payload, type can be registration or login",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
@@ -2615,20 +2615,19 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "code",
-                "session_id",
+                "flow_id",
                 "type"
             ],
             "properties": {
                 "code": {
                     "type": "string"
                 },
-                "session_id": {
+                "flow_id": {
                     "type": "string"
                 },
                 "type": {
                     "type": "string",
                     "enum": [
-                        "challenge",
                         "registration",
                         "login"
                     ]
@@ -2739,10 +2738,10 @@ const docTemplate = `{
                 "challenge_at": {
                     "type": "integer"
                 },
-                "receiver": {
+                "flow_id": {
                     "type": "string"
                 },
-                "session_id": {
+                "receiver": {
                     "type": "string"
                 }
             }

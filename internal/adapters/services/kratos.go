@@ -85,6 +85,44 @@ type KratosFlowResponse struct {
 	} `json:"ui"`
 }
 
+// KratosErrorResponse represents the error response structure from Kratos API
+type KratosErrorResponse struct {
+	State string `json:"state"`
+	UI    struct {
+		Messages []struct {
+			ID   int64  `json:"id"`
+			Text string `json:"text"`
+			Type string `json:"type"`
+		} `json:"messages"`
+		Nodes []struct {
+			Messages []struct {
+				ID      int64  `json:"id"`
+				Text    string `json:"text"`
+				Type    string `json:"type"`
+				Context struct {
+					Reason string `json:"reason"`
+				} `json:"context"`
+			} `json:"messages"`
+		} `json:"nodes"`
+	} `json:"ui"`
+}
+
+// GetValidationErrors extracts validation error messages from the response
+func (r *KratosErrorResponse) GetValidationErrors() []string {
+	var validationErrors []string
+
+	// Check messages in UI nodes
+	for _, node := range r.UI.Nodes {
+		for _, msg := range node.Messages {
+			if msg.Type == "error" {
+				validationErrors = append(validationErrors, msg.Text)
+			}
+		}
+	}
+
+	return validationErrors
+}
+
 type kratosServiceImpl struct {
 	client *kratos.APIClient
 }
@@ -170,36 +208,10 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 			// Check if this is a 400 response
 			if resp != nil && resp.StatusCode == 400 {
 				// Parse the response to check the flow state
-				var kratosResp struct {
-					State string `json:"state"`
-					UI    struct {
-						Messages []struct {
-							ID   int64  `json:"id"`
-							Text string `json:"text"`
-							Type string `json:"type"`
-						} `json:"messages"`
-						Nodes []struct {
-							Messages []struct {
-								ID      int64  `json:"id"`
-								Text    string `json:"text"`
-								Type    string `json:"type"`
-								Context struct {
-									Reason string `json:"reason"`
-								} `json:"context"`
-							} `json:"messages"`
-						} `json:"nodes"`
-					} `json:"ui"`
-				}
+				var kratosResp KratosErrorResponse
 				if err := json.NewDecoder(resp.Body).Decode(&kratosResp); err == nil {
 					// Check for validation errors
-					var validationErrors []string
-					for _, node := range kratosResp.UI.Nodes {
-						for _, msg := range node.Messages {
-							if msg.Type == "error" {
-								validationErrors = append(validationErrors, msg.Text)
-							}
-						}
-					}
+					validationErrors := kratosResp.GetValidationErrors()
 
 					// Return validation errors if any
 					if len(validationErrors) > 0 {
@@ -247,31 +259,33 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 		return nil, fmt.Errorf("failed to parse flow data: %w", err)
 	}
 
-	fmt.Println("flowData", flowData)
-
 	// Extract traits from nodes
 	traits := make(map[string]interface{})
 	for _, node := range flowData.UI.Nodes {
-		if node.Group == "default" && node.Type == "input" {
-			name := node.Attributes.Name
-			if strings.HasPrefix(name, "traits.") {
-				traitKey := strings.TrimPrefix(name, "traits.")
-				if node.Attributes.Value != nil {
-					// Check for empty string values
-					if strVal, ok := node.Attributes.Value.(string); ok {
-						if strVal != "" {
-							traits[traitKey] = strVal
-						}
-					} else {
-						// For non-string values, add them as is
-						traits[traitKey] = node.Attributes.Value
-					}
+		if node.Group != "default" || node.Type != "input" {
+			continue
+		}
+
+		name := node.Attributes.Name
+		if !strings.HasPrefix(name, "traits.") {
+			continue
+		}
+
+		traitKey := strings.TrimPrefix(name, "traits.")
+		if node.Attributes.Value != nil {
+			// Check for empty string values
+			if strVal, ok := node.Attributes.Value.(string); ok {
+				if strVal != "" {
+					traits[traitKey] = strVal
 				}
+			} else {
+				// For non-string values, add them as is
+				traits[traitKey] = node.Attributes.Value
 			}
 		}
+
 	}
 
-	// Ensure we have the required traits
 	if len(traits) == 0 {
 		return nil, fmt.Errorf("no traits found in registration flow")
 	}
@@ -284,9 +298,6 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 		},
 	}
 	result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
-	fmt.Println("result", result)
-	fmt.Println("resp", resp)
-	fmt.Println("err", err)
 	if err != nil {
 		return nil, fmt.Errorf("failed to submit registration flow with code: %w", err)
 	}
@@ -346,64 +357,35 @@ func (k *kratosServiceImpl) SubmitLoginFlow(
 	}
 
 	result, resp, err := submitFlow.UpdateLoginFlowBody(body).Execute()
-	if err != nil {
-		// Check if this is a 400 response
-		if resp != nil && resp.StatusCode == 400 {
-			// Parse the response to check the flow state
-			var kratosResp struct {
-				State string `json:"state"`
-				UI    struct {
-					Messages []struct {
-						ID   int64  `json:"id"`
-						Text string `json:"text"`
-						Type string `json:"type"`
-					} `json:"messages"`
-					Nodes []struct {
-						Messages []struct {
-							ID      int64  `json:"id"`
-							Text    string `json:"text"`
-							Type    string `json:"type"`
-							Context struct {
-								Reason string `json:"reason"`
-							} `json:"context"`
-						} `json:"messages"`
-					} `json:"nodes"`
-				} `json:"ui"`
-			}
-			if err := json.NewDecoder(resp.Body).Decode(&kratosResp); err == nil {
-				// Check for validation errors
-				var validationErrors []string
-				for _, node := range kratosResp.UI.Nodes {
-					for _, msg := range node.Messages {
-						if msg.Type == "error" {
-							validationErrors = append(validationErrors, msg.Text)
-						}
-					}
-				}
+	if err == nil {
+		return result, nil
+	}
 
-				// Return validation errors if any
-				if len(validationErrors) > 0 {
-					return nil, fmt.Errorf("validation errors: %v", validationErrors)
-				}
-
-				// Handle different states
-				switch kratosResp.State {
-				case "sent_email":
-					// This is a successful response
-					return &kratos.SuccessfulNativeLogin{}, nil
-				case "choose_method":
-					// This means we need to select a login method
-					return nil, fmt.Errorf("login method selection required")
-				default:
-					// For any other state, return the original error
-					return nil, err
-				}
-			}
-		}
+	if resp == nil || resp.StatusCode != 400 {
 		return nil, fmt.Errorf("failed to submit login flow: %w", err)
 	}
 
-	return result, nil
+	// This is a 400 response, but this is a successful response, it is a known issue of Kratos
+	// We need to parse the response to check the flow state
+	// Github issue: https://github.com/ory/kratos/issues/4052
+	var kratosResp KratosErrorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&kratosResp); err != nil {
+		return nil, fmt.Errorf("failed to submit login flow: %w", err)
+	}
+
+	validationErrors := kratosResp.GetValidationErrors()
+	if len(validationErrors) > 0 {
+		return nil, fmt.Errorf("validation errors: %v", validationErrors)
+	}
+
+	switch kratosResp.State {
+	case "sent_email":
+		return &kratos.SuccessfulNativeLogin{}, nil
+	case "choose_method":
+		return nil, fmt.Errorf("login method selection required")
+	default:
+		return nil, err
+	}
 }
 
 func (k *kratosServiceImpl) InitializeVerificationFlow(ctx context.Context) (*kratos.VerificationFlow, error) {
@@ -435,70 +417,60 @@ func (k *kratosServiceImpl) SubmitVerificationFlow(
 		},
 	}
 
-	result, resp, err := k.client.FrontendAPI.UpdateVerificationFlow(ctx).
+	_, resp, err := k.client.FrontendAPI.UpdateVerificationFlow(ctx).
 		Flow(flow.Id).
 		UpdateVerificationFlowBody(body).
 		Execute()
-	if err != nil {
-		// Check if this is a 400 response
-		if resp != nil && resp.StatusCode == 400 {
-			// Parse the response to check the flow state
-			var kratosResp struct {
-				State string `json:"state"`
-				UI    struct {
-					Messages []struct {
-						ID   int64  `json:"id"`
-						Text string `json:"text"`
-						Type string `json:"type"`
-					} `json:"messages"`
-					Nodes []struct {
-						Messages []struct {
-							ID      int64  `json:"id"`
-							Text    string `json:"text"`
-							Type    string `json:"type"`
-							Context struct {
-								Reason string `json:"reason"`
-							} `json:"context"`
-						} `json:"messages"`
-					} `json:"nodes"`
-				} `json:"ui"`
-			}
-			if err := json.NewDecoder(resp.Body).Decode(&kratosResp); err == nil {
-				// Check for validation errors
-				var validationErrors []string
-				for _, node := range kratosResp.UI.Nodes {
-					for _, msg := range node.Messages {
-						if msg.Type == "error" {
-							validationErrors = append(validationErrors, msg.Text)
-						}
-					}
-				}
-
-				// Return validation errors if any
-				if len(validationErrors) > 0 {
-					return nil, fmt.Errorf("validation errors: %v", validationErrors)
-				}
-
-				// Handle different states
-				switch kratosResp.State {
-				case "sent_email":
-					// This is a successful response for sending verification email
-					return flow, nil
-				case "passed_challenge":
-					// This is a successful response for verification
-					return flow, nil
-				default:
-					// For any other state, return the original error
-					return nil, err
-				}
-			}
-		}
+	if err != nil && resp.StatusCode != 400 {
 		return nil, fmt.Errorf("failed to submit verification flow: %w", err)
 	}
 
-	return result, nil
+	// This is a 400 response, but this is a successful response, it is a known issue of Kratos
+	// We need to parse the response to check the flow state
+	// Github issue: https://github.com/ory/kratos/issues/4052
+	var kratosResp KratosErrorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&kratosResp); err != nil {
+		return nil, fmt.Errorf("failed to submit verification flow: %w", err)
+	}
+
+	validationErrors := kratosResp.GetValidationErrors()
+	if len(validationErrors) > 0 {
+		return nil, fmt.Errorf("validation errors: %v", validationErrors)
+	}
+
+	switch kratosResp.State {
+	case "sent_email":
+		return flow, nil
+	case "passed_challenge":
+		return flow, nil
+	default:
+		return nil, err
+	}
 }
 
+// WhoAmI gets the session from Kratos
+func (k *kratosServiceImpl) WhoAmI(ctx context.Context, sessionToken string) (*kratos.Session, error) {
+	session, _, err := k.client.FrontendAPI.ToSession(ctx).XSessionToken(sessionToken).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get whoami session: %w", err)
+	}
+	return session, nil
+}
+
+// Logout logs out the user by invalidating the session
+func (k *kratosServiceImpl) Logout(ctx context.Context, sessionToken string) error {
+	_, err := k.client.FrontendAPI.PerformNativeLogout(ctx).
+		PerformNativeLogoutBody(kratos.PerformNativeLogoutBody{
+			SessionToken: sessionToken,
+		}).
+		Execute()
+	if err != nil {
+		return fmt.Errorf("failed to perform native logout: %w", err)
+	}
+	return nil
+}
+
+// GetSession gets the session from Kratos
 func (k *kratosServiceImpl) GetSession(ctx context.Context, sessionToken string) (*kratos.Session, error) {
 	session, _, err := k.client.FrontendAPI.ToSession(ctx).
 		Cookie(fmt.Sprintf("ory_kratos_session=%s", sessionToken)).
@@ -509,30 +481,11 @@ func (k *kratosServiceImpl) GetSession(ctx context.Context, sessionToken string)
 	return session, nil
 }
 
+// RevokeSession revokes the session from Kratos
 func (k *kratosServiceImpl) RevokeSession(ctx context.Context, sessionToken string) error {
 	_, err := k.client.FrontendAPI.DisableMySession(ctx, sessionToken).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to revoke session: %w", err)
-	}
-	return nil
-}
-
-func (k *kratosServiceImpl) WhoAmI(ctx context.Context, sessionToken string) (*kratos.Session, error) {
-	session, _, err := k.client.FrontendAPI.ToSession(ctx).XSessionToken(sessionToken).Execute()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get whoami session: %w", err)
-	}
-	return session, nil
-}
-
-func (k *kratosServiceImpl) Logout(ctx context.Context, sessionToken string) error {
-	_, err := k.client.FrontendAPI.PerformNativeLogout(ctx).
-		PerformNativeLogoutBody(kratos.PerformNativeLogoutBody{
-			SessionToken: sessionToken,
-		}).
-		Execute()
-	if err != nil {
-		return fmt.Errorf("failed to perform native logout: %w", err)
 	}
 	return nil
 }

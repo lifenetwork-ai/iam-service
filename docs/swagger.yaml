@@ -108,17 +108,16 @@ definitions:
     properties:
       code:
         type: string
-      session_id:
+      flow_id:
         type: string
       type:
         enum:
-        - challenge
         - registration
         - login
         type: string
     required:
     - code
-    - session_id
+    - flow_id
     - type
     type: object
   dto.IdentityChallengeWithEmailDTO:
@@ -188,9 +187,9 @@ definitions:
     properties:
       challenge_at:
         type: integer
-      receiver:
+      flow_id:
         type: string
-      session_id:
+      receiver:
         type: string
     type: object
   dto.IdentityUserDTO:
@@ -1787,7 +1786,7 @@ paths:
         name: X-Organization-Id
         required: true
         type: string
-      - description: verification payload
+      - description: verification payload, type can be registration or login
         in: body
         name: challenge
         required: true
