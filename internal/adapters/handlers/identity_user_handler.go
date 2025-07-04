@@ -185,173 +185,6 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	httpresponse.Success(ctx, http.StatusOK, auth)
 }
 
-// // Login to authenticate user.
-// // @Summary Authenticate user
-// // @Description Authenticate user
-// // @Tags users
-// // @Accept json
-// // @Produce json
-// // @Param X-Organization-Id header string true "Organization ID"
-// // @Param login body dto.IdentityUserLoginDTO true "login payload"
-// // @Success 200 {object} response.SuccessResponse "Successful authenticate user"
-// // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
-// // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// // @Router /api/v1/users/login [post]
-// func (h *userHandler) Login(ctx *gin.Context) {
-// 	httpresponse.Error(
-// 		ctx,
-// 		http.StatusNotImplemented,
-// 		"MSG_NOT_IMPLEMENTED",
-// 		"Not implemented",
-// 		nil,
-// 	)
-// }
-
-// // Login with Google to authenticate user.
-// // @Summary Authenticate user with Google
-// // @Description Authenticate user with Google
-// // @Tags users
-// // @Accept json
-// // @Produce json
-// // @Param X-Organization-Id header string true "Organization ID"
-// // @Success 200 {object} response.SuccessResponse "Successful authenticate user with Google"
-// // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// // @Router /api/v1/users/login-with-google [post]
-// func (h *userHandler) LoginWithGoogle(ctx *gin.Context) {
-// 	httpresponse.Error(
-// 		ctx,
-// 		http.StatusNotImplemented,
-// 		"MSG_NOT_IMPLEMENTED",
-// 		"Not implemented",
-// 		nil,
-// 	)
-// }
-
-// // Login with Facebook to authenticate user.
-// // @Summary Authenticate user with Facebook
-// // @Description Authenticate user with Facebook
-// // @Tags users
-// // @Accept json
-// // @Produce json
-// // @Param X-Organization-Id header string true "Organization ID"
-// // @Success 200 {object} response.SuccessResponse "Successful authenticate user with Facebook"
-// // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// // @Router /api/v1/users/login-with-facebook [post]
-// func (h *userHandler) LoginWithFacebook(ctx *gin.Context) {
-// 	httpresponse.Error(
-// 		ctx,
-// 		http.StatusNotImplemented,
-// 		"MSG_NOT_IMPLEMENTED",
-// 		"Not implemented",
-// 		nil,
-// 	)
-// }
-
-// // Login with Apple to authenticate user.
-// // @Summary Authenticate user with Apple
-// // @Description Authenticate user with Apple
-// // @Tags users
-// // @Accept json
-// // @Produce json
-// // @Param X-Organization-Id header string true "Organization ID"
-// // @Success 200 {object} response.SuccessResponse "Successful authenticate user with Apple"
-// // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// // @Router /api/v1/users/login-with-apple [post]
-// func (h *userHandler) LoginWithApple(ctx *gin.Context) {
-// 	httpresponse.Error(
-// 		ctx,
-// 		http.StatusNotImplemented,
-// 		"MSG_NOT_IMPLEMENTED",
-// 		"Not implemented",
-// 		nil,
-// 	)
-// }
-
-// // Refresh to refresh token.
-// // @Summary Refresh token
-// // @Description Refresh token
-// // @Tags users
-// // @Accept json
-// // @Produce json
-// // @Param X-Organization-Id header string true "Organization ID"
-// // @Param Authorization header string true "Bearer Token"
-// // @Param refresh_token body dto.IdentityRefreshTokenDTO true "refresh token payload"
-// // @Success 200 {object} response.SuccessResponse "Successful refresh token"
-// // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
-// // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// // @Router /api/v1/users/refresh-token [post]
-// func (h *userHandler) RefreshToken(ctx *gin.Context) {
-// 	// Get the Bearer token from the Authorization header
-// 	authHeader := ctx.GetHeader("Authorization")
-// 	if authHeader == "" {
-// 		httpresponse.Error(
-// 			ctx,
-// 			http.StatusUnauthorized,
-// 			"UNAUTHORIZED",
-// 			"Authorization header is required",
-// 			[]map[string]string{{
-// 				"field": "Authorization",
-// 				"error": "Authorization header is required",
-// 			}},
-// 		)
-// 		return
-// 	}
-
-// 	// Check if the token is a Bearer token
-// 	tokenParts := strings.Split(authHeader, " ")
-// 	tokenPrefix := tokenParts[0]
-// 	if len(tokenParts) != 2 || (tokenPrefix != "Bearer" && tokenPrefix != "Token") {
-// 		httpresponse.Error(
-// 			ctx,
-// 			http.StatusUnauthorized,
-// 			"UNAUTHORIZED",
-// 			"Authorization header is required",
-// 			[]map[string]string{{
-// 				"field": "Authorization",
-// 				"error": "Invalid authorization header format",
-// 			}},
-// 		)
-// 		return
-// 	}
-
-// 	payload := dto.IdentityRefreshTokenDTO{}
-// 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-// 		httpresponse.Error(
-// 			ctx,
-// 			http.StatusBadRequest,
-// 			"MSG_INVALID_PAYLOAD",
-// 			"Invalid payload",
-// 			err,
-// 		)
-// 		return
-// 	}
-
-// 	if payload.RefreshToken == "" {
-// 		httpresponse.Error(
-// 			ctx,
-// 			http.StatusBadRequest,
-// 			"MSG_REFRESH_TOKEN_IS_REQUIRED",
-// 			"Refresh token is required",
-// 			nil,
-// 		)
-// 		return
-// 	}
-
-// 	auth, err := h.ucase.RefreshToken(ctx, tokenParts[1], payload.RefreshToken)
-// 	if err != nil {
-// 		httpresponse.Error(
-// 			ctx,
-// 			http.StatusInternalServerError,
-// 			"MSG_FAILED_TO_REFRESH_TOKEN",
-// 			"Failed to refresh token",
-// 			err,
-// 		)
-// 		return
-// 	}
-
-// 	httpresponse.Success(ctx, http.StatusOK, auth)
-// }
-
 // Me to get user profile.
 // @Summary Get user profile
 // @Description Get user profile
@@ -414,7 +247,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
-// @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, tenant is required, if both are provided, email will be used"
+// @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, if both are provided then error will be returned. Tenant field is required"
 // @Success 200 {object} response.SuccessResponse{data=dto.IdentityUserAuthDTO} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
@@ -433,36 +266,15 @@ func (h *userHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	// Validate that at least one contact method is provided
-	if reqPayload.Email == "" && reqPayload.Phone == "" {
+	err := validateRegisterPayload(reqPayload)
+	if err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
 		httpresponse.Error(
 			ctx,
-			http.StatusBadRequest,
-			"MSG_CONTACT_METHOD_REQUIRED",
-			"Either email or phone must be provided",
-			[]map[string]string{
-				{
-					"field": "email,phone",
-					"error": "At least one contact method (email or phone) must be provided",
-				},
-			},
-		)
-		return
-	}
-
-	// Validate tenant is provided
-	if reqPayload.Tenant == "" {
-		httpresponse.Error(
-			ctx,
-			http.StatusBadRequest,
-			"MSG_TENANT_REQUIRED",
-			"Tenant is required",
-			[]map[string]string{
-				{
-					"field": "tenant",
-					"error": "Tenant must be provided",
-				},
-			},
+			err.Status,
+			err.Code,
+			err.Message,
+			err.Details,
 		)
 		return
 	}
@@ -481,4 +293,32 @@ func (h *userHandler) Register(ctx *gin.Context) {
 	}
 
 	httpresponse.Success(ctx, http.StatusOK, auth)
+}
+
+func validateRegisterPayload(reqPayload dto.IdentityUserRegisterDTO) *dto.ErrorDTOResponse {
+	if reqPayload.Email == "" && reqPayload.Phone == "" {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_CONTACT_METHOD_REQUIRED",
+			Message: "Either email or phone must be provided",
+		}
+	}
+
+	if reqPayload.Email != "" && reqPayload.Phone != "" {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_ONLY_EMAIL_OR_PHONE_MUST_BE_PROVIDED",
+			Message: "Only email or phone must be provided",
+		}
+	}
+
+	if reqPayload.Tenant == "" {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_TENANT_REQUIRED",
+			Message: "Tenant is required",
+		}
+	}
+
+	return nil
 }

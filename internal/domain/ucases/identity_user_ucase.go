@@ -364,6 +364,7 @@ func (u *userUseCase) ChallengeVerify(
 	}, nil
 }
 
+// Register registers a new user
 func (u *userUseCase) Register(
 	ctx context.Context,
 	payload dto.IdentityUserRegisterDTO,
