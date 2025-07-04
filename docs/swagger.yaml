@@ -155,11 +155,6 @@ definitions:
       updated_at:
         type: string
     type: object
-  dto.IdentityRefreshTokenDTO:
-    properties:
-      refresh_token:
-        type: string
-    type: object
   dto.IdentityRoleDTO:
     properties:
       id:
@@ -224,13 +219,6 @@ definitions:
         type: string
       updated_at:
         type: integer
-      user_name:
-        type: string
-    type: object
-  dto.IdentityUserLoginDTO:
-    properties:
-      password:
-        type: string
       user_name:
         type: string
     type: object
@@ -1893,116 +1881,6 @@ paths:
       summary: Login with phone and otp
       tags:
       - users
-  /api/v1/users/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: login payload
-        in: body
-        name: login
-        required: true
-        schema:
-          $ref: '#/definitions/dto.IdentityUserLoginDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user
-      tags:
-      - users
-  /api/v1/users/login-with-apple:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with Apple
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user with Apple
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user with Apple
-      tags:
-      - users
-  /api/v1/users/login-with-facebook:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with Facebook
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user with Facebook
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user with Facebook
-      tags:
-      - users
-  /api/v1/users/login-with-google:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with Google
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user with Google
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user with Google
-      tags:
-      - users
   /api/v1/users/logout:
     post:
       consumes:
@@ -2075,46 +1953,6 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Get user profile
-      tags:
-      - users
-  /api/v1/users/refresh-token:
-    post:
-      consumes:
-      - application/json
-      description: Refresh token
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: Bearer Token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: refresh token payload
-        in: body
-        name: refresh_token
-        required: true
-        schema:
-          $ref: '#/definitions/dto.IdentityRefreshTokenDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful refresh token
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Refresh token
       tags:
       - users
   /api/v1/users/register:
