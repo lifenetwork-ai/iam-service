@@ -166,21 +166,33 @@ definitions:
     type: object
   dto.IdentityUserAuthDTO:
     properties:
-      access_expires_at:
-        type: integer
-      access_token:
+      active:
+        type: boolean
+      authenticated_at:
         type: string
-      last_login_at:
-        type: integer
-      refresh_expires_at:
-        type: integer
-      refresh_token:
+      authentication_methods:
+        description: Optional session metadata
+        items:
+          type: string
+        type: array
+      expires_at:
+        type: string
+      issued_at:
+        type: string
+      session_id:
+        description: Core session fields from Kratos
+        type: string
+      session_token:
+        description: Token used for authenticating subsequent requests
         type: string
       user:
-        $ref: '#/definitions/dto.IdentityUserDTO'
+        allOf:
+        - $ref: '#/definitions/dto.IdentityUserDTO'
+        description: User information
       verification_flow:
         $ref: '#/definitions/dto.IdentityUserChallengeDTO'
       verification_needed:
+        description: Verification flow (for incomplete registrations)
         type: boolean
     type: object
   dto.IdentityUserChallengeDTO:
@@ -1965,8 +1977,8 @@ paths:
         name: X-Organization-Id
         required: true
         type: string
-      - description: Only email or phone must be provided, tenant is required, if
-          both are provided, email will be used
+      - description: 'Only email or phone must be provided, if both are provided then
+          error will be returned. Tenant field is required(available value: `genetica`,`life_ai`)'
         in: body
         name: register
         required: true

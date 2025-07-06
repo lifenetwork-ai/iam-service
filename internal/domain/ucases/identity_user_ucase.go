@@ -15,6 +15,12 @@ import (
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	ucase_interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
+	client "github.com/ory/kratos-client-go"
+)
+
+const (
+	// DefaultChallengeDuration is the default duration for a challenge session
+	DefaultChallengeDuration = 5 * time.Minute
 )
 
 type userUseCase struct {
@@ -78,7 +84,7 @@ func (u *userUseCase) ChallengeWithPhone(
 		Type:  "phone",
 		Phone: phone,
 		Flow:  flow.Id,
-	}, 5*time.Minute)
+	}, DefaultChallengeDuration)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -114,13 +120,24 @@ func (u *userUseCase) ChallengeWithEmail(
 		}
 	}
 
-	// Initialize verification flow with Kratos
-	flow, err := u.kratosService.InitializeVerificationFlow(ctx)
+	// Initialize login flow with Kratos
+	flow, err := u.kratosService.InitializeLoginFlow(ctx)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "VERIFICATION_FLOW_FAILED",
-			Message: "Failed to initialize verification flow",
+			Message: "Failed to initialize login flow",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// Submit login flow to Kratos
+	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, "code", &email, nil, nil)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "VERIFICATION_FLOW_FAILED",
+			Message: "Failed to submit login flow",
 			Details: []any{err.Error()},
 		}
 	}
@@ -131,7 +148,7 @@ func (u *userUseCase) ChallengeWithEmail(
 		Type:  "email",
 		Email: email,
 		Flow:  flow.Id,
-	}, 5*time.Minute)
+	}, DefaultChallengeDuration)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -177,17 +194,21 @@ func (u *userUseCase) VerifyRegister(
 
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
-		AccessToken:      *registrationResult.SessionToken,
-		RefreshToken:     "", // Kratos handles refresh internally
-		AccessExpiresAt:  registrationResult.Session.ExpiresAt.Unix(),
-		RefreshExpiresAt: 0,
-		LastLoginAt:      time.Now().Unix(),
+		SessionID:       registrationResult.Session.Id,
+		SessionToken:    *registrationResult.SessionToken,
+		Active:          *registrationResult.Session.Active,
+		ExpiresAt:       registrationResult.Session.ExpiresAt,
+		IssuedAt:        registrationResult.Session.IssuedAt,
+		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       registrationResult.Identity.Id,
 			UserName: extractStringFromTraits(registrationResult.Identity.Traits.(map[string]interface{}), "username", ""),
 			Email:    extractStringFromTraits(registrationResult.Identity.Traits.(map[string]interface{}), "email", ""),
 			Phone:    extractStringFromTraits(registrationResult.Identity.Traits.(map[string]interface{}), "phone_number", ""),
 		},
+		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
+			return *method.Method
+		}),
 	}, nil
 }
 
@@ -241,17 +262,21 @@ func (u *userUseCase) VerifyLogin(
 	}
 
 	return &dto.IdentityUserAuthDTO{
-		AccessToken:      *loginResult.SessionToken,
-		RefreshToken:     "", // Kratos handles refresh internally
-		AccessExpiresAt:  loginResult.Session.ExpiresAt.Unix(),
-		RefreshExpiresAt: 0,
-		LastLoginAt:      time.Now().Unix(),
+		SessionID:       loginResult.Session.Id,
+		SessionToken:    *loginResult.SessionToken,
+		Active:          *loginResult.Session.Active,
+		ExpiresAt:       loginResult.Session.ExpiresAt,
+		IssuedAt:        loginResult.Session.IssuedAt,
+		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       loginResult.Session.Identity.Id,
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "username", ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "email", ""),
 			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
 		},
+		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
+			return *method.Method
+		}),
 	}, nil
 }
 
@@ -355,12 +380,16 @@ func (u *userUseCase) ChallengeVerify(
 
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
-		AccessToken:      verificationResult.Id,
-		RefreshToken:     "", // Kratos handles refresh internally
-		AccessExpiresAt:  session.ExpiresAt.Unix(),
-		RefreshExpiresAt: 0,
-		LastLoginAt:      time.Now().Unix(),
-		User:             userDTO,
+		SessionID:       session.Id,
+		SessionToken:    verificationResult.Id, // Use verification result ID as session token
+		Active:          *session.Active,
+		ExpiresAt:       session.ExpiresAt,
+		IssuedAt:        session.IssuedAt,
+		AuthenticatedAt: session.AuthenticatedAt,
+		User:            userDTO,
+		AuthenticationMethods: utils.Map(session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
+			return *method.Method
+		}),
 	}, nil
 }
 
@@ -414,12 +443,17 @@ func (u *userUseCase) Register(
 		}
 	}
 
+	receiver := payload.Email
+	if payload.Phone != "" {
+		receiver = payload.Phone
+	}
+
 	// Return success with verification flow info
 	return &dto.IdentityUserAuthDTO{
 		VerificationNeeded: true,
 		VerificationFlow: &dto.IdentityUserChallengeDTO{
 			FlowID:      flow.Id,
-			Receiver:    payload.Phone,
+			Receiver:    receiver,
 			ChallengeAt: time.Now().Unix(),
 		},
 	}, nil
@@ -469,12 +503,16 @@ func (u *userUseCase) LogIn(
 
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
-		AccessToken:      *session.SessionToken,
-		RefreshToken:     "", // Kratos handles refresh internally
-		AccessExpiresAt:  session.Session.ExpiresAt.Unix(),
-		RefreshExpiresAt: 0,
-		LastLoginAt:      time.Now().Unix(),
-		User:             userDTO,
+		SessionID:       session.Session.Id,
+		SessionToken:    session.Session.Id, // Use session ID as session token
+		Active:          *session.Session.Active,
+		ExpiresAt:       session.Session.ExpiresAt,
+		IssuedAt:        session.Session.IssuedAt,
+		AuthenticatedAt: session.Session.AuthenticatedAt,
+		User:            userDTO,
+		AuthenticationMethods: utils.Map(session.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
+			return *method.Method
+		}),
 	}, nil
 }
 
@@ -552,12 +590,16 @@ func (u *userUseCase) RefreshToken(
 
 	// Return current session information
 	return &dto.IdentityUserAuthDTO{
-		AccessToken:      session.Id,
-		RefreshToken:     "", // Kratos handles refresh internally
-		AccessExpiresAt:  session.ExpiresAt.Unix(),
-		RefreshExpiresAt: 0,
-		LastLoginAt:      session.IssuedAt.Unix(),
-		User:             userDTO,
+		SessionID:       session.Id,
+		SessionToken:    session.Id, // Use session ID as session token
+		Active:          *session.Active,
+		ExpiresAt:       session.ExpiresAt,
+		IssuedAt:        session.IssuedAt,
+		AuthenticatedAt: session.AuthenticatedAt,
+		User:            userDTO,
+		AuthenticationMethods: utils.Map(session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
+			return *method.Method
+		}),
 	}, nil
 }
 

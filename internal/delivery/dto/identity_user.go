@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 // IdentityUserDTO represents an User.
 type IdentityUserDTO struct {
 	ID        string `json:"id"`
@@ -24,14 +26,23 @@ type IdentityUserChallengeDTO struct {
 	ChallengeAt int64  `json:"challenge_at" description:"Time challenge was sent"`
 }
 
-// IdentityUserAuthDTO represents the response for a successful login.
+// IdentityUserAuthDTO represents the response for a successful authentication with Kratos session
 type IdentityUserAuthDTO struct {
-	AccessToken        string                    `json:"access_token"`
-	RefreshToken       string                    `json:"refresh_token"`
-	AccessExpiresAt    int64                     `json:"access_expires_at"`
-	RefreshExpiresAt   int64                     `json:"refresh_expires_at"`
-	LastLoginAt        int64                     `json:"last_login_at"`
-	User               IdentityUserDTO           `json:"user"`
+	// Core session fields from Kratos
+	SessionID       string     `json:"session_id"`
+	SessionToken    string     `json:"session_token"` // Token used for authenticating subsequent requests
+	Active          bool       `json:"active"`
+	ExpiresAt       *time.Time `json:"expires_at,omitempty"`
+	IssuedAt        *time.Time `json:"issued_at,omitempty"`
+	AuthenticatedAt *time.Time `json:"authenticated_at,omitempty"`
+
+	// User information
+	User IdentityUserDTO `json:"user"`
+
+	// Optional session metadata
+	AuthenticationMethods []string `json:"authentication_methods,omitempty"`
+
+	// Verification flow (for incomplete registrations)
 	VerificationNeeded bool                      `json:"verification_needed,omitempty"`
 	VerificationFlow   *IdentityUserChallengeDTO `json:"verification_flow,omitempty"`
 }

@@ -104,14 +104,16 @@ func TestVerifyLogin(t *testing.T) {
 				flow := &client.LoginFlow{Id: "flow-id"}
 				session := &entities.ChallengeSession{Phone: "+1234567890", Flow: "flow-id"}
 				loginResult := &client.SuccessfulNativeLogin{
-					SessionToken: stringPtr("token"),
 					Session: client.Session{
+						Active:    boolPtr(true),
+						Id:        "session-id",
 						ExpiresAt: timePtr(time.Now().Add(time.Hour)),
 						Identity: &client.Identity{
 							Id:     "user-id",
 							Traits: map[string]interface{}{"username": "test"},
 						},
 					},
+					SessionToken: stringPtr("session-token"),
 				}
 
 				svc.EXPECT().GetLoginFlow(gomock.Any(), "flow-id").Return(flow, nil)
@@ -157,7 +159,9 @@ func TestVerifyLogin(t *testing.T) {
 			} else {
 				require.Nil(t, err)
 				require.NotNil(t, result)
-				assert.Equal(t, "token", result.AccessToken)
+				assert.Equal(t, "session-id", result.SessionID)
+				assert.Equal(t, "session-token", result.SessionToken)
+				assert.Equal(t, "user-id", result.User.ID)
 			}
 		})
 	}
@@ -228,7 +232,7 @@ func TestProfile(t *testing.T) {
 	}
 }
 
-func TestRefreshToken(t *testing.T) {
+func TestVerifyRegister(t *testing.T) {
 	tests := []struct {
 		name           string
 		mockSetup      func(*mock_services.MockKratosService)
@@ -238,28 +242,35 @@ func TestRefreshToken(t *testing.T) {
 		{
 			name: "Success",
 			mockSetup: func(svc *mock_services.MockKratosService) {
-				session := &client.Session{
-					Id:        "session-id",
-					ExpiresAt: timePtr(time.Now().Add(time.Hour)),
-					IssuedAt:  timePtr(time.Now()),
-					Identity: &client.Identity{
-						Id:     "user-id",
-						Traits: map[string]interface{}{"username": "test"},
+				flow := &client.RegistrationFlow{Id: "flow-id"}
+				registrationResult := &client.SuccessfulNativeRegistration{
+					Session: &client.Session{
+						Id:        "session-id",
+						Active:    boolPtr(true),
+						ExpiresAt: timePtr(time.Now().Add(time.Hour)),
+						Identity: &client.Identity{
+							Id: "user-id",
+							Traits: map[string]interface{}{
+								"username": "test",
+								"email":    "test@example.com",
+								"phone":    "+1234567890",
+							},
+						},
 					},
+					SessionToken: stringPtr("session-token"),
 				}
-				svc.EXPECT().GetSession(gomock.Any(), "access-token").Return(session, nil)
+
+				svc.EXPECT().GetRegistrationFlow(gomock.Any(), "flow-id").Return(flow, nil)
+				svc.EXPECT().SubmitRegistrationFlowWithCode(gomock.Any(), flow, "123456").Return(registrationResult, nil)
 			},
 		},
 		{
-			name: "Session Expired",
+			name: "Flow Not Found",
 			mockSetup: func(svc *mock_services.MockKratosService) {
-				session := &client.Session{
-					ExpiresAt: timePtr(time.Now().Add(-time.Hour)), // Expired
-				}
-				svc.EXPECT().GetSession(gomock.Any(), "access-token").Return(session, nil)
+				svc.EXPECT().GetRegistrationFlow(gomock.Any(), "flow-id").Return(nil, errors.New("not found"))
 			},
-			expectedStatus: http.StatusUnauthorized,
-			expectedCode:   "MSG_SESSION_EXPIRED",
+			expectedStatus: http.StatusInternalServerError,
+			expectedCode:   "MSG_GET_FLOW_FAILED",
 		},
 	}
 
@@ -270,7 +281,7 @@ func TestRefreshToken(t *testing.T) {
 
 			tt.mockSetup(mockSvc)
 
-			result, err := useCase.RefreshToken(context.Background(), "access-token", "refresh-token")
+			result, err := useCase.VerifyRegister(context.Background(), "flow-id", "123456")
 
 			if tt.expectedStatus != 0 {
 				require.NotNil(t, err)
@@ -279,6 +290,12 @@ func TestRefreshToken(t *testing.T) {
 			} else {
 				require.Nil(t, err)
 				require.NotNil(t, result)
+				assert.Equal(t, "session-id", result.SessionID)
+				assert.Equal(t, "session-token", result.SessionToken)
+				assert.Equal(t, "user-id", result.User.ID)
+				assert.Equal(t, "test", result.User.UserName)
+				assert.Equal(t, "test@example.com", result.User.Email)
+				assert.Equal(t, "+1234567890", result.User.Phone)
 			}
 		})
 	}
@@ -313,4 +330,8 @@ func stringPtr(s string) *string {
 
 func timePtr(t time.Time) *time.Time {
 	return &t
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

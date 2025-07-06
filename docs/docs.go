@@ -2408,7 +2408,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Only email or phone must be provided, tenant is required, if both are provided, email will be used",
+                        "description": "Only email or phone must be provided, if both are provided then error will be returned. Tenant field is required(available value: ` + "`" + `genetica` + "`" + `,` + "`" + `life_ai` + "`" + `)",
                         "name": "register",
                         "in": "body",
                         "required": true,
@@ -2706,28 +2706,46 @@ const docTemplate = `{
         "dto.IdentityUserAuthDTO": {
             "type": "object",
             "properties": {
-                "access_expires_at": {
-                    "type": "integer"
+                "active": {
+                    "type": "boolean"
                 },
-                "access_token": {
+                "authenticated_at": {
                     "type": "string"
                 },
-                "last_login_at": {
-                    "type": "integer"
+                "authentication_methods": {
+                    "description": "Optional session metadata",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
-                "refresh_expires_at": {
-                    "type": "integer"
+                "expires_at": {
+                    "type": "string"
                 },
-                "refresh_token": {
+                "issued_at": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "description": "Core session fields from Kratos",
+                    "type": "string"
+                },
+                "session_token": {
+                    "description": "Token used for authenticating subsequent requests",
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/dto.IdentityUserDTO"
+                    "description": "User information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.IdentityUserDTO"
+                        }
+                    ]
                 },
                 "verification_flow": {
                     "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
                 },
                 "verification_needed": {
+                    "description": "Verification flow (for incomplete registrations)",
                     "type": "boolean"
                 }
             }
