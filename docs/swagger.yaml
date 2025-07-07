@@ -1793,11 +1793,6 @@ paths:
       - application/json
       description: Verify either a login challenge or registration flow
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
       - description: verification payload, type can be registration or login
         in: body
         name: challenge
@@ -1828,11 +1823,6 @@ paths:
       - application/json
       description: Login with email and otp
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
       - description: challenge payload
         in: body
         name: challenge
@@ -1863,11 +1853,6 @@ paths:
       - application/json
       description: Login with phone and otp
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
       - description: challenge payload
         in: body
         name: challenge
@@ -1898,11 +1883,6 @@ paths:
       - application/json
       description: De-authenticate user
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
       - default: Bearer <token>
         description: Bearer Token
         in: header
@@ -1943,11 +1923,6 @@ paths:
       - application/json
       description: Get user profile
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
       - default: Bearer <token>
         description: Bearer Token
         in: header
@@ -1974,11 +1949,6 @@ paths:
       - application/json
       description: Register a new user
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
       - description: 'Only email or phone must be provided, if both are provided then
           error will be returned. Tenant field is required(available value: `genetica`,`life_ai`)'
         in: body

@@ -26,7 +26,6 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param X-Organization-Id header string true "Organization ID"
 // @Param challenge body dto.IdentityChallengeWithPhoneDTO true "challenge payload"
 // @Success 200 {object} response.SuccessResponse "Successful make a challenge with Phone and OTP"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -78,7 +77,6 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param X-Organization-Id header string true "Organization ID"
 // @Param challenge body dto.IdentityChallengeWithEmailDTO true "challenge payload"
 // @Success 200 {object} response.SuccessResponse "Successful make a challenge with Email and OTP"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -130,7 +128,6 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param X-Organization-Id header string true "Organization ID"
 // @Param challenge body dto.IdentityChallengeVerifyDTO true "verification payload, type can be registration or login"
 // @Success 200 {object} response.SuccessResponse "Successful verification"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -191,7 +188,6 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param X-Organization-Id header string true "Organization ID"
 // @Param Authorization header string true "Bearer Token" default(Bearer <token>)
 // @Success 200 {object} response.SuccessResponse "Successful get user profile"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
@@ -218,7 +214,6 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param X-Organization-Id header string true "Organization ID"
 // @Param Authorization header string true "Bearer Token" default(Bearer <token>)
 // @Param request body object true "Empty request body"
 // @Success 200 {object} response.SuccessResponse{data=interface{}} "Successful de-authenticate user"
@@ -246,7 +241,6 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param X-Organization-Id header string true "Organization ID"
 // @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, if both are provided then error will be returned. Tenant field is required(available value: `genetica`,`life_ai`)"
 // @Success 200 {object} response.SuccessResponse{data=dto.IdentityUserAuthDTO} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
