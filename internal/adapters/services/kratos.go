@@ -282,6 +282,13 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 		},
 	}
 	result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
+	if resp != nil && resp.StatusCode == 400 {
+		if err := k.parseKratosErrorResponse(resp, fmt.Errorf("registration failed: %w", err)); err != nil {
+			return nil, err
+		}
+		return &kratos.SuccessfulNativeRegistration{}, nil
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to submit registration flow with code: %w", err)
 	}

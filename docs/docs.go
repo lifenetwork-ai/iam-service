@@ -2294,6 +2294,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
                         "description": "Bearer Token",
                         "name": "Authorization",
                         "in": "header",
@@ -2364,6 +2365,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
                         "description": "Bearer Token",
                         "name": "Authorization",
                         "in": "header",
@@ -2628,7 +2630,7 @@ const docTemplate = `{
                 "type": {
                     "type": "string",
                     "enum": [
-                        "registration",
+                        "register",
                         "login"
                     ]
                 }

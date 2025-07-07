@@ -112,7 +112,7 @@ definitions:
         type: string
       type:
         enum:
-        - registration
+        - register
         - login
         type: string
     required:
@@ -1903,7 +1903,8 @@ paths:
         name: X-Organization-Id
         required: true
         type: string
-      - description: Bearer Token
+      - default: Bearer <token>
+        description: Bearer Token
         in: header
         name: Authorization
         required: true
@@ -1947,7 +1948,8 @@ paths:
         name: X-Organization-Id
         required: true
         type: string
-      - description: Bearer Token
+      - default: Bearer <token>
+        description: Bearer Token
         in: header
         name: Authorization
         required: true

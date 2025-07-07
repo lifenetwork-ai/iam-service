@@ -57,7 +57,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 		return
 	}
 
-	session, err := h.ucase.ChallengeWithPhone(ctx, reqPayload.Phone)
+	challenge, err := h.ucase.ChallengeWithPhone(ctx, reqPayload.Phone)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -69,7 +69,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 		return
 	}
 
-	httpresponse.Success(ctx, http.StatusOK, session)
+	httpresponse.Success(ctx, http.StatusOK, challenge)
 }
 
 // ChallengeWithEmail to login with email and otp.
@@ -109,7 +109,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 		return
 	}
 
-	session, err := h.ucase.ChallengeWithEmail(ctx, reqPayload.Email)
+	challenge, err := h.ucase.ChallengeWithEmail(ctx, reqPayload.Email)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -121,7 +121,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 		return
 	}
 
-	httpresponse.Success(ctx, http.StatusOK, session)
+	httpresponse.Success(ctx, http.StatusOK, challenge)
 }
 
 // Verify the challenge or registration
@@ -156,7 +156,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	switch reqPayload.Type {
 	case "challenge":
 		auth, err = h.ucase.ChallengeVerify(ctx, reqPayload.FlowID, reqPayload.Code)
-	case "registration":
+	case "register":
 		auth, err = h.ucase.VerifyRegister(ctx, reqPayload.FlowID, reqPayload.Code)
 	case "login":
 		auth, err = h.ucase.VerifyLogin(ctx, reqPayload.FlowID, reqPayload.Code)
@@ -192,7 +192,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
-// @Param Authorization header string true "Bearer Token"
+// @Param Authorization header string true "Bearer Token" default(Bearer <token>)
 // @Success 200 {object} response.SuccessResponse "Successful get user profile"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
@@ -219,7 +219,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Organization-Id header string true "Organization ID"
-// @Param Authorization header string true "Bearer Token"
+// @Param Authorization header string true "Bearer Token" default(Bearer <token>)
 // @Param request body object true "Empty request body"
 // @Success 200 {object} response.SuccessResponse{data=interface{}} "Successful de-authenticate user"
 // @Failure 401 {object} response.ErrorResponse "Unauthorized - Invalid or missing token"
