@@ -113,5 +113,4 @@ func RegisterRoutes(
 		middleware.RequestAuthenticationMiddleware(),
 		userHandler.Me,
 	)
-
 }

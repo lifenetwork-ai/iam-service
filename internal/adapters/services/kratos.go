@@ -22,7 +22,7 @@ type KratosService interface {
 
 	// Login flow
 	InitializeLoginFlow(ctx context.Context) (*kratos.LoginFlow, error)
-	SubmitLoginFlow(ctx context.Context, flow *kratos.LoginFlow, method string, identifier *string, password *string, code *string) (*kratos.SuccessfulNativeLogin, error)
+	SubmitLoginFlow(ctx context.Context, flow *kratos.LoginFlow, method string, identifier, password, code *string) (*kratos.SuccessfulNativeLogin, error)
 	GetLoginFlow(ctx context.Context, flowID string) (*kratos.LoginFlow, error)
 
 	// Verification flow

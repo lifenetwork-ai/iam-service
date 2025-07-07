@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"testing"
 
+	"go.uber.org/mock/gomock"
+
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	mock_repositories "github.com/lifenetwork-ai/iam-service/mocks/adapters/repositories/types"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
 )
 
 const (
