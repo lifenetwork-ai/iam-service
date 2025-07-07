@@ -10,7 +10,6 @@ type UserIdentity struct {
 	GlobalUserID string    `json:"global_user_id" gorm:"type:uuid;not null"`
 	Type         string    `json:"type" gorm:"type:varchar(20);not null"` // email, phone, google, wallet, etc.
 	Value        string    `json:"value" gorm:"type:varchar(255);not null"`
-	Primary      bool      `json:"primary" gorm:"default:false"`
 	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
