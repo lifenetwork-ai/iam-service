@@ -1,8 +1,3 @@
-SET TIMEZONE TO 'UTC';
-
--- Enable the uuid-ossp extension for generating UUIDs
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 CREATE TABLE IF NOT EXISTS identity_organizations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
@@ -21,15 +16,6 @@ CREATE TABLE IF NOT EXISTS identity_organizations (
 CREATE INDEX IF NOT EXISTS organization_name_idx ON identity_organizations (name);
 CREATE INDEX IF NOT EXISTS organization_code_idx ON identity_organizations (code);
 CREATE INDEX IF NOT EXISTS organization_parent_path_idx ON identity_organizations (parent_path);
-
--- Create a trigger function to update 'updated_at' column on update
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-   NEW.updated_at = NOW();
-   RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 -- Drop existing trigger if it exists, then create it
 DO $$
