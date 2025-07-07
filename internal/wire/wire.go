@@ -15,6 +15,7 @@ import (
 type repos struct {
 	IdentityOrganizationRepo repositories_interfaces.IdentityOrganizationRepository
 	IdentityUserRepo         repositories_interfaces.IdentityUserRepository
+	TenantRepo               repositories_interfaces.TenantRepository
 
 	AccessSessionRepo    repositories_interfaces.AccessSessionRepository
 	ChallengeSessionRepo repositories_interfaces.ChallengeSessionRepository
@@ -26,6 +27,7 @@ func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *re
 	return &repos{
 		IdentityOrganizationRepo: repositories.NewIdentityOrganizationRepository(db, cacheRepo),
 		IdentityUserRepo:         repositories.NewIdentityUserRepository(db, cacheRepo),
+		TenantRepo:               repositories.NewTenantRepository(db),
 
 		AccessSessionRepo:    repositories.NewAccessSessionRepository(db, cacheRepo),
 		ChallengeSessionRepo: repositories.NewChallengeSessionRepository(cacheRepo),
@@ -36,6 +38,7 @@ func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *re
 type UseCases struct {
 	IdentityOrganizationUCase ucases_interfaces.IdentityOrganizationUseCase
 	IdentityUserUCase         ucases_interfaces.IdentityUserUseCase
+	AdminUCase                ucases_interfaces.AdminUseCase
 }
 
 // Initialize use cases
@@ -49,5 +52,6 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 			repos.ChallengeSessionRepo,
 			services.NewKratosService(),
 		),
+		AdminUCase: ucases.NewAdminUseCase(repos.TenantRepo),
 	}
 }

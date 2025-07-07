@@ -19,8 +19,27 @@ func RegisterRoutes(
 	db *gorm.DB,
 	organizationUCase interfaces.IdentityOrganizationUseCase,
 	userUCase interfaces.IdentityUserUseCase,
+	adminUCase interfaces.AdminUseCase,
 ) {
 	v1 := r.Group("/api/v1")
+
+	// SECTION: Admin routes
+	adminRouter := v1.Group("admin")
+	adminRouter.Use(
+		middleware.AdminBasicAuthMiddleware(),
+	)
+
+	// Admin Tenant Management subgroup
+	adminHandler := handlers.NewAdminHandler(adminUCase)
+	tenantRouter := adminRouter.Group("tenants")
+	{
+		tenantRouter.GET("/", adminHandler.ListTenants)
+		tenantRouter.GET("/:id", adminHandler.GetTenant)
+		tenantRouter.POST("/", adminHandler.CreateTenant)
+		tenantRouter.PUT("/:id", adminHandler.UpdateTenant)
+		tenantRouter.DELETE("/:id", adminHandler.DeleteTenant)
+		tenantRouter.PUT("/:id/status", adminHandler.UpdateTenantStatus)
+	}
 
 	// SECTION: organizations
 	organizationRouter := v1.Group("organizations")
@@ -56,7 +75,7 @@ func RegisterRoutes(
 		organizationHandler.DeleteOrganization,
 	)
 
-	// SECTION: organizations
+	// SECTION: users
 	userRouter := v1.Group("users")
 	userHandler := handlers.NewIdentityUserHandler(userUCase)
 	userRouter.POST(
@@ -78,30 +97,6 @@ func RegisterRoutes(
 		"/register",
 		userHandler.Register,
 	)
-
-	// TODO: Add support for social login
-	// userRouter.POST(
-	// 	"/login-with-google",
-	// 	userHandler.LoginWithGoogle,
-	// )
-
-	// userRouter.POST(
-	// 	"/login-with-facebook",
-	// 	userHandler.LoginWithFacebook,
-	// )
-
-	// userRouter.POST(
-	// 	"/login-with-apple",
-	// 	userHandler.LoginWithApple,
-	// )
-
-	// userRouter.POST("/register", userHandler.Register)
-
-	// TODO: Add support for password login
-	// userRouter.POST(
-	// 	"/login",
-	// 	userHandler.Login,
-	// )
 
 	userRouter.POST(
 		"/logout",

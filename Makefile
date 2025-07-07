@@ -32,8 +32,7 @@ lint:
 	golangci-lint run --fix
 
 swagger:
-	swag init -g cmd/main.go
-
+	swag init -g ./cmd/main.go -d ./ -o ./docs
 wiring: 
 	wire ./wire
 

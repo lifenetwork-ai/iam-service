@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   dto.AccessPermissionDTO:
     properties:
@@ -12,6 +13,23 @@ definitions:
   dto.AccessSessionDTO:
     properties:
       id:
+        type: string
+    type: object
+  dto.AdminAccountDTO:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+      status:
+        type: string
+      updated_at:
         type: string
     type: object
   dto.CreateAccessPermissionPayloadDTO:
@@ -41,6 +59,20 @@ definitions:
     required:
     - code
     - name
+    type: object
+  dto.CreateAdminAccountPayloadDTO:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
     type: object
   dto.CreateIdentityGroupPayloadDTO:
     properties:
@@ -103,6 +135,19 @@ definitions:
     required:
     - code
     - name
+    type: object
+  dto.CreateTenantPayloadDTO:
+    properties:
+      admin_url:
+        type: string
+      name:
+        type: string
+      public_url:
+        type: string
+    required:
+    - admin_url
+    - name
+    - public_url
     type: object
   dto.IdentityChallengeVerifyDTO:
     properties:
@@ -258,6 +303,21 @@ definitions:
       total:
         type: integer
     type: object
+  dto.TenantDTO:
+    properties:
+      admin_url:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      public_url:
+        type: string
+      updated_at:
+        type: string
+    type: object
   dto.UpdateAccessPermissionPayloadDTO:
     properties:
       code:
@@ -348,6 +408,28 @@ definitions:
     - code
     - name
     type: object
+  dto.UpdateTenantPayloadDTO:
+    properties:
+      admin_url:
+        type: string
+      name:
+        type: string
+      public_url:
+        type: string
+    type: object
+  dto.UpdateTenantStatusPayloadDTO:
+    properties:
+      reason:
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        - suspended
+        type: string
+    required:
+    - status
+    type: object
   response.ErrorResponse:
     properties:
       code:
@@ -375,8 +457,283 @@ definitions:
         type: integer
     type: object
 info:
-  contact: {}
+  contact:
+    email: support@lifenetwork.ai
+    name: API Support
+  description: Identity and Access Management Service
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: IAM Service API
+  version: "1.0"
 paths:
+  /api/v1/admin/accounts:
+    post:
+      consumes:
+      - application/json
+      description: Create a new admin account (requires root account configured via
+        ADMIN_EMAIL and ADMIN_PASSWORD env vars)
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-Id
+        required: true
+        type: string
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Admin account details
+        in: body
+        name: admin
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAdminAccountPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successful creation of admin account
+          schema:
+            $ref: '#/definitions/dto.AdminAccountDTO'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized - Not the root account
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Create a new admin account
+      tags:
+      - admin
+  /api/v1/admin/tenants:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of tenants with optional search
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Page size (default: 10)'
+        in: query
+        name: size
+        type: integer
+      - description: Search keyword
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PaginationDTOResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: List all tenants
+      tags:
+      - tenants
+    post:
+      consumes:
+      - application/json
+      description: Create a new tenant with the provided details
+      parameters:
+      - description: Tenant details
+        in: body
+        name: tenant
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTenantPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TenantDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create a new tenant
+      tags:
+      - tenants
+  /api/v1/admin/tenants/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a tenant and all associated data
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TenantDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete a tenant
+      tags:
+      - tenants
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a tenant
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TenantDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get a tenant by ID
+      tags:
+      - tenants
+    put:
+      consumes:
+      - application/json
+      description: Update a tenant's details
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant details
+        in: body
+        name: tenant
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTenantPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TenantDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update a tenant
+      tags:
+      - tenants
+  /api/v1/admin/tenants/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update a tenant's status (requires root or admin account)
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant status details
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTenantStatusPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TenantDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update tenant status
+      tags:
+      - tenants
   /api/v1/groups:
     get:
       consumes:
@@ -1979,4 +2336,7 @@ paths:
       summary: Register a new user
       tags:
       - users
+securityDefinitions:
+  BasicAuth:
+    type: basic
 swagger: "2.0"
