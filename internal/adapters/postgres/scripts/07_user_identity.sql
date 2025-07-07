@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS user_identities (
     global_user_id UUID NOT NULL REFERENCES global_users(id) ON DELETE CASCADE,
     type VARCHAR(20) NOT NULL, -- email, phone, google, wallet, etc.
     value VARCHAR(255) NOT NULL,
-    verified BOOLEAN DEFAULT FALSE,
     primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
