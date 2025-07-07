@@ -1884,7 +1884,7 @@ paths:
       description: De-authenticate user
       parameters:
       - default: Bearer <token>
-        description: Bearer Token
+        description: Bearer Token(Bearer ory...)
         in: header
         name: Authorization
         required: true
@@ -1924,7 +1924,7 @@ paths:
       description: Get user profile
       parameters:
       - default: Bearer <token>
-        description: Bearer Token
+        description: Bearer Token(Bearer ory...)
         in: header
         name: Authorization
         required: true
