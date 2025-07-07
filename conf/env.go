@@ -105,8 +105,8 @@ var defaultConfigurations = map[string]any{
 	"JWT_ACCESS_TOKEN_LIFETIME":      "3600",  // 1 hour
 	"JWT_REFRESH_TOKEN_LIFETIME":     "86400", // 24 hours
 	"LIFE_AI_BACKEND_URL":            "https://nightly.lifenetwork.ai",
-	"KRATOS_PUBLIC_ENDPOINT":         "https://auth.develop.lifenetwork.ai",                                             // Default Kratos public API endpoint
-	"KRATOS_ADMIN_ENDPOINT":          "https://human-network-kratos-admin-develop-802449703053.asia-southeast1.run.app", // Default Kratos admin API endpoint
+	"KRATOS_PUBLIC_ENDPOINT":         "https://auth.develop.lifenetwork.ai", // Default Kratos public API endpoint
+	"KRATOS_ADMIN_ENDPOINT":          "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations
