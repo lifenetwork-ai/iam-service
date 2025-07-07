@@ -108,8 +108,17 @@ definitions:
     properties:
       code:
         type: string
-      session_id:
+      flow_id:
         type: string
+      type:
+        enum:
+        - register
+        - login
+        type: string
+    required:
+    - code
+    - flow_id
+    - type
     type: object
   dto.IdentityChallengeWithEmailDTO:
     properties:
@@ -145,11 +154,6 @@ definitions:
       updated_at:
         type: string
     type: object
-  dto.IdentityRefreshTokenDTO:
-    properties:
-      refresh_token:
-        type: string
-    type: object
   dto.IdentityRoleDTO:
     properties:
       id:
@@ -160,12 +164,85 @@ definitions:
       id:
         type: string
     type: object
-  dto.IdentityUserLoginDTO:
+  dto.IdentityUserAuthDTO:
     properties:
-      password:
+      active:
+        type: boolean
+      authenticated_at:
         type: string
+      authentication_methods:
+        description: Optional session metadata
+        items:
+          type: string
+        type: array
+      expires_at:
+        type: string
+      issued_at:
+        type: string
+      session_id:
+        description: Core session fields from Kratos
+        type: string
+      session_token:
+        description: Token used for authenticating subsequent requests
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/dto.IdentityUserDTO'
+        description: User information
+      verification_flow:
+        $ref: '#/definitions/dto.IdentityUserChallengeDTO'
+      verification_needed:
+        description: Verification flow (for incomplete registrations)
+        type: boolean
+    type: object
+  dto.IdentityUserChallengeDTO:
+    properties:
+      challenge_at:
+        type: integer
+      flow_id:
+        type: string
+      receiver:
+        type: string
+    type: object
+  dto.IdentityUserDTO:
+    properties:
+      created_at:
+        type: integer
+      email:
+        type: string
+      first_name:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      seed:
+        type: string
+      status:
+        type: boolean
+      tenant:
+        type: string
+      updated_at:
+        type: integer
       user_name:
         type: string
+    type: object
+  dto.IdentityUserRegisterDTO:
+    properties:
+      email:
+        type: string
+      phone:
+        type: string
+      tenant:
+        type: string
+    required:
+    - tenant
     type: object
   dto.PaginationDTOResponse:
     properties:
@@ -1714,14 +1791,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Verify the challenge
+      description: Verify either a login challenge or registration flow
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: challenge payload
+      - description: verification payload, type can be registration or login
         in: body
         name: challenge
         required: true
@@ -1731,7 +1803,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Successful verify the challenge
+          description: Successful verification
           schema:
             $ref: '#/definitions/response.SuccessResponse'
         "400":
@@ -1742,7 +1814,7 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Verify the challenge
+      summary: Verify the challenge or registration
       tags:
       - users
   /api/v1/users/challenge-with-email:
@@ -1751,11 +1823,6 @@ paths:
       - application/json
       description: Login with email and otp
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
       - description: challenge payload
         in: body
         name: challenge
@@ -1786,11 +1853,6 @@ paths:
       - application/json
       description: Login with phone and otp
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
       - description: challenge payload
         in: body
         name: challenge
@@ -1815,139 +1877,39 @@ paths:
       summary: Login with phone and otp
       tags:
       - users
-  /api/v1/users/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: login payload
-        in: body
-        name: login
-        required: true
-        schema:
-          $ref: '#/definitions/dto.IdentityUserLoginDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user
-      tags:
-      - users
-  /api/v1/users/login-with-apple:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with Apple
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user with Apple
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user with Apple
-      tags:
-      - users
-  /api/v1/users/login-with-facebook:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with Facebook
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user with Facebook
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user with Facebook
-      tags:
-      - users
-  /api/v1/users/login-with-google:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user with Google
-      parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful authenticate user with Google
-          schema:
-            $ref: '#/definitions/response.SuccessResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Authenticate user with Google
-      tags:
-      - users
   /api/v1/users/logout:
     post:
       consumes:
       - application/json
       description: De-authenticate user
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: Bearer Token
+      - default: Bearer <token>
+        description: Bearer Token(Bearer ory...)
         in: header
         name: Authorization
         required: true
         type: string
+      - description: Empty request body
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
       produces:
       - application/json
       responses:
         "200":
           description: Successful de-authenticate user
           schema:
-            $ref: '#/definitions/response.SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data: {}
+              type: object
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -1961,12 +1923,8 @@ paths:
       - application/json
       description: Get user profile
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: Bearer Token
+      - default: Bearer <token>
+        description: Bearer Token(Bearer ory...)
         in: header
         name: Authorization
         required: true
@@ -1985,35 +1943,31 @@ paths:
       summary: Get user profile
       tags:
       - users
-  /api/v1/users/refresh-token:
+  /api/v1/users/register:
     post:
       consumes:
       - application/json
-      description: Refresh token
+      description: Register a new user
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: Bearer Token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: refresh token payload
+      - description: 'Only email or phone must be provided, if both are provided then
+          error will be returned. Tenant field is required(available value: `genetica`,`life_ai`)'
         in: body
-        name: refresh_token
+        name: register
         required: true
         schema:
-          $ref: '#/definitions/dto.IdentityRefreshTokenDTO'
+          $ref: '#/definitions/dto.IdentityUserRegisterDTO'
       produces:
       - application/json
       responses:
         "200":
-          description: Successful refresh token
+          description: Successful user registration with verification flow
           schema:
-            $ref: '#/definitions/response.SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.IdentityUserAuthDTO'
+              type: object
         "400":
           description: Invalid request payload
           schema:
@@ -2022,7 +1976,7 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Refresh token
+      summary: Register a new user
       tags:
       - users
 swagger: "2.0"

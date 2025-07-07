@@ -2114,7 +2114,7 @@ const docTemplate = `{
         },
         "/api/v1/users/challenge-verify": {
             "post": {
-                "description": "Verify the challenge",
+                "description": "Verify either a login challenge or registration flow",
                 "consumes": [
                     "application/json"
                 ],
@@ -2124,17 +2124,10 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Verify the challenge",
+                "summary": "Verify the challenge or registration",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "challenge payload",
+                        "description": "verification payload, type can be registration or login",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
@@ -2145,7 +2138,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful verify the challenge",
+                        "description": "Successful verification",
                         "schema": {
                             "$ref": "#/definitions/response.SuccessResponse"
                         }
@@ -2179,13 +2172,6 @@ const docTemplate = `{
                 ],
                 "summary": "Login with email and otp",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
                     {
                         "description": "challenge payload",
                         "name": "challenge",
@@ -2233,13 +2219,6 @@ const docTemplate = `{
                 "summary": "Login with phone and otp",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
                         "description": "challenge payload",
                         "name": "challenge",
                         "in": "body",
@@ -2271,173 +2250,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/login": {
-            "post": {
-                "description": "Authenticate user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "login payload",
-                        "name": "login",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserLoginDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/login-with-apple": {
-            "post": {
-                "description": "Authenticate user with Apple",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user with Apple",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user with Apple",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/login-with-facebook": {
-            "post": {
-                "description": "Authenticate user with Facebook",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user with Facebook",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user with Facebook",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/login-with-google": {
-            "post": {
-                "description": "Authenticate user with Google",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user with Google",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user with Google",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/users/logout": {
             "post": {
                 "description": "De-authenticate user",
@@ -2454,24 +2266,43 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token(Bearer ory...)",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
+                        "description": "Empty request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Successful de-authenticate user",
                         "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {}
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing token",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
@@ -2499,14 +2330,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token(Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -2528,9 +2353,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/refresh-token": {
+        "/api/v1/users/register": {
             "post": {
-                "description": "Refresh token",
+                "description": "Register a new user",
                 "consumes": [
                     "application/json"
                 ],
@@ -2540,37 +2365,35 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Refresh token",
+                "summary": "Register a new user",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "refresh token payload",
-                        "name": "refresh_token",
+                        "description": "Only email or phone must be provided, if both are provided then error will be returned. Tenant field is required(available value: ` + "`" + `genetica` + "`" + `,` + "`" + `life_ai` + "`" + `)",
+                        "name": "register",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityRefreshTokenDTO"
+                            "$ref": "#/definitions/dto.IdentityUserRegisterDTO"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful refresh token",
+                        "description": "Successful user registration with verification flow",
                         "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2750,12 +2573,24 @@ const docTemplate = `{
         },
         "dto.IdentityChallengeVerifyDTO": {
             "type": "object",
+            "required": [
+                "code",
+                "flow_id",
+                "type"
+            ],
             "properties": {
                 "code": {
                     "type": "string"
                 },
-                "session_id": {
+                "flow_id": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "register",
+                        "login"
+                    ]
                 }
             }
         },
@@ -2812,14 +2647,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.IdentityRefreshTokenDTO": {
-            "type": "object",
-            "properties": {
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.IdentityRoleDTO": {
             "type": "object",
             "properties": {
@@ -2836,13 +2663,124 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.IdentityUserLoginDTO": {
+        "dto.IdentityUserAuthDTO": {
             "type": "object",
             "properties": {
-                "password": {
+                "active": {
+                    "type": "boolean"
+                },
+                "authenticated_at": {
                     "type": "string"
                 },
+                "authentication_methods": {
+                    "description": "Optional session metadata",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "issued_at": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "description": "Core session fields from Kratos",
+                    "type": "string"
+                },
+                "session_token": {
+                    "description": "Token used for authenticating subsequent requests",
+                    "type": "string"
+                },
+                "user": {
+                    "description": "User information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.IdentityUserDTO"
+                        }
+                    ]
+                },
+                "verification_flow": {
+                    "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
+                },
+                "verification_needed": {
+                    "description": "Verification flow (for incomplete registrations)",
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.IdentityUserChallengeDTO": {
+            "type": "object",
+            "properties": {
+                "challenge_at": {
+                    "type": "integer"
+                },
+                "flow_id": {
+                    "type": "string"
+                },
+                "receiver": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityUserDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "seed": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "boolean"
+                },
+                "tenant": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
+                },
                 "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityUserRegisterDTO": {
+            "type": "object",
+            "required": [
+                "tenant"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "tenant": {
                     "type": "string"
                 }
             }

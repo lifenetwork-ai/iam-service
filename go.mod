@@ -1,6 +1,8 @@
 module github.com/lifenetwork-ai/iam-service
 
-go 1.22.4
+go 1.24.0
+
+toolchain go1.24.3
 
 require (
 	github.com/cosmos/go-bip39 v1.0.0
@@ -9,6 +11,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.5.5
+	github.com/ory/kratos-client-go v1.3.8
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/spf13/viper v1.19.0

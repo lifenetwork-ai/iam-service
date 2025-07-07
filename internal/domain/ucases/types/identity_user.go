@@ -23,21 +23,21 @@ type IdentityUserUseCase interface {
 		code string,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
 
-	LogInWithGoogle(
-		ctx context.Context,
-	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
-
-	LogInWithFacebook(
-		ctx context.Context,
-	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
-
-	LogInWithApple(
-		ctx context.Context,
-	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
-
 	Register(
 		ctx context.Context,
 		payload dto.IdentityUserRegisterDTO,
+	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
+
+	VerifyRegister(
+		ctx context.Context,
+		flowID string,
+		code string,
+	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
+
+	VerifyLogin(
+		ctx context.Context,
+		flowID string,
+		code string,
 	) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse)
 
 	LogIn(

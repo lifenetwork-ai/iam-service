@@ -75,31 +75,34 @@ func RegisterRoutes(
 	)
 
 	userRouter.POST(
-		"/login-with-google",
-		userHandler.LoginWithGoogle,
+		"/register",
+		userHandler.Register,
 	)
 
-	userRouter.POST(
-		"/login-with-facebook",
-		userHandler.LoginWithFacebook,
-	)
+	// TODO: Add support for social login
+	// userRouter.POST(
+	// 	"/login-with-google",
+	// 	userHandler.LoginWithGoogle,
+	// )
 
-	userRouter.POST(
-		"/login-with-apple",
-		userHandler.LoginWithApple,
-	)
+	// userRouter.POST(
+	// 	"/login-with-facebook",
+	// 	userHandler.LoginWithFacebook,
+	// )
+
+	// userRouter.POST(
+	// 	"/login-with-apple",
+	// 	userHandler.LoginWithApple,
+	// )
 
 	// userRouter.POST("/register", userHandler.Register)
 
-	userRouter.POST(
-		"/login",
-		userHandler.Login,
-	)
+	// TODO: Add support for password login
+	// userRouter.POST(
+	// 	"/login",
+	// 	userHandler.Login,
+	// )
 
-	userRouter.POST(
-		"/refresh-token",
-		userHandler.RefreshToken,
-	)
 	userRouter.POST(
 		"/logout",
 		middleware.RequestAuthenticationMiddleware(),
@@ -107,7 +110,8 @@ func RegisterRoutes(
 	)
 	userRouter.GET(
 		"/me",
-		middleware.RequestHybridAuthenticationMiddleware(),
+		middleware.RequestAuthenticationMiddleware(),
 		userHandler.Me,
 	)
+
 }

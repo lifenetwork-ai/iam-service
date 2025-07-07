@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lifenetwork-ai/iam-service/conf"
 	cachingTypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -17,6 +18,11 @@ import (
 // XHeaderValidationMiddleware returns a gin middleware for HTTP request checking X-* headers
 func XHeaderValidationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if conf.IsDebugMode() {
+			c.Next()
+			return
+		}
+
 		// Ignore Swagger requests
 		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
 			c.Next() // Skip check headers for Swagger routes

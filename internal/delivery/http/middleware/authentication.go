@@ -336,30 +336,31 @@ func RequestAuthenticationMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Query Redis to find profile with key is tokenMd5
-		requester := cacheAuthentication(ctx, token)
-		if requester == nil {
-			requester = jwtAuthentication(ctx, token)
-			saveToCache(ctx, requester, token)
-		}
+		// // Query Redis to find profile with key is tokenMd5
+		// requester := cacheAuthentication(ctx, token)
+		// if requester == nil {
+		// 	requester = jwtAuthentication(ctx, token)
+		// 	saveToCache(ctx, requester, token)
+		// }
 
-		if requester == nil {
-			httpresponse.Error(
-				ctx,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid token",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid token",
-				}},
-			)
-			return
-		}
+		// if requester == nil {
+		// 	httpresponse.Error(
+		// 		ctx,
+		// 		http.StatusUnauthorized,
+		// 		"UNAUTHORIZED",
+		// 		"Invalid token",
+		// 		[]map[string]string{{
+		// 			"field": "Authorization",
+		// 			"error": "Invalid token",
+		// 		}},
+		// 	)
+		// 	return
+		// }
 
 		// Set the user in the context
-		ctx.Set("requesterId", requester.ID)
-		ctx.Set("requester", requester)
+		// ctx.Set("requesterId", requester.ID)
+		// ctx.Set("requester", requester)
+		ctx.Set("sessionToken", token)
 		ctx.Next()
 	}
 }

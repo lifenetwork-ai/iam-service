@@ -6,12 +6,11 @@ import (
 	"net/http"
 	"testing"
 
-	"go.uber.org/mock/gomock"
-
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
-	"github.com/lifenetwork-ai/iam-service/internal/mocks"
+	mock_repositories "github.com/lifenetwork-ai/iam-service/mocks/adapters/repositories/types"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 const (
@@ -83,7 +82,7 @@ func TestOrganizationUseCase_List(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockOrgRepo := mocks.NewMockIdentityOrganizationRepository(ctrl)
+			mockOrgRepo := mock_repositories.NewMockIdentityOrganizationRepository(ctrl)
 			useCase := NewIdentityOrganizationUseCase(mockOrgRepo)
 
 			ctx := context.Background()
@@ -153,7 +152,7 @@ func TestOrganizationUseCase_GetByID(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockOrgRepo := mocks.NewMockIdentityOrganizationRepository(ctrl)
+			mockOrgRepo := mock_repositories.NewMockIdentityOrganizationRepository(ctrl)
 			useCase := NewIdentityOrganizationUseCase(mockOrgRepo)
 
 			ctx := context.Background()
@@ -242,7 +241,7 @@ func TestOrganizationUseCase_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockOrgRepo := mocks.NewMockIdentityOrganizationRepository(ctrl)
+			mockOrgRepo := mock_repositories.NewMockIdentityOrganizationRepository(ctrl)
 			useCase := NewIdentityOrganizationUseCase(mockOrgRepo)
 
 			ctx := context.Background()
@@ -350,7 +349,7 @@ func TestOrganizationUseCase_Update(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockOrgRepo := mocks.NewMockIdentityOrganizationRepository(ctrl)
+			mockOrgRepo := mock_repositories.NewMockIdentityOrganizationRepository(ctrl)
 			useCase := NewIdentityOrganizationUseCase(mockOrgRepo)
 
 			ctx := context.Background()
@@ -434,7 +433,7 @@ func TestOrganizationUseCase_Delete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockOrgRepo := mocks.NewMockIdentityOrganizationRepository(ctrl)
+			mockOrgRepo := mock_repositories.NewMockIdentityOrganizationRepository(ctrl)
 			useCase := NewIdentityOrganizationUseCase(mockOrgRepo)
 
 			ctx := context.Background()
