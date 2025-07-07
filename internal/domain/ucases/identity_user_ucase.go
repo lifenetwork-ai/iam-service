@@ -201,10 +201,10 @@ func (u *userUseCase) VerifyRegister(
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
-			ID:       registrationResult.Identity.Id,
-			UserName: extractStringFromTraits(registrationResult.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(registrationResult.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(registrationResult.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			ID:       registrationResult.Session.Identity.Id,
+			UserName: extractStringFromTraits(registrationResult.Session.Identity.Traits.(map[string]interface{}), "username", ""),
+			Email:    extractStringFromTraits(registrationResult.Session.Identity.Traits.(map[string]interface{}), "email", ""),
+			Phone:    extractStringFromTraits(registrationResult.Session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
 		},
 		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
