@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -71,6 +72,15 @@ func (u *userUseCase) ChallengeWithPhone(
 	// Submit login flow to Kratos
 	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, "code", &phone, nil, nil)
 	if err != nil {
+		// Check if error indicates user not found
+		if strings.Contains(err.Error(), "credentials are invalid") || strings.Contains(err.Error(), "no such user") {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusNotFound,
+				Code:    "USER_NOT_FOUND",
+				Message: "User not found",
+				Details: []any{"No user registered with this phone number"},
+			}
+		}
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
 			Code:    "LOGIN_FAILED",
@@ -134,10 +144,19 @@ func (u *userUseCase) ChallengeWithEmail(
 	// Submit login flow to Kratos
 	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, "code", &email, nil, nil)
 	if err != nil {
+		// Check if error indicates user not found
+		if strings.Contains(err.Error(), "credentials are invalid") || strings.Contains(err.Error(), "no such user") {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusNotFound,
+				Code:    "USER_NOT_FOUND",
+				Message: "User not found",
+				Details: []any{"No user registered with this email address"},
+			}
+		}
 		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "VERIFICATION_FLOW_FAILED",
-			Message: "Failed to submit login flow",
+			Status:  http.StatusUnauthorized,
+			Code:    "LOGIN_FAILED",
+			Message: "Login failed",
 			Details: []any{err.Error()},
 		}
 	}
