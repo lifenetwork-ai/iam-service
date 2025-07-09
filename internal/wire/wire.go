@@ -7,7 +7,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
-	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 )
 

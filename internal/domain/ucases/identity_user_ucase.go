@@ -448,7 +448,9 @@ func (u *userUseCase) Register(
 	}
 
 	// Submit registration flow to Kratos
-	registrationResp, err := u.kratosService.SubmitRegistrationFlow(ctx, flow, "code", traits)
+	registrationResp, err := u.kratosService.SubmitRegistrationFlow(
+		ctx, flow, constants.MethodTypeCode.String(), traits,
+	)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
