@@ -28,9 +28,7 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 // @Produce json
 // @Param challenge body dto.IdentityChallengeWithPhoneDTO true "challenge payload"
 // @Success 200 {object} response.SuccessResponse "Successful make a challenge with Phone and OTP"
-// @Failure 400 {object} response.ErrorResponse "Invalid phone number format or missing phone"
-// @Failure 401 {object} response.ErrorResponse "Login failed - invalid credentials"
-// @Failure 404 {object} response.ErrorResponse "User not found - no user registered with this phone number"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-phone [post]
 func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
@@ -62,10 +60,10 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 	if err != nil {
 		httpresponse.Error(
 			ctx,
-			err.Status,
-			err.Code,
-			err.Message,
-			err.Details,
+			http.StatusInternalServerError,
+			"MSG_FAILED_TO_MAKE_CHALLENGE",
+			"Failed to make a challenge",
+			err,
 		)
 		return
 	}
@@ -81,9 +79,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 // @Produce json
 // @Param challenge body dto.IdentityChallengeWithEmailDTO true "challenge payload"
 // @Success 200 {object} response.SuccessResponse "Successful make a challenge with Email and OTP"
-// @Failure 400 {object} response.ErrorResponse "Invalid email format or missing email"
-// @Failure 401 {object} response.ErrorResponse "Login failed - invalid credentials"
-// @Failure 404 {object} response.ErrorResponse "User not found - no user registered with this email address"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-email [post]
 func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
@@ -115,10 +111,10 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 	if err != nil {
 		httpresponse.Error(
 			ctx,
-			err.Status,
-			err.Code,
-			err.Message,
-			err.Details,
+			http.StatusInternalServerError,
+			"MSG_FAILED_TO_MAKE_CHALLENGE",
+			"Failed to make a challenge",
+			err,
 		)
 		return
 	}
@@ -134,9 +130,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Produce json
 // @Param challenge body dto.IdentityChallengeVerifyDTO true "verification payload, type can be registration or login"
 // @Success 200 {object} response.SuccessResponse "Successful verification"
-// @Failure 400 {object} response.ErrorResponse "Invalid request payload or verification code"
-// @Failure 401 {object} response.ErrorResponse "Unauthorized - verification failed"
-// @Failure 404 {object} response.ErrorResponse "Challenge session not found"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-verify [post]
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {

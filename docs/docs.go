@@ -2144,7 +2144,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Invalid request payload or verification code",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - verification failed",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Challenge session not found",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -2190,7 +2202,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Invalid email format or missing email",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Login failed - invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found - no user registered with this email address",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -2236,7 +2260,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Invalid phone number format or missing phone",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Login failed - invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found - no user registered with this phone number",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -2342,6 +2378,12 @@ const docTemplate = `{
                         "description": "Successful get user profile",
                         "schema": {
                             "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
