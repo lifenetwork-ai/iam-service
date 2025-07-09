@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 )
@@ -184,9 +185,9 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 
 	var body kratos.UpdateRegistrationFlowBody
 	switch method {
-	case "code":
+	case constants.MethodTypeCode.String():
 		body.UpdateRegistrationFlowWithCodeMethod = &kratos.UpdateRegistrationFlowWithCodeMethod{
-			Method: "code",
+			Method: constants.MethodTypeCode.String(),
 			Traits: traits,
 		}
 
@@ -202,9 +203,9 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 		}
 		return result, nil
 
-	case "password":
+	case constants.MethodTypePassword.String():
 		body.UpdateRegistrationFlowWithPasswordMethod = &kratos.UpdateRegistrationFlowWithPasswordMethod{
-			Method: "password",
+			Method: constants.MethodTypePassword.String(),
 			Traits: traits,
 		}
 		result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
@@ -276,7 +277,7 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 
 	body := kratos.UpdateRegistrationFlowBody{
 		UpdateRegistrationFlowWithCodeMethod: &kratos.UpdateRegistrationFlowWithCodeMethod{
-			Method: "code",
+			Method: constants.MethodTypeCode.String(),
 			Code:   &code,
 			Traits: traits,
 		},
@@ -331,15 +332,15 @@ func (k *kratosServiceImpl) SubmitLoginFlow(
 
 	var body kratos.UpdateLoginFlowBody
 	switch method {
-	case "code":
+	case constants.MethodTypeCode.String():
 		body.UpdateLoginFlowWithCodeMethod = &kratos.UpdateLoginFlowWithCodeMethod{
-			Method:     "code",
+			Method:     constants.MethodTypeCode.String(),
 			Identifier: identifier,
 			Code:       code,
 		}
-	case "password":
+	case constants.MethodTypePassword.String():
 		body.UpdateLoginFlowWithPasswordMethod = &kratos.UpdateLoginFlowWithPasswordMethod{
-			Method:     "password",
+			Method:     constants.MethodTypePassword.String(),
 			Password:   *password,
 			Identifier: *identifier,
 		}
@@ -389,7 +390,7 @@ func (k *kratosServiceImpl) SubmitVerificationFlow(
 	codePtr := code
 	body := kratos.UpdateVerificationFlowBody{
 		UpdateVerificationFlowWithCodeMethod: &kratos.UpdateVerificationFlowWithCodeMethod{
-			Method: "code",
+			Method: constants.MethodTypeCode.String(),
 			Code:   &codePtr,
 		},
 	}
