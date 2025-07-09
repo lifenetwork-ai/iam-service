@@ -8,33 +8,48 @@ import (
 	"net/http"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
-	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
-	ucase_interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
 	client "github.com/ory/kratos-client-go"
 )
 
 const (
 	// DefaultChallengeDuration is the default duration for a challenge session
-	DefaultChallengeDuration = 5 * time.Minute
+	DefaultChallengeDuration = 5 * time.Minute // TODO: this should be configurable
 )
 
 type userUseCase struct {
-	challengeSessionRepo repositories.ChallengeSessionRepository
-	kratosService        services.KratosService
+	db                        *gorm.DB
+	challengeSessionRepo      repositories.ChallengeSessionRepository
+	globalUserRepo            repositories.GlobalUserRepository
+	userIdentityRepo          repositories.UserIdentityRepository
+	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository
+	kratosService             services.KratosService
 }
 
 func NewIdentityUserUseCase(
+	db *gorm.DB,
 	challengeSessionRepo repositories.ChallengeSessionRepository,
+	globalUserRepo repositories.GlobalUserRepository,
+	userIdentityRepo repositories.UserIdentityRepository,
+	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository,
 	kratosService services.KratosService,
-) ucase_interfaces.IdentityUserUseCase {
+) ucasetypes.IdentityUserUseCase {
 	return &userUseCase{
-		challengeSessionRepo: challengeSessionRepo,
-		kratosService:        kratosService,
+		db:                        db,
+		challengeSessionRepo:      challengeSessionRepo,
+		globalUserRepo:            globalUserRepo,
+		userIdentityRepo:          userIdentityRepo,
+		userIdentifierMappingRepo: userIdentifierMappingRepo,
+		kratosService:             kratosService,
 	}
 }
 
@@ -80,7 +95,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Create challenge session
-	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &entities.ChallengeSession{
+	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
 		Type:  "phone",
 		Phone: phone,
 		Flow:  flow.Id,
@@ -144,7 +159,7 @@ func (u *userUseCase) ChallengeWithEmail(
 
 	// Create challenge session
 	sessionID := uuid.New().String()
-	err = u.challengeSessionRepo.SaveChallenge(ctx, sessionID, &entities.ChallengeSession{
+	err = u.challengeSessionRepo.SaveChallenge(ctx, sessionID, &domain.ChallengeSession{
 		Type:  "email",
 		Email: email,
 		Flow:  flow.Id,
@@ -433,12 +448,63 @@ func (u *userUseCase) Register(
 	}
 
 	// Submit registration flow to Kratos
-	_, err = u.kratosService.SubmitRegistrationFlow(ctx, flow, "code", traits)
+	registrationResp, err := u.kratosService.SubmitRegistrationFlow(ctx, flow, "code", traits)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Code:    "REGISTRATION_FAILED",
 			Message: "Registration failed",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// IAM registration
+	err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 1. Create global user
+		globalUser := &domain.GlobalUser{}
+		if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
+			return fmt.Errorf("failed to create global user: %w", err)
+		}
+
+		// 2. Create identity
+		if payload.Email != "" {
+			identity := &domain.UserIdentity{
+				GlobalUserID: globalUser.ID,
+				Type:         constants.IdentifierEmail.String(),
+				Value:        payload.Email,
+			}
+			if err := u.userIdentityRepo.Create(tx, identity); err != nil {
+				return fmt.Errorf("failed to create email identity: %w", err)
+			}
+		}
+		if payload.Phone != "" {
+			identity := &domain.UserIdentity{
+				GlobalUserID: globalUser.ID,
+				Type:         constants.IdentifierPhone.String(),
+				Value:        payload.Phone,
+			}
+			if err := u.userIdentityRepo.Create(tx, identity); err != nil {
+				return fmt.Errorf("failed to create phone identity: %w", err)
+			}
+		}
+
+		// 3. Create mapping
+		mapping := &domain.UserIdentifierMapping{
+			GlobalUserID: globalUser.ID,
+			Tenant:       payload.Tenant,
+			TenantUserID: registrationResp.Identity.Id, // use Kratos identity ID
+		}
+		if err := u.userIdentifierMappingRepo.Create(tx, mapping); err != nil {
+			return fmt.Errorf("failed to create mapping: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "IAM_REGISTRATION_FAILED",
+			Message: "Failed to register IAM records",
 			Details: []any{err.Error()},
 		}
 	}
