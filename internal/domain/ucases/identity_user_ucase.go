@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
 	client "github.com/ory/kratos-client-go"
 )
@@ -732,13 +732,13 @@ func safeExtractTraits(traits interface{}) (map[string]interface{}, bool) {
 	// Fallback: JSON marshal/unmarshal for complex cases
 	jsonBytes, err := json.Marshal(traits)
 	if err != nil {
-		log.Printf("Failed to marshal traits: %v", err)
+		logger.GetLogger().Errorf("Failed to marshal traits: %v", err)
 		return make(map[string]interface{}), false
 	}
 
 	var traitsMap map[string]interface{}
 	if err := json.Unmarshal(jsonBytes, &traitsMap); err != nil {
-		log.Printf("Failed to unmarshal traits: %v", err)
+		logger.GetLogger().Errorf("Failed to unmarshal traits: %v", err)
 		return make(map[string]interface{}), false
 	}
 
