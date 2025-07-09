@@ -84,7 +84,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Submit login flow to Kratos
-	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, "code", &phone, nil, nil)
+	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, constants.MethodTypeCode.String(), &phone, nil, nil)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
@@ -147,7 +147,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	// Submit login flow to Kratos
-	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, "code", &email, nil, nil)
+	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, constants.MethodTypeCode.String(), &email, nil, nil)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -266,7 +266,9 @@ func (u *userUseCase) VerifyLogin(
 	}
 
 	// Submit login flow with code
-	loginResult, err := u.kratosService.SubmitLoginFlow(ctx, flow, "code", &sessionValue.Phone, nil, &code)
+	loginResult, err := u.kratosService.SubmitLoginFlow(
+		ctx, flow, constants.MethodTypeCode.String(), &sessionValue.Phone, nil, &code,
+	)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
