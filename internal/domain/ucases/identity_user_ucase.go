@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -415,7 +416,7 @@ func (u *userUseCase) Register(
 	ctx context.Context,
 	payload dto.IdentityUserRegisterDTO,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
-	// Initialize registration flow with Kratos
+	// Step 1: Init Kratos flow
 	flow, err := u.kratosService.InitializeRegistrationFlow(ctx)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
@@ -426,7 +427,7 @@ func (u *userUseCase) Register(
 		}
 	}
 
-	// Validate phone number if provided
+	// Step 2: Validate phone
 	if payload.Phone != "" && !utils.IsPhoneNumber(payload.Phone) {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
@@ -436,20 +437,16 @@ func (u *userUseCase) Register(
 		}
 	}
 
-	// Prepare traits for registration
-	traits := make(map[string]any)
-
+	// Step 3: Submit Kratos registration
+	traits := map[string]any{}
 	if payload.Phone != "" {
 		traits["phone_number"] = payload.Phone
 	}
 	if payload.Email != "" {
 		traits["email"] = payload.Email
 	}
-	if payload.Tenant != "" {
-		traits["tenant"] = payload.Tenant
-	}
+	traits["tenant"] = payload.Tenant
 
-	// Submit registration flow to Kratos
 	registrationResp, err := u.kratosService.SubmitRegistrationFlow(
 		ctx, flow, constants.MethodTypeCode.String(), traits,
 	)
@@ -462,44 +459,64 @@ func (u *userUseCase) Register(
 		}
 	}
 
-	// IAM registration
+	// Step 4: IAM DB logic
 	err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// 1. Create global user
-		globalUser := &domain.GlobalUser{}
-		if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
-			return fmt.Errorf("failed to create global user: %w", err)
+		var globalUser *domain.GlobalUser
+
+		// Try to find existing global user
+		globalUserID, err := u.findGlobalUserIDByIdentity(ctx, tx, payload)
+		if err != nil {
+			return fmt.Errorf("check identity existence: %w", err)
 		}
 
-		// 2. Create identity
+		if globalUserID != "" {
+			globalUser = &domain.GlobalUser{ID: globalUserID}
+
+			// If mapping already exists, skip
+			exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(
+				ctx, tx, payload.Tenant, registrationResp.Identity.Id,
+			)
+			if err != nil {
+				return fmt.Errorf("check existing mapping: %w", err)
+			}
+			if exists {
+				return nil
+			}
+		} else {
+			// Create global user
+			globalUser = &domain.GlobalUser{}
+			if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
+				return fmt.Errorf("create global user: %w", err)
+			}
+		}
+
+		// Create identities
 		if payload.Email != "" {
-			identity := &domain.UserIdentity{
+			if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
 				GlobalUserID: globalUser.ID,
 				Type:         constants.IdentifierEmail.String(),
 				Value:        payload.Email,
-			}
-			if err := u.userIdentityRepo.Create(tx, identity); err != nil {
-				return fmt.Errorf("failed to create email identity: %w", err)
+			}); err != nil {
+				return fmt.Errorf("email identity: %w", err)
 			}
 		}
 		if payload.Phone != "" {
-			identity := &domain.UserIdentity{
+			if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
 				GlobalUserID: globalUser.ID,
 				Type:         constants.IdentifierPhone.String(),
 				Value:        payload.Phone,
-			}
-			if err := u.userIdentityRepo.Create(tx, identity); err != nil {
-				return fmt.Errorf("failed to create phone identity: %w", err)
+			}); err != nil {
+				return fmt.Errorf("phone identity: %w", err)
 			}
 		}
 
-		// 3. Create mapping
-		mapping := &domain.UserIdentifierMapping{
+		// Create mapping
+		if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
 			GlobalUserID: globalUser.ID,
 			Tenant:       payload.Tenant,
-			TenantUserID: registrationResp.Identity.Id, // use Kratos identity ID
-		}
-		if err := u.userIdentifierMappingRepo.Create(tx, mapping); err != nil {
-			return fmt.Errorf("failed to create mapping: %w", err)
+			TenantUserID: registrationResp.Identity.Id,
+		}); err != nil {
+			return fmt.Errorf("create mapping: %w", err)
 		}
 
 		return nil
@@ -513,12 +530,11 @@ func (u *userUseCase) Register(
 		}
 	}
 
+	// Final success return
 	receiver := payload.Email
 	if payload.Phone != "" {
 		receiver = payload.Phone
 	}
-
-	// Return success with verification flow info
 	return &dto.IdentityUserAuthDTO{
 		VerificationNeeded: true,
 		VerificationFlow: &dto.IdentityUserChallengeDTO{
@@ -527,6 +543,24 @@ func (u *userUseCase) Register(
 			ChallengeAt: time.Now().Unix(),
 		},
 	}, nil
+}
+
+func (u *userUseCase) findGlobalUserIDByIdentity(ctx context.Context, tx *gorm.DB, payload dto.IdentityUserRegisterDTO) (string, error) {
+	if payload.Email != "" {
+		if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierEmail.String(), payload.Email); err == nil {
+			return identity.GlobalUserID, nil
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", err
+		}
+	}
+	if payload.Phone != "" {
+		if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierPhone.String(), payload.Phone); err == nil {
+			return identity.GlobalUserID, nil
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", err
+		}
+	}
+	return "", nil
 }
 
 // Login with username and password

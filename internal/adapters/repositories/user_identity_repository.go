@@ -25,13 +25,27 @@ func (r *userIdentityRepository) GetByGlobalUserID(ctx context.Context, globalUs
 	return list, nil
 }
 
-func (r *userIdentityRepository) GetByTypeAndValue(ctx context.Context, typ, value string) (*domain.UserIdentity, error) {
+func (r *userIdentityRepository) GetByTypeAndValue(
+	ctx context.Context,
+	tx *gorm.DB,
+	identityType string,
+	value string,
+) (*domain.UserIdentity, error) {
 	var identity domain.UserIdentity
-	if err := r.db.WithContext(ctx).
-		Where("type = ? AND value = ?", typ, value).
+
+	db := tx
+	if db == nil {
+		db = r.db.WithContext(ctx)
+	} else {
+		db = db.WithContext(ctx)
+	}
+
+	if err := db.
+		Where("type = ? AND value = ?", identityType, value).
 		First(&identity).Error; err != nil {
 		return nil, err
 	}
+
 	return &identity, nil
 }
 
@@ -46,8 +60,11 @@ func (r *userIdentityRepository) FindGlobalUserIDByIdentity(ctx context.Context,
 	return identity.GlobalUserID, nil
 }
 
-func (r *userIdentityRepository) Create(tx *gorm.DB, identity *domain.UserIdentity) error {
-	return tx.Create(identity).Error
+func (r *userIdentityRepository) FirstOrCreate(tx *gorm.DB, identity *domain.UserIdentity) error {
+	return tx.FirstOrCreate(identity, domain.UserIdentity{
+		Type:  identity.Type,
+		Value: identity.Value,
+	}).Error
 }
 
 func (r *userIdentityRepository) Update(tx *gorm.DB, identity *domain.UserIdentity) error {

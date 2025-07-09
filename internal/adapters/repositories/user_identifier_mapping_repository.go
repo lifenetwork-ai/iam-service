@@ -17,14 +17,17 @@ func NewUserIdentifierMappingRepository(db *gorm.DB) interfaces.UserIdentifierMa
 	return &userIdentifierMappingRepository{db: db}
 }
 
-func (r *userIdentifierMappingRepository) GetByTenantAndUserID(ctx context.Context, tenant, tenantUserID string) (*domain.UserIdentifierMapping, error) {
-	var mapping domain.UserIdentifierMapping
-	if err := r.db.WithContext(ctx).
+func (r *userIdentifierMappingRepository) ExistsByTenantAndTenantUserID(
+	ctx context.Context, tx *gorm.DB, tenant, tenantUserID string,
+) (bool, error) {
+	var count int64
+	if err := tx.WithContext(ctx).
+		Model(&domain.UserIdentifierMapping{}).
 		Where("tenant = ? AND tenant_user_id = ?", tenant, tenantUserID).
-		First(&mapping).Error; err != nil {
-		return nil, err
+		Count(&count).Error; err != nil {
+		return false, err
 	}
-	return &mapping, nil
+	return count > 0, nil
 }
 
 func (r *userIdentifierMappingRepository) GetByGlobalUserID(ctx context.Context, globalUserID string) ([]domain.UserIdentifierMapping, error) {
