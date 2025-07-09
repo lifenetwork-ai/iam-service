@@ -1,8 +1,3 @@
-SET TIMEZONE TO 'UTC';
-
--- Enable the uuid-ossp extension for generating UUIDs
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 CREATE TABLE IF NOT EXISTS access_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID NOT NULL,
@@ -18,15 +13,6 @@ CREATE TABLE IF NOT EXISTS access_sessions (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE
 );
-
--- Create a trigger function to update 'updated_at' column on update
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-   NEW.updated_at = NOW();
-   RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 -- Drop existing trigger if it exists, then create it
 DO $$

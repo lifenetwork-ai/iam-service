@@ -2114,7 +2114,7 @@ const docTemplate = `{
         },
         "/api/v1/users/challenge-verify": {
             "post": {
-                "description": "Verify either a login challenge or registration flow",
+                "description": "Verify a one-time code sent to user for either login or registration challenge.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2124,10 +2124,10 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Verify the challenge or registration",
+                "summary": "Verify login or registration challenge",
                 "parameters": [
                     {
-                        "description": "verification payload, type can be registration or login",
+                        "description": "Verification payload. ` + "`" + `type` + "`" + ` must be one of: ` + "`" + `register` + "`" + `, ` + "`" + `login` + "`" + `",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
@@ -2138,13 +2138,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful verification",
+                        "description": "Verification successful",
                         "schema": {
                             "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Invalid request payload or code",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }

@@ -4,37 +4,52 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
-	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
-	ucase_interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
 	client "github.com/ory/kratos-client-go"
 )
 
 const (
 	// DefaultChallengeDuration is the default duration for a challenge session
-	DefaultChallengeDuration = 5 * time.Minute
+	DefaultChallengeDuration = 5 * time.Minute // TODO: this should be configurable
 )
 
 type userUseCase struct {
-	challengeSessionRepo repositories.ChallengeSessionRepository
-	kratosService        services.KratosService
+	db                        *gorm.DB
+	challengeSessionRepo      repositories.ChallengeSessionRepository
+	globalUserRepo            repositories.GlobalUserRepository
+	userIdentityRepo          repositories.UserIdentityRepository
+	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository
+	kratosService             services.KratosService
 }
 
 func NewIdentityUserUseCase(
+	db *gorm.DB,
 	challengeSessionRepo repositories.ChallengeSessionRepository,
+	globalUserRepo repositories.GlobalUserRepository,
+	userIdentityRepo repositories.UserIdentityRepository,
+	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository,
 	kratosService services.KratosService,
-) ucase_interfaces.IdentityUserUseCase {
+) ucasetypes.IdentityUserUseCase {
 	return &userUseCase{
-		challengeSessionRepo: challengeSessionRepo,
-		kratosService:        kratosService,
+		db:                        db,
+		challengeSessionRepo:      challengeSessionRepo,
+		globalUserRepo:            globalUserRepo,
+		userIdentityRepo:          userIdentityRepo,
+		userIdentifierMappingRepo: userIdentifierMappingRepo,
+		kratosService:             kratosService,
 	}
 }
 
@@ -69,7 +84,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Submit login flow to Kratos
-	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, "code", &phone, nil, nil)
+	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, constants.MethodTypeCode.String(), &phone, nil, nil)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
@@ -80,7 +95,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Create challenge session
-	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &entities.ChallengeSession{
+	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
 		Type:  "phone",
 		Phone: phone,
 		Flow:  flow.Id,
@@ -132,7 +147,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	// Submit login flow to Kratos
-	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, "code", &email, nil, nil)
+	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, constants.MethodTypeCode.String(), &email, nil, nil)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -144,7 +159,7 @@ func (u *userUseCase) ChallengeWithEmail(
 
 	// Create challenge session
 	sessionID := uuid.New().String()
-	err = u.challengeSessionRepo.SaveChallenge(ctx, sessionID, &entities.ChallengeSession{
+	err = u.challengeSessionRepo.SaveChallenge(ctx, sessionID, &domain.ChallengeSession{
 		Type:  "email",
 		Email: email,
 		Flow:  flow.Id,
@@ -166,7 +181,6 @@ func (u *userUseCase) ChallengeWithEmail(
 	}, nil
 }
 
-// VerifyRegister verifies the registration flow
 func (u *userUseCase) VerifyRegister(
 	ctx context.Context,
 	flowID string,
@@ -192,6 +206,99 @@ func (u *userUseCase) VerifyRegister(
 		}
 	}
 
+	// Extract traits
+	traits, ok := registrationResult.Session.Identity.Traits.(map[string]interface{})
+	if !ok {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "INVALID_TRAITS",
+			Message: "Failed to parse identity traits",
+		}
+	}
+
+	email := extractStringFromTraits(traits, "email", "")
+	phone := extractStringFromTraits(traits, "phone_number", "")
+	tenant := extractStringFromTraits(traits, "tenant", "")
+	tenantUserID := registrationResult.Session.Identity.Id
+
+	// IAM mapping logic
+	err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var globalUserID string
+
+		// Try to find existing global user
+		if email != "" {
+			identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierEmail.String(), email)
+			if err == nil {
+				globalUserID = identity.GlobalUserID
+			}
+		}
+		if globalUserID == "" && phone != "" {
+			identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierPhone.String(), phone)
+			if err == nil {
+				globalUserID = identity.GlobalUserID
+			}
+		}
+
+		var globalUser *domain.GlobalUser
+		if globalUserID != "" {
+			globalUser = &domain.GlobalUser{ID: globalUserID}
+
+			// Check if mapping already exists
+			exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant, tenantUserID)
+			if err != nil {
+				return fmt.Errorf("check mapping exists: %w", err)
+			}
+			if exists {
+				return nil
+			}
+		} else {
+			// Create global user
+			globalUser = &domain.GlobalUser{}
+			if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
+				return fmt.Errorf("create global user: %w", err)
+			}
+		}
+
+		// Create UserIdentity records
+		if email != "" {
+			if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
+				GlobalUserID: globalUser.ID,
+				Type:         constants.IdentifierEmail.String(),
+				Value:        email,
+			}); err != nil {
+				return fmt.Errorf("email identity: %w", err)
+			}
+		}
+		if phone != "" {
+			if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
+				GlobalUserID: globalUser.ID,
+				Type:         constants.IdentifierPhone.String(),
+				Value:        phone,
+			}); err != nil {
+				return fmt.Errorf("phone identity: %w", err)
+			}
+		}
+
+		// Create mapping
+		if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
+			GlobalUserID: globalUser.ID,
+			Tenant:       tenant,
+			TenantUserID: tenantUserID,
+		}); err != nil {
+			return fmt.Errorf("create mapping: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "IAM_REGISTRATION_FAILED",
+			Message: "Failed to persist IAM records",
+			Details: []any{err.Error()},
+		}
+	}
+
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
 		SessionID:       registrationResult.Session.Id,
@@ -201,10 +308,10 @@ func (u *userUseCase) VerifyRegister(
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
-			ID:       registrationResult.Session.Identity.Id,
-			UserName: extractStringFromTraits(registrationResult.Session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(registrationResult.Session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(registrationResult.Session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			ID:       tenantUserID,
+			UserName: extractStringFromTraits(traits, "username", ""),
+			Email:    email,
+			Phone:    phone,
 		},
 		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -251,7 +358,9 @@ func (u *userUseCase) VerifyLogin(
 	}
 
 	// Submit login flow with code
-	loginResult, err := u.kratosService.SubmitLoginFlow(ctx, flow, "code", &sessionValue.Phone, nil, &code)
+	loginResult, err := u.kratosService.SubmitLoginFlow(
+		ctx, flow, constants.MethodTypeCode.String(), &sessionValue.Phone, nil, &code,
+	)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
@@ -662,13 +771,13 @@ func safeExtractTraits(traits interface{}) (map[string]interface{}, bool) {
 	// Fallback: JSON marshal/unmarshal for complex cases
 	jsonBytes, err := json.Marshal(traits)
 	if err != nil {
-		log.Printf("Failed to marshal traits: %v", err)
+		logger.GetLogger().Errorf("Failed to marshal traits: %v", err)
 		return make(map[string]interface{}), false
 	}
 
 	var traitsMap map[string]interface{}
 	if err := json.Unmarshal(jsonBytes, &traitsMap); err != nil {
-		log.Printf("Failed to unmarshal traits: %v", err)
+		logger.GetLogger().Errorf("Failed to unmarshal traits: %v", err)
 		return make(map[string]interface{}), false
 	}
 

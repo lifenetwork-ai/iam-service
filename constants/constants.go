@@ -67,19 +67,6 @@ const (
 	RefreshTokenExpiry = 7 * 24 * time.Hour // 7 days
 )
 
-// IdentifierType represents the types of identifiers used for login
-type IdentifierType string
-
-func (t IdentifierType) String() string {
-	return string(t)
-}
-
-const (
-	IdentifierEmail    IdentifierType = "email"
-	IdentifierUsername IdentifierType = "username"
-	IdentifierPhone    IdentifierType = "phone"
-)
-
 // Refresh token renewal threshold
 const RefreshTokenRenewalThreshold = 24 * time.Hour
 
