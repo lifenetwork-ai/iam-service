@@ -17,46 +17,11 @@ func RegisterRoutes(
 	r *gin.Engine,
 	config *conf.Configuration,
 	db *gorm.DB,
-	organizationUCase interfaces.IdentityOrganizationUseCase,
 	userUCase interfaces.IdentityUserUseCase,
 ) {
 	v1 := r.Group("/api/v1")
 
-	// SECTION: organizations
-	organizationRouter := v1.Group("organizations")
-	organizationHandler := handlers.NewIdentityOrganizationHandler(organizationUCase)
-	organizationRouter.GET(
-		"/",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:read"),
-		organizationHandler.GetOrganizations,
-	)
-	organizationRouter.GET(
-		"/:organization_id",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:read"),
-		organizationHandler.GetDetail,
-	)
-	organizationRouter.POST(
-		"/",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:create"),
-		organizationHandler.CreateOrganization,
-	)
-	organizationRouter.PUT(
-		"/:organization_id",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:update"),
-		organizationHandler.UpdateOrganization,
-	)
-	organizationRouter.DELETE(
-		"/:organization_id",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:delete"),
-		organizationHandler.DeleteOrganization,
-	)
-
-	// SECTION: organizations
+	// SECTION: users
 	userRouter := v1.Group("users")
 	userHandler := handlers.NewIdentityUserHandler(userUCase)
 	userRouter.POST(
@@ -78,30 +43,6 @@ func RegisterRoutes(
 		"/register",
 		userHandler.Register,
 	)
-
-	// TODO: Add support for social login
-	// userRouter.POST(
-	// 	"/login-with-google",
-	// 	userHandler.LoginWithGoogle,
-	// )
-
-	// userRouter.POST(
-	// 	"/login-with-facebook",
-	// 	userHandler.LoginWithFacebook,
-	// )
-
-	// userRouter.POST(
-	// 	"/login-with-apple",
-	// 	userHandler.LoginWithApple,
-	// )
-
-	// userRouter.POST("/register", userHandler.Register)
-
-	// TODO: Add support for password login
-	// userRouter.POST(
-	// 	"/login",
-	// 	userHandler.Login,
-	// )
 
 	userRouter.POST(
 		"/logout",
