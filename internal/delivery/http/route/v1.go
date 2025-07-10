@@ -17,7 +17,6 @@ func RegisterRoutes(
 	r *gin.Engine,
 	config *conf.Configuration,
 	db *gorm.DB,
-	organizationUCase interfaces.IdentityOrganizationUseCase,
 	userUCase interfaces.IdentityUserUseCase,
 	adminUCase interfaces.AdminUseCase,
 ) {
@@ -75,6 +74,7 @@ func RegisterRoutes(
 		organizationHandler.DeleteOrganization,
 	)
 
+	// SECTION: users
 	// SECTION: users
 	userRouter := v1.Group("users")
 	userHandler := handlers.NewIdentityUserHandler(userUCase)

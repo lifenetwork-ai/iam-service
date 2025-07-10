@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	repo_types "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	kratos_client "github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	kratos "github.com/ory/kratos-client-go"
@@ -192,9 +193,9 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 
 	var body kratos.UpdateRegistrationFlowBody
 	switch method {
-	case "code":
+	case constants.MethodTypeCode.String():
 		body.UpdateRegistrationFlowWithCodeMethod = &kratos.UpdateRegistrationFlowWithCodeMethod{
-			Method: "code",
+			Method: constants.MethodTypeCode.String(),
 			Traits: traits,
 		}
 
@@ -210,9 +211,9 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 		}
 		return result, nil
 
-	case "password":
+	case constants.MethodTypePassword.String():
 		body.UpdateRegistrationFlowWithPasswordMethod = &kratos.UpdateRegistrationFlowWithPasswordMethod{
-			Method: "password",
+			Method: constants.MethodTypePassword.String(),
 			Traits: traits,
 		}
 		result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
@@ -303,7 +304,7 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 	submitFlow := publicAPI.FrontendAPI.UpdateRegistrationFlow(ctx).Flow(flow.Id)
 	body := kratos.UpdateRegistrationFlowBody{
 		UpdateRegistrationFlowWithCodeMethod: &kratos.UpdateRegistrationFlowWithCodeMethod{
-			Method: "code",
+			Method: constants.MethodTypeCode.String(),
 			Code:   &code,
 			Traits: traits,
 		},
@@ -360,15 +361,15 @@ func (k *kratosServiceImpl) SubmitLoginFlow(ctx context.Context, tenantID uuid.U
 
 	var body kratos.UpdateLoginFlowBody
 	switch method {
-	case "code":
+	case constants.MethodTypeCode.String():
 		body.UpdateLoginFlowWithCodeMethod = &kratos.UpdateLoginFlowWithCodeMethod{
-			Method:     "code",
+			Method:     constants.MethodTypeCode.String(),
 			Identifier: identifier,
 			Code:       code,
 		}
-	case "password":
+	case constants.MethodTypePassword.String():
 		body.UpdateLoginFlowWithPasswordMethod = &kratos.UpdateLoginFlowWithPasswordMethod{
-			Method:     "password",
+			Method:     constants.MethodTypePassword.String(),
 			Password:   *password,
 			Identifier: *identifier,
 		}
@@ -426,7 +427,7 @@ func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID
 	codePtr := code
 	body := kratos.UpdateVerificationFlowBody{
 		UpdateVerificationFlowWithCodeMethod: &kratos.UpdateVerificationFlowWithCodeMethod{
-			Method: "code",
+			Method: constants.MethodTypeCode.String(),
 			Code:   &codePtr,
 		},
 	}

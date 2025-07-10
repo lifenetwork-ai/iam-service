@@ -45,7 +45,6 @@ func RunApp(config *conf.Configuration) {
 		r,
 		config,
 		db,
-		ucases.IdentityOrganizationUCase,
 		ucases.IdentityUserUCase,
 		ucases.AdminUCase,
 	)
@@ -100,7 +99,6 @@ func initializeRouter() *gin.Engine {
 	r.Use(middleware.DefaultPagination())
 	r.Use(middleware.RequestLoggerMiddleware())
 	r.Use(middleware.RequestDataGuardMiddleware())
-	r.Use(middleware.XHeaderValidationMiddleware())
 	r.Use(gin.Recovery())
 	return r
 }

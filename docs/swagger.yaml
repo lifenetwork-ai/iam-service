@@ -175,40 +175,6 @@ definitions:
       phone:
         type: string
     type: object
-  dto.IdentityGroupDTO:
-    properties:
-      id:
-        type: string
-    type: object
-  dto.IdentityOrganizationDTO:
-    properties:
-      authenticate_url:
-        type: string
-      code:
-        type: string
-      created_at:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      self_authenticate:
-        type: boolean
-      updated_at:
-        type: string
-    type: object
-  dto.IdentityRoleDTO:
-    properties:
-      id:
-        type: string
-    type: object
-  dto.IdentityServiceDTO:
-    properties:
-      id:
-        type: string
-    type: object
   dto.IdentityUserAuthDTO:
     properties:
       active:
@@ -776,10 +742,12 @@ paths:
       summary: Retrieve groups
       tags:
       - groups
+  /api/v1/users/challenge-verify:
     post:
       consumes:
       - application/json
-      description: Create a new group
+      description: Verify a one-time code sent to user for either login or registration
+        challenge.
       parameters:
       - description: Organization ID
         in: header
@@ -2152,6 +2120,7 @@ paths:
         required: true
         type: string
       - description: verification payload, type can be registration or login
+      - description: 'Verification payload. `type` must be one of: `register`, `login`'
         in: body
         name: challenge
         required: true
@@ -2161,18 +2130,18 @@ paths:
       - application/json
       responses:
         "200":
-          description: Successful verification
+          description: Verification successful
           schema:
             $ref: '#/definitions/response.SuccessResponse'
         "400":
-          description: Invalid request payload
+          description: Invalid request payload or code
           schema:
             $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Verify the challenge or registration
+      summary: Verify login or registration challenge
       tags:
       - users
   /api/v1/users/challenge-with-email:

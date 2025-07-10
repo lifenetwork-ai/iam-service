@@ -4,41 +4,37 @@ import (
 	"gorm.io/gorm"
 
 	infrainterfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
-	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
-	repositories_interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
+	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
-	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
-	ucases_interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
+	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 )
 
 // Struct to hold all repositories
 type repos struct {
-	IdentityOrganizationRepo repositories_interfaces.IdentityOrganizationRepository
-	IdentityUserRepo         repositories_interfaces.IdentityUserRepository
-	TenantRepo               repositories_interfaces.TenantRepository
+	ChallengeSessionRepo repotypes.ChallengeSessionRepository
 
-	AccessSessionRepo    repositories_interfaces.AccessSessionRepository
-	ChallengeSessionRepo repositories_interfaces.ChallengeSessionRepository
+	GlobalUserRepo            repotypes.GlobalUserRepository
+	UserIdentityRepo          repotypes.UserIdentityRepository
+	UserIdentifierMappingRepo repotypes.UserIdentifierMappingRepository
 }
 
 // Initialize repositories (only using cache where needed)
 func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *repos {
 	// Return all repositories
 	return &repos{
-		IdentityOrganizationRepo: repositories.NewIdentityOrganizationRepository(db, cacheRepo),
-		IdentityUserRepo:         repositories.NewIdentityUserRepository(db, cacheRepo),
-		TenantRepo:               repositories.NewTenantRepository(db),
-
-		AccessSessionRepo:    repositories.NewAccessSessionRepository(db, cacheRepo),
 		ChallengeSessionRepo: repositories.NewChallengeSessionRepository(cacheRepo),
+
+		GlobalUserRepo:            repositories.NewGlobalUserRepository(db),
+		UserIdentityRepo:          repositories.NewUserIdentityRepository(db),
+		UserIdentifierMappingRepo: repositories.NewUserIdentifierMappingRepository(db),
 	}
 }
 
 // Struct to hold all use cases
 type UseCases struct {
-	IdentityOrganizationUCase ucases_interfaces.IdentityOrganizationUseCase
-	IdentityUserUCase         ucases_interfaces.IdentityUserUseCase
-	AdminUCase                ucases_interfaces.AdminUseCase
+	IdentityUserUCase ucasetypes.IdentityUserUseCase
 }
 
 // Initialize use cases
@@ -47,12 +43,13 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 
 	// Return all use cases
 	return &UseCases{
-		IdentityOrganizationUCase: ucases.NewIdentityOrganizationUseCase(repos.IdentityOrganizationRepo),
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
+			db,
 			repos.ChallengeSessionRepo,
-			repos.TenantRepo,
-			services.NewKratosService(repos.TenantRepo),
+			repos.GlobalUserRepo,
+			repos.UserIdentityRepo,
+			repos.UserIdentifierMappingRepo,
+			services.NewKratosService(),
 		),
-		AdminUCase: ucases.NewAdminUseCase(repos.TenantRepo),
 	}
 }

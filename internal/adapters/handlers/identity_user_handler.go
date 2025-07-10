@@ -163,12 +163,15 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Summary Verify the challenge or registration
 // @Description Verify either a login challenge or registration flow
 // @Param X-Tenant-Id header string true "Tenant ID"
+// Verify a login or registration challenge
+// @Summary Verify login or registration challenge
+// @Description Verify a one-time code sent to user for either login or registration challenge.
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param challenge body dto.IdentityChallengeVerifyDTO true "verification payload, type can be registration or login"
-// @Success 200 {object} response.SuccessResponse "Successful verification"
-// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Param challenge body dto.IdentityChallengeVerifyDTO true "Verification payload. `type` must be one of: `register`, `login`"
+// @Success 200 {object} response.SuccessResponse "Verification successful"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload or code"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-verify [post]
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
