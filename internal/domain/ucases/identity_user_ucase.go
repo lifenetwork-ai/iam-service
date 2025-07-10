@@ -27,15 +27,13 @@ const (
 )
 
 type userUseCase struct {
-	challengeSessionRepo      repositories.ChallengeSessionRepository
+	db                        *gorm.DB
 	tenantRepo                repositories.TenantRepository
 	kratosService             services.KratosService
-	db                        *gorm.DB
-	challengeSessionRepo      repositories.ChallengeSessionRepository
 	globalUserRepo            repositories.GlobalUserRepository
 	userIdentityRepo          repositories.UserIdentityRepository
 	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository
-	kratosService             services.KratosService
+	challengeSessionRepo      repositories.ChallengeSessionRepository
 }
 
 func NewIdentityUserUseCase(
@@ -48,15 +46,13 @@ func NewIdentityUserUseCase(
 	kratosService services.KratosService,
 ) ucasetypes.IdentityUserUseCase {
 	return &userUseCase{
+		db:                        db,
 		challengeSessionRepo:      challengeSessionRepo,
 		tenantRepo:                tenantRepo,
 		kratosService:             kratosService,
-		db:                        db,
-		challengeSessionRepo:      challengeSessionRepo,
 		globalUserRepo:            globalUserRepo,
 		userIdentityRepo:          userIdentityRepo,
 		userIdentifierMappingRepo: userIdentifierMappingRepo,
-		kratosService:             kratosService,
 	}
 }
 
@@ -101,8 +97,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Submit login flow to Kratos
-	_, err = u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, "code", &phone, nil, nil)
-	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, constants.MethodTypeCode.String(), &phone, nil, nil)
+	_, err = u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &phone, nil, nil)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
@@ -166,8 +161,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	// Submit login flow to Kratos
-	_, err = u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, "code", &email, nil, nil)
-	_, err = u.kratosService.SubmitLoginFlow(ctx, flow, constants.MethodTypeCode.String(), &email, nil, nil)
+	_, err = u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &email, nil, nil)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -380,9 +374,8 @@ func (u *userUseCase) VerifyLogin(
 	}
 
 	// Submit login flow with code
-	loginResult, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, "code", nil, nil, &code)
 	loginResult, err := u.kratosService.SubmitLoginFlow(
-		ctx, flow, constants.MethodTypeCode.String(), &sessionValue.Phone, nil, &code,
+		ctx, tenantID, flow, constants.MethodTypeCode.String(), &sessionValue.Phone, nil, &code,
 	)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
@@ -533,7 +526,7 @@ func (u *userUseCase) Register(
 	}
 
 	// Submit registration flow
-	registrationResult, err := u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, "code", traits)
+	_, err = u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
@@ -542,25 +535,19 @@ func (u *userUseCase) Register(
 			Details: []interface{}{err.Error()},
 		}
 	}
+	receiver := payload.Email
+	if receiver == "" {
+		receiver = payload.Phone
+	}
 
-	// Return authentication response
+	// Return success with verification flow info
 	return &dto.IdentityUserAuthDTO{
-		SessionID:       registrationResult.Session.Id,
-		SessionToken:    *registrationResult.SessionToken,
-		Active:          *registrationResult.Session.Active,
-		ExpiresAt:       registrationResult.Session.ExpiresAt,
-		IssuedAt:        registrationResult.Session.IssuedAt,
-		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
-		User: dto.IdentityUserDTO{
-			ID:       registrationResult.Session.Identity.Id,
-			UserName: extractStringFromTraits(registrationResult.Session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(registrationResult.Session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(registrationResult.Session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
-			Tenant:   tenant.Name,
+		VerificationNeeded: true,
+		VerificationFlow: &dto.IdentityUserChallengeDTO{
+			FlowID:      flow.Id,
+			Receiver:    receiver,
+			ChallengeAt: time.Now().Unix(),
 		},
-		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
-			return *method.Method
-		}),
 	}, nil
 }
 

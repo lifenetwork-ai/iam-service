@@ -3,7 +3,6 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,10 +18,10 @@ import (
 func XHeaderValidationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Ignore Swagger requests
-		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
-			c.Next() // Skip check headers for Swagger routes
-			return
-		}
+		// if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
+		// 	c.Next() // Skip check headers for Swagger routes
+		// 	return
+		// }
 
 		tenantId := c.GetHeader("X-Tenant-Id")
 		if tenantId == "" {
@@ -48,7 +47,7 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 		tenantRepo := repositories.NewTenantRepository(dbConnection)
 
 		// Query Redis to find profile with key is tokenMd5
-		var tenant *entities.Tenant = nil
+		var tenant *entities.Tenant
 		cacheKey := &cachingTypes.Keyer{
 			Raw: tenantId,
 		}
@@ -57,8 +56,8 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 		err := cacheRepo.RetrieveItem(cacheKey, &cacheRequester)
 		if err == nil {
 			if tenant, ok := cacheRequester.(entities.Tenant); ok {
-				c.Set("tenantId", tenant.ID)
-				c.Set("tenant", tenant)
+				c.Set(string(TenantIDKey), tenant.ID)
+				c.Set(string(TenantKey), tenant)
 				c.Next()
 				return
 			}
@@ -103,8 +102,8 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 			logger.GetLogger().Errorf("Failed to cache tenant: %v", err)
 		}
 
-		c.Set("tenantId", tenant.ID)
-		c.Set("tenant", tenant)
+		logger.GetLogger().Infof("tenant: %v", tenant)
+		c.Set(string(TenantKey), tenant)
 		c.Next()
 	}
 }

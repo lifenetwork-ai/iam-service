@@ -23,7 +23,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/users/challenge-verify": {
         "/api/v1/admin/accounts": {
             "post": {
                 "security": [
@@ -430,76 +429,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/groups": {
-            "get": {
-                "description": "Get groups",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "groups"
-                ],
-                "summary": "Retrieve groups",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Keyword",
-                        "name": "keyword",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of groups",
-                        "schema": {
-                            "$ref": "#/definitions/dto.PaginationDTOResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid page number or size",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
+        "/api/v1/users/challenge-verify": {
             "post": {
-                "description": "Verify a one-time code sent to user for either login or registration challenge.",
+                "description": "Verify either a login challenge or registration flow\nVerify a one-time code sent to user for either login or registration challenge.",
                 "consumes": [
                     "application/json"
                 ],
@@ -840,30 +772,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.AccessPermissionDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.AccessPolicyDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.AccessSessionDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.AdminAccountDTO": {
             "type": "object",
             "properties": {
@@ -890,48 +798,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CreateAccessPermissionPayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.CreateAccessPolicyPayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.CreateAdminAccountPayloadDTO": {
             "type": "object",
             "required": [
@@ -949,98 +815,6 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 8
-                }
-            }
-        },
-        "dto.CreateIdentityGroupPayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.CreateIdentityOrganizationPayloadDTO": {
-            "type": "object",
-            "required": [
-                "authenticate_url",
-                "code",
-                "name",
-                "self_authenticate"
-            ],
-            "properties": {
-                "authenticate_url": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                },
-                "self_authenticate": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "dto.CreateIdentityRolePayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.CreateIdentityServicePayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
                 }
             }
         },
@@ -1258,140 +1032,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateAccessPermissionPayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateAccessPolicyPayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateIdentityGroupPayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateIdentityOrganizationPayloadDTO": {
-            "type": "object",
-            "required": [
-                "authenticate_url",
-                "code",
-                "name",
-                "self_authenticate"
-            ],
-            "properties": {
-                "authenticate_url": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                },
-                "self_authenticate": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "dto.UpdateIdentityRolePayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateIdentityServicePayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
                     "type": "string"
                 }
             }

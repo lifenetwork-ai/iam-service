@@ -18,6 +18,7 @@ type repos struct {
 	GlobalUserRepo            repotypes.GlobalUserRepository
 	UserIdentityRepo          repotypes.UserIdentityRepository
 	UserIdentifierMappingRepo repotypes.UserIdentifierMappingRepository
+	TenantRepo                repotypes.TenantRepository
 }
 
 // Initialize repositories (only using cache where needed)
@@ -29,12 +30,15 @@ func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *re
 		GlobalUserRepo:            repositories.NewGlobalUserRepository(db),
 		UserIdentityRepo:          repositories.NewUserIdentityRepository(db),
 		UserIdentifierMappingRepo: repositories.NewUserIdentifierMappingRepository(db),
+		TenantRepo:                repositories.NewTenantRepository(db),
 	}
 }
 
 // Struct to hold all use cases
 type UseCases struct {
 	IdentityUserUCase ucasetypes.IdentityUserUseCase
+	AdminUCase        ucasetypes.AdminUseCase
+	TenantUCase       ucasetypes.TenantUseCase
 }
 
 // Initialize use cases
@@ -46,10 +50,13 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
 			db,
 			repos.ChallengeSessionRepo,
+			repos.TenantRepo,
 			repos.GlobalUserRepo,
 			repos.UserIdentityRepo,
 			repos.UserIdentifierMappingRepo,
-			services.NewKratosService(),
+			services.NewKratosService(repos.TenantRepo),
 		),
+		AdminUCase:  ucases.NewAdminUseCase(repos.TenantRepo),
+		TenantUCase: ucases.NewTenantUseCase(repos.TenantRepo),
 	}
 }

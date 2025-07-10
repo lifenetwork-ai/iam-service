@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
@@ -14,6 +15,7 @@ type contextKey string
 
 const (
 	TenantIDKey     contextKey = "tenant_id"
+	TenantKey       contextKey = "tenant"
 	TenantHeaderKey            = "X-Tenant-ID"
 )
 
@@ -30,13 +32,13 @@ func NewTenantMiddleware(tenantRepo interfaces.TenantRepository) *TenantMiddlewa
 }
 
 // GetTenantFromContext retrieves tenant ID from context
-func GetTenantFromContext(ctx context.Context) (uuid.UUID, error) {
-	tenantID, ok := ctx.Value(TenantIDKey).(uuid.UUID)
+func GetTenantFromContext(ctx context.Context) (*domain.Tenant, error) {
+	tenant, ok := ctx.Value(TenantKey).(*domain.Tenant)
 	if !ok {
-		logger.GetLogger().Errorf("tenant ID not found in context")
-		return uuid.Nil, errors.New("tenant ID not found in context")
+		logger.GetLogger().Errorf("tenant not found in context")
+		return nil, errors.New("tenant not found in context")
 	}
-	return tenantID, nil
+	return tenant, nil
 }
 
 // Middleware handles tenant context in requests

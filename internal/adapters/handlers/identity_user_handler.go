@@ -1,12 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
@@ -22,13 +23,17 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 	}
 }
 
-// getTenantID extracts tenant ID from context
-func (h *userHandler) getTenantID(ctx *gin.Context) (uuid.UUID, error) {
-	tenantID, err := middleware.GetTenantFromContext(ctx.Request.Context())
-	if err != nil {
-		return uuid.Nil, err
+// getTenant extracts tenant from context
+func (h *userHandler) getTenant(ctx *gin.Context) (*domain.Tenant, error) {
+	tenant, ok := ctx.Get(string(middleware.TenantKey))
+	if !ok {
+		return nil, errors.New("tenant not found in context")
 	}
-	return tenantID, nil
+	tenantObj, ok := tenant.(*domain.Tenant)
+	if !ok {
+		return nil, errors.New("invalid tenant type in context")
+	}
+	return tenantObj, nil
 }
 
 // ChallengeWithPhone to login with phone and otp.
@@ -44,7 +49,7 @@ func (h *userHandler) getTenantID(ctx *gin.Context) (uuid.UUID, error) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-phone [post]
 func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
-	tenantID, err := h.getTenantID(ctx)
+	tenant, err := h.getTenant(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -80,7 +85,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 		return
 	}
 
-	challenge, errResponse := h.ucase.ChallengeWithPhone(ctx, tenantID, reqPayload.Phone)
+	challenge, errResponse := h.ucase.ChallengeWithPhone(ctx, tenant.ID, reqPayload.Phone)
 	if errResponse != nil {
 		httpresponse.Error(
 			ctx,
@@ -108,7 +113,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-email [post]
 func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
-	tenantID, err := h.getTenantID(ctx)
+	tenant, err := h.getTenant(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -144,7 +149,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 		return
 	}
 
-	challenge, errResponse := h.ucase.ChallengeWithEmail(ctx.Request.Context(), tenantID, reqPayload.Email)
+	challenge, errResponse := h.ucase.ChallengeWithEmail(ctx.Request.Context(), tenant.ID, reqPayload.Email)
 	if errResponse != nil {
 		httpresponse.Error(
 			ctx,
@@ -175,7 +180,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-verify [post]
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
-	tenantID, err := h.getTenantID(ctx)
+	tenant, err := h.getTenant(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -204,11 +209,11 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 
 	switch reqPayload.Type {
 	case "challenge":
-		auth, err = h.ucase.ChallengeVerify(ctx.Request.Context(), tenantID, reqPayload.FlowID, reqPayload.Code)
+		auth, err = h.ucase.ChallengeVerify(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
 	case "register":
-		auth, err = h.ucase.VerifyRegister(ctx.Request.Context(), tenantID, reqPayload.FlowID, reqPayload.Code)
+		auth, err = h.ucase.VerifyRegister(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
 	case "login":
-		auth, err = h.ucase.VerifyLogin(ctx.Request.Context(), tenantID, reqPayload.FlowID, reqPayload.Code)
+		auth, err = h.ucase.VerifyLogin(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
 	default:
 		httpresponse.Error(
 			ctx,
@@ -246,7 +251,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
 func (h *userHandler) Me(ctx *gin.Context) {
-	tenantID, err := h.getTenantID(ctx)
+	tenant, err := h.getTenant(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -258,7 +263,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 		return
 	}
 
-	requester, errResponse := h.ucase.Profile(ctx.Request.Context(), tenantID)
+	requester, errResponse := h.ucase.Profile(ctx.Request.Context(), tenant.ID)
 	if errResponse != nil {
 		logger.GetLogger().Errorf("Failed to get user profile: %v", errResponse.Error())
 		httpresponse.Error(
@@ -288,7 +293,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/logout [post]
 func (h *userHandler) Logout(ctx *gin.Context) {
-	tenantID, err := h.getTenantID(ctx)
+	tenant, err := h.getTenant(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -300,7 +305,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.ucase.LogOut(ctx.Request.Context(), tenantID); err != nil {
+	if err := h.ucase.LogOut(ctx.Request.Context(), tenant.ID); err != nil {
 		httpresponse.Error(
 			ctx,
 			err.Status,
@@ -327,7 +332,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/register [post]
 func (h *userHandler) Register(ctx *gin.Context) {
-	tenantID, err := h.getTenantID(ctx)
+	tenant, err := h.getTenant(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -363,7 +368,7 @@ func (h *userHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	auth, errResponse := h.ucase.Register(ctx.Request.Context(), tenantID, reqPayload)
+	auth, errResponse := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload)
 	if errResponse != nil {
 		httpresponse.Error(
 			ctx,
