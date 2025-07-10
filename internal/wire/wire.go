@@ -13,8 +13,6 @@ import (
 
 // Struct to hold all repositories
 type repos struct {
-	IdentityOrganizationRepo repotypes.IdentityOrganizationRepository
-
 	AccessSessionRepo    repotypes.AccessSessionRepository
 	ChallengeSessionRepo repotypes.ChallengeSessionRepository
 
@@ -27,8 +25,6 @@ type repos struct {
 func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *repos {
 	// Return all repositories
 	return &repos{
-		IdentityOrganizationRepo: repositories.NewIdentityOrganizationRepository(db, cacheRepo),
-
 		AccessSessionRepo:    repositories.NewAccessSessionRepository(db, cacheRepo),
 		ChallengeSessionRepo: repositories.NewChallengeSessionRepository(cacheRepo),
 
@@ -40,8 +36,7 @@ func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *re
 
 // Struct to hold all use cases
 type UseCases struct {
-	IdentityOrganizationUCase ucasetypes.IdentityOrganizationUseCase
-	IdentityUserUCase         ucasetypes.IdentityUserUseCase
+	IdentityUserUCase ucasetypes.IdentityUserUseCase
 }
 
 // Initialize use cases
@@ -50,7 +45,6 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 
 	// Return all use cases
 	return &UseCases{
-		IdentityOrganizationUCase: ucases.NewIdentityOrganizationUseCase(repos.IdentityOrganizationRepo),
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
 			db,
 			repos.ChallengeSessionRepo,
