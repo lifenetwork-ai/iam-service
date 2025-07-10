@@ -13,7 +13,6 @@ import (
 
 // Struct to hold all repositories
 type repos struct {
-	AccessSessionRepo    repotypes.AccessSessionRepository
 	ChallengeSessionRepo repotypes.ChallengeSessionRepository
 
 	GlobalUserRepo            repotypes.GlobalUserRepository
@@ -25,7 +24,6 @@ type repos struct {
 func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *repos {
 	// Return all repositories
 	return &repos{
-		AccessSessionRepo:    repositories.NewAccessSessionRepository(db, cacheRepo),
 		ChallengeSessionRepo: repositories.NewChallengeSessionRepository(cacheRepo),
 
 		GlobalUserRepo:            repositories.NewGlobalUserRepository(db),

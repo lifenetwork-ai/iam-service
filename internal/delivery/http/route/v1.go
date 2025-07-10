@@ -21,7 +21,7 @@ func RegisterRoutes(
 ) {
 	v1 := r.Group("/api/v1")
 
-	// SECTION: organizations
+	// SECTION: users
 	userRouter := v1.Group("users")
 	userHandler := handlers.NewIdentityUserHandler(userUCase)
 	userRouter.POST(
@@ -43,30 +43,6 @@ func RegisterRoutes(
 		"/register",
 		userHandler.Register,
 	)
-
-	// TODO: Add support for social login
-	// userRouter.POST(
-	// 	"/login-with-google",
-	// 	userHandler.LoginWithGoogle,
-	// )
-
-	// userRouter.POST(
-	// 	"/login-with-facebook",
-	// 	userHandler.LoginWithFacebook,
-	// )
-
-	// userRouter.POST(
-	// 	"/login-with-apple",
-	// 	userHandler.LoginWithApple,
-	// )
-
-	// userRouter.POST("/register", userHandler.Register)
-
-	// TODO: Add support for password login
-	// userRouter.POST(
-	// 	"/login",
-	// 	userHandler.Login,
-	// )
 
 	userRouter.POST(
 		"/logout",
