@@ -10,6 +10,7 @@ import (
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 )
 
@@ -42,7 +43,7 @@ func (u *adminUseCase) ListTenants(ctx context.Context, page, size int, keyword 
 	}
 
 	// Filter by keyword if provided
-	var filteredTenants []*repositories.Tenant
+	var filteredTenants []*entities.Tenant
 	if keyword != "" {
 		keyword = strings.ToLower(keyword)
 		for _, tenant := range tenants {
@@ -161,7 +162,7 @@ func (u *adminUseCase) CreateTenant(ctx context.Context, payload dto.CreateTenan
 
 	// Create new tenant
 	tenant := domain.FromCreateDTO(payload)
-	repoTenant := &repositories.Tenant{
+	repoTenant := &entities.Tenant{
 		ID:        tenant.ID,
 		Name:      tenant.Name,
 		PublicURL: tenant.PublicURL,
@@ -237,7 +238,7 @@ func (u *adminUseCase) UpdateTenant(ctx context.Context, id string, payload dto.
 	}
 
 	// Update tenant
-	domainTenant := domain.Tenant{
+	domainTenant := entities.Tenant{
 		ID:        existingTenant.ID,
 		Name:      existingTenant.Name,
 		PublicURL: existingTenant.PublicURL,
@@ -247,7 +248,7 @@ func (u *adminUseCase) UpdateTenant(ctx context.Context, id string, payload dto.
 	}
 
 	if domainTenant.ApplyUpdate(payload) {
-		repoTenant := &repositories.Tenant{
+		repoTenant := &entities.Tenant{
 			ID:        domainTenant.ID,
 			Name:      domainTenant.Name,
 			PublicURL: domainTenant.PublicURL,

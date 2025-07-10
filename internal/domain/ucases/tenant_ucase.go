@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
-	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 )
 
@@ -39,7 +39,7 @@ func (u *tenantUseCase) List(
 	}
 
 	// Filter by keyword if provided
-	var filteredTenants []*repositories.Tenant
+	var filteredTenants []*entities.Tenant
 	if keyword != "" {
 		keyword = strings.ToLower(keyword)
 		for _, tenant := range tenants {
@@ -69,7 +69,7 @@ func (u *tenantUseCase) List(
 	// Convert to DTOs
 	tenantDTOs := make([]interface{}, 0)
 	for _, tenant := range filteredTenants[start:end] {
-		domainTenant := domain.Tenant{
+		domainTenant := entities.Tenant{
 			ID:        tenant.ID,
 			Name:      tenant.Name,
 			PublicURL: tenant.PublicURL,
@@ -126,7 +126,7 @@ func (u *tenantUseCase) GetByID(
 		}
 	}
 
-	domainTenant := domain.Tenant{
+	domainTenant := entities.Tenant{
 		ID:        tenant.ID,
 		Name:      tenant.Name,
 		PublicURL: tenant.PublicURL,
@@ -163,8 +163,8 @@ func (u *tenantUseCase) Create(
 	}
 
 	// Create new tenant
-	tenant := domain.FromCreateDTO(payload)
-	repoTenant := &repositories.Tenant{
+	tenant := entities.FromCreateDTO(payload)
+	repoTenant := &entities.Tenant{
 		ID:        tenant.ID,
 		Name:      tenant.Name,
 		PublicURL: tenant.PublicURL,
@@ -244,7 +244,7 @@ func (u *tenantUseCase) Update(
 	}
 
 	// Update tenant
-	domainTenant := domain.Tenant{
+	domainTenant := entities.Tenant{
 		ID:        existingTenant.ID,
 		Name:      existingTenant.Name,
 		PublicURL: existingTenant.PublicURL,
@@ -254,7 +254,7 @@ func (u *tenantUseCase) Update(
 	}
 
 	if domainTenant.ApplyUpdate(payload) {
-		repoTenant := &repositories.Tenant{
+		repoTenant := &entities.Tenant{
 			ID:        domainTenant.ID,
 			Name:      domainTenant.Name,
 			PublicURL: domainTenant.PublicURL,
@@ -312,7 +312,7 @@ func (u *tenantUseCase) Delete(
 	}
 
 	// Convert to domain model for DTO conversion
-	domainTenant := domain.Tenant{
+	domainTenant := entities.Tenant{
 		ID:        existingTenant.ID,
 		Name:      existingTenant.Name,
 		PublicURL: existingTenant.PublicURL,

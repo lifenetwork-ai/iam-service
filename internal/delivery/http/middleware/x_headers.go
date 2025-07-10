@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/google/uuid"
 	cachingTypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -18,28 +18,23 @@ import (
 // XHeaderValidationMiddleware returns a gin middleware for HTTP request checking X-* headers
 func XHeaderValidationMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if conf.IsDebugMode() {
-			c.Next()
-			return
-		}
-
 		// Ignore Swagger requests
 		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
 			c.Next() // Skip check headers for Swagger routes
 			return
 		}
 
-		organizationId := c.GetHeader("X-Organization-Id")
-		if organizationId == "" {
+		tenantId := c.GetHeader("X-Tenant-Id")
+		if tenantId == "" {
 			c.AbortWithStatusJSON(
 				http.StatusPreconditionRequired,
 				gin.H{
-					"code":    "MSG_MISSING_ORGANIZATION_ID_HEADER",
-					"message": "Missing X-Organization-Id header",
+					"code":    "MSG_MISSING_TENANT_ID_HEADER",
+					"message": "Missing X-Tenant-Id header",
 					"details": []interface{}{
 						map[string]string{
-							"field": "X-Organization-Id",
-							"error": "X-Organization-Id header is required",
+							"field": "X-Tenant-Id",
+							"error": "X-Tenant-Id header is required",
 						},
 					},
 				},
@@ -50,36 +45,32 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 		// Dependency injection
 		dbConnection := instances.DBConnectionInstance()
 		cacheRepo := instances.CacheRepositoryInstance(c)
-		organizationRepo := repositories.NewIdentityOrganizationRepository(dbConnection, cacheRepo)
+		tenantRepo := repositories.NewTenantRepository(dbConnection)
 
 		// Query Redis to find profile with key is tokenMd5
-		var organization *entities.IdentityOrganization = nil
+		var tenant *entities.Tenant = nil
 		cacheKey := &cachingTypes.Keyer{
-			Raw: organizationId,
+			Raw: tenantId,
 		}
 
 		var cacheRequester interface{}
 		err := cacheRepo.RetrieveItem(cacheKey, &cacheRequester)
 		if err == nil {
-			if org, ok := cacheRequester.(entities.IdentityOrganization); ok {
-				organization = &org
-			}
-
-			if organization != nil {
-				c.Set("organizationId", organization.ID)
-				c.Set("organization", organization)
+			if tenant, ok := cacheRequester.(entities.Tenant); ok {
+				c.Set("tenantId", tenant.ID)
+				c.Set("tenant", tenant)
 				c.Next()
 				return
 			}
 		}
 
-		organization, err = organizationRepo.GetByID(c, organizationId)
+		tenant, err = tenantRepo.GetByID(uuid.MustParse(tenantId))
 		if err != nil {
 			c.AbortWithStatusJSON(
 				http.StatusInternalServerError,
 				gin.H{
-					"code":    "MSG_FAILED_TO_GET_ORGANIZATION",
-					"message": "Failed to get organization",
+					"code":    "MSG_FAILED_TO_GET_TENANT",
+					"message": "Failed to get tenant",
 					"details": []interface{}{
 						map[string]string{
 							"error": err.Error(),
@@ -90,16 +81,16 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if organization == nil {
+		if tenant == nil {
 			c.AbortWithStatusJSON(
 				http.StatusNotFound,
 				gin.H{
-					"code":    "MSG_ORGANIZATION_NOT_FOUND",
-					"message": "Organization not found",
+					"code":    "MSG_TENANT_NOT_FOUND",
+					"message": "Tenant not found",
 					"details": []interface{}{
 						map[string]string{
-							"field": "organization_id",
-							"error": "Organization not found",
+							"field": "tenant_id",
+							"error": "Tenant not found",
 						},
 					},
 				},
@@ -108,12 +99,12 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 		}
 
 		// Cache the user to memory cache
-		if err = cacheRepo.SaveItem(cacheKey, *organization, 30*time.Minute); err != nil {
-			logger.GetLogger().Errorf("Failed to cache organization: %v", err)
+		if err = cacheRepo.SaveItem(cacheKey, *tenant, 30*time.Minute); err != nil {
+			logger.GetLogger().Errorf("Failed to cache tenant: %v", err)
 		}
 
-		c.Set("organizationId", organization.ID)
-		c.Set("organization", organization)
+		c.Set("tenantId", tenant.ID)
+		c.Set("tenant", tenant)
 		c.Next()
 	}
 }

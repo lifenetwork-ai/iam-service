@@ -64,9 +64,8 @@ type IdentityChallengeVerifyDTO struct {
 }
 
 type IdentityUserRegisterDTO struct {
-	Email  string `json:"email" validate:"omitempty,email"`
-	Phone  string `json:"phone" validate:"omitempty"`
-	Tenant string `json:"tenant" validate:"required"`
+	Email string `json:"email" validate:"omitempty,email"`
+	Phone string `json:"phone" validate:"omitempty"`
 }
 
 // IdentityUserLoginDTO represents the request for a user login.

@@ -1,27 +1,16 @@
 package interfaces
 
 import (
-	"time"
-
 	"github.com/google/uuid"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 )
-
-// Tenant represents a tenant in the system
-type Tenant struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key"`
-	Name      string    `gorm:"type:varchar(255);not null"`
-	PublicURL string    `gorm:"type:varchar(255);not null"`
-	AdminURL  string    `gorm:"type:varchar(255);not null"`
-	CreatedAt time.Time `gorm:"not null"`
-	UpdatedAt time.Time `gorm:"not null"`
-}
 
 // TenantRepository defines the interface for tenant operations
 type TenantRepository interface {
-	Create(tenant *Tenant) error
-	Update(tenant *Tenant) error
+	Create(tenant *entities.Tenant) error
+	Update(tenant *entities.Tenant) error
 	Delete(id uuid.UUID) error
-	GetByID(id uuid.UUID) (*Tenant, error)
-	List() ([]*Tenant, error)
-	GetByName(name string) (*Tenant, error)
+	GetByID(id uuid.UUID) (*entities.Tenant, error)
+	List() ([]*entities.Tenant, error)
+	GetByName(name string) (*entities.Tenant, error)
 }

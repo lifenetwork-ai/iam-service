@@ -7,7 +7,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/conf"
+	repo_types "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	kratos_client "github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 )
@@ -15,28 +18,28 @@ import (
 // KratosService defines the interface for interacting with Ory Kratos
 type KratosService interface {
 	// Registration flow
-	InitializeRegistrationFlow(ctx context.Context) (*kratos.RegistrationFlow, error)
-	SubmitRegistrationFlow(ctx context.Context, flow *kratos.RegistrationFlow, method string, traits map[string]interface{}) (*kratos.SuccessfulNativeRegistration, error)
-	GetRegistrationFlow(ctx context.Context, flowID string) (*kratos.RegistrationFlow, error)
-	SubmitRegistrationFlowWithCode(ctx context.Context, flow *kratos.RegistrationFlow, code string) (*kratos.SuccessfulNativeRegistration, error)
+	InitializeRegistrationFlow(ctx context.Context, tenantID uuid.UUID) (*kratos.RegistrationFlow, error)
+	SubmitRegistrationFlow(ctx context.Context, tenantID uuid.UUID, flow *kratos.RegistrationFlow, method string, traits map[string]interface{}) (*kratos.SuccessfulNativeRegistration, error)
+	GetRegistrationFlow(ctx context.Context, tenantID uuid.UUID, flowID string) (*kratos.RegistrationFlow, error)
+	SubmitRegistrationFlowWithCode(ctx context.Context, tenantID uuid.UUID, flow *kratos.RegistrationFlow, code string) (*kratos.SuccessfulNativeRegistration, error)
 
 	// Login flow
-	InitializeLoginFlow(ctx context.Context) (*kratos.LoginFlow, error)
-	SubmitLoginFlow(ctx context.Context, flow *kratos.LoginFlow, method string, identifier, password, code *string) (*kratos.SuccessfulNativeLogin, error)
-	GetLoginFlow(ctx context.Context, flowID string) (*kratos.LoginFlow, error)
+	InitializeLoginFlow(ctx context.Context, tenantID uuid.UUID) (*kratos.LoginFlow, error)
+	SubmitLoginFlow(ctx context.Context, tenantID uuid.UUID, flow *kratos.LoginFlow, method string, identifier, password, code *string) (*kratos.SuccessfulNativeLogin, error)
+	GetLoginFlow(ctx context.Context, tenantID uuid.UUID, flowID string) (*kratos.LoginFlow, error)
 
 	// Verification flow
-	InitializeVerificationFlow(ctx context.Context) (*kratos.VerificationFlow, error)
-	GetVerificationFlow(ctx context.Context, flowID string) (*kratos.VerificationFlow, error)
-	SubmitVerificationFlow(ctx context.Context, flow *kratos.VerificationFlow, code string) (*kratos.VerificationFlow, error)
+	InitializeVerificationFlow(ctx context.Context, tenantID uuid.UUID) (*kratos.VerificationFlow, error)
+	GetVerificationFlow(ctx context.Context, tenantID uuid.UUID, flowID string) (*kratos.VerificationFlow, error)
+	SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flow *kratos.VerificationFlow, code string) (*kratos.VerificationFlow, error)
 
 	// Logout flow
-	Logout(ctx context.Context, sessionToken string) error
+	Logout(ctx context.Context, tenantID uuid.UUID, sessionToken string) error
 
 	// Session management
-	GetSession(ctx context.Context, sessionToken string) (*kratos.Session, error)
-	RevokeSession(ctx context.Context, sessionToken string) error
-	WhoAmI(ctx context.Context, sessionToken string) (*kratos.Session, error)
+	GetSession(ctx context.Context, tenantID uuid.UUID, sessionToken string) (*kratos.Session, error)
+	RevokeSession(ctx context.Context, tenantID uuid.UUID, sessionToken string) error
+	WhoAmI(ctx context.Context, tenantID uuid.UUID, sessionToken string) (*kratos.Session, error)
 }
 
 // KratosResponse represents the structured response from Kratos API
@@ -147,40 +150,45 @@ func (r *KratosErrorResponse) GetErrorMessages() []string {
 }
 
 type kratosServiceImpl struct {
-	client *kratos.APIClient
+	client *kratos_client.Client
 }
 
 // NewKratosService creates a new instance of KratosService
-func NewKratosService() KratosService {
+func NewKratosService(tenantRepo repo_types.TenantRepository) KratosService {
 	config := conf.GetKratosConfig()
-	configuration := kratos.NewConfiguration()
-	configuration.Servers = []kratos.ServerConfiguration{
-		{
-			URL: config.PublicEndpoint,
-		},
-	}
-
-	client := kratos.NewAPIClient(configuration)
+	client := kratos_client.NewClient(config, tenantRepo)
 	return &kratosServiceImpl{
 		client: client,
 	}
 }
 
-func (k *kratosServiceImpl) InitializeRegistrationFlow(ctx context.Context) (*kratos.RegistrationFlow, error) {
-	flow, _, err := k.client.FrontendAPI.CreateNativeRegistrationFlow(ctx).Execute()
+// InitializeRegistrationFlow initiates a new registration flow
+func (k *kratosServiceImpl) InitializeRegistrationFlow(ctx context.Context, tenantID uuid.UUID) (*kratos.RegistrationFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+	flow, _, err := publicAPI.FrontendAPI.CreateNativeRegistrationFlow(ctx).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize registration flow: %w", err)
 	}
 	return flow, nil
 }
 
+// SubmitRegistrationFlow submits a registration flow
 func (k *kratosServiceImpl) SubmitRegistrationFlow(
 	ctx context.Context,
+	tenantID uuid.UUID,
 	flow *kratos.RegistrationFlow,
 	method string,
-	traits map[string]any,
+	traits map[string]interface{},
 ) (*kratos.SuccessfulNativeRegistration, error) {
-	submitFlow := k.client.FrontendAPI.UpdateRegistrationFlow(ctx).Flow(flow.Id)
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+
+	submitFlow := publicAPI.FrontendAPI.UpdateRegistrationFlow(ctx).Flow(flow.Id)
 
 	var body kratos.UpdateRegistrationFlowBody
 	switch method {
@@ -224,11 +232,28 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 	}
 }
 
-func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, flow *kratos.RegistrationFlow, code string) (*kratos.SuccessfulNativeRegistration, error) {
-	submitFlow := k.client.FrontendAPI.UpdateRegistrationFlow(ctx).Flow(flow.Id)
+// GetRegistrationFlow gets a registration flow
+func (k *kratosServiceImpl) GetRegistrationFlow(ctx context.Context, tenantID uuid.UUID, flowID string) (*kratos.RegistrationFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+	flow, _, err := publicAPI.FrontendAPI.GetRegistrationFlow(ctx).Id(flowID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get registration flow: %w", err)
+	}
+	return flow, nil
+}
+
+// SubmitRegistrationFlowWithCode submits a registration flow with code
+func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, tenantID uuid.UUID, flow *kratos.RegistrationFlow, code string) (*kratos.SuccessfulNativeRegistration, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
 
 	// Get the flow again to extract traits
-	_, resp, err := k.client.FrontendAPI.GetRegistrationFlow(ctx).Id(flow.Id).Execute()
+	_, resp, err := publicAPI.FrontendAPI.GetRegistrationFlow(ctx).Id(flow.Id).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get registration flow: %w", err)
 	}
@@ -274,6 +299,8 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 		return nil, fmt.Errorf("no traits found in registration flow")
 	}
 
+	// Submit the flow with code
+	submitFlow := publicAPI.FrontendAPI.UpdateRegistrationFlow(ctx).Flow(flow.Id)
 	body := kratos.UpdateRegistrationFlowBody{
 		UpdateRegistrationFlowWithCodeMethod: &kratos.UpdateRegistrationFlowWithCodeMethod{
 			Method: "code",
@@ -281,53 +308,55 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 			Traits: traits,
 		},
 	}
-	result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
-	if resp != nil && resp.StatusCode == 400 {
-		if err := k.parseKratosErrorResponse(resp, fmt.Errorf("registration failed: %w", err)); err != nil {
-			return nil, err
-		}
-		return &kratos.SuccessfulNativeRegistration{}, nil
-	}
 
+	result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
 	if err != nil {
+		if resp != nil && resp.StatusCode == 400 {
+			if err := k.parseKratosErrorResponse(resp, fmt.Errorf("registration failed: %w", err)); err != nil {
+				return nil, err
+			}
+			return &kratos.SuccessfulNativeRegistration{}, nil
+		}
 		return nil, fmt.Errorf("failed to submit registration flow with code: %w", err)
 	}
+
 	return result, nil
 }
 
-func (k *kratosServiceImpl) GetRegistrationFlow(ctx context.Context, flowID string) (*kratos.RegistrationFlow, error) {
-	flow, _, err := k.client.FrontendAPI.GetRegistrationFlow(ctx).Id(flowID).Execute()
+// InitializeLoginFlow initiates a new login flow
+func (k *kratosServiceImpl) InitializeLoginFlow(ctx context.Context, tenantID uuid.UUID) (*kratos.LoginFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get registration flow: %w", err)
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
 	}
-	return flow, nil
-}
-
-func (k *kratosServiceImpl) InitializeLoginFlow(ctx context.Context) (*kratos.LoginFlow, error) {
-	flow, _, err := k.client.FrontendAPI.CreateNativeLoginFlow(ctx).Execute()
+	flow, _, err := publicAPI.FrontendAPI.CreateNativeLoginFlow(ctx).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize login flow: %w", err)
 	}
 	return flow, nil
 }
 
-func (k *kratosServiceImpl) GetLoginFlow(ctx context.Context, flowID string) (*kratos.LoginFlow, error) {
-	flow, _, err := k.client.FrontendAPI.GetLoginFlow(ctx).Id(flowID).Execute()
+// GetLoginFlow gets a login flow
+func (k *kratosServiceImpl) GetLoginFlow(ctx context.Context, tenantID uuid.UUID, flowID string) (*kratos.LoginFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+	flow, _, err := publicAPI.FrontendAPI.GetLoginFlow(ctx).Id(flowID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get login flow: %w", err)
 	}
 	return flow, nil
 }
 
-func (k *kratosServiceImpl) SubmitLoginFlow(
-	ctx context.Context,
-	flow *kratos.LoginFlow,
-	method string,
-	identifier *string,
-	password *string,
-	code *string,
-) (*kratos.SuccessfulNativeLogin, error) {
-	submitFlow := k.client.FrontendAPI.UpdateLoginFlow(ctx).Flow(flow.Id)
+// SubmitLoginFlow submits a login flow
+func (k *kratosServiceImpl) SubmitLoginFlow(ctx context.Context, tenantID uuid.UUID, flow *kratos.LoginFlow, method string, identifier, password, code *string) (*kratos.SuccessfulNativeLogin, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+
+	submitFlow := publicAPI.FrontendAPI.UpdateLoginFlow(ctx).Flow(flow.Id)
 
 	var body kratos.UpdateLoginFlowBody
 	switch method {
@@ -348,44 +377,52 @@ func (k *kratosServiceImpl) SubmitLoginFlow(
 	}
 
 	result, resp, err := submitFlow.UpdateLoginFlowBody(body).Execute()
-	if err == nil {
-		return result, nil
-	}
-
-	if resp == nil || resp.StatusCode != 400 {
+	if err != nil {
+		if resp != nil && resp.StatusCode == 400 {
+			if err := k.parseKratosErrorResponse(resp, fmt.Errorf("login failed: %w", err)); err != nil {
+				return nil, err
+			}
+			return &kratos.SuccessfulNativeLogin{}, nil
+		}
 		return nil, fmt.Errorf("failed to submit login flow: %w", err)
 	}
 
-	// This is a 400 response, but this is a successful response, it is a known issue of Kratos
-	// We need to parse the response to check the flow state
-	// Github issue: https://github.com/ory/kratos/issues/4052
-	if err := k.parseKratosErrorResponse(resp, fmt.Errorf("failed to submit login flow: %w", err)); err != nil {
-		return nil, err
-	}
-	return &kratos.SuccessfulNativeLogin{}, nil
+	return result, nil
 }
 
-func (k *kratosServiceImpl) InitializeVerificationFlow(ctx context.Context) (*kratos.VerificationFlow, error) {
-	flow, _, err := k.client.FrontendAPI.CreateNativeVerificationFlow(ctx).Execute()
+// InitializeVerificationFlow initiates a new verification flow
+func (k *kratosServiceImpl) InitializeVerificationFlow(ctx context.Context, tenantID uuid.UUID) (*kratos.VerificationFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+	flow, _, err := publicAPI.FrontendAPI.CreateNativeVerificationFlow(ctx).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize verification flow: %w", err)
 	}
 	return flow, nil
 }
 
-func (k *kratosServiceImpl) GetVerificationFlow(ctx context.Context, flowID string) (*kratos.VerificationFlow, error) {
-	flow, _, err := k.client.FrontendAPI.GetVerificationFlow(ctx).Id(flowID).Execute()
+// GetVerificationFlow gets a verification flow
+func (k *kratosServiceImpl) GetVerificationFlow(ctx context.Context, tenantID uuid.UUID, flowID string) (*kratos.VerificationFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+	flow, _, err := publicAPI.FrontendAPI.GetVerificationFlow(ctx).Id(flowID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get verification flow: %w", err)
 	}
 	return flow, nil
 }
 
-func (k *kratosServiceImpl) SubmitVerificationFlow(
-	ctx context.Context,
-	flow *kratos.VerificationFlow,
-	code string,
-) (*kratos.VerificationFlow, error) {
+// SubmitVerificationFlow submits a verification flow
+func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flow *kratos.VerificationFlow, code string) (*kratos.VerificationFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+
 	codePtr := code
 	body := kratos.UpdateVerificationFlowBody{
 		UpdateVerificationFlowWithCodeMethod: &kratos.UpdateVerificationFlowWithCodeMethod{
@@ -394,36 +431,31 @@ func (k *kratosServiceImpl) SubmitVerificationFlow(
 		},
 	}
 
-	_, resp, err := k.client.FrontendAPI.UpdateVerificationFlow(ctx).
+	result, resp, err := publicAPI.FrontendAPI.UpdateVerificationFlow(ctx).
 		Flow(flow.Id).
 		UpdateVerificationFlowBody(body).
 		Execute()
-	if err != nil && resp.StatusCode != 400 {
+	if err != nil {
+		if resp != nil && resp.StatusCode == 400 {
+			if err := k.parseKratosErrorResponse(resp, fmt.Errorf("verification failed: %w", err)); err != nil {
+				return nil, err
+			}
+			return flow, nil
+		}
 		return nil, fmt.Errorf("failed to submit verification flow: %w", err)
 	}
 
-	// This is a 400 response, but this is a successful response, it is a known issue of Kratos
-	// We need to parse the response to check the flow state
-	// Github issue: https://github.com/ory/kratos/issues/4052
-	if err := k.parseKratosErrorResponse(resp, fmt.Errorf("failed to submit verification flow: %w", err)); err != nil {
-		return nil, err
-	}
-
-	return flow, nil
+	return result, nil
 }
 
-// WhoAmI gets the session from Kratos
-func (k *kratosServiceImpl) WhoAmI(ctx context.Context, sessionToken string) (*kratos.Session, error) {
-	session, _, err := k.client.FrontendAPI.ToSession(ctx).XSessionToken(sessionToken).Execute()
+// Logout logs out the user
+func (k *kratosServiceImpl) Logout(ctx context.Context, tenantID uuid.UUID, sessionToken string) error {
+	publicAPI, err := k.client.PublicAPI(tenantID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get whoami session: %w", err)
+		return fmt.Errorf("failed to get public API client: %w", err)
 	}
-	return session, nil
-}
 
-// Logout logs out the user by invalidating the session
-func (k *kratosServiceImpl) Logout(ctx context.Context, sessionToken string) error {
-	_, err := k.client.FrontendAPI.PerformNativeLogout(ctx).
+	_, err = publicAPI.FrontendAPI.PerformNativeLogout(ctx).
 		PerformNativeLogoutBody(kratos.PerformNativeLogoutBody{
 			SessionToken: sessionToken,
 		}).
@@ -434,9 +466,14 @@ func (k *kratosServiceImpl) Logout(ctx context.Context, sessionToken string) err
 	return nil
 }
 
-// GetSession gets the session from Kratos
-func (k *kratosServiceImpl) GetSession(ctx context.Context, sessionToken string) (*kratos.Session, error) {
-	session, _, err := k.client.FrontendAPI.ToSession(ctx).
+// GetSession gets a session
+func (k *kratosServiceImpl) GetSession(ctx context.Context, tenantID uuid.UUID, sessionToken string) (*kratos.Session, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+
+	session, _, err := publicAPI.FrontendAPI.ToSession(ctx).
 		Cookie(fmt.Sprintf("ory_kratos_session=%s", sessionToken)).
 		Execute()
 	if err != nil {
@@ -445,13 +482,32 @@ func (k *kratosServiceImpl) GetSession(ctx context.Context, sessionToken string)
 	return session, nil
 }
 
-// RevokeSession revokes the session from Kratos
-func (k *kratosServiceImpl) RevokeSession(ctx context.Context, sessionToken string) error {
-	_, err := k.client.FrontendAPI.DisableMySession(ctx, sessionToken).Execute()
+// RevokeSession revokes a session
+func (k *kratosServiceImpl) RevokeSession(ctx context.Context, tenantID uuid.UUID, sessionToken string) error {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return fmt.Errorf("failed to get public API client: %w", err)
+	}
+
+	_, err = publicAPI.FrontendAPI.DisableMySession(ctx, sessionToken).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to revoke session: %w", err)
 	}
 	return nil
+}
+
+// WhoAmI gets the current session
+func (k *kratosServiceImpl) WhoAmI(ctx context.Context, tenantID uuid.UUID, sessionToken string) (*kratos.Session, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+
+	session, _, err := publicAPI.FrontendAPI.ToSession(ctx).XSessionToken(sessionToken).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get whoami session: %w", err)
+	}
+	return session, nil
 }
 
 // parseKratosErrorResponse parses error response from Kratos and returns appropriate error

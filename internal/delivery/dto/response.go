@@ -1,5 +1,7 @@
 package dto
 
+import "fmt"
+
 type PaginationDTOResponse struct {
 	NextPage int           `json:"next_page"`
 	Page     int           `json:"page"`
@@ -20,4 +22,8 @@ type ErrorDTOResponse struct {
 	Code    string        `json:"code"`
 	Message string        `json:"message"`
 	Details []interface{} `json:"details,omitempty"`
+}
+
+func (e *ErrorDTOResponse) Error() string {
+	return fmt.Sprintf("code: %s, message: %s, details: %v", e.Code, e.Message, e.Details)
 }

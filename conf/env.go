@@ -59,8 +59,8 @@ type JwtConfiguration struct {
 }
 
 type KratosConfiguration struct {
-	PublicEndpoint string `mapstructure:"KRATOS_PUBLIC_ENDPOINT"`
-	AdminEndpoint  string `mapstructure:"KRATOS_ADMIN_ENDPOINT"`
+	DefaultPublicEndpoint string `mapstructure:"KRATOS_PUBLIC_ENDPOINT"`
+	DefaultAdminEndpoint  string `mapstructure:"KRATOS_ADMIN_ENDPOINT"`
 }
 
 type Configuration struct {
@@ -105,8 +105,6 @@ var defaultConfigurations = map[string]any{
 	"JWT_ACCESS_TOKEN_LIFETIME":      "3600",  // 1 hour
 	"JWT_REFRESH_TOKEN_LIFETIME":     "86400", // 24 hours
 	"LIFE_AI_BACKEND_URL":            "https://nightly.lifenetwork.ai",
-	"KRATOS_PUBLIC_ENDPOINT":         "https://auth.develop.lifenetwork.ai", // Default Kratos public API endpoint
-	"KRATOS_ADMIN_ENDPOINT":          "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations

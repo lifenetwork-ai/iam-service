@@ -50,7 +50,8 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 		IdentityOrganizationUCase: ucases.NewIdentityOrganizationUseCase(repos.IdentityOrganizationRepo),
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
 			repos.ChallengeSessionRepo,
-			services.NewKratosService(),
+			repos.TenantRepo,
+			services.NewKratosService(repos.TenantRepo),
 		),
 		AdminUCase: ucases.NewAdminUseCase(repos.TenantRepo),
 	}

@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	repo_types "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 )
 
 var _ repo_types.TenantRepository = &TenantRepository{}
@@ -32,14 +33,14 @@ func NewTenantRepository(db *gorm.DB) *TenantRepository {
 	}
 }
 
-func (r *TenantRepository) Create(tenant *repo_types.Tenant) error {
+func (r *TenantRepository) Create(tenant *entities.Tenant) error {
 	if tenant.ID == uuid.Nil {
 		tenant.ID = uuid.New()
 	}
 	return r.db.Create(tenant).Error
 }
 
-func (r *TenantRepository) Update(tenant *repo_types.Tenant) error {
+func (r *TenantRepository) Update(tenant *entities.Tenant) error {
 	if tenant.ID == uuid.Nil {
 		return errors.New("tenant ID is required")
 	}
@@ -47,11 +48,11 @@ func (r *TenantRepository) Update(tenant *repo_types.Tenant) error {
 }
 
 func (r *TenantRepository) Delete(id uuid.UUID) error {
-	return r.db.Delete(&repo_types.Tenant{}, id).Error
+	return r.db.Delete(&entities.Tenant{}, id).Error
 }
 
-func (r *TenantRepository) GetByID(id uuid.UUID) (*repo_types.Tenant, error) {
-	var tenant repo_types.Tenant
+func (r *TenantRepository) GetByID(id uuid.UUID) (*entities.Tenant, error) {
+	var tenant entities.Tenant
 	if err := r.db.First(&tenant, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -61,16 +62,16 @@ func (r *TenantRepository) GetByID(id uuid.UUID) (*repo_types.Tenant, error) {
 	return &tenant, nil
 }
 
-func (r *TenantRepository) List() ([]*repo_types.Tenant, error) {
-	var tenants []*repo_types.Tenant
+func (r *TenantRepository) List() ([]*entities.Tenant, error) {
+	var tenants []*entities.Tenant
 	if err := r.db.Find(&tenants).Error; err != nil {
 		return nil, err
 	}
 	return tenants, nil
 }
 
-func (r *TenantRepository) GetByName(name string) (*repo_types.Tenant, error) {
-	var tenant repo_types.Tenant
+func (r *TenantRepository) GetByName(name string) (*entities.Tenant, error) {
+	var tenant entities.Tenant
 	if err := r.db.Where("name = ?", name).First(&tenant).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -98,7 +99,7 @@ func (r *CachedTenantRepository) getCacheKey(id interface{}) string {
 	return fmt.Sprintf(tenantCacheKey, id)
 }
 
-func (r *CachedTenantRepository) Create(tenant *repo_types.Tenant) error {
+func (r *CachedTenantRepository) Create(tenant *entities.Tenant) error {
 	if tenant.ID == uuid.Nil {
 		tenant.ID = uuid.New()
 	}
@@ -115,7 +116,7 @@ func (r *CachedTenantRepository) Create(tenant *repo_types.Tenant) error {
 	return nil
 }
 
-func (r *CachedTenantRepository) Update(tenant *repo_types.Tenant) error {
+func (r *CachedTenantRepository) Update(tenant *entities.Tenant) error {
 	if tenant.ID == uuid.Nil {
 		return errors.New("tenant ID is required")
 	}
@@ -134,7 +135,7 @@ func (r *CachedTenantRepository) Update(tenant *repo_types.Tenant) error {
 }
 
 func (r *CachedTenantRepository) Delete(id uuid.UUID) error {
-	if err := r.db.Delete(&repo_types.Tenant{}, id).Error; err != nil {
+	if err := r.db.Delete(&entities.Tenant{}, id).Error; err != nil {
 		return err
 	}
 
@@ -147,11 +148,11 @@ func (r *CachedTenantRepository) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (r *CachedTenantRepository) GetByName(name string) (*repo_types.Tenant, error) {
+func (r *CachedTenantRepository) GetByName(name string) (*entities.Tenant, error) {
 	// Try cache first
 	ctx := context.Background()
 	key := r.getCacheKey("name:" + name)
-	var tenant repo_types.Tenant
+	var tenant entities.Tenant
 	if err := r.cache.Get(ctx, key, &tenant); err == nil {
 		return &tenant, nil
 	}
@@ -178,11 +179,11 @@ func (r *CachedTenantRepository) GetByName(name string) (*repo_types.Tenant, err
 	return &tenant, nil
 }
 
-func (r *CachedTenantRepository) GetByID(id uuid.UUID) (*repo_types.Tenant, error) {
+func (r *CachedTenantRepository) GetByID(id uuid.UUID) (*entities.Tenant, error) {
 	// Try cache first
 	ctx := context.Background()
 	key := r.getCacheKey(id)
-	var tenant repo_types.Tenant
+	var tenant entities.Tenant
 	if err := r.cache.Get(ctx, key, &tenant); err == nil {
 		return &tenant, nil
 	}
@@ -203,11 +204,11 @@ func (r *CachedTenantRepository) GetByID(id uuid.UUID) (*repo_types.Tenant, erro
 	return &tenant, nil
 }
 
-func (r *CachedTenantRepository) List() ([]*repo_types.Tenant, error) {
+func (r *CachedTenantRepository) List() ([]*entities.Tenant, error) {
 	// For list operations, we'll use a shorter cache duration since this data changes more frequently
 	ctx := context.Background()
 	key := r.getCacheKey("all")
-	var tenants []*repo_types.Tenant
+	var tenants []*entities.Tenant
 
 	// Try cache first
 	if err := r.cache.Get(ctx, key, &tenants); err == nil {

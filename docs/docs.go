@@ -2541,6 +2541,13 @@ const docTemplate = `{
                 "summary": "Verify the challenge or registration",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "verification payload, type can be registration or login",
                         "name": "challenge",
                         "in": "body",
@@ -2586,6 +2593,13 @@ const docTemplate = `{
                 ],
                 "summary": "Login with email and otp",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "challenge payload",
                         "name": "challenge",
@@ -2633,6 +2647,13 @@ const docTemplate = `{
                 "summary": "Login with phone and otp",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "challenge payload",
                         "name": "challenge",
                         "in": "body",
@@ -2678,6 +2699,13 @@ const docTemplate = `{
                 ],
                 "summary": "De-authenticate user",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "default": "Bearer \u003ctoken\u003e",
@@ -2744,6 +2772,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "default": "Bearer \u003ctoken\u003e",
                         "description": "Bearer Token(Bearer ory...)",
                         "name": "Authorization",
@@ -2781,6 +2816,13 @@ const docTemplate = `{
                 ],
                 "summary": "Register a new user",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "Only email or phone must be provided, if both are provided then error will be returned. Tenant field is required(available value: ` + "`" + `genetica` + "`" + `,` + "`" + `life_ai` + "`" + `)",
                         "name": "register",
@@ -3249,17 +3291,11 @@ const docTemplate = `{
         },
         "dto.IdentityUserRegisterDTO": {
             "type": "object",
-            "required": [
-                "tenant"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
                 "phone": {
-                    "type": "string"
-                },
-                "tenant": {
                     "type": "string"
                 }
             }

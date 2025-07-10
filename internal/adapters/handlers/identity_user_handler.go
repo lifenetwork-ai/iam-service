@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
@@ -20,9 +22,19 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 	}
 }
 
+// getTenantID extracts tenant ID from context
+func (h *userHandler) getTenantID(ctx *gin.Context) (uuid.UUID, error) {
+	tenantID, err := middleware.GetTenantFromContext(ctx.Request.Context())
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return tenantID, nil
+}
+
 // ChallengeWithPhone to login with phone and otp.
 // @Summary Login with phone and otp
 // @Description Login with phone and otp
+// @Param X-Tenant-Id header string true "Tenant ID"
 // @Tags users
 // @Accept json
 // @Produce json
@@ -32,6 +44,18 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-phone [post]
 func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
+	tenantID, err := h.getTenantID(ctx)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_TENANT",
+			"Invalid tenant",
+			err,
+		)
+		return
+	}
+
 	reqPayload := dto.IdentityChallengeWithPhoneDTO{}
 	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
@@ -56,14 +80,14 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 		return
 	}
 
-	challenge, err := h.ucase.ChallengeWithPhone(ctx, reqPayload.Phone)
-	if err != nil {
+	challenge, errResponse := h.ucase.ChallengeWithPhone(ctx, tenantID, reqPayload.Phone)
+	if errResponse != nil {
 		httpresponse.Error(
 			ctx,
 			http.StatusInternalServerError,
 			"MSG_FAILED_TO_MAKE_CHALLENGE",
 			"Failed to make a challenge",
-			err,
+			errResponse.Details,
 		)
 		return
 	}
@@ -74,6 +98,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 // ChallengeWithEmail to login with email and otp.
 // @Summary Login with email and otp
 // @Description Login with email and otp
+// @Param X-Tenant-Id header string true "Tenant ID"
 // @Tags users
 // @Accept json
 // @Produce json
@@ -83,6 +108,18 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-email [post]
 func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
+	tenantID, err := h.getTenantID(ctx)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_TENANT",
+			"Invalid tenant",
+			err,
+		)
+		return
+	}
+
 	var reqPayload dto.IdentityChallengeWithEmailDTO
 	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
@@ -107,14 +144,14 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 		return
 	}
 
-	challenge, err := h.ucase.ChallengeWithEmail(ctx, reqPayload.Email)
-	if err != nil {
+	challenge, errResponse := h.ucase.ChallengeWithEmail(ctx.Request.Context(), tenantID, reqPayload.Email)
+	if errResponse != nil {
 		httpresponse.Error(
 			ctx,
 			http.StatusInternalServerError,
 			"MSG_FAILED_TO_MAKE_CHALLENGE",
 			"Failed to make a challenge",
-			err,
+			errResponse.Details,
 		)
 		return
 	}
@@ -125,6 +162,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // Verify the challenge or registration
 // @Summary Verify the challenge or registration
 // @Description Verify either a login challenge or registration flow
+// @Param X-Tenant-Id header string true "Tenant ID"
 // @Tags users
 // @Accept json
 // @Produce json
@@ -134,8 +172,20 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-verify [post]
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
+	tenantID, err := h.getTenantID(ctx)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_TENANT",
+			"Invalid tenant",
+			err,
+		)
+		return
+	}
+
 	var reqPayload dto.IdentityChallengeVerifyDTO
-	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
+	if err = ctx.ShouldBindJSON(&reqPayload); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
 		httpresponse.Error(
 			ctx,
@@ -148,15 +198,14 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	}
 
 	var auth *dto.IdentityUserAuthDTO
-	var err *dto.ErrorDTOResponse
 
 	switch reqPayload.Type {
 	case "challenge":
-		auth, err = h.ucase.ChallengeVerify(ctx, reqPayload.FlowID, reqPayload.Code)
+		auth, err = h.ucase.ChallengeVerify(ctx.Request.Context(), tenantID, reqPayload.FlowID, reqPayload.Code)
 	case "register":
-		auth, err = h.ucase.VerifyRegister(ctx, reqPayload.FlowID, reqPayload.Code)
+		auth, err = h.ucase.VerifyRegister(ctx.Request.Context(), tenantID, reqPayload.FlowID, reqPayload.Code)
 	case "login":
-		auth, err = h.ucase.VerifyLogin(ctx, reqPayload.FlowID, reqPayload.Code)
+		auth, err = h.ucase.VerifyLogin(ctx.Request.Context(), tenantID, reqPayload.FlowID, reqPayload.Code)
 	default:
 		httpresponse.Error(
 			ctx,
@@ -171,10 +220,10 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	if err != nil {
 		httpresponse.Error(
 			ctx,
-			err.Status,
-			err.Code,
-			err.Message,
-			err.Details,
+			http.StatusInternalServerError,
+			"MSG_FAILED_TO_VERIFY_CHALLENGE",
+			"Failed to verify challenge",
+			err,
 		)
 		return
 	}
@@ -185,6 +234,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // Me to get user profile.
 // @Summary Get user profile
 // @Description Get user profile
+// @Param X-Tenant-Id header string true "Tenant ID"
 // @Tags users
 // @Accept json
 // @Produce json
@@ -193,14 +243,27 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
 func (h *userHandler) Me(ctx *gin.Context) {
-	requester, err := h.ucase.Profile(ctx)
+	tenantID, err := h.getTenantID(ctx)
 	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_TENANT",
+			"Invalid tenant",
+			err,
+		)
+		return
+	}
+
+	requester, errResponse := h.ucase.Profile(ctx.Request.Context(), tenantID)
+	if errResponse != nil {
+		logger.GetLogger().Errorf("Failed to get user profile: %v", errResponse.Error())
 		httpresponse.Error(
 			ctx,
 			http.StatusInternalServerError,
 			"MSG_FAILED_TO_GET_USER_PROFILE",
 			"Failed to get user profile",
-			err,
+			errResponse.Details,
 		)
 		return
 	}
@@ -211,6 +274,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // Logout to de-authenticate user.
 // @Summary De-authenticate user
 // @Description De-authenticate user
+// @Param X-Tenant-Id header string true "Tenant ID"
 // @Tags users
 // @Accept json
 // @Produce json
@@ -221,7 +285,19 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/logout [post]
 func (h *userHandler) Logout(ctx *gin.Context) {
-	if err := h.ucase.LogOut(ctx); err != nil {
+	tenantID, err := h.getTenantID(ctx)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_TENANT",
+			"Invalid tenant",
+			err,
+		)
+		return
+	}
+
+	if err := h.ucase.LogOut(ctx.Request.Context(), tenantID); err != nil {
 		httpresponse.Error(
 			ctx,
 			err.Status,
@@ -238,6 +314,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // Register to register user.
 // @Summary Register a new user
 // @Description Register a new user
+// @Param X-Tenant-Id header string true "Tenant ID"
 // @Tags users
 // @Accept json
 // @Produce json
@@ -247,6 +324,18 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/register [post]
 func (h *userHandler) Register(ctx *gin.Context) {
+	tenantID, err := h.getTenantID(ctx)
+	if err != nil {
+		httpresponse.Error(
+			ctx,
+			http.StatusBadRequest,
+			"MSG_INVALID_TENANT",
+			"Invalid tenant",
+			err,
+		)
+		return
+	}
+
 	var reqPayload dto.IdentityUserRegisterDTO
 	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
@@ -260,28 +349,25 @@ func (h *userHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	err := validateRegisterPayload(reqPayload)
-	if err != nil {
-		logger.GetLogger().Errorf("Invalid payload: %v", err)
+	if errResponse := validateRegisterPayload(reqPayload); errResponse != nil {
 		httpresponse.Error(
 			ctx,
-			err.Status,
-			err.Code,
-			err.Message,
-			err.Details,
+			errResponse.Status,
+			errResponse.Code,
+			errResponse.Message,
+			errResponse.Details,
 		)
 		return
 	}
 
-	// Call the use case to handle registration
-	auth, err := h.ucase.Register(ctx, reqPayload)
-	if err != nil {
+	auth, errResponse := h.ucase.Register(ctx.Request.Context(), tenantID, reqPayload)
+	if errResponse != nil {
 		httpresponse.Error(
 			ctx,
-			err.Status,
-			err.Code,
-			err.Message,
-			err.Details,
+			errResponse.Status,
+			errResponse.Code,
+			errResponse.Message,
+			errResponse.Details,
 		)
 		return
 	}
@@ -303,14 +389,6 @@ func validateRegisterPayload(reqPayload dto.IdentityUserRegisterDTO) *dto.ErrorD
 			Status:  http.StatusBadRequest,
 			Code:    "MSG_ONLY_EMAIL_OR_PHONE_MUST_BE_PROVIDED",
 			Message: "Only email or phone must be provided",
-		}
-	}
-
-	if reqPayload.Tenant == "" {
-		return &dto.ErrorDTOResponse{
-			Status:  http.StatusBadRequest,
-			Code:    "MSG_TENANT_REQUIRED",
-			Message: "Tenant is required",
 		}
 	}
 
