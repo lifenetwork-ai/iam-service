@@ -49,11 +49,11 @@ func (r *userIdentityRepository) GetByTypeAndValue(
 	return &identity, nil
 }
 
-func (r *userIdentityRepository) FindGlobalUserIDByIdentity(ctx context.Context, typ, value string) (string, error) {
+func (r *userIdentityRepository) FindGlobalUserIDByIdentity(ctx context.Context, identityType, value string) (string, error) {
 	var identity domain.UserIdentity
 	if err := r.db.WithContext(ctx).
 		Select("global_user_id").
-		Where("type = ? AND value = ?", typ, value).
+		Where("type = ? AND value = ?", identityType, value).
 		First(&identity).Error; err != nil {
 		return "", err
 	}

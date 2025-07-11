@@ -343,6 +343,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, if both are provided then error will be returned. Tenant field is required(available value: `genetica`,`life_ai`)"
 // @Success 200 {object} response.SuccessResponse{data=dto.IdentityUserAuthDTO} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 409 {object} response.ErrorResponse "Email or phone number already exists"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/register [post]
 func (h *userHandler) Register(ctx *gin.Context) {

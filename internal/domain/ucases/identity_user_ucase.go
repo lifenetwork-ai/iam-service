@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -502,6 +503,57 @@ func (u *userUseCase) Register(
 	tenantID uuid.UUID,
 	payload dto.IdentityUserRegisterDTO,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
+	// Validate phone number if provided
+	if payload.Phone != "" && !utils.IsPhoneNumber(payload.Phone) {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "INVALID_PHONE_NUMBER",
+			Message: "Invalid phone number format",
+			Details: []any{"Phone number must be in international format (e.g., +1234567890)"},
+		}
+	}
+
+	// Check if identifier (email/phone) already exists in IAM
+	if payload.Email != "" {
+		globalUserID, err := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, constants.IdentifierEmail.String(), payload.Email)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "IAM_LOOKUP_FAILED",
+				Message: "Failed to check existing email identity",
+				Details: []any{err.Error()},
+			}
+		}
+		if globalUserID != "" {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusConflict,
+				Code:    "EMAIL_ALREADY_EXISTS",
+				Message: "Email has already been registered",
+			}
+		}
+	}
+
+	if payload.Phone != "" {
+		globalUserID, err := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, constants.IdentifierPhone.String(), payload.Phone)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "IAM_LOOKUP_FAILED",
+				Message: "Failed to check existing phone identity",
+				Details: []any{err.Error()},
+			}
+		}
+		if globalUserID != "" {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusConflict,
+				Code:    "PHONE_ALREADY_EXISTS",
+				Message: "Phone number has already been registered",
+			}
+		}
+	}
+
+	// Initialize registration flow with Kratos
+	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
 	tenant, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to initialize registration flow: %v", err)
@@ -509,17 +561,6 @@ func (u *userUseCase) Register(
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_GET_TENANT_FAILED",
 			Message: "Failed to get tenant",
-		}
-	}
-
-	// Initialize registration flow
-	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
-	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_INITIALIZE_REGISTRATION_FAILED",
-			Message: "Failed to initialize registration flow",
-			Details: []interface{}{err.Error()},
 		}
 	}
 
@@ -580,8 +621,8 @@ func (u *userUseCase) LogIn(
 		}
 	}
 
-	// Submit login flow with password
-	loginResult, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, "password", &username, &password, nil)
+	// Submit login flow to Kratos
+	loginResult, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypePassword.String(), &username, &password, nil)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to submit login flow: %v", err)
 		return nil, &dto.ErrorDTOResponse{
