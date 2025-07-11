@@ -582,7 +582,7 @@ func (u *userUseCase) Register(
 	}
 
 	// Submit registration flow to Kratos
-	_, err = u.kratosService.SubmitRegistrationFlow(ctx, flow, "code", traits)
+	_, err = u.kratosService.SubmitRegistrationFlow(ctx, flow, constants.MethodTypeCode.String(), traits)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
@@ -627,7 +627,7 @@ func (u *userUseCase) LogIn(
 	}
 
 	// Submit login flow to Kratos
-	session, err := u.kratosService.SubmitLoginFlow(ctx, flow, "password", &username, &password, nil)
+	session, err := u.kratosService.SubmitLoginFlow(ctx, flow, constants.MethodTypePassword.String(), &username, &password, nil)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
