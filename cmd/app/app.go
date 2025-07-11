@@ -99,6 +99,7 @@ func initializeRouter() *gin.Engine {
 	r.Use(middleware.DefaultPagination())
 	r.Use(middleware.RequestLoggerMiddleware())
 	r.Use(middleware.RequestDataGuardMiddleware())
+	r.Use(middleware.RequestAuthenticationMiddleware())
 	r.Use(gin.Recovery())
 	return r
 }

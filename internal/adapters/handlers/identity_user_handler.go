@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -260,7 +261,23 @@ func (h *userHandler) Me(ctx *gin.Context) {
 		return
 	}
 
-	requester, usecaseErr := h.ucase.Profile(ctx.Request.Context(), tenant.ID)
+	// Get session token from gin context and create new context with it
+	sessionToken, exists := ctx.Get(string(middleware.SessionTokenKey))
+	if !exists {
+		httpresponse.Error(
+			ctx,
+			http.StatusUnauthorized,
+			"MSG_UNAUTHORIZED",
+			"Unauthorized",
+			[]interface{}{
+				map[string]string{"field": "session_token", "error": "Session token not found"},
+			},
+		)
+		return
+	}
+
+	reqCtx := context.WithValue(ctx.Request.Context(), middleware.SessionTokenKey, sessionToken)
+	requester, usecaseErr := h.ucase.Profile(reqCtx, tenant.ID)
 	if usecaseErr != nil {
 		logger.GetLogger().Errorf("Failed to get user profile: %v", usecaseErr.Error())
 		httpresponse.Error(
