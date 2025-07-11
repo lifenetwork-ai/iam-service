@@ -242,16 +242,6 @@ paths:
       description: Create a new admin account (requires root account configured via
         ADMIN_EMAIL and ADMIN_PASSWORD env vars)
       parameters:
-      - description: Organization ID
-        in: header
-        name: X-Organization-Id
-        required: true
-        type: string
-      - description: Bearer Token
-        in: header
-        name: Authorization
-        required: true
-        type: string
       - description: Admin account details
         in: body
         name: admin

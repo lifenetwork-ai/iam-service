@@ -64,7 +64,7 @@ func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.Creat
 	}
 
 	// Save to database
-	if err := u.adminAccountRepo.Create(nil, account); err != nil {
+	if err := u.adminAccountRepo.Create(account); err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_CREATE_ADMIN_FAILED",
@@ -74,6 +74,30 @@ func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.Creat
 	}
 
 	// Return DTO
+	dto := account.ToDTO()
+	return &dto, nil
+}
+
+func (u *adminUseCase) GetAdminAccountByEmail(ctx context.Context, email string) (*dto.AdminAccountDTO, *dto.ErrorDTOResponse) {
+	account, err := u.adminAccountRepo.GetByEmail(email)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_GET_ADMIN_ACCOUNT_FAILED",
+			Message: err.Error(),
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	if account == nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusNotFound,
+			Code:    "MSG_ADMIN_ACCOUNT_NOT_FOUND",
+			Message: "Admin account not found",
+			Details: []interface{}{"Admin account not found"},
+		}
+	}
+
 	dto := account.ToDTO()
 	return &dto, nil
 }

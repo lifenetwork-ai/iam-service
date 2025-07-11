@@ -10,7 +10,7 @@ import (
 type AdminUseCase interface {
 	// CreateAdminAccount creates a new admin account (requires root account configured via env vars)
 	CreateAdminAccount(ctx context.Context, payload dto.CreateAdminAccountPayloadDTO) (*dto.AdminAccountDTO, *dto.ErrorDTOResponse)
-
+	GetAdminAccountByEmail(ctx context.Context, email string) (*dto.AdminAccountDTO, *dto.ErrorDTOResponse)
 	// Tenant Management
 	ListTenants(ctx context.Context, page, size int, keyword string) (*dto.PaginationDTOResponse, *dto.ErrorDTOResponse)
 	GetTenantByID(ctx context.Context, id string) (*dto.TenantDTO, *dto.ErrorDTOResponse)

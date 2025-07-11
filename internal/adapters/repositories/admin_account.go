@@ -19,8 +19,8 @@ func NewAdminAccountRepository(db *gorm.DB) interfaces.AdminAccountRepository {
 }
 
 // Create creates a new admin account
-func (r *adminAccountRepository) Create(db *gorm.DB, account *domain.AdminAccount) error {
-	return db.Create(account).Error
+func (r *adminAccountRepository) Create(account *domain.AdminAccount) error {
+	return r.db.Create(account).Error
 }
 
 // GetByEmail retrieves an admin account by email
@@ -55,15 +55,15 @@ func (r *adminAccountRepository) GetByID(id string) (*domain.AdminAccount, error
 }
 
 // Update updates an admin account
-func (r *adminAccountRepository) Update(db *gorm.DB, account *domain.AdminAccount) error {
-	return db.Save(account).Error
+func (r *adminAccountRepository) Update(account *domain.AdminAccount) error {
+	return r.db.Save(account).Error
 }
 
 // Delete deletes an admin account
-func (r *adminAccountRepository) Delete(db *gorm.DB, id string) error {
+func (r *adminAccountRepository) Delete(id string) error {
 	parsedID, err := uuid.Parse(id)
 	if err != nil {
 		return err
 	}
-	return db.Delete(&domain.AdminAccount{}, "id = ?", parsedID).Error
+	return r.db.Delete(&domain.AdminAccount{}, "id = ?", parsedID).Error
 }

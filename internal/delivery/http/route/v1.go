@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/handlers"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 )
@@ -24,13 +25,19 @@ func RegisterRoutes(
 	v1 := r.Group("/api/v1")
 
 	// SECTION: Admin routes
+	adminRepo := repositories.NewAdminAccountRepository(db)
 	adminRouter := v1.Group("admin")
 	adminRouter.Use(
-		middleware.AdminBasicAuthMiddleware(),
+		middleware.AdminAuthMiddleware(adminRepo),
 	)
 
 	// Admin Tenant Management subgroup
 	adminHandler := handlers.NewAdminHandler(adminUCase)
+	accountRouter := adminRouter.Group("accounts")
+	{
+		accountRouter.POST("/", adminHandler.CreateAdminAccount)
+	}
+
 	tenantRouter := adminRouter.Group("tenants")
 	{
 		tenantRouter.GET("/", adminHandler.ListTenants)

@@ -28,7 +28,6 @@ func NewAdminHandler(ucase interfaces.AdminUseCase) *adminHandler {
 // @Tags admin
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
 // @Param admin body dto.CreateAdminAccountPayloadDTO true "Admin account details"
 // @Success 201 {object} dto.AdminAccountDTO "Successful creation of admin account"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
