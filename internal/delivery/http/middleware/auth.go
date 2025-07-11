@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"strings"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // validateBasicAuth validates and extracts credentials from Basic auth header
