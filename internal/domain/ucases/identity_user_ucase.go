@@ -203,6 +203,7 @@ func (u *userUseCase) VerifyRegister(
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
 	flow, err := u.kratosService.GetRegistrationFlow(ctx, tenantID, flowID)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to get registration flow: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_GET_FLOW_FAILED",
@@ -213,6 +214,7 @@ func (u *userUseCase) VerifyRegister(
 	// Submit registration flow with code
 	registrationResult, err := u.kratosService.SubmitRegistrationFlowWithCode(ctx, tenantID, flow, code)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to submit registration flow with code: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Code:    "MSG_REGISTRATION_FAILED",
@@ -224,6 +226,7 @@ func (u *userUseCase) VerifyRegister(
 	// Extract traits
 	traits, ok := registrationResult.Session.Identity.Traits.(map[string]interface{})
 	if !ok {
+		logger.GetLogger().Errorf("Failed to parse identity traits: %v", traits)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "INVALID_TRAITS",
@@ -344,6 +347,7 @@ func (u *userUseCase) VerifyLogin(
 	// Get the login flow
 	flow, err := u.kratosService.GetLoginFlow(ctx, tenantID, flowID)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to get registration flow: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_GET_FLOW_FAILED",
@@ -438,6 +442,7 @@ func (u *userUseCase) ChallengeVerify(
 	// Get the verification flow
 	flow, err := u.kratosService.GetVerificationFlow(ctx, tenantID, sessionValue.Flow)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to get verification flow: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_GET_FLOW_FAILED",
@@ -449,6 +454,7 @@ func (u *userUseCase) ChallengeVerify(
 	// Submit verification flow with code
 	_, err = u.kratosService.SubmitVerificationFlow(ctx, tenantID, flow, code)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to submit verification flow with code: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Code:    "MSG_VERIFICATION_FAILED",
@@ -460,6 +466,7 @@ func (u *userUseCase) ChallengeVerify(
 	// Get session
 	session, err := u.kratosService.GetSession(ctx, tenantID, sessionValue.Flow)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to get session: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
 			Code:    "MSG_INVALID_SESSION",
@@ -496,6 +503,7 @@ func (u *userUseCase) Register(
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
 	tenant, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to initialize registration flow: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_GET_TENANT_FAILED",
@@ -528,6 +536,7 @@ func (u *userUseCase) Register(
 	// Submit registration flow
 	_, err = u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to submit registration flow: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Code:    "MSG_REGISTRATION_FAILED",
@@ -561,6 +570,7 @@ func (u *userUseCase) LogIn(
 	// Initialize login flow
 	flow, err := u.kratosService.InitializeLoginFlow(ctx, tenantID)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to initialize login flow: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_INITIALIZE_LOGIN_FAILED",
@@ -572,6 +582,7 @@ func (u *userUseCase) LogIn(
 	// Submit login flow with password
 	loginResult, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, "password", &username, &password, nil)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to submit login flow: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
 			Code:    "MSG_LOGIN_FAILED",
@@ -620,6 +631,7 @@ func (u *userUseCase) LogOut(
 
 	// Revoke session
 	if err := u.kratosService.Logout(ctx, tenantID, sessionToken); err != nil {
+		logger.GetLogger().Errorf("Failed to logout: %v", err)
 		return &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_LOGOUT_FAILED",
@@ -641,6 +653,7 @@ func (u *userUseCase) RefreshToken(
 	// Get session
 	session, err := u.kratosService.GetSession(ctx, tenantID, accessToken)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to get session: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
 			Code:    "MSG_INVALID_SESSION",
@@ -690,6 +703,7 @@ func (u *userUseCase) Profile(
 	// Get session
 	session, err := u.kratosService.WhoAmI(ctx, tenantID, sessionToken)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to extract user traits: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
 			Code:    "MSG_INVALID_SESSION",

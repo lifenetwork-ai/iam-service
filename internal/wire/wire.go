@@ -19,6 +19,7 @@ type repos struct {
 	UserIdentityRepo          repotypes.UserIdentityRepository
 	UserIdentifierMappingRepo repotypes.UserIdentifierMappingRepository
 	TenantRepo                repotypes.TenantRepository
+	AdminAccountRepo          repotypes.AdminAccountRepository
 }
 
 // Initialize repositories (only using cache where needed)
@@ -31,6 +32,7 @@ func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *re
 		UserIdentityRepo:          repositories.NewUserIdentityRepository(db),
 		UserIdentifierMappingRepo: repositories.NewUserIdentifierMappingRepository(db),
 		TenantRepo:                repositories.NewTenantRepository(db),
+		AdminAccountRepo:          repositories.NewAdminAccountRepository(db),
 	}
 }
 
@@ -56,7 +58,7 @@ func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) 
 			repos.UserIdentifierMappingRepo,
 			services.NewKratosService(repos.TenantRepo),
 		),
-		AdminUCase:  ucases.NewAdminUseCase(repos.TenantRepo),
+		AdminUCase:  ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
 		TenantUCase: ucases.NewTenantUseCase(repos.TenantRepo),
 	}
 }

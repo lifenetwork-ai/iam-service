@@ -52,15 +52,16 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 			Raw: tenantId,
 		}
 
-		var cacheRequester interface{}
-		err := cacheRepo.RetrieveItem(cacheKey, &cacheRequester)
-		if err == nil {
-			if tenant, ok := cacheRequester.(entities.Tenant); ok {
-				c.Set(string(TenantIDKey), tenant.ID)
-				c.Set(string(TenantKey), tenant)
-				c.Next()
-				return
-			}
+		err := cacheRepo.RetrieveItem(cacheKey, &tenant)
+		if err != nil {
+			logger.GetLogger().Errorf("Failed to retrieve tenant from cache: %v", err)
+		}
+		logger.GetLogger().Infof("tenant: %v", tenant)
+		if tenant != nil {
+			c.Set(string(TenantIDKey), tenant.ID)
+			c.Set(string(TenantKey), tenant)
+			c.Next()
+			return
 		}
 
 		tenant, err = tenantRepo.GetByID(uuid.MustParse(tenantId))

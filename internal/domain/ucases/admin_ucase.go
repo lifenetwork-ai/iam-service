@@ -15,21 +15,67 @@ import (
 )
 
 type adminUseCase struct {
-	tenantRepo repositories.TenantRepository
+	tenantRepo       repositories.TenantRepository
+	adminAccountRepo repositories.AdminAccountRepository
 }
 
-func NewAdminUseCase(tenantRepo repositories.TenantRepository) interfaces.AdminUseCase {
+func NewAdminUseCase(tenantRepo repositories.TenantRepository, adminAccountRepo repositories.AdminAccountRepository) interfaces.AdminUseCase {
 	return &adminUseCase{
-		tenantRepo: tenantRepo,
+		tenantRepo:       tenantRepo,
+		adminAccountRepo: adminAccountRepo,
 	}
 }
 
 func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.CreateAdminAccountPayloadDTO) (*dto.AdminAccountDTO, *dto.ErrorDTOResponse) {
-	// TODO: Implement admin account creation
-	return nil, &dto.ErrorDTOResponse{
-		Status:  http.StatusNotImplemented,
-		Message: "Admin account creation not implemented",
+	// Check if admin account with same email exists
+	existingAccount, err := u.adminAccountRepo.GetByEmail(payload.Email)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_CREATE_ADMIN_FAILED",
+			Message: "Failed to check existing admin account",
+			Details: []interface{}{err.Error()},
+		}
 	}
+
+	if existingAccount != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusConflict,
+			Code:    "MSG_ADMIN_EMAIL_EXISTS",
+			Message: "Admin account with this email already exists",
+			Details: []interface{}{
+				map[string]string{
+					"field": "email",
+					"error": "Email already exists",
+				},
+			},
+		}
+	}
+
+	// Create new admin account
+	account := &domain.AdminAccount{}
+	if err := account.FromCreateDTO(payload); err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_CREATE_ADMIN_FAILED",
+			Message: "Failed to create admin account",
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	// Save to database
+	if err := u.adminAccountRepo.Create(nil, account); err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_CREATE_ADMIN_FAILED",
+			Message: "Failed to save admin account",
+			Details: []interface{}{err.Error()},
+		}
+	}
+
+	// Return DTO
+	dto := account.ToDTO()
+	return &dto, nil
 }
 
 func (u *adminUseCase) ListTenants(ctx context.Context, page, size int, keyword string) (*dto.PaginationDTOResponse, *dto.ErrorDTOResponse) {

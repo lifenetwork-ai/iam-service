@@ -29,6 +29,7 @@ func (h *userHandler) getTenant(ctx *gin.Context) (*domain.Tenant, error) {
 	if !ok {
 		return nil, errors.New("tenant not found in context")
 	}
+	logger.GetLogger().Infof("tenant: %v", tenant)
 	tenantObj, ok := tenant.(*domain.Tenant)
 	if !ok {
 		return nil, errors.New("invalid tenant type in context")
@@ -85,14 +86,14 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 		return
 	}
 
-	challenge, errResponse := h.ucase.ChallengeWithPhone(ctx, tenant.ID, reqPayload.Phone)
-	if errResponse != nil {
+	challenge, usecaseErr := h.ucase.ChallengeWithPhone(ctx, tenant.ID, reqPayload.Phone)
+	if usecaseErr != nil {
 		httpresponse.Error(
 			ctx,
 			http.StatusInternalServerError,
 			"MSG_FAILED_TO_MAKE_CHALLENGE",
 			"Failed to make a challenge",
-			errResponse.Details,
+			usecaseErr.Details,
 		)
 		return
 	}
@@ -149,14 +150,14 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 		return
 	}
 
-	challenge, errResponse := h.ucase.ChallengeWithEmail(ctx.Request.Context(), tenant.ID, reqPayload.Email)
-	if errResponse != nil {
+	challenge, usecaseErr := h.ucase.ChallengeWithEmail(ctx.Request.Context(), tenant.ID, reqPayload.Email)
+	if usecaseErr != nil {
 		httpresponse.Error(
 			ctx,
 			http.StatusInternalServerError,
 			"MSG_FAILED_TO_MAKE_CHALLENGE",
 			"Failed to make a challenge",
-			errResponse.Details,
+			usecaseErr.Details,
 		)
 		return
 	}
@@ -182,6 +183,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	tenant, err := h.getTenant(ctx)
 	if err != nil {
+		logger.GetLogger().Errorf("Failed to get tenant: %v", err)
 		httpresponse.Error(
 			ctx,
 			http.StatusBadRequest,
@@ -206,14 +208,20 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	}
 
 	var auth *dto.IdentityUserAuthDTO
-
+	var usecaseErr *dto.ErrorDTOResponse
 	switch reqPayload.Type {
-	case "challenge":
-		auth, err = h.ucase.ChallengeVerify(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
 	case "register":
-		auth, err = h.ucase.VerifyRegister(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
+		auth, usecaseErr = h.ucase.VerifyRegister(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
+		if usecaseErr != nil {
+			httpresponse.Error(ctx, usecaseErr.Status, usecaseErr.Code, usecaseErr.Message, usecaseErr.Details)
+			return
+		}
 	case "login":
-		auth, err = h.ucase.VerifyLogin(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
+		auth, usecaseErr = h.ucase.VerifyLogin(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
+		if usecaseErr != nil {
+			httpresponse.Error(ctx, usecaseErr.Status, usecaseErr.Code, usecaseErr.Message, usecaseErr.Details)
+			return
+		}
 	default:
 		httpresponse.Error(
 			ctx,
@@ -221,17 +229,6 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 			"MSG_INVALID_VERIFICATION_TYPE",
 			"Invalid verification type",
 			nil,
-		)
-		return
-	}
-
-	if err != nil {
-		httpresponse.Error(
-			ctx,
-			http.StatusInternalServerError,
-			"MSG_FAILED_TO_VERIFY_CHALLENGE",
-			"Failed to verify challenge",
-			err,
 		)
 		return
 	}
@@ -263,15 +260,15 @@ func (h *userHandler) Me(ctx *gin.Context) {
 		return
 	}
 
-	requester, errResponse := h.ucase.Profile(ctx.Request.Context(), tenant.ID)
-	if errResponse != nil {
-		logger.GetLogger().Errorf("Failed to get user profile: %v", errResponse.Error())
+	requester, usecaseErr := h.ucase.Profile(ctx.Request.Context(), tenant.ID)
+	if usecaseErr != nil {
+		logger.GetLogger().Errorf("Failed to get user profile: %v", usecaseErr.Error())
 		httpresponse.Error(
 			ctx,
 			http.StatusInternalServerError,
 			"MSG_FAILED_TO_GET_USER_PROFILE",
 			"Failed to get user profile",
-			errResponse.Details,
+			usecaseErr.Details,
 		)
 		return
 	}
@@ -368,14 +365,14 @@ func (h *userHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	auth, errResponse := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload)
-	if errResponse != nil {
+	auth, usecaseErr := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload)
+	if usecaseErr != nil {
 		httpresponse.Error(
 			ctx,
-			errResponse.Status,
-			errResponse.Code,
-			errResponse.Message,
-			errResponse.Details,
+			usecaseErr.Status,
+			usecaseErr.Code,
+			usecaseErr.Message,
+			usecaseErr.Details,
 		)
 		return
 	}
