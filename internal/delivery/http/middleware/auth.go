@@ -2,16 +2,86 @@ package middleware
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
-
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
+	"golang.org/x/crypto/bcrypt"
 )
+
+// validateBasicAuth validates and extracts credentials from Basic auth header
+func validateBasicAuth(authHeader string) (email, password string, err error) {
+	if authHeader == "" {
+		return "", "", fmt.Errorf("authorization header is required")
+	}
+
+	if !strings.HasPrefix(authHeader, "Basic ") {
+		return "", "", fmt.Errorf("invalid authorization header format")
+	}
+
+	payload, err := base64.StdEncoding.DecodeString(authHeader[6:])
+	if err != nil {
+		return "", "", fmt.Errorf("invalid authorization header format")
+	}
+
+	pair := strings.SplitN(string(payload), ":", 2)
+	if len(pair) != 2 {
+		return "", "", fmt.Errorf("invalid authorization header format")
+	}
+
+	return pair[0], pair[1], nil
+}
+
+// isRootUser checks if the provided credentials match the root user
+func isRootUser(email, password string) bool {
+	config := conf.GetConfiguration()
+	rootEmail := config.AdminAccount.AdminEmail
+	rootPassword := config.AdminAccount.AdminPassword
+
+	return email == rootEmail && password == rootPassword
+}
+
+// setRootContext sets root user context variables
+func setRootContext(c *gin.Context, email string) {
+	c.Set("isRoot", true)
+	c.Set("rootEmail", email)
+	c.Set("role", "ROOT")
+}
+
+// setAdminContext sets admin user context variables
+func setAdminContext(c *gin.Context, account *domain.AdminAccount) {
+	c.Set("isAdmin", true)
+	c.Set("adminEmail", account.Email)
+	c.Set("adminID", account.ID.String())
+	c.Set("role", account.Role)
+}
+
+// sendAuthError sends authentication error response
+func sendAuthError(c *gin.Context, realm, message string, statusCode int) {
+	c.Header("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s"`, realm))
+
+	errorCode := "UNAUTHORIZED"
+	if statusCode == http.StatusForbidden {
+		errorCode = "FORBIDDEN"
+	}
+
+	httpresponse.Error(
+		c,
+		statusCode,
+		errorCode,
+		message,
+		[]map[string]string{{
+			"field": "Authorization",
+			"error": message,
+		}},
+	)
+	c.Abort()
+}
 
 // RootAuthMiddleware returns a gin middleware for root authentication
 func RootAuthMiddleware() gin.HandlerFunc {
@@ -22,100 +92,18 @@ func RootAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		auth := c.GetHeader("Authorization")
-		if auth == "" {
-			c.Header("WWW-Authenticate", `Basic realm="Root Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Authorization header is required",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Authorization header is required",
-				}},
-			)
-			c.Abort()
-			return
-		}
-
-		if !strings.HasPrefix(auth, "Basic ") {
-			c.Header("WWW-Authenticate", `Basic realm="Root Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid authorization header format",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid authorization header format",
-				}},
-			)
-			c.Abort()
-			return
-		}
-
-		payload, err := base64.StdEncoding.DecodeString(auth[6:])
+		email, password, err := validateBasicAuth(c.GetHeader("Authorization"))
 		if err != nil {
-			c.Header("WWW-Authenticate", `Basic realm="Root Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid authorization header format",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid authorization header format",
-				}},
-			)
-			c.Abort()
+			sendAuthError(c, "Root Area", err.Error(), http.StatusUnauthorized)
 			return
 		}
 
-		pair := strings.SplitN(string(payload), ":", 2)
-		if len(pair) != 2 {
-			c.Header("WWW-Authenticate", `Basic realm="Root Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid authorization header format",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid authorization header format",
-				}},
-			)
-			c.Abort()
+		if !isRootUser(email, password) {
+			sendAuthError(c, "Root Area", "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
 
-		// Get root credentials from config
-		config := conf.GetConfiguration()
-		rootEmail := config.AdminAccount.AdminEmail
-		rootPassword := config.AdminAccount.AdminPassword
-
-		// Validate root credentials
-		if pair[0] != rootEmail || pair[1] != rootPassword {
-			c.Header("WWW-Authenticate", `Basic realm="Root Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid credentials",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid credentials",
-				}},
-			)
-			c.Abort()
-			return
-		}
-
-		// Set root info in context
-		c.Set("isRoot", true)
-		c.Set("rootEmail", rootEmail)
-		c.Set("role", "ROOT")
-
+		setRootContext(c, email)
 		c.Next()
 	}
 }
@@ -129,134 +117,39 @@ func AdminAuthMiddleware(adminRepo interfaces.AdminAccountRepository) gin.Handle
 			return
 		}
 
-		auth := c.GetHeader("Authorization")
-		if auth == "" {
-			c.Header("WWW-Authenticate", `Basic realm="Admin Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Authorization header is required",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Authorization header is required",
-				}},
-			)
-			c.Abort()
-			return
-		}
-
-		if !strings.HasPrefix(auth, "Basic ") {
-			c.Header("WWW-Authenticate", `Basic realm="Admin Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid authorization header format",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid authorization header format",
-				}},
-			)
-			c.Abort()
-			return
-		}
-
-		payload, err := base64.StdEncoding.DecodeString(auth[6:])
+		email, password, err := validateBasicAuth(c.GetHeader("Authorization"))
 		if err != nil {
-			c.Header("WWW-Authenticate", `Basic realm="Admin Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid authorization header format",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid authorization header format",
-				}},
-			)
-			c.Abort()
+			sendAuthError(c, "Admin Area", err.Error(), http.StatusUnauthorized)
 			return
 		}
 
-		pair := strings.SplitN(string(payload), ":", 2)
-		if len(pair) != 2 {
-			c.Header("WWW-Authenticate", `Basic realm="Admin Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid authorization header format",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid authorization header format",
-				}},
-			)
-			c.Abort()
+		// Check if this is a root user first
+		if isRootUser(email, password) {
+			setRootContext(c, email)
+			c.Next()
 			return
 		}
-
-		email := pair[0]
-		password := pair[1]
 
 		// Get admin account from database
 		account, err := adminRepo.GetByEmail(email)
 		if err != nil || account == nil {
-			c.Header("WWW-Authenticate", `Basic realm="Admin Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid credentials",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid credentials",
-				}},
-			)
-			c.Abort()
+			sendAuthError(c, "Admin Area", "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
 
 		// Verify password
 		if err := bcrypt.CompareHashAndPassword([]byte(account.PasswordHash), []byte(password)); err != nil {
-			c.Header("WWW-Authenticate", `Basic realm="Admin Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusUnauthorized,
-				"UNAUTHORIZED",
-				"Invalid credentials",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Invalid credentials",
-				}},
-			)
-			c.Abort()
+			sendAuthError(c, "Admin Area", "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
 
 		// Check if account has admin role
 		if account.Role != "ADMIN" && account.Role != "ROOT" {
-			c.Header("WWW-Authenticate", `Basic realm="Admin Area"`)
-			httpresponse.Error(
-				c,
-				http.StatusForbidden,
-				"FORBIDDEN",
-				"Insufficient privileges",
-				[]map[string]string{{
-					"field": "Authorization",
-					"error": "Insufficient privileges",
-				}},
-			)
-			c.Abort()
+			sendAuthError(c, "Admin Area", "Insufficient privileges", http.StatusForbidden)
 			return
 		}
 
-		// Set admin info in context
-		c.Set("isAdmin", true)
-		c.Set("adminEmail", account.Email)
-		c.Set("adminID", account.ID.String())
-		c.Set("role", account.Role)
-
+		setAdminContext(c, account)
 		c.Next()
 	}
 }

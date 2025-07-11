@@ -26,19 +26,20 @@ func RegisterRoutes(
 	// SECTION: Admin routes
 	adminRepo := repositories.NewAdminAccountRepository(db)
 	adminRouter := v1.Group("admin")
-	adminRouter.Use(
-		middleware.AdminAuthMiddleware(adminRepo),
-	)
 
 	// Admin Tenant Management subgroup
 	adminHandler := handlers.NewAdminHandler(adminUCase)
 	accountRouter := adminRouter.Group("accounts")
 	{
+		accountRouter.Use(
+			middleware.RootAuthMiddleware(),
+		)
 		accountRouter.POST("/", adminHandler.CreateAdminAccount)
 	}
 
 	tenantRouter := adminRouter.Group("tenants")
 	{
+		tenantRouter.Use(middleware.AdminAuthMiddleware(adminRepo))
 		tenantRouter.GET("/", adminHandler.ListTenants)
 		tenantRouter.GET("/:id", adminHandler.GetTenant)
 		tenantRouter.POST("/", adminHandler.CreateTenant)

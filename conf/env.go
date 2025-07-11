@@ -24,12 +24,6 @@ type DatabaseConfiguration struct {
 	DbConnMaxLifetimeInMinute string `mapstructure:"DB_CONN_MAX_LIFETIME_IN_MINUTE"`
 }
 
-type SecretConfiguration struct {
-	Mnemonic   string `mapstructure:"MNEMONIC"`
-	Passphrase string `mapstructure:"PASSPHRASE"`
-	Salt       string `mapstructure:"SALT"`
-}
-
 type AdminAccountConfiguration struct {
 	AdminEmail    string `mapstructure:"ADMIN_EMAIL"`
 	AdminPassword string `mapstructure:"ADMIN_PASSWORD"`
@@ -52,29 +46,20 @@ type SmsConfiguration struct {
 	SmsPassword string `mapstructure:"SMS_PASSWORD"`
 }
 
-type JwtConfiguration struct {
-	Secret          string `mapstructure:"JWT_SECRET"`
-	AccessLifetime  int64  `mapstructure:"JWT_ACCESS_TOKEN_LIFETIME"`  // second
-	RefreshLifetime int64  `mapstructure:"JWT_REFRESH_TOKEN_LIFETIME"` // second
-}
-
 type KratosConfiguration struct{}
 
 type Configuration struct {
 	Database     DatabaseConfiguration     `mapstructure:",squash"`
 	Redis        RedisConfiguration        `mapstructure:",squash"`
-	Secret       SecretConfiguration       `mapstructure:",squash"`
 	AdminAccount AdminAccountConfiguration `mapstructure:",squash"`
 	AppName      string                    `mapstructure:"APP_NAME"`
 	AppPort      uint32                    `mapstructure:"APP_PORT"`
 	Env          string                    `mapstructure:"ENV"`
 	LogLevel     string                    `mapstructure:"LOG_LEVEL"`
-	JWTSecret    string                    `mapstructure:"JWT_SECRET"`
 	LifeAIConfig LifeAIConfiguration       `mapstructure:",squash"`
 	CacheType    string                    `mapstructure:"CACHE_TYPE"`
 	EmailConfig  EmailConfiguration        `mapstructure:",squash"`
 	SmsConfig    SmsConfiguration          `mapstructure:",squash"`
-	JwtConfig    JwtConfiguration          `mapstructure:",squash"`
 	KratosConfig KratosConfiguration       `mapstructure:",squash"`
 }
 
@@ -95,12 +80,6 @@ var defaultConfigurations = map[string]any{
 	"DB_MAX_IDLE_CONNS":              "5",
 	"DB_MAX_OPEN_CONNS":              "15",
 	"DB_CONN_MAX_LIFETIME_IN_MINUTE": "60",
-	"MNEMONIC":                       "",
-	"PASSPHRASE":                     "",
-	"SALT":                           "",
-	"JWT_SECRET":                     "Abc@13579",
-	"JWT_ACCESS_TOKEN_LIFETIME":      "3600",  // 1 hour
-	"JWT_REFRESH_TOKEN_LIFETIME":     "86400", // 24 hours
 	"LIFE_AI_BACKEND_URL":            "https://nightly.lifenetwork.ai",
 }
 
