@@ -1,10 +1,11 @@
 package repositories
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/google/uuid"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
-	"gorm.io/gorm"
 )
 
 type adminAccountRepository struct {

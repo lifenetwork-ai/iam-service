@@ -20,7 +20,6 @@ func RegisterRoutes(
 	db *gorm.DB,
 	userUCase interfaces.IdentityUserUseCase,
 	adminUCase interfaces.AdminUseCase,
-
 ) {
 	v1 := r.Group("/api/v1")
 

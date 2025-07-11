@@ -6,17 +6,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-	infra_interfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
-	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"gorm.io/gorm"
 
+	"github.com/google/uuid"
+	infra_interfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
 	repo_types "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
-var _ repo_types.TenantRepository = &TenantRepository{}
-var _ repo_types.TenantRepository = &CachedTenantRepository{}
+var (
+	_ repo_types.TenantRepository = &TenantRepository{}
+	_ repo_types.TenantRepository = &CachedTenantRepository{}
+)
 
 var (
 	tenantCacheKey = "tenant:%v"

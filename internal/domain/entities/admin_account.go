@@ -3,9 +3,10 @@ package domain
 import (
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // AdminAccount represents an admin account in the system

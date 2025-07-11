@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"strings"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // RootAuthMiddleware returns a gin middleware for root authentication

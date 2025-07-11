@@ -554,6 +554,16 @@ func (u *userUseCase) Register(
 
 	// Initialize registration flow with Kratos
 	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to initialize registration flow: %v", err)
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_INITIALIZE_REGISTRATION_FAILED",
+			Message: "Failed to initialize registration flow",
+			Details: []interface{}{err.Error()},
+		}
+	}
+
 	tenant, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to initialize registration flow: %v", err)
