@@ -58,10 +58,7 @@ type JwtConfiguration struct {
 	RefreshLifetime int64  `mapstructure:"JWT_REFRESH_TOKEN_LIFETIME"` // second
 }
 
-type KratosConfiguration struct {
-	DefaultPublicEndpoint string `mapstructure:"KRATOS_PUBLIC_ENDPOINT"`
-	DefaultAdminEndpoint  string `mapstructure:"KRATOS_ADMIN_ENDPOINT"`
-}
+type KratosConfiguration struct{}
 
 type Configuration struct {
 	Database     DatabaseConfiguration     `mapstructure:",squash"`
