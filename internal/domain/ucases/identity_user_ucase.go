@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -507,6 +508,55 @@ func (u *userUseCase) Register(
 	ctx context.Context,
 	payload dto.IdentityUserRegisterDTO,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
+	// Validate phone number if provided
+	if payload.Phone != "" && !utils.IsPhoneNumber(payload.Phone) {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "INVALID_PHONE_NUMBER",
+			Message: "Invalid phone number format",
+			Details: []any{"Phone number must be in international format (e.g., +1234567890)"},
+		}
+	}
+
+	// Check if identifier (email/phone) already exists in IAM
+	if payload.Email != "" {
+		globalUserID, err := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, constants.IdentifierEmail.String(), payload.Email)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "IAM_LOOKUP_FAILED",
+				Message: "Failed to check existing email identity",
+				Details: []any{err.Error()},
+			}
+		}
+		if globalUserID != "" {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusConflict,
+				Code:    "EMAIL_ALREADY_EXISTS",
+				Message: "Email has already been registered",
+			}
+		}
+	}
+
+	if payload.Phone != "" {
+		globalUserID, err := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, constants.IdentifierPhone.String(), payload.Phone)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "IAM_LOOKUP_FAILED",
+				Message: "Failed to check existing phone identity",
+				Details: []any{err.Error()},
+			}
+		}
+		if globalUserID != "" {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusConflict,
+				Code:    "PHONE_ALREADY_EXISTS",
+				Message: "Phone number has already been registered",
+			}
+		}
+	}
+
 	// Initialize registration flow with Kratos
 	flow, err := u.kratosService.InitializeRegistrationFlow(ctx)
 	if err != nil {
@@ -515,16 +565,6 @@ func (u *userUseCase) Register(
 			Code:    "REGISTRATION_FLOW_FAILED",
 			Message: "Failed to initialize registration flow",
 			Details: []any{err.Error()},
-		}
-	}
-
-	// Validate phone number if provided
-	if payload.Phone != "" && !utils.IsPhoneNumber(payload.Phone) {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusBadRequest,
-			Code:    "INVALID_PHONE_NUMBER",
-			Message: "Invalid phone number format",
-			Details: []any{"Phone number must be in international format (e.g., +1234567890)"},
 		}
 	}
 
