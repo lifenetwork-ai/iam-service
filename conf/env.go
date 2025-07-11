@@ -25,8 +25,8 @@ type DatabaseConfiguration struct {
 }
 
 type AdminAccountConfiguration struct {
-	AdminEmail    string `mapstructure:"ADMIN_EMAIL"`
-	AdminPassword string `mapstructure:"ADMIN_PASSWORD"`
+	AdminEmail    string `mapstructure:"ROOT_USERNAME"`
+	AdminPassword string `mapstructure:"ROOT_PASSWORD"`
 }
 
 type LifeAIConfiguration struct {

@@ -24,7 +24,7 @@ func NewAdminHandler(ucase interfaces.AdminUseCase) *adminHandler {
 // CreateAdminAccount creates a new admin account.
 // @Summary Create a new admin account
 // @Security BasicAuth
-// @Description Create a new admin account (requires root account configured via ADMIN_EMAIL and ADMIN_PASSWORD env vars)
+// @Description Create a new admin account (requires root account configured via ROOT_USERNAME and ROOT_PASSWORD env vars)
 // @Tags admin
 // @Accept json
 // @Produce json

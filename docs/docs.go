@@ -30,7 +30,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Create a new admin account (requires root account configured via ADMIN_EMAIL and ADMIN_PASSWORD env vars)",
+                "description": "Create a new admin account (requires root account configured via ROOT_USERNAME and ROOT_PASSWORD env vars)",
                 "consumes": [
                     "application/json"
                 ],

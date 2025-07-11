@@ -240,7 +240,7 @@ paths:
       consumes:
       - application/json
       description: Create a new admin account (requires root account configured via
-        ADMIN_EMAIL and ADMIN_PASSWORD env vars)
+        ROOT_USERNAME and ROOT_PASSWORD env vars)
       parameters:
       - description: Admin account details
         in: body
