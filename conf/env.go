@@ -29,23 +29,6 @@ type RootAccountConfiguration struct {
 	RootPassword string `mapstructure:"IAM_ROOT_PASSWORD"`
 }
 
-type LifeAIConfiguration struct {
-	BackendURL string `mapstructure:"LIFE_AI_BACKEND_URL"`
-}
-
-type EmailConfiguration struct {
-	EmailHost     string `mapstructure:"EMAIL_HOST"`
-	EmailPort     string `mapstructure:"EMAIL_PORT"`
-	EmailUsername string `mapstructure:"EMAIL_USERNAME"`
-	EmailPassword string `mapstructure:"EMAIL_PASSWORD"`
-}
-
-type SmsConfiguration struct {
-	SmsProvider string `mapstructure:"SMS_PROVIDER"`
-	SmsUsername string `mapstructure:"SMS_USERNAME"`
-	SmsPassword string `mapstructure:"SMS_PASSWORD"`
-}
-
 type KratosConfiguration struct{}
 
 type Configuration struct {
@@ -56,10 +39,7 @@ type Configuration struct {
 	AppPort      uint32                   `mapstructure:"APP_PORT"`
 	Env          string                   `mapstructure:"ENV"`
 	LogLevel     string                   `mapstructure:"LOG_LEVEL"`
-	LifeAIConfig LifeAIConfiguration      `mapstructure:",squash"`
 	CacheType    string                   `mapstructure:"CACHE_TYPE"`
-	EmailConfig  EmailConfiguration       `mapstructure:",squash"`
-	SmsConfig    SmsConfiguration         `mapstructure:",squash"`
 	KratosConfig KratosConfiguration      `mapstructure:",squash"`
 }
 
@@ -120,8 +100,4 @@ func init() {
 	}
 
 	log.Println("Configuration loaded successfully")
-}
-
-func GetKratosConfig() *KratosConfiguration {
-	return &configuration.KratosConfig
 }
