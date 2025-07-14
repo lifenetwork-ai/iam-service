@@ -3,7 +3,6 @@ package ucases
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -238,8 +237,29 @@ func (u *userUseCase) VerifyRegister(
 
 	email := extractStringFromTraits(traits, "email", "")
 	phone := extractStringFromTraits(traits, "phone_number", "")
-	tenant := extractStringFromTraits(traits, "tenant", "")
+	tenantName := extractStringFromTraits(traits, "tenant", "")
 	tenantUserID := registrationResult.Session.Identity.Id
+
+	// Get tenant by name
+	tenant, err := u.tenantRepo.GetByName(tenantName)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_GET_TENANT_FAILED",
+			Message: "Failed to get tenant",
+			Details: []interface{}{err.Error()},
+		}
+	}
+	if tenant == nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusNotFound,
+			Code:    "MSG_TENANT_NOT_FOUND",
+			Message: "Tenant not found",
+			Details: []interface{}{
+				map[string]string{"field": "tenant", "error": "Tenant not found"},
+			},
+		}
+	}
 
 	// IAM mapping logic
 	err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -264,7 +284,7 @@ func (u *userUseCase) VerifyRegister(
 			globalUser = &domain.GlobalUser{ID: globalUserID}
 
 			// Check if mapping already exists
-			exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant, tenantUserID)
+			exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), tenantUserID)
 			if err != nil {
 				return fmt.Errorf("check mapping exists: %w", err)
 			}
@@ -302,7 +322,7 @@ func (u *userUseCase) VerifyRegister(
 		// Create mapping
 		if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
 			GlobalUserID: globalUser.ID,
-			Tenant:       tenant,
+			TenantID:     tenant.ID.String(),
 			TenantUserID: tenantUserID,
 		}); err != nil {
 			return fmt.Errorf("create mapping: %w", err)
@@ -515,8 +535,8 @@ func (u *userUseCase) Register(
 
 	// Check if identifier (email/phone) already exists in IAM
 	if payload.Email != "" {
-		globalUserID, err := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, constants.IdentifierEmail.String(), payload.Email)
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), constants.IdentifierEmail.String(), payload.Email)
+		if err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "IAM_LOOKUP_FAILED",
@@ -524,7 +544,7 @@ func (u *userUseCase) Register(
 				Details: []any{err.Error()},
 			}
 		}
-		if globalUserID != "" {
+		if exists {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusConflict,
 				Code:    "EMAIL_ALREADY_EXISTS",
@@ -534,8 +554,8 @@ func (u *userUseCase) Register(
 	}
 
 	if payload.Phone != "" {
-		globalUserID, err := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, constants.IdentifierPhone.String(), payload.Phone)
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), constants.IdentifierPhone.String(), payload.Phone)
+		if err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "IAM_LOOKUP_FAILED",
@@ -543,7 +563,8 @@ func (u *userUseCase) Register(
 				Details: []any{err.Error()},
 			}
 		}
-		if globalUserID != "" {
+
+		if exists {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusConflict,
 				Code:    "PHONE_ALREADY_EXISTS",

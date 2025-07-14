@@ -10,20 +10,20 @@ sequenceDiagram
     
     Note over Client,Identity: Registration Flow
     Client->>API: POST /api/v1/users/register
-    Note right of Client: Body: {email/phone, tenant}
+    Note right of Client: Body: {email/phone}
     API->>Identity: Create Identity
     Identity-->>API: Identity Created
-    API-->>Client: 200 OK {flowId}
+    API-->>Client: 200 OK {flowId, verification_needed: true}
     Note over Client,API: User receives verification code
     Client->>API: POST /api/v1/users/challenge-verify
     Note right of Client: Body: {flowId, code, type: "register"}
     API->>Identity: Verify Code
     Identity-->>API: Code Verified
-    API-->>Client: 200 OK {access_token, refresh_token}
+    API-->>Client: 200 OK {session_token, user}
     
-    Note over Client,Identity: Login Flow
+    Note over Client,Identity: Login Flow (Email)
     Client->>API: POST /api/v1/users/challenge-with-email
-    Note right of Client: Body: {email, tenant}
+    Note right of Client: Body: {email}
     API->>Identity: Generate Challenge
     Identity-->>API: Challenge Created
     API-->>Client: 200 OK {flowId}
@@ -32,18 +32,31 @@ sequenceDiagram
     Note right of Client: Body: {flowId, code, type: "login"}
     API->>Identity: Verify Challenge
     Identity-->>API: Challenge Verified
-    API-->>Client: 200 OK {access_token, refresh_token}
+    API-->>Client: 200 OK {session_token, user}
+    
+    Note over Client,Identity: Login Flow (Phone)
+    Client->>API: POST /api/v1/users/challenge-with-phone
+    Note right of Client: Body: {phone}
+    API->>Identity: Generate Challenge
+    Identity-->>API: Challenge Created
+    API-->>Client: 200 OK {flowId}
+    Note over Client,API: User receives verification code
+    Client->>API: POST /api/v1/users/challenge-verify
+    Note right of Client: Body: {flowId, code, type: "login"}
+    API->>Identity: Verify Challenge
+    Identity-->>API: Challenge Verified
+    API-->>Client: 200 OK {session_token, user}
     
     Note over Client,Identity: Profile & Logout
     Client->>API: GET /api/v1/users/me
-    Note right of Client: Header: Authorization: Bearer {access_token}
+    Note right of Client: Header: Authorization: Bearer {session_token}
     API->>Identity: Get Identity
     Identity-->>API: Identity Details
-    API-->>Client: 200 OK {profile}
+    API-->>Client: 200 OK {user}
     Client->>API: POST /api/v1/users/logout
-    Note right of Client: Header: Authorization: Bearer {access_token}
-    API->>Identity: Revoke Tokens
-    Identity-->>API: Tokens Revoked
+    Note right of Client: Header: Authorization: Bearer {session_token}
+    API->>Identity: Revoke Session
+    Identity-->>API: Session Revoked
     API-->>Client: 200 OK
 ```
 
@@ -51,47 +64,170 @@ sequenceDiagram
 
 ### Registration
 - `POST /api/v1/users/register`
-  - Request: `{ email/phone: string, tenant: string }`
-  - Response: `{ flowId: string }`
+  - Headers:
+    - `X-Tenant-Id`: string (required)
+  - Request Body:
+    ```json
+    {
+      "email": "string",  // Either email or phone must be provided
+      "phone": "string"   // Cannot provide both
+    }
+    ```
+  - Response:
+    ```json
+    {
+      "data": {
+        "verification_flow": {
+          "flow_id": "string",
+          "receiver": "string",
+          "challenge_at": number
+        },
+        "verification_needed": true
+      }
+    }
+    ```
 
 ### Login
 - `POST /api/v1/users/challenge-with-email`
-  - Request: `{ email: string, tenant: string }`
-  - Response: `{ flowId: string }`
+  - Headers:
+    - `X-Tenant-Id`: string (required)
+  - Request Body:
+    ```json
+    {
+      "email": "string"
+    }
+    ```
+  - Response:
+    ```json
+    {
+      "data": {
+        "flow_id": "string",
+        "receiver": "string",
+        "challenge_at": number
+      }
+    }
+    ```
+
 - `POST /api/v1/users/challenge-with-phone`
-  - Request: `{ phone: string, tenant: string }`
-  - Response: `{ flowId: string }`
+  - Headers:
+    - `X-Tenant-Id`: string (required)
+  - Request Body:
+    ```json
+    {
+      "phone": "string"
+    }
+    ```
+  - Response:
+    ```json
+    {
+      "data": {
+        "flow_id": "string",
+        "receiver": "string",
+        "challenge_at": number
+      }
+    }
+    ```
 
 ### Verification
 - `POST /api/v1/users/challenge-verify`
-  - Request: `{ flowId: string, code: string, type: "register" | "login" }`
-  - Response: `{ access_token: string, refresh_token: string }`
+  - Headers:
+    - `X-Tenant-Id`: string (required)
+  - Request Body:
+    ```json
+    {
+      "flow_id": "string",
+      "code": "string",
+      "type": "register" | "login"
+    }
+    ```
+  - Response:
+    ```json
+    {
+      "data": {
+        "session_id": "string",
+        "session_token": "string",
+        "issued_at": "string",
+        "expires_at": "string",
+        "authenticated_at": "string",
+        "authentication_methods": ["string"],
+        "active": boolean,
+        "user": {
+          "id": "string",
+          "email": "string",
+          "phone": "string",
+          "name": "string",
+          "first_name": "string",
+          "last_name": "string",
+          "full_name": "string",
+          "user_name": "string",
+          "tenant": "string",
+          "status": boolean,
+          "created_at": number,
+          "updated_at": number
+        }
+      }
+    }
+    ```
 
 ### Profile
 - `GET /api/v1/users/me`
-  - Header: `Authorization: Bearer {access_token}`
-  - Response: `{ profile: object }`
+  - Headers:
+    - `X-Tenant-Id`: string (required)
+    - `Authorization`: Bearer {session_token} (required)
+  - Response:
+    ```json
+    {
+      "data": {
+        "id": "string",
+        "email": "string",
+        "phone": "string",
+        "name": "string",
+        "first_name": "string",
+        "last_name": "string",
+        "full_name": "string",
+        "user_name": "string",
+        "tenant": "string",
+        "status": boolean,
+        "created_at": number,
+        "updated_at": number
+      }
+    }
+    ```
 
 ### Logout
 - `POST /api/v1/users/logout`
-  - Header: `Authorization: Bearer {access_token}`
-  - Response: `200 OK`
+  - Headers:
+    - `X-Tenant-Id`: string (required)
+    - `Authorization`: Bearer {session_token} (required)
+  - Request Body: empty object `{}`
+  - Response: 200 OK
 
 ## Error Responses
 
-Common error responses across all endpoints:
+All endpoints may return the following error responses:
 
-- `400 Bad Request` - Invalid request format or missing required fields
-- `401 Unauthorized` - Invalid or expired access token
-- `404 Not Found` - Resource not found
-- `429 Too Many Requests` - Rate limit exceeded
-- `500 Internal Server Error` - Server error
-
-### Example Error Response
 ```json
 {
-  "error": "invalid_request",
-  "message": "Missing required field: tenant",
-  "code": 400
+  "status": number,    // HTTP status code
+  "code": "string",    // Error code
+  "message": "string", // Human-readable error message
+  "errors": [         // Optional array of detailed errors
+    {
+      "field": "string",
+      "error": "string"
+    }
+  ]
 }
 ```
+
+Common error codes:
+- `MSG_INVALID_TENANT` - Invalid or missing tenant ID
+- `MSG_INVALID_PAYLOAD` - Invalid request payload
+- `MSG_UNAUTHORIZED` - Invalid or missing session token
+- `MSG_CONTACT_METHOD_REQUIRED` - Either email or phone must be provided
+- `MSG_ONLY_EMAIL_OR_PHONE_MUST_BE_PROVIDED` - Cannot provide both email and phone
+- `MSG_EMAIL_IS_REQUIRED` - Email is required for email challenge
+- `MSG_PHONE_NUMBER_IS_REQUIRED` - Phone number is required for phone challenge
+- `MSG_FAILED_TO_MAKE_CHALLENGE` - Failed to create challenge
+- `MSG_INVALID_VERIFICATION_TYPE` - Invalid verification type
+- `MSG_FAILED_TO_GET_USER_PROFILE` - Failed to get user profile
