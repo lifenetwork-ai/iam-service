@@ -76,5 +76,6 @@ func CheckRateLimit(
 			Message: "Too many attempts, please try again later",
 		}
 	}
+	_ = limiter.RegisterAttempt(key, window)
 	return nil
 }

@@ -452,6 +452,12 @@
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -505,6 +511,12 @@
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -554,6 +566,12 @@
                     },
                     "400": {
                         "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -742,6 +760,12 @@
                     },
                     "409": {
                         "description": "Email or phone number already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }

@@ -128,9 +128,6 @@ func (u *userUseCase) ChallengeWithPhone(
 		}
 	}
 
-	// Rate limit attempts
-	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
-
 	return &dto.IdentityUserChallengeDTO{
 		FlowID:      flow.Id,
 		Receiver:    phone,
@@ -201,9 +198,6 @@ func (u *userUseCase) ChallengeWithEmail(
 			Details: []interface{}{err.Error()},
 		}
 	}
-
-	// Rate limit attempts
-	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Return challenge session
 	return &dto.IdentityUserChallengeDTO{
@@ -363,9 +357,6 @@ func (u *userUseCase) VerifyRegister(
 		}
 	}
 
-	// Rate limit attempts
-	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
-
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
 		SessionID:       registrationResult.Session.Id,
@@ -445,9 +436,6 @@ func (u *userUseCase) VerifyLogin(
 		}
 	}
 
-	// Rate limit attempts
-	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
-
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
 		SessionID:       loginResult.Session.Id,
@@ -526,9 +514,6 @@ func (u *userUseCase) ChallengeVerify(
 			Details: []interface{}{err.Error()},
 		}
 	}
-
-	// Rate limit attempts
-	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Get session
 	session, err := u.kratosService.GetSession(ctx, tenantID, sessionValue.Flow)
@@ -675,9 +660,6 @@ func (u *userUseCase) Register(
 	if receiver == "" {
 		receiver = payload.Phone
 	}
-
-	// Rate limit attempts
-	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Return success with verification flow info
 	return &dto.IdentityUserAuthDTO{

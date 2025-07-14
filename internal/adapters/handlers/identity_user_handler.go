@@ -48,6 +48,7 @@ func (h *userHandler) getTenant(ctx *gin.Context) (*domain.Tenant, error) {
 // @Param challenge body dto.IdentityChallengeWithPhoneDTO true "challenge payload"
 // @Success 200 {object} response.SuccessResponse "Successful make a challenge with Phone and OTP"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-phone [post]
 func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
@@ -112,6 +113,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 // @Param challenge body dto.IdentityChallengeWithEmailDTO true "challenge payload"
 // @Success 200 {object} response.SuccessResponse "Successful make a challenge with Email and OTP"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-email [post]
 func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
@@ -179,6 +181,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Param challenge body dto.IdentityChallengeVerifyDTO true "Verification payload. `type` must be one of: `register`, `login`"
 // @Success 200 {object} response.SuccessResponse "Verification successful"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload or code"
+// @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-verify [post]
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
@@ -344,6 +347,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Success 200 {object} response.SuccessResponse{data=dto.IdentityUserAuthDTO} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 409 {object} response.ErrorResponse "Email or phone number already exists"
+// @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/register [post]
 func (h *userHandler) Register(ctx *gin.Context) {

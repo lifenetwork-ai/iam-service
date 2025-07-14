@@ -523,6 +523,10 @@ paths:
           description: Invalid request payload or code
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Too many attempts, rate limit exceeded
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -558,6 +562,10 @@ paths:
           description: Invalid request payload
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Too many attempts, rate limit exceeded
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -591,6 +599,10 @@ paths:
             $ref: '#/definitions/response.SuccessResponse'
         "400":
           description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Too many attempts, rate limit exceeded
           schema:
             $ref: '#/definitions/response.ErrorResponse'
         "500":
@@ -712,6 +724,10 @@ paths:
             $ref: '#/definitions/response.ErrorResponse'
         "409":
           description: Email or phone number already exists
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Too many attempts, rate limit exceeded
           schema:
             $ref: '#/definitions/response.ErrorResponse'
         "500":

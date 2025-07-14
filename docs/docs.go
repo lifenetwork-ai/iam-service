@@ -459,6 +459,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -512,6 +518,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -561,6 +573,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -749,6 +767,12 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Email or phone number already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
