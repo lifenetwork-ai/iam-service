@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
-	"github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 )
 
 type cachingRepository struct {
 	ctx    context.Context
-	client interfaces.CacheClient
+	client types.CacheClient
 }
 
 // NewCachingRepository initializes a new caching repository
-func NewCachingRepository(ctx context.Context, client interfaces.CacheClient) interfaces.CacheRepository {
+func NewCachingRepository(ctx context.Context, client types.CacheClient) types.CacheRepository {
 	return &cachingRepository{
 		ctx:    ctx,
 		client: client,

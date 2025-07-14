@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
-	infrainterfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/redis/go-redis/v9"
 )
@@ -20,7 +20,7 @@ type redisCacheClient struct {
 }
 
 // NewRedisCacheClient initializes Redis cache client with configuration
-func NewRedisCacheClient() infrainterfaces.CacheClient {
+func NewRedisCacheClient() types.CacheClient {
 	config := conf.GetRedisConfiguration()
 	ttl, err := time.ParseDuration(config.RedisTtl)
 	if err != nil {
