@@ -48,7 +48,7 @@ var configuration Configuration
 var defaultConfigurations = map[string]any{
 	"REDIS_ADDRESS":                  "localhost:6379",
 	"REDIS_TTL":                      "60",
-	"APP_PORT":                       "9090",
+	"APP_PORT":                       "8080",
 	"ENV_FILE":                       ".env",
 	"ENV":                            "DEV",
 	"LOG_LEVEL":                      "debug",
@@ -60,7 +60,6 @@ var defaultConfigurations = map[string]any{
 	"DB_MAX_IDLE_CONNS":              "5",
 	"DB_MAX_OPEN_CONNS":              "15",
 	"DB_CONN_MAX_LIFETIME_IN_MINUTE": "60",
-	"LIFE_AI_BACKEND_URL":            "https://nightly.lifenetwork.ai",
 }
 
 // loadDefaultConfigs sets default values for critical configurations
