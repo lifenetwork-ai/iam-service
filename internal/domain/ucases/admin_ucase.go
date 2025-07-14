@@ -27,7 +27,7 @@ func NewAdminUseCase(tenantRepo repositories.TenantRepository, adminAccountRepo 
 
 func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.CreateAdminAccountPayloadDTO) (*dto.AdminAccountDTO, *dto.ErrorDTOResponse) {
 	// Check if admin account with same email exists
-	existingAccount, err := u.adminAccountRepo.GetByEmail(payload.Email)
+	existingAccount, err := u.adminAccountRepo.GetByUsername(payload.Username)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -40,12 +40,12 @@ func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.Creat
 	if existingAccount != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusConflict,
-			Code:    "MSG_ADMIN_EMAIL_EXISTS",
-			Message: "Admin account with this email already exists",
+			Code:    "MSG_ADMIN_USERNAME_EXISTS",
+			Message: "Admin account with this username already exists",
 			Details: []interface{}{
 				map[string]string{
-					"field": "email",
-					"error": "Email already exists",
+					"field": "username",
+					"error": "Username already exists",
 				},
 			},
 		}
@@ -77,8 +77,8 @@ func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.Creat
 	return &dto, nil
 }
 
-func (u *adminUseCase) GetAdminAccountByEmail(ctx context.Context, email string) (*dto.AdminAccountDTO, *dto.ErrorDTOResponse) {
-	account, err := u.adminAccountRepo.GetByEmail(email)
+func (u *adminUseCase) GetAdminAccountByUsername(ctx context.Context, username string) (*dto.AdminAccountDTO, *dto.ErrorDTOResponse) {
+	account, err := u.adminAccountRepo.GetByUsername(username)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,

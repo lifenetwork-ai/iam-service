@@ -15,8 +15,23 @@ import (
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 )
 
+const (
+	RoleAdmin = "admin"
+	RoleRoot  = "root"
+)
+
+var (
+	// Context keys
+	ContextKeyIsRoot        = "isRoot"
+	ContextKeyRootUsername  = "rootUsername"
+	ContextKeyRole          = "role"
+	ContextKeyIsAdmin       = "isAdmin"
+	ContextKeyAdminUsername = "adminUsername"
+	ContextKeyAdminID       = "adminID"
+)
+
 // validateBasicAuth validates and extracts credentials from Basic auth header
-func validateBasicAuth(authHeader string) (email, password string, err error) {
+func validateBasicAuth(authHeader string) (username, password string, err error) {
 	if authHeader == "" {
 		return "", "", fmt.Errorf("authorization header is required")
 	}
@@ -39,27 +54,27 @@ func validateBasicAuth(authHeader string) (email, password string, err error) {
 }
 
 // isRootUser checks if the provided credentials match the root user
-func isRootUser(email, password string) bool {
+func isRootUser(username, password string) bool {
 	config := conf.GetConfiguration()
-	rootEmail := config.AdminAccount.AdminEmail
-	rootPassword := config.AdminAccount.AdminPassword
+	rootUsername := config.RootAccount.RootUsername
+	rootPassword := config.RootAccount.RootPassword
 
-	return email == rootEmail && password == rootPassword
+	return username == rootUsername && password == rootPassword
 }
 
 // setRootContext sets root user context variables
-func setRootContext(c *gin.Context, email string) {
-	c.Set("isRoot", true)
-	c.Set("rootEmail", email)
-	c.Set("role", "ROOT")
+func setRootContext(c *gin.Context, username string) {
+	c.Set(ContextKeyIsRoot, true)
+	c.Set(ContextKeyRootUsername, username)
+	c.Set(ContextKeyRole, RoleRoot)
 }
 
 // setAdminContext sets admin user context variables
 func setAdminContext(c *gin.Context, account *domain.AdminAccount) {
-	c.Set("isAdmin", true)
-	c.Set("adminEmail", account.Email)
-	c.Set("adminID", account.ID.String())
-	c.Set("role", account.Role)
+	c.Set(ContextKeyIsAdmin, true)
+	c.Set(ContextKeyAdminUsername, account.Username)
+	c.Set(ContextKeyAdminID, account.ID.String())
+	c.Set(ContextKeyRole, account.Role)
 }
 
 // sendAuthError sends authentication error response
@@ -93,18 +108,18 @@ func RootAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		email, password, err := validateBasicAuth(c.GetHeader("Authorization"))
+		username, password, err := validateBasicAuth(c.GetHeader("Authorization"))
 		if err != nil {
 			sendAuthError(c, "Root Area", err.Error(), http.StatusUnauthorized)
 			return
 		}
 
-		if !isRootUser(email, password) {
+		if !isRootUser(username, password) {
 			sendAuthError(c, "Root Area", "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
 
-		setRootContext(c, email)
+		setRootContext(c, username)
 		c.Next()
 	}
 }
@@ -118,21 +133,21 @@ func AdminAuthMiddleware(adminRepo interfaces.AdminAccountRepository) gin.Handle
 			return
 		}
 
-		email, password, err := validateBasicAuth(c.GetHeader("Authorization"))
+		username, password, err := validateBasicAuth(c.GetHeader("Authorization"))
 		if err != nil {
 			sendAuthError(c, "Admin Area", err.Error(), http.StatusUnauthorized)
 			return
 		}
 
 		// Check if this is a root user first
-		if isRootUser(email, password) {
-			setRootContext(c, email)
+		if isRootUser(username, password) {
+			setRootContext(c, username)
 			c.Next()
 			return
 		}
 
 		// Get admin account from database
-		account, err := adminRepo.GetByEmail(email)
+		account, err := adminRepo.GetByUsername(username)
 		if err != nil || account == nil {
 			sendAuthError(c, "Admin Area", "Invalid credentials", http.StatusUnauthorized)
 			return
@@ -145,7 +160,7 @@ func AdminAuthMiddleware(adminRepo interfaces.AdminAccountRepository) gin.Handle
 		}
 
 		// Check if account has admin role
-		if account.Role != "ADMIN" && account.Role != "ROOT" {
+		if account.Role != RoleAdmin && account.Role != RoleRoot {
 			sendAuthError(c, "Admin Area", "Insufficient privileges", http.StatusForbidden)
 			return
 		}

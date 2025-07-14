@@ -24,9 +24,9 @@ type DatabaseConfiguration struct {
 	DbConnMaxLifetimeInMinute string `mapstructure:"DB_CONN_MAX_LIFETIME_IN_MINUTE"`
 }
 
-type AdminAccountConfiguration struct {
-	AdminEmail    string `mapstructure:"ROOT_USERNAME"`
-	AdminPassword string `mapstructure:"ROOT_PASSWORD"`
+type RootAccountConfiguration struct {
+	RootUsername string `mapstructure:"ROOT_USERNAME"`
+	RootPassword string `mapstructure:"ROOT_PASSWORD"`
 }
 
 type LifeAIConfiguration struct {
@@ -49,18 +49,18 @@ type SmsConfiguration struct {
 type KratosConfiguration struct{}
 
 type Configuration struct {
-	Database     DatabaseConfiguration     `mapstructure:",squash"`
-	Redis        RedisConfiguration        `mapstructure:",squash"`
-	AdminAccount AdminAccountConfiguration `mapstructure:",squash"`
-	AppName      string                    `mapstructure:"APP_NAME"`
-	AppPort      uint32                    `mapstructure:"APP_PORT"`
-	Env          string                    `mapstructure:"ENV"`
-	LogLevel     string                    `mapstructure:"LOG_LEVEL"`
-	LifeAIConfig LifeAIConfiguration       `mapstructure:",squash"`
-	CacheType    string                    `mapstructure:"CACHE_TYPE"`
-	EmailConfig  EmailConfiguration        `mapstructure:",squash"`
-	SmsConfig    SmsConfiguration          `mapstructure:",squash"`
-	KratosConfig KratosConfiguration       `mapstructure:",squash"`
+	Database     DatabaseConfiguration    `mapstructure:",squash"`
+	Redis        RedisConfiguration       `mapstructure:",squash"`
+	RootAccount  RootAccountConfiguration `mapstructure:",squash"`
+	AppName      string                   `mapstructure:"APP_NAME"`
+	AppPort      uint32                   `mapstructure:"APP_PORT"`
+	Env          string                   `mapstructure:"ENV"`
+	LogLevel     string                   `mapstructure:"LOG_LEVEL"`
+	LifeAIConfig LifeAIConfiguration      `mapstructure:",squash"`
+	CacheType    string                   `mapstructure:"CACHE_TYPE"`
+	EmailConfig  EmailConfiguration       `mapstructure:",squash"`
+	SmsConfig    SmsConfiguration         `mapstructure:",squash"`
+	KratosConfig KratosConfiguration      `mapstructure:",squash"`
 }
 
 var configuration Configuration

@@ -4,8 +4,6 @@ definitions:
     properties:
       created_at:
         type: string
-      email:
-        type: string
       id:
         type: string
       name:
@@ -16,20 +14,24 @@ definitions:
         type: string
       updated_at:
         type: string
+      username:
+        type: string
     type: object
   dto.CreateAdminAccountPayloadDTO:
     properties:
-      email:
-        type: string
-      name:
-        type: string
       password:
         minLength: 8
         type: string
+      role:
+        enum:
+        - admin
+        type: string
+      username:
+        type: string
     required:
-    - email
-    - name
     - password
+    - role
+    - username
     type: object
   dto.CreateTenantPayloadDTO:
     properties:

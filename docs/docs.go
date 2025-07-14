@@ -770,9 +770,6 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
-                "email": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
@@ -787,26 +784,32 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },
         "dto.CreateAdminAccountPayloadDTO": {
             "type": "object",
             "required": [
-                "email",
-                "name",
-                "password"
+                "password",
+                "role",
+                "username"
             ],
             "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
                 "password": {
                     "type": "string",
                     "minLength": 8
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "admin"
+                    ]
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },

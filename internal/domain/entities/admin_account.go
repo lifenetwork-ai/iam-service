@@ -12,8 +12,7 @@ import (
 // AdminAccount represents an admin account in the system
 type AdminAccount struct {
 	ID           uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	Email        string    `gorm:"type:varchar(255);not null;unique"`
-	Name         string    `gorm:"type:varchar(255);not null"`
+	Username     string    `gorm:"type:varchar(255);not null;unique"`
 	PasswordHash string    `gorm:"type:varchar(255);not null"`
 	Role         string    `gorm:"type:varchar(50);not null;default:'ADMIN'"`
 	Status       string    `gorm:"type:varchar(50);not null;default:'active'"`
@@ -24,9 +23,8 @@ type AdminAccount struct {
 // FromCreateDTO creates a new AdminAccount from a CreateAdminAccountPayloadDTO
 func (a *AdminAccount) FromCreateDTO(payload dto.CreateAdminAccountPayloadDTO) error {
 	a.ID = uuid.New()
-	a.Email = payload.Email
-	a.Name = payload.Name
-	a.Role = "ADMIN"
+	a.Username = payload.Username
+	a.Role = payload.Role
 	a.Status = "active"
 	a.CreatedAt = time.Now()
 	a.UpdatedAt = time.Now()
@@ -45,8 +43,7 @@ func (a *AdminAccount) FromCreateDTO(payload dto.CreateAdminAccountPayloadDTO) e
 func (a *AdminAccount) ToDTO() dto.AdminAccountDTO {
 	return dto.AdminAccountDTO{
 		ID:        a.ID.String(),
-		Email:     a.Email,
-		Name:      a.Name,
+		Username:  a.Username,
 		Role:      a.Role,
 		Status:    a.Status,
 		CreatedAt: a.CreatedAt,

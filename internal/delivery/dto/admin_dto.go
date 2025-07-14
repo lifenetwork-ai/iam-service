@@ -5,7 +5,7 @@ import "time"
 // AdminAccountDTO represents an admin account
 type AdminAccountDTO struct {
 	ID        string    `json:"id"`
-	Email     string    `json:"email"`
+	Username  string    `json:"username"`
 	Name      string    `json:"name"`
 	Role      string    `json:"role"`
 	Status    string    `json:"status"`
@@ -15,11 +15,9 @@ type AdminAccountDTO struct {
 
 // CreateAdminAccountPayloadDTO represents the payload for creating an admin account
 type CreateAdminAccountPayloadDTO struct {
-	Email    string `json:"email" binding:"required,email"`
-	Name     string `json:"name" binding:"required"`
+	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required,min=8"`
-	// Role is always "admin" since only root can create admin accounts
-	// and root account is configured via env vars
+	Role     string `json:"role" binding:"required,oneof=admin"`
 }
 
 // UpdateTenantStatusPayloadDTO represents the payload for updating a tenant's status

@@ -24,10 +24,10 @@ func (r *adminAccountRepository) Create(account *domain.AdminAccount) error {
 	return r.db.Create(account).Error
 }
 
-// GetByEmail retrieves an admin account by email
-func (r *adminAccountRepository) GetByEmail(email string) (*domain.AdminAccount, error) {
+// GetByUsername retrieves an admin account by username
+func (r *adminAccountRepository) GetByUsername(username string) (*domain.AdminAccount, error) {
 	var account domain.AdminAccount
-	err := r.db.Where("email = ?", email).First(&account).Error
+	err := r.db.Where("username = ?", username).First(&account).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
