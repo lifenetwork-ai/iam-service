@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
+	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
@@ -22,23 +23,20 @@ import (
 	client "github.com/ory/kratos-client-go"
 )
 
-const (
-	// DefaultChallengeDuration is the default duration for a challenge session
-	DefaultChallengeDuration = 5 * time.Minute // TODO: this should be configurable
-)
-
 type userUseCase struct {
 	db                        *gorm.DB
+	rateLimiter               ratelimiters.RateLimiter
 	tenantRepo                repositories.TenantRepository
-	kratosService             services.KratosService
 	globalUserRepo            repositories.GlobalUserRepository
 	userIdentityRepo          repositories.UserIdentityRepository
 	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository
 	challengeSessionRepo      repositories.ChallengeSessionRepository
+	kratosService             services.KratosService
 }
 
 func NewIdentityUserUseCase(
 	db *gorm.DB,
+	rateLimiter ratelimiters.RateLimiter,
 	challengeSessionRepo repositories.ChallengeSessionRepository,
 	tenantRepo repositories.TenantRepository,
 	globalUserRepo repositories.GlobalUserRepository,
@@ -48,12 +46,13 @@ func NewIdentityUserUseCase(
 ) ucasetypes.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,
+		rateLimiter:               rateLimiter,
 		challengeSessionRepo:      challengeSessionRepo,
 		tenantRepo:                tenantRepo,
-		kratosService:             kratosService,
 		globalUserRepo:            globalUserRepo,
 		userIdentityRepo:          userIdentityRepo,
 		userIdentifierMappingRepo: userIdentifierMappingRepo,
+		kratosService:             kratosService,
 	}
 }
 
@@ -86,6 +85,12 @@ func (u *userUseCase) ChallengeWithPhone(
 		}
 	}
 
+	// Check rate limit for phone challenges
+	key := "challenge:phone:" + phone
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
+	}
+
 	// Initialize verification flow with Kratos
 	flow, err := u.kratosService.InitializeLoginFlow(ctx, tenantID)
 	if err != nil {
@@ -113,7 +118,7 @@ func (u *userUseCase) ChallengeWithPhone(
 		Type:  "phone",
 		Phone: phone,
 		Flow:  flow.Id,
-	}, DefaultChallengeDuration)
+	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -122,6 +127,9 @@ func (u *userUseCase) ChallengeWithPhone(
 			Details: []interface{}{err.Error()},
 		}
 	}
+
+	// Rate limit attempts
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	return &dto.IdentityUserChallengeDTO{
 		FlowID:      flow.Id,
@@ -148,6 +156,12 @@ func (u *userUseCase) ChallengeWithEmail(
 				},
 			},
 		}
+	}
+
+	// Check rate limit for email challenges
+	key := "challenge:email:" + email
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
 	}
 
 	// Initialize login flow with Kratos
@@ -178,7 +192,7 @@ func (u *userUseCase) ChallengeWithEmail(
 		Type:  "email",
 		Email: email,
 		Flow:  flow.Id,
-	}, DefaultChallengeDuration)
+	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -187,6 +201,9 @@ func (u *userUseCase) ChallengeWithEmail(
 			Details: []interface{}{err.Error()},
 		}
 	}
+
+	// Rate limit attempts
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Return challenge session
 	return &dto.IdentityUserChallengeDTO{
@@ -439,6 +456,12 @@ func (u *userUseCase) ChallengeVerify(
 	sessionID string,
 	code string,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
+	// Check rate limit for verification attempts
+	key := fmt.Sprintf("verify:%s", sessionID)
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
+	}
+
 	// Get the challenge session
 	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, sessionID)
 	if err != nil {
@@ -484,6 +507,9 @@ func (u *userUseCase) ChallengeVerify(
 			Details: []interface{}{err.Error()},
 		}
 	}
+
+	// Rate limit attempts
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Get session
 	session, err := u.kratosService.GetSession(ctx, tenantID, sessionValue.Flow)
@@ -531,6 +557,15 @@ func (u *userUseCase) Register(
 			Message: "Invalid phone number format",
 			Details: []any{"Phone number must be in international format (e.g., +1234567890)"},
 		}
+	}
+
+	// Check rate limit for registration attempts
+	key := "register:" + payload.Email
+	if payload.Phone != "" {
+		key = "register:" + payload.Phone
+	}
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
 	}
 
 	// Check if identifier (email/phone) already exists in IAM
@@ -621,6 +656,9 @@ func (u *userUseCase) Register(
 	if receiver == "" {
 		receiver = payload.Phone
 	}
+
+	// Rate limit attempts
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Return success with verification flow info
 	return &dto.IdentityUserAuthDTO{

@@ -3,12 +3,13 @@ package wire
 import (
 	"gorm.io/gorm"
 
-	infrainterfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 // Struct to hold all repositories
@@ -23,7 +24,7 @@ type repos struct {
 }
 
 // Initialize repositories (only using cache where needed)
-func initializeRepos(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *repos {
+func initializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *repos {
 	// Return all repositories
 	return &repos{
 		ChallengeSessionRepo: repositories.NewChallengeSessionRepository(cacheRepo),
@@ -44,13 +45,14 @@ type UseCases struct {
 }
 
 // Initialize use cases
-func InitializeUseCases(db *gorm.DB, cacheRepo infrainterfaces.CacheRepository) *UseCases {
+func InitializeUseCases(db *gorm.DB, cacheRepo types.CacheRepository) *UseCases {
 	repos := initializeRepos(db, cacheRepo)
 
 	// Return all use cases
 	return &UseCases{
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
 			db,
+			instances.RateLimiterInstance(),
 			repos.ChallengeSessionRepo,
 			repos.TenantRepo,
 			repos.GlobalUserRepo,

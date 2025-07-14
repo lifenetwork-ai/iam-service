@@ -6,17 +6,17 @@ import (
 
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
-	"github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 var (
 	cacheOnce sync.Once
-	cacheRepo interfaces.CacheRepository
+	cacheRepo types.CacheRepository
 )
 
 // CacheRepositoryInstance provides a singleton instance of CacheRepository.
-func CacheRepositoryInstance(ctx context.Context) interfaces.CacheRepository {
+func CacheRepositoryInstance(ctx context.Context) types.CacheRepository {
 	cacheOnce.Do(func() {
 		cacheType := conf.GetCacheType()
 		switch cacheType {

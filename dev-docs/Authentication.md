@@ -223,7 +223,7 @@ All endpoints may return the following error responses:
 Common error codes:
 - `MSG_INVALID_TENANT` - Invalid or missing tenant ID
 - `MSG_INVALID_PAYLOAD` - Invalid request payload
-- `MSG_INVALID_PHONE_NUMBER` - Invalid phone number format
+- `MSG_INVALID_PHONE_NUMBER` - Phone number must be in international format (e.g., +1234567890)
 - `MSG_UNAUTHORIZED` - Invalid or missing session token
 - `MSG_CONTACT_METHOD_REQUIRED` - Either email or phone must be provided
 - `MSG_ONLY_EMAIL_OR_PHONE_MUST_BE_PROVIDED` - Cannot provide both email and phone
@@ -233,5 +233,7 @@ Common error codes:
 - `MSG_INVALID_VERIFICATION_TYPE` - Invalid verification type
 - `MSG_FAILED_TO_GET_USER_PROFILE` - Failed to get user profile
 - `MSG_IAM_LOOKUP_FAILED` - Failed to query IAM database for identity check
-- `MSG_EMAIL_ALREADY_EXISTS` - Email already registered
-- `MSG_PHONE_ALREADY_EXISTS` - Phone number already registered
+- `MSG_EMAIL_ALREADY_EXISTS` - Email has already been registered
+- `MSG_PHONE_ALREADY_EXISTS` - Phone number has already been registered
+- `MSG_RATE_LIMIT_CHECK_FAILED` - Could not check rate limit
+- `MSG_RATE_LIMIT_EXCEEDED` - Too many attempts, please try again later

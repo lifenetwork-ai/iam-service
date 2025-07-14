@@ -9,15 +9,15 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
-	infra_interfaces "github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
-	repo_types "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
+	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 var (
-	_ repo_types.TenantRepository = &TenantRepository{}
-	_ repo_types.TenantRepository = &CachedTenantRepository{}
+	_ repotypes.TenantRepository = &TenantRepository{}
+	_ repotypes.TenantRepository = &CachedTenantRepository{}
 )
 
 var (
@@ -87,10 +87,10 @@ func (r *TenantRepository) GetByName(name string) (*entities.Tenant, error) {
 
 type CachedTenantRepository struct {
 	db    *gorm.DB
-	cache infra_interfaces.CacheClient
+	cache cachetypes.CacheClient
 }
 
-func NewCachedTenantRepository(db *gorm.DB, cache infra_interfaces.CacheClient) *CachedTenantRepository {
+func NewCachedTenantRepository(db *gorm.DB, cache cachetypes.CacheClient) *CachedTenantRepository {
 	return &CachedTenantRepository{
 		db:    db,
 		cache: cache,
