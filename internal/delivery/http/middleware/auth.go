@@ -13,7 +13,6 @@ import (
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
-	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 const (
@@ -59,8 +58,6 @@ func isRootUser(username, password string) bool {
 	config := conf.GetConfiguration()
 	rootUsername := config.RootAccount.RootUsername
 	rootPassword := config.RootAccount.RootPassword
-
-	logger.GetLogger().Infof("isRootUser: username: %s, password: %s, rootUsername: %s, rootPassword: %s", username, password, rootUsername, rootPassword)
 
 	return username == rootUsername && password == rootPassword
 }

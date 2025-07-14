@@ -45,6 +45,7 @@ type Configuration struct {
 
 var configuration Configuration
 
+// Only parse the envs that are defined in the defaultConfigurations struct
 var defaultConfigurations = map[string]any{
 	"REDIS_ADDRESS":                  "localhost:6379",
 	"REDIS_TTL":                      "60",
@@ -60,6 +61,8 @@ var defaultConfigurations = map[string]any{
 	"DB_MAX_IDLE_CONNS":              "5",
 	"DB_MAX_OPEN_CONNS":              "15",
 	"DB_CONN_MAX_LIFETIME_IN_MINUTE": "60",
+	"IAM_ROOT_USERNAME":              "",
+	"IAM_ROOT_PASSWORD":              "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations
