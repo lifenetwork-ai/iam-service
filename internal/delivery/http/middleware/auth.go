@@ -60,6 +60,8 @@ func isRootUser(username, password string) bool {
 	rootUsername := config.RootAccount.RootUsername
 	rootPassword := config.RootAccount.RootPassword
 
+	logger.GetLogger().Infof("isRootUser: username: %s, password: %s, rootUsername: %s, rootPassword: %s", username, password, rootUsername, rootPassword)
+
 	return username == rootUsername && password == rootPassword
 }
 
@@ -139,7 +141,6 @@ func AdminAuthMiddleware(adminRepo interfaces.AdminAccountRepository) gin.Handle
 			sendAuthError(c, "Admin Area", err.Error(), http.StatusUnauthorized)
 			return
 		}
-		logger.GetLogger().Infof("AdminAuthMiddleware: username: %s, password: %s", username, password)
 
 		// Check if this is a root user first
 		if isRootUser(username, password) {
