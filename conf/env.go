@@ -25,8 +25,8 @@ type DatabaseConfiguration struct {
 }
 
 type RootAccountConfiguration struct {
-	RootUsername string `mapstructure:"ROOT_USERNAME"`
-	RootPassword string `mapstructure:"ROOT_PASSWORD"`
+	RootUsername string `mapstructure:"IAM_ROOT_USERNAME"`
+	RootPassword string `mapstructure:"IAM_ROOT_PASSWORD"`
 }
 
 type LifeAIConfiguration struct {
