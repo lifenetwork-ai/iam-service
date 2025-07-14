@@ -4,14 +4,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
+	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
 )
 
 type fixedWindowRateLimiter struct {
-	cache types.CacheClient
+	cache cachetypes.CacheClient
 }
 
-func NewFixedWindowRateLimiter(cache types.CacheClient) *fixedWindowRateLimiter {
+func NewFixedWindowRateLimiter(cache cachetypes.CacheClient) types.RateLimiter {
 	return &fixedWindowRateLimiter{cache: cache}
 }
 
