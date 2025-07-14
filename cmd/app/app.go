@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
+	_ "github.com/lifenetwork-ai/iam-service/docs" // Import generated docs
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	routev1 "github.com/lifenetwork-ai/iam-service/internal/delivery/http/route"
 	"github.com/lifenetwork-ai/iam-service/internal/wire"
@@ -45,6 +46,7 @@ func RunApp(config *conf.Configuration) {
 		config,
 		db,
 		ucases.IdentityUserUCase,
+		ucases.AdminUCase,
 	)
 
 	// Start server

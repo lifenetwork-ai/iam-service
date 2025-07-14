@@ -14,4 +14,5 @@ type UserIdentityRepository interface {
 	FindGlobalUserIDByIdentity(ctx context.Context, identityType, value string) (string, error)
 	FirstOrCreate(tx *gorm.DB, identity *domain.UserIdentity) error
 	Update(tx *gorm.DB, identity *domain.UserIdentity) error
+	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
 }

@@ -8,6 +8,10 @@ import (
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 )
 
+const (
+	SessionTokenKey contextKey = "session_token"
+)
+
 func validateAuthorizationHeader(
 	ctx *gin.Context,
 ) (bool, string, string) {
@@ -80,7 +84,7 @@ func RequestAuthenticationMiddleware() gin.HandlerFunc {
 		// Set the user in the context
 		// ctx.Set("requesterId", requester.ID)
 		// ctx.Set("requester", requester)
-		ctx.Set("sessionToken", token)
+		ctx.Set(string(SessionTokenKey), token)
 		ctx.Next()
 	}
 }

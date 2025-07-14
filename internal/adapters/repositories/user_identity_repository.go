@@ -70,3 +70,17 @@ func (r *userIdentityRepository) FirstOrCreate(tx *gorm.DB, identity *domain.Use
 func (r *userIdentityRepository) Update(tx *gorm.DB, identity *domain.UserIdentity) error {
 	return tx.Save(identity).Error
 }
+
+// ExistsWithinTenant checks if an identity exists within a tenant
+func (r *userIdentityRepository) ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&domain.UserIdentity{}).
+		Joins("JOIN global_users ON global_users.id = user_identities.global_user_id").
+		Joins("JOIN user_identifier_mapping ON user_identifier_mapping.global_user_id = global_users.id").
+		Where("user_identifier_mapping.tenant_id = ? AND user_identities.type = ? AND user_identities.value = ?", tenantID, identityType, value).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
