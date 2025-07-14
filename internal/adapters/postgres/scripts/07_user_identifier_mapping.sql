@@ -2,11 +2,11 @@
 CREATE TABLE IF NOT EXISTS user_identifier_mapping (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     global_user_id UUID NOT NULL REFERENCES global_users(id) ON DELETE CASCADE,
-    tenant VARCHAR(25) NOT NULL,
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     tenant_user_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (tenant, tenant_user_id)
+    UNIQUE (tenant_id, tenant_user_id)
 );
 
 -- Index

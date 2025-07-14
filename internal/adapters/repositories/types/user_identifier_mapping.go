@@ -10,9 +10,9 @@ import (
 
 type UserIdentifierMappingRepository interface {
 	ExistsByTenantAndTenantUserID(
-		ctx context.Context, tx *gorm.DB, tenant, tenantUserID string,
+		ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string,
 	) (bool, error)
 	GetByGlobalUserID(ctx context.Context, globalUserID string) ([]domain.UserIdentifierMapping, error)
-	ExistsMapping(ctx context.Context, tenant, globalUserID string) (bool, error)
+	ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error)
 	Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
 }
