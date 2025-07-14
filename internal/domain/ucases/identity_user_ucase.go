@@ -527,7 +527,7 @@ func (u *userUseCase) Register(
 	if payload.Phone != "" && !utils.IsPhoneNumber(payload.Phone) {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
-			Code:    "INVALID_PHONE_NUMBER",
+			Code:    "MSG_INVALID_PHONE_NUMBER",
 			Message: "Invalid phone number format",
 			Details: []any{"Phone number must be in international format (e.g., +1234567890)"},
 		}
@@ -539,7 +539,7 @@ func (u *userUseCase) Register(
 		if err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
-				Code:    "IAM_LOOKUP_FAILED",
+				Code:    "MSG_IAM_LOOKUP_FAILED",
 				Message: "Failed to check existing email identity",
 				Details: []any{err.Error()},
 			}
@@ -547,7 +547,7 @@ func (u *userUseCase) Register(
 		if exists {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusConflict,
-				Code:    "EMAIL_ALREADY_EXISTS",
+				Code:    "MSG_EMAIL_ALREADY_EXISTS",
 				Message: "Email has already been registered",
 			}
 		}
@@ -558,7 +558,7 @@ func (u *userUseCase) Register(
 		if err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
-				Code:    "IAM_LOOKUP_FAILED",
+				Code:    "MSG_IAM_LOOKUP_FAILED",
 				Message: "Failed to check existing phone identity",
 				Details: []any{err.Error()},
 			}
@@ -567,7 +567,7 @@ func (u *userUseCase) Register(
 		if exists {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusConflict,
-				Code:    "PHONE_ALREADY_EXISTS",
+				Code:    "MSG_PHONE_ALREADY_EXISTS",
 				Message: "Phone number has already been registered",
 			}
 		}
