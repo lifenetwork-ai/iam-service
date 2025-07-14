@@ -102,15 +102,16 @@ func init() {
 	viper.SetConfigType("env")                             // Explicitly tell Viper it's an .env file
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // Replace dots with underscores
 
-	// Set default values before reading config
+	viper.AutomaticEnv()
+
+	// Set default values after AutomaticEnv
 	loadDefaultConfigs()
 
 	// Attempt to read the .env file
 	if err := viper.ReadInConfig(); err == nil {
 		log.Printf("Loaded configuration from file: %s", envFile)
 	} else {
-		viper.AutomaticEnv() // Enable reading from environment variables
-		log.Printf("Config file \"%s\" not found or unreadable, falling back to environment variables", envFile)
+		log.Printf("Config file \"%s\" not found or unreadable, using environment variables and defaults", envFile)
 	}
 
 	// Unmarshal values into the global `configuration` struct
