@@ -63,17 +63,21 @@ sequenceDiagram
 ## API Endpoints
 
 ### Registration
+
 - `POST /api/v1/users/register`
   - Headers:
     - `X-Tenant-Id`: string (required)
   - Request Body:
+
     ```json
     {
       "email": "string",  // Either email or phone must be provided
       "phone": "string"   // Cannot provide both
     }
     ```
+
   - Response:
+
     ```json
     {
       "data": {
@@ -88,16 +92,20 @@ sequenceDiagram
     ```
 
 ### Login
+
 - `POST /api/v1/users/challenge-with-email`
   - Headers:
     - `X-Tenant-Id`: string (required)
   - Request Body:
+
     ```json
     {
       "email": "string"
     }
     ```
+
   - Response:
+
     ```json
     {
       "data": {
@@ -112,12 +120,15 @@ sequenceDiagram
   - Headers:
     - `X-Tenant-Id`: string (required)
   - Request Body:
+
     ```json
     {
       "phone": "string"
     }
     ```
+
   - Response:
+
     ```json
     {
       "data": {
@@ -129,10 +140,12 @@ sequenceDiagram
     ```
 
 ### Verification
+
 - `POST /api/v1/users/challenge-verify`
   - Headers:
     - `X-Tenant-Id`: string (required)
   - Request Body:
+
     ```json
     {
       "flow_id": "string",
@@ -140,7 +153,9 @@ sequenceDiagram
       "type": "register" | "login"
     }
     ```
+
   - Response:
+
     ```json
     {
       "data": {
@@ -170,11 +185,13 @@ sequenceDiagram
     ```
 
 ### Profile
+
 - `GET /api/v1/users/me`
   - Headers:
     - `X-Tenant-Id`: string (required)
     - `Authorization`: Bearer {session_token} (required)
   - Response:
+
     ```json
     {
       "data": {
@@ -195,6 +212,7 @@ sequenceDiagram
     ```
 
 ### Logout
+
 - `POST /api/v1/users/logout`
   - Headers:
     - `X-Tenant-Id`: string (required)
@@ -221,6 +239,7 @@ All endpoints may return the following error responses:
 ```
 
 Common error codes:
+
 - `MSG_INVALID_TENANT` - Invalid or missing tenant ID
 - `MSG_INVALID_PAYLOAD` - Invalid request payload
 - `MSG_INVALID_PHONE_NUMBER` - Phone number must be in international format (e.g., +1234567890)
