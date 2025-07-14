@@ -213,12 +213,19 @@ func (u *userUseCase) ChallengeWithEmail(
 	}, nil
 }
 
+// VerifyRegister verifies the registration flow
 func (u *userUseCase) VerifyRegister(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	flowID string,
 	code string,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
+	// Check rate limit for verification attempts
+	key := "verify:register:" + flowID
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
+	}
+
 	flow, err := u.kratosService.GetRegistrationFlow(ctx, tenantID, flowID)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get registration flow: %v", err)
@@ -356,6 +363,9 @@ func (u *userUseCase) VerifyRegister(
 		}
 	}
 
+	// Rate limit attempts
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
+
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
 		SessionID:       registrationResult.Session.Id,
@@ -383,6 +393,12 @@ func (u *userUseCase) VerifyLogin(
 	flowID string,
 	code string,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
+	// Check rate limit for verification attempts
+	key := "verify:login:" + flowID
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
+	}
+
 	// Get the login flow
 	flow, err := u.kratosService.GetLoginFlow(ctx, tenantID, flowID)
 	if err != nil {
@@ -428,6 +444,9 @@ func (u *userUseCase) VerifyLogin(
 			Details: []interface{}{err.Error()},
 		}
 	}
+
+	// Rate limit attempts
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
