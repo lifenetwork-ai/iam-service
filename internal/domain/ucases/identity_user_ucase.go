@@ -537,6 +537,32 @@ func (u *userUseCase) Register(
 		}
 	}
 
+	key := ""
+	if payload.Email != "" {
+		key = "register:" + payload.Email
+	} else if payload.Phone != "" {
+		key = "register:" + payload.Phone
+	}
+
+	if key != "" {
+		limited, err := u.rateLimiter.IsLimited(key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow)
+		if err != nil {
+			logger.GetLogger().Errorf("Rate limiter check failed for key %s: %v", key, err)
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "MSG_RATE_LIMIT_CHECK_FAILED",
+				Message: "Could not check registration rate limit",
+			}
+		}
+		if limited {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusTooManyRequests,
+				Code:    "MSG_RATE_LIMIT_EXCEEDED",
+				Message: "Too many registration attempts, please try again later",
+			}
+		}
+	}
+
 	// Check if identifier (email/phone) already exists in IAM
 	if payload.Email != "" {
 		exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), constants.IdentifierEmail.String(), payload.Email)
@@ -624,6 +650,10 @@ func (u *userUseCase) Register(
 	receiver := payload.Email
 	if receiver == "" {
 		receiver = payload.Phone
+	}
+
+	if key != "" {
+		_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 	}
 
 	// Return success with verification flow info
