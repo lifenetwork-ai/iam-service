@@ -27,11 +27,11 @@ type userUseCase struct {
 	db                        *gorm.DB
 	rateLimiter               ratelimiters.RateLimiter
 	tenantRepo                repositories.TenantRepository
-	kratosService             services.KratosService
 	globalUserRepo            repositories.GlobalUserRepository
 	userIdentityRepo          repositories.UserIdentityRepository
 	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository
 	challengeSessionRepo      repositories.ChallengeSessionRepository
+	kratosService             services.KratosService
 }
 
 func NewIdentityUserUseCase(
@@ -49,10 +49,10 @@ func NewIdentityUserUseCase(
 		rateLimiter:               rateLimiter,
 		challengeSessionRepo:      challengeSessionRepo,
 		tenantRepo:                tenantRepo,
-		kratosService:             kratosService,
 		globalUserRepo:            globalUserRepo,
 		userIdentityRepo:          userIdentityRepo,
 		userIdentifierMappingRepo: userIdentifierMappingRepo,
+		kratosService:             kratosService,
 	}
 }
 
@@ -438,6 +438,12 @@ func (u *userUseCase) ChallengeVerify(
 	sessionID string,
 	code string,
 ) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
+	// Check rate limit for verification attempts
+	key := fmt.Sprintf("verify:%s", sessionID)
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
+	}
+
 	// Get the challenge session
 	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, sessionID)
 	if err != nil {
@@ -483,6 +489,9 @@ func (u *userUseCase) ChallengeVerify(
 			Details: []interface{}{err.Error()},
 		}
 	}
+
+	// Rate limit attempts
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Get session
 	session, err := u.kratosService.GetSession(ctx, tenantID, sessionValue.Flow)
@@ -532,27 +541,13 @@ func (u *userUseCase) Register(
 		}
 	}
 
-	// Rate limit registration attempts
+	// Check rate limit for registration attempts
 	key := "register:" + payload.Email
 	if payload.Phone != "" {
 		key = "register:" + payload.Phone
 	}
-
-	limited, err := u.rateLimiter.IsLimited(key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow)
-	if err != nil {
-		logger.GetLogger().Errorf("Rate limiter check failed for key %s: %v", key, err)
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_RATE_LIMIT_CHECK_FAILED",
-			Message: "Could not check registration rate limit",
-		}
-	}
-	if limited {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusTooManyRequests,
-			Code:    "MSG_RATE_LIMIT_EXCEEDED",
-			Message: "Too many registration attempts, please try again later",
-		}
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
 	}
 
 	// Check if identifier (email/phone) already exists in IAM
@@ -644,7 +639,7 @@ func (u *userUseCase) Register(
 		receiver = payload.Phone
 	}
 
-	// Rate limit the registration attempt
+	// Rate limit attempts
 	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Return success with verification flow info
