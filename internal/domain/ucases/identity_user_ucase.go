@@ -85,6 +85,12 @@ func (u *userUseCase) ChallengeWithPhone(
 		}
 	}
 
+	// Check rate limit for phone challenges
+	key := "challenge:phone:" + phone
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
+	}
+
 	// Initialize verification flow with Kratos
 	flow, err := u.kratosService.InitializeLoginFlow(ctx, tenantID)
 	if err != nil {
@@ -122,6 +128,9 @@ func (u *userUseCase) ChallengeWithPhone(
 		}
 	}
 
+	// Rate limit attempts
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
+
 	return &dto.IdentityUserChallengeDTO{
 		FlowID:      flow.Id,
 		Receiver:    phone,
@@ -147,6 +156,12 @@ func (u *userUseCase) ChallengeWithEmail(
 				},
 			},
 		}
+	}
+
+	// Check rate limit for email challenges
+	key := "challenge:email:" + email
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
 	}
 
 	// Initialize login flow with Kratos
@@ -186,6 +201,9 @@ func (u *userUseCase) ChallengeWithEmail(
 			Details: []interface{}{err.Error()},
 		}
 	}
+
+	// Rate limit attempts
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Return challenge session
 	return &dto.IdentityUserChallengeDTO{
