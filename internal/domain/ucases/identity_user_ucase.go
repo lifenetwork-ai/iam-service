@@ -23,11 +23,6 @@ import (
 	client "github.com/ory/kratos-client-go"
 )
 
-const (
-	// DefaultChallengeDuration is the default duration for a challenge session
-	DefaultChallengeDuration = 5 * time.Minute
-)
-
 type userUseCase struct {
 	db                        *gorm.DB
 	rateLimiter               ratelimiters.RateLimiter
@@ -117,7 +112,7 @@ func (u *userUseCase) ChallengeWithPhone(
 		Type:  "phone",
 		Phone: phone,
 		Flow:  flow.Id,
-	}, DefaultChallengeDuration)
+	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -182,7 +177,7 @@ func (u *userUseCase) ChallengeWithEmail(
 		Type:  "email",
 		Email: email,
 		Flow:  flow.Id,
-	}, DefaultChallengeDuration)
+	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -537,29 +532,26 @@ func (u *userUseCase) Register(
 		}
 	}
 
-	key := ""
-	if payload.Email != "" {
-		key = "register:" + payload.Email
-	} else if payload.Phone != "" {
+	// Rate limit registration attempts
+	key := "register:" + payload.Email
+	if payload.Phone != "" {
 		key = "register:" + payload.Phone
 	}
 
-	if key != "" {
-		limited, err := u.rateLimiter.IsLimited(key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow)
-		if err != nil {
-			logger.GetLogger().Errorf("Rate limiter check failed for key %s: %v", key, err)
-			return nil, &dto.ErrorDTOResponse{
-				Status:  http.StatusInternalServerError,
-				Code:    "MSG_RATE_LIMIT_CHECK_FAILED",
-				Message: "Could not check registration rate limit",
-			}
+	limited, err := u.rateLimiter.IsLimited(key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow)
+	if err != nil {
+		logger.GetLogger().Errorf("Rate limiter check failed for key %s: %v", key, err)
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_RATE_LIMIT_CHECK_FAILED",
+			Message: "Could not check registration rate limit",
 		}
-		if limited {
-			return nil, &dto.ErrorDTOResponse{
-				Status:  http.StatusTooManyRequests,
-				Code:    "MSG_RATE_LIMIT_EXCEEDED",
-				Message: "Too many registration attempts, please try again later",
-			}
+	}
+	if limited {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusTooManyRequests,
+			Code:    "MSG_RATE_LIMIT_EXCEEDED",
+			Message: "Too many registration attempts, please try again later",
 		}
 	}
 
@@ -652,9 +644,8 @@ func (u *userUseCase) Register(
 		receiver = payload.Phone
 	}
 
-	if key != "" {
-		_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
-	}
+	// Rate limit the registration attempt
+	_ = u.rateLimiter.RegisterAttempt(key, constants.RateLimitWindow)
 
 	// Return success with verification flow info
 	return &dto.IdentityUserAuthDTO{
