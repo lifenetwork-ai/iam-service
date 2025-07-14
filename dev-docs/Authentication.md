@@ -223,6 +223,7 @@ All endpoints may return the following error responses:
 Common error codes:
 - `MSG_INVALID_TENANT` - Invalid or missing tenant ID
 - `MSG_INVALID_PAYLOAD` - Invalid request payload
+- `MSG_INVALID_PHONE_NUMBER` - Invalid phone number format
 - `MSG_UNAUTHORIZED` - Invalid or missing session token
 - `MSG_CONTACT_METHOD_REQUIRED` - Either email or phone must be provided
 - `MSG_ONLY_EMAIL_OR_PHONE_MUST_BE_PROVIDED` - Cannot provide both email and phone
@@ -231,3 +232,6 @@ Common error codes:
 - `MSG_FAILED_TO_MAKE_CHALLENGE` - Failed to create challenge
 - `MSG_INVALID_VERIFICATION_TYPE` - Invalid verification type
 - `MSG_FAILED_TO_GET_USER_PROFILE` - Failed to get user profile
+- `MSG_IAM_LOOKUP_FAILED` - Failed to query IAM database for identity check
+- `MSG_EMAIL_ALREADY_EXISTS` - Email already registered
+- `MSG_PHONE_ALREADY_EXISTS` - Phone number already registered
