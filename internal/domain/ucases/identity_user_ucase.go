@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
+	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
@@ -24,11 +25,12 @@ import (
 
 const (
 	// DefaultChallengeDuration is the default duration for a challenge session
-	DefaultChallengeDuration = 5 * time.Minute // TODO: this should be configurable
+	DefaultChallengeDuration = 5 * time.Minute
 )
 
 type userUseCase struct {
 	db                        *gorm.DB
+	rateLimiter               ratelimiters.RateLimiter
 	challengeSessionRepo      repositories.ChallengeSessionRepository
 	globalUserRepo            repositories.GlobalUserRepository
 	userIdentityRepo          repositories.UserIdentityRepository
@@ -38,6 +40,7 @@ type userUseCase struct {
 
 func NewIdentityUserUseCase(
 	db *gorm.DB,
+	rateLimiter ratelimiters.RateLimiter,
 	challengeSessionRepo repositories.ChallengeSessionRepository,
 	globalUserRepo repositories.GlobalUserRepository,
 	userIdentityRepo repositories.UserIdentityRepository,
@@ -46,6 +49,7 @@ func NewIdentityUserUseCase(
 ) ucasetypes.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,
+		rateLimiter:               rateLimiter,
 		challengeSessionRepo:      challengeSessionRepo,
 		globalUserRepo:            globalUserRepo,
 		userIdentityRepo:          userIdentityRepo,

@@ -9,6 +9,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 // Struct to hold all repositories
@@ -45,6 +46,7 @@ func InitializeUseCases(db *gorm.DB, cacheRepo types.CacheRepository) *UseCases 
 	return &UseCases{
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
 			db,
+			instances.RateLimiterInstance(),
 			repos.ChallengeSessionRepo,
 			repos.GlobalUserRepo,
 			repos.UserIdentityRepo,

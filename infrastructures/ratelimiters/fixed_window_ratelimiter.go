@@ -1,7 +1,6 @@
 package ratelimiters
 
 import (
-	"context"
 	"time"
 
 	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
@@ -9,34 +8,36 @@ import (
 )
 
 type fixedWindowRateLimiter struct {
-	cache cachetypes.CacheClient
+	cacheRepo cachetypes.CacheRepository // dùng interface mới
 }
 
-func NewFixedWindowRateLimiter(cache cachetypes.CacheClient) types.RateLimiter {
-	return &fixedWindowRateLimiter{cache: cache}
+func NewFixedWindowRateLimiter(cache cachetypes.CacheRepository) types.RateLimiter {
+	return &fixedWindowRateLimiter{cacheRepo: cache}
 }
 
-func (r *fixedWindowRateLimiter) IsLimited(ctx context.Context, key string, limit int, window time.Duration) (bool, error) {
+func (r *fixedWindowRateLimiter) IsLimited(key string, limit int, window time.Duration) (bool, error) {
 	var count int
-	err := r.cache.Get(ctx, key, &count)
+	cacheKey := &cachetypes.Keyer{Raw: key}
+	err := r.cacheRepo.RetrieveItem(cacheKey, &count)
 	if err != nil {
-		// Not found => no limit hit yet
+		// not found or expired
 		return false, nil
 	}
 	return count >= limit, nil
 }
 
-func (r *fixedWindowRateLimiter) RegisterAttempt(ctx context.Context, key string, window time.Duration) error {
+func (r *fixedWindowRateLimiter) RegisterAttempt(key string, window time.Duration) error {
 	var count int
-	err := r.cache.Get(ctx, key, &count)
+	cacheKey := &cachetypes.Keyer{Raw: key}
+	err := r.cacheRepo.RetrieveItem(cacheKey, &count)
 	if err != nil {
-		// First attempt → set to 1 with expiration
-		return r.cache.Set(ctx, key, 1, window)
+		// first time
+		return r.cacheRepo.SaveItem(cacheKey, 1, window)
 	}
-	// Increment within window
-	return r.cache.Set(ctx, key, count+1, window)
+	return r.cacheRepo.SaveItem(cacheKey, count+1, window)
 }
 
-func (r *fixedWindowRateLimiter) ResetAttempts(ctx context.Context, key string) error {
-	return r.cache.Del(ctx, key)
+func (r *fixedWindowRateLimiter) ResetAttempts(key string) error {
+	cacheKey := &cachetypes.Keyer{Raw: key}
+	return r.cacheRepo.RemoveItem(cacheKey)
 }
