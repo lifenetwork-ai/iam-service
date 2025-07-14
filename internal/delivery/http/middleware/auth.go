@@ -13,6 +13,7 @@ import (
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 const (
@@ -138,6 +139,7 @@ func AdminAuthMiddleware(adminRepo interfaces.AdminAccountRepository) gin.Handle
 			sendAuthError(c, "Admin Area", err.Error(), http.StatusUnauthorized)
 			return
 		}
+		logger.GetLogger().Infof("AdminAuthMiddleware: username: %s, password: %s", username, password)
 
 		// Check if this is a root user first
 		if isRootUser(username, password) {
