@@ -32,7 +32,7 @@ func initializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *repos {
 		GlobalUserRepo:            repositories.NewGlobalUserRepository(db),
 		UserIdentityRepo:          repositories.NewUserIdentityRepository(db),
 		UserIdentifierMappingRepo: repositories.NewUserIdentifierMappingRepository(db),
-		TenantRepo:                repositories.NewTenantRepository(db),
+		TenantRepo:                repositories.NewCTenantRepositoryCache(repositories.NewTenantRepository(db), cacheRepo),
 		AdminAccountRepo:          repositories.NewAdminAccountRepository(db),
 	}
 }

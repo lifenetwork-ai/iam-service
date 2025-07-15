@@ -1,11 +1,8 @@
 package repositories
 
 import (
-	"errors"
 	"fmt"
 	"time"
-
-	"gorm.io/gorm"
 
 	"github.com/google/uuid"
 	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
@@ -15,112 +12,107 @@ import (
 
 const tenantCacheTTL = 7 * 24 * time.Hour
 
-var _ repotypes.TenantRepository = &tenantRepositoryCache{}
-
 type tenantRepositoryCache struct {
-	db    *gorm.DB
+	repo  repotypes.TenantRepository
 	cache cachetypes.CacheRepository
 }
 
-func NewCachedTenantRepository(db *gorm.DB, cache cachetypes.CacheRepository) *tenantRepositoryCache {
+func NewCTenantRepositoryCache(
+	repo repotypes.TenantRepository,
+	cache cachetypes.CacheRepository,
+) repotypes.TenantRepository {
 	return &tenantRepositoryCache{
-		db:    db,
+		repo:  repo,
 		cache: cache,
 	}
 }
 
-func getTenantCacheKey(key interface{}) *cachetypes.Keyer {
-	return &cachetypes.Keyer{Raw: fmt.Sprintf("tenant:%v", key)}
+func tenantKeyByID(id uuid.UUID) *cachetypes.Keyer {
+	return &cachetypes.Keyer{Raw: fmt.Sprintf("tenant:%s", id.String())}
 }
 
-func (r *tenantRepositoryCache) Create(tenant *entities.Tenant) error {
-	if tenant.ID == uuid.Nil {
-		tenant.ID = uuid.New()
-	}
+func tenantKeyByName(name string) *cachetypes.Keyer {
+	return &cachetypes.Keyer{Raw: fmt.Sprintf("tenant:name:%s", name)}
+}
 
-	if err := r.db.Create(tenant).Error; err != nil {
+func tenantKeyAll() *cachetypes.Keyer {
+	return &cachetypes.Keyer{Raw: "tenant:all"}
+}
+
+func (c *tenantRepositoryCache) Create(tenant *entities.Tenant) error {
+	if err := c.repo.Create(tenant); err != nil {
 		return err
 	}
-
-	// Cache by ID and name
-	_ = r.cache.SaveItem(getTenantCacheKey(tenant.ID), tenant, tenantCacheTTL)
-	_ = r.cache.SaveItem(getTenantCacheKey("name:"+tenant.Name), tenant, tenantCacheTTL)
+	// Cache both by ID and name
+	_ = c.cache.SaveItem(tenantKeyByID(tenant.ID), tenant, tenantCacheTTL)
+	_ = c.cache.SaveItem(tenantKeyByName(tenant.Name), tenant, tenantCacheTTL)
 	return nil
 }
 
-func (r *tenantRepositoryCache) Update(tenant *entities.Tenant) error {
-	if tenant.ID == uuid.Nil {
-		return errors.New("tenant ID is required")
-	}
-
-	if err := r.db.Save(tenant).Error; err != nil {
+func (c *tenantRepositoryCache) Update(tenant *entities.Tenant) error {
+	if err := c.repo.Update(tenant); err != nil {
 		return err
 	}
-
-	_ = r.cache.SaveItem(getTenantCacheKey(tenant.ID), tenant, tenantCacheTTL)
-	_ = r.cache.SaveItem(getTenantCacheKey("name:"+tenant.Name), tenant, tenantCacheTTL)
+	_ = c.cache.SaveItem(tenantKeyByID(tenant.ID), tenant, tenantCacheTTL)
+	_ = c.cache.SaveItem(tenantKeyByName(tenant.Name), tenant, tenantCacheTTL)
 	return nil
 }
 
-func (r *tenantRepositoryCache) Delete(id uuid.UUID) error {
-	if err := r.db.Delete(&entities.Tenant{}, id).Error; err != nil {
+func (c *tenantRepositoryCache) Delete(id uuid.UUID) error {
+	tenant, _ := c.repo.GetByID(id)
+	if err := c.repo.Delete(id); err != nil {
 		return err
 	}
-
-	_ = r.cache.RemoveItem(getTenantCacheKey(id))
+	_ = c.cache.RemoveItem(tenantKeyByID(id))
+	if tenant != nil {
+		_ = c.cache.RemoveItem(tenantKeyByName(tenant.Name))
+	}
 	return nil
 }
 
-func (r *tenantRepositoryCache) GetByID(id uuid.UUID) (*entities.Tenant, error) {
+func (c *tenantRepositoryCache) GetByID(id uuid.UUID) (*entities.Tenant, error) {
 	var tenant entities.Tenant
-	if err := r.cache.RetrieveItem(getTenantCacheKey(id), &tenant); err == nil {
+	if err := c.cache.RetrieveItem(tenantKeyByID(id), &tenant); err == nil {
 		return &tenant, nil
 	}
 
-	if err := r.db.First(&tenant, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
+	tenantPtr, err := c.repo.GetByID(id)
+	if err != nil || tenantPtr == nil {
+		return tenantPtr, err
 	}
 
-	_ = r.cache.SaveItem(getTenantCacheKey(id), tenant, tenantCacheTTL)
-	_ = r.cache.SaveItem(getTenantCacheKey("name:"+tenant.Name), tenant, tenantCacheTTL)
-
-	return &tenant, nil
+	_ = c.cache.SaveItem(tenantKeyByID(tenantPtr.ID), tenantPtr, tenantCacheTTL)
+	_ = c.cache.SaveItem(tenantKeyByName(tenantPtr.Name), tenantPtr, tenantCacheTTL)
+	return tenantPtr, nil
 }
 
-func (r *tenantRepositoryCache) GetByName(name string) (*entities.Tenant, error) {
+func (c *tenantRepositoryCache) GetByName(name string) (*entities.Tenant, error) {
 	var tenant entities.Tenant
-	if err := r.cache.RetrieveItem(getTenantCacheKey("name:"+name), &tenant); err == nil {
+	if err := c.cache.RetrieveItem(tenantKeyByName(name), &tenant); err == nil {
 		return &tenant, nil
 	}
 
-	if err := r.db.Where("name = ?", name).First(&tenant).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
+	tenantPtr, err := c.repo.GetByName(name)
+	if err != nil || tenantPtr == nil {
+		return tenantPtr, err
 	}
 
-	_ = r.cache.SaveItem(getTenantCacheKey("name:"+name), tenant, tenantCacheTTL)
-	_ = r.cache.SaveItem(getTenantCacheKey(tenant.ID), tenant, tenantCacheTTL)
-
-	return &tenant, nil
+	_ = c.cache.SaveItem(tenantKeyByName(tenantPtr.Name), tenantPtr, tenantCacheTTL)
+	_ = c.cache.SaveItem(tenantKeyByID(tenantPtr.ID), tenantPtr, tenantCacheTTL)
+	return tenantPtr, nil
 }
 
-func (r *tenantRepositoryCache) List() ([]*entities.Tenant, error) {
+func (c *tenantRepositoryCache) List() ([]*entities.Tenant, error) {
 	var tenants []*entities.Tenant
-	key := getTenantCacheKey("all")
-
-	if err := r.cache.RetrieveItem(key, &tenants); err == nil {
+	if err := c.cache.RetrieveItem(tenantKeyAll(), &tenants); err == nil {
 		return tenants, nil
 	}
 
-	if err := r.db.Find(&tenants).Error; err != nil {
+	tenants, err := c.repo.List()
+	if err != nil {
 		return nil, err
 	}
 
-	_ = r.cache.SaveItem(key, tenants, tenantCacheTTL)
+	_ = c.cache.SaveItem(tenantKeyAll(), tenants, tenantCacheTTL)
 	return tenants, nil
 }
