@@ -14,8 +14,7 @@ import (
 
 // Struct to hold all repositories
 type repos struct {
-	ChallengeSessionRepo repotypes.ChallengeSessionRepository
-
+	ChallengeSessionRepo      repotypes.ChallengeSessionRepository
 	GlobalUserRepo            repotypes.GlobalUserRepository
 	UserIdentityRepo          repotypes.UserIdentityRepository
 	UserIdentifierMappingRepo repotypes.UserIdentifierMappingRepository
@@ -27,13 +26,14 @@ type repos struct {
 func initializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *repos {
 	// Return all repositories
 	return &repos{
-		ChallengeSessionRepo: repositories.NewChallengeSessionRepository(cacheRepo),
-
+		ChallengeSessionRepo:      repositories.NewChallengeSessionRepository(cacheRepo),
 		GlobalUserRepo:            repositories.NewGlobalUserRepository(db),
 		UserIdentityRepo:          repositories.NewUserIdentityRepository(db),
 		UserIdentifierMappingRepo: repositories.NewUserIdentifierMappingRepository(db),
-		TenantRepo:                repositories.NewTenantRepositoryCache(repositories.NewTenantRepository(db), cacheRepo),
-		AdminAccountRepo:          repositories.NewAdminAccountRepository(db),
+		TenantRepo: repositories.NewTenantRepositoryCache(
+			repositories.NewTenantRepository(db), cacheRepo,
+		),
+		AdminAccountRepo: repositories.NewAdminAccountRepository(db),
 	}
 }
 
