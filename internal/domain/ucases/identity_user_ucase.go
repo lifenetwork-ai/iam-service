@@ -74,7 +74,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	if !utils.IsPhoneNumber(phone) {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
-			Code:    "INVALID_PHONE_NUMBER",
+			Code:    "MSG_INVALID_PHONE_NUMBER",
 			Message: "Invalid phone number",
 			Details: []interface{}{
 				map[string]string{
@@ -96,7 +96,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "VERIFICATION_FLOW_FAILED",
+			Code:    "MSG_VERIFICATION_FLOW_FAILED",
 			Message: "Failed to initialize verification flow",
 			Details: []any{err.Error()},
 		}
@@ -107,7 +107,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
-			Code:    "LOGIN_FAILED",
+			Code:    "MSG_LOGIN_FAILED",
 			Message: "Login failed",
 			Details: []any{err.Error()},
 		}
@@ -144,7 +144,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	if !utils.IsEmail(email) {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
-			Code:    "INVALID_EMAIL",
+			Code:    "MSG_INVALID_EMAIL",
 			Message: "Invalid email",
 			Details: []any{
 				map[string]string{
@@ -166,7 +166,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "VERIFICATION_FLOW_FAILED",
+			Code:    "MSG_VERIFICATION_FLOW_FAILED",
 			Message: "Failed to initialize login flow",
 			Details: []any{err.Error()},
 		}
@@ -177,7 +177,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "VERIFICATION_FLOW_FAILED",
+			Code:    "MSG_VERIFICATION_FLOW_FAILED",
 			Message: "Failed to submit login flow",
 			Details: []any{err.Error()},
 		}
@@ -248,7 +248,7 @@ func (u *userUseCase) VerifyRegister(
 		logger.GetLogger().Errorf("Failed to parse identity traits: %v", traits)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "INVALID_TRAITS",
+			Code:    "MSG_INVALID_TRAITS",
 			Message: "Failed to parse identity traits",
 		}
 	}
@@ -351,7 +351,7 @@ func (u *userUseCase) VerifyRegister(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "IAM_REGISTRATION_FAILED",
+			Code:    "MSG_IAM_REGISTRATION_FAILED",
 			Message: "Failed to persist IAM records",
 			Details: []any{err.Error()},
 		}
