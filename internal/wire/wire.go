@@ -6,7 +6,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
@@ -58,7 +58,7 @@ func InitializeUseCases(db *gorm.DB, cacheRepo types.CacheRepository) *UseCases 
 			repos.GlobalUserRepo,
 			repos.UserIdentityRepo,
 			repos.UserIdentifierMappingRepo,
-			services.NewKratosService(repos.TenantRepo),
+			kratos.NewKratosService(repos.TenantRepo),
 		),
 		AdminUCase:  ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
 		TenantUCase: ucases.NewTenantUseCase(repos.TenantRepo),
