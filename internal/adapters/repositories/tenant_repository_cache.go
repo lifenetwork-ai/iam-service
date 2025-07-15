@@ -8,6 +8,7 @@ import (
 	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 const tenantCacheTTL = 7 * 24 * time.Hour
@@ -44,8 +45,19 @@ func (c *tenantRepositoryCache) Create(tenant *entities.Tenant) error {
 		return err
 	}
 	// Cache both by ID and name
-	_ = c.cache.SaveItem(tenantKeyByID(tenant.ID), tenant, tenantCacheTTL)
-	_ = c.cache.SaveItem(tenantKeyByName(tenant.Name), tenant, tenantCacheTTL)
+	err := c.cache.SaveItem(tenantKeyByID(tenant.ID), tenant, tenantCacheTTL)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to save tenant to cache: %v", err)
+	}
+	err = c.cache.SaveItem(tenantKeyByName(tenant.Name), tenant, tenantCacheTTL)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to save tenant to cache: %v", err)
+	}
+
+	err = c.updateListCache()
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to update list cache: %v", err)
+	}
 	return nil
 }
 
@@ -53,8 +65,20 @@ func (c *tenantRepositoryCache) Update(tenant *entities.Tenant) error {
 	if err := c.repo.Update(tenant); err != nil {
 		return err
 	}
-	_ = c.cache.SaveItem(tenantKeyByID(tenant.ID), tenant, tenantCacheTTL)
-	_ = c.cache.SaveItem(tenantKeyByName(tenant.Name), tenant, tenantCacheTTL)
+	err := c.cache.SaveItem(tenantKeyByID(tenant.ID), tenant, tenantCacheTTL)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to save tenant to cache: %v", err)
+	}
+	err = c.cache.SaveItem(tenantKeyByName(tenant.Name), tenant, tenantCacheTTL)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to save tenant to cache: %v", err)
+	}
+
+	err = c.updateListCache()
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to update list cache: %v", err)
+	}
+
 	return nil
 }
 
@@ -63,9 +87,21 @@ func (c *tenantRepositoryCache) Delete(id uuid.UUID) error {
 	if err := c.repo.Delete(id); err != nil {
 		return err
 	}
-	_ = c.cache.RemoveItem(tenantKeyByID(id))
+	err := c.cache.RemoveItem(tenantKeyByID(id))
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to remove tenant from cache: %v", err)
+	}
 	if tenant != nil {
-		_ = c.cache.RemoveItem(tenantKeyByName(tenant.Name))
+		err = c.cache.RemoveItem(tenantKeyByName(tenant.Name))
+		if err != nil {
+			logger.GetLogger().Errorf("Failed to remove tenant from cache: %v", err)
+		}
+	}
+
+	// Update list cache
+	err = c.updateListCache()
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to update list cache: %v", err)
 	}
 	return nil
 }
@@ -81,8 +117,21 @@ func (c *tenantRepositoryCache) GetByID(id uuid.UUID) (*entities.Tenant, error) 
 		return tenantPtr, err
 	}
 
-	_ = c.cache.SaveItem(tenantKeyByID(tenantPtr.ID), tenantPtr, tenantCacheTTL)
-	_ = c.cache.SaveItem(tenantKeyByName(tenantPtr.Name), tenantPtr, tenantCacheTTL)
+	err = c.cache.SaveItem(tenantKeyByID(tenantPtr.ID), tenantPtr, tenantCacheTTL)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to save tenant to cache: %v", err)
+	}
+
+	err = c.cache.SaveItem(tenantKeyByName(tenantPtr.Name), tenantPtr, tenantCacheTTL)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to save tenant to cache: %v", err)
+	}
+
+	// Update list cache
+	err = c.updateListCache()
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to update list cache: %v", err)
+	}
 	return tenantPtr, nil
 }
 
@@ -97,8 +146,21 @@ func (c *tenantRepositoryCache) GetByName(name string) (*entities.Tenant, error)
 		return tenantPtr, err
 	}
 
-	_ = c.cache.SaveItem(tenantKeyByName(tenantPtr.Name), tenantPtr, tenantCacheTTL)
-	_ = c.cache.SaveItem(tenantKeyByID(tenantPtr.ID), tenantPtr, tenantCacheTTL)
+	err = c.cache.SaveItem(tenantKeyByName(tenantPtr.Name), tenantPtr, tenantCacheTTL)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to save tenant to cache: %v", err)
+	}
+
+	err = c.cache.SaveItem(tenantKeyByID(tenantPtr.ID), tenantPtr, tenantCacheTTL)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to save tenant to cache: %v", err)
+	}
+
+	// Update list cache
+	err = c.updateListCache()
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to update list cache: %v", err)
+	}
 	return tenantPtr, nil
 }
 
@@ -113,6 +175,18 @@ func (c *tenantRepositoryCache) List() ([]*entities.Tenant, error) {
 		return nil, err
 	}
 
-	_ = c.cache.SaveItem(tenantKeyAll(), tenants, tenantCacheTTL)
+	err = c.cache.SaveItem(tenantKeyAll(), tenants, tenantCacheTTL)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to save tenant to cache: %v", err)
+	}
+
 	return tenants, nil
+}
+
+func (c *tenantRepositoryCache) updateListCache() error {
+	tenants, err := c.repo.List()
+	if err != nil {
+		return err
+	}
+	return c.cache.SaveItem(tenantKeyAll(), tenants, tenantCacheTTL)
 }
