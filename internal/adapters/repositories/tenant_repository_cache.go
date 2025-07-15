@@ -17,7 +17,7 @@ type tenantRepositoryCache struct {
 	cache cachetypes.CacheRepository
 }
 
-func NewCTenantRepositoryCache(
+func NewTenantRepositoryCache(
 	repo repotypes.TenantRepository,
 	cache cachetypes.CacheRepository,
 ) repotypes.TenantRepository {
