@@ -13,7 +13,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
+	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/types"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -31,7 +31,7 @@ type userUseCase struct {
 	userIdentityRepo          repositories.UserIdentityRepository
 	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository
 	challengeSessionRepo      repositories.ChallengeSessionRepository
-	kratosService             kratos.KratosService
+	kratosService             kratos_types.KratosService
 }
 
 func NewIdentityUserUseCase(
@@ -42,7 +42,7 @@ func NewIdentityUserUseCase(
 	globalUserRepo repositories.GlobalUserRepository,
 	userIdentityRepo repositories.UserIdentityRepository,
 	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository,
-	kratosService kratos.KratosService,
+	kratosService kratos_types.KratosService,
 ) ucasetypes.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,
