@@ -29,8 +29,6 @@ type RootAccountConfiguration struct {
 	RootPassword string `mapstructure:"IAM_ROOT_PASSWORD"`
 }
 
-type KratosConfiguration struct{}
-
 type Configuration struct {
 	Database     DatabaseConfiguration    `mapstructure:",squash"`
 	Redis        RedisConfiguration       `mapstructure:",squash"`
@@ -41,11 +39,13 @@ type Configuration struct {
 	LogLevel     string                   `mapstructure:"LOG_LEVEL"`
 	CacheType    string                   `mapstructure:"CACHE_TYPE"`
 	KratosConfig KratosConfiguration      `mapstructure:",squash"`
+	Keto         KetoConfiguration        `mapstructure:",squash"`
 }
 
 var configuration Configuration
 
-// Only parse the envs that are defined in the defaultConfigurations struct
+// NOTE: when adding a new env, you need to add it to the defaultConfigurations map
+// TODO: add a way remove this behavior
 var defaultConfigurations = map[string]any{
 	"REDIS_ADDRESS":                  "localhost:6379",
 	"REDIS_TTL":                      "60",
@@ -63,6 +63,8 @@ var defaultConfigurations = map[string]any{
 	"DB_CONN_MAX_LIFETIME_IN_MINUTE": "60",
 	"IAM_ROOT_USERNAME":              "",
 	"IAM_ROOT_PASSWORD":              "",
+	"KETO_DEFAULT_READ_URL":          "",
+	"KETO_DEFAULT_WRITE_URL":         "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations
