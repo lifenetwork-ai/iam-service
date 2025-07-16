@@ -73,3 +73,9 @@ type IdentityUserLoginDTO struct {
 	UserName string `json:"user_name"`
 	Password string `json:"password"`
 }
+
+// IdentityUserPreChangeDTO represents the request to verify the old identifier before changing it.
+type IdentityUserPreChangeDTO struct {
+	CurrentIdentifier string `json:"current_identifier" binding:"required" description:"Current email or phone number"`
+	NewIdentifier     string `json:"new_identifier" binding:"required" description:"New email or phone number to change to"`
+}

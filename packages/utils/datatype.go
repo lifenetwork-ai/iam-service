@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"fmt"
 	"html"
 	"regexp"
 	"strings"
+
+	"github.com/lifenetwork-ai/iam-service/constants"
 )
 
 func IsPhoneNumber(phone string) bool {
@@ -16,6 +19,16 @@ func IsEmail(email string) bool {
 	// Check if the email is valid
 	emailValidator := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	return emailValidator.MatchString(email)
+}
+
+func GetIdentifierType(identifier string) (string, error) {
+	if IsEmail(identifier) {
+		return constants.IdentifierEmail.String(), nil
+	}
+	if IsPhoneNumber(identifier) {
+		return constants.IdentifierPhone.String(), nil
+	}
+	return "", fmt.Errorf("invalid identifier format")
 }
 
 // SafeString sanitizes input to prevent SQL injection and XSS attacks.

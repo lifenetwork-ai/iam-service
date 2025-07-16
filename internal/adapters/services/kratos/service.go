@@ -377,37 +377,6 @@ func (k *kratosServiceImpl) WhoAmI(ctx context.Context, tenantID uuid.UUID, sess
 	return session, nil
 }
 
-// PreChangeIdentifier prepares for changing an identifier (email or phone number) by verifying the old identifier via OTP
-func (k *kratosServiceImpl) PreChangeIdentifier(
-	ctx context.Context,
-	tenantID uuid.UUID,
-	sessionToken, oldIdentifier, oldCode, newIdentifier, identifierType string, // identifierType: "email" or "phone_number"
-) (string, error) {
-	publicAPI, err := k.client.PublicAPI(tenantID)
-	if err != nil {
-		return "", fmt.Errorf("get public Kratos API failed: %w", err)
-	}
-
-	// Step 1: Get identity ID from session
-	session, _, err := publicAPI.FrontendAPI.ToSession(ctx).XSessionToken(sessionToken).Execute()
-	if err != nil {
-		return "", fmt.Errorf("get session failed: %w", err)
-	}
-	identityID := session.Identity.Id
-
-	// Step 2: Verify old identifier via OTP
-	if err := k.verifyIdentifierViaOTP(ctx, publicAPI, oldIdentifier, oldCode); err != nil {
-		return "", fmt.Errorf("verify old identifier failed: %w", err)
-	}
-
-	// Step 3: Revoke current session
-	if err := k.RevokeSession(ctx, tenantID, sessionToken); err != nil {
-		return "", fmt.Errorf("revoke session failed: %w", err)
-	}
-
-	return identityID, nil
-}
-
 // UpdateIdentifierTrait updates the identifier trait (email or phone number) in the identity
 func (k *kratosServiceImpl) UpdateIdentifierTrait(
 	ctx context.Context,
@@ -435,36 +404,6 @@ func (k *kratosServiceImpl) UpdateIdentifierTrait(
 		UpdateIdentityBody(update).Execute()
 	if err != nil {
 		return fmt.Errorf("update identity failed: %w", err)
-	}
-
-	return nil
-}
-
-// verifyIdentifierViaOTP verifies the identifier (email or phone number) via OTP
-func (k *kratosServiceImpl) verifyIdentifierViaOTP(
-	ctx context.Context,
-	publicAPI *kratos.APIClient,
-	identifier, code string,
-) error {
-	loginFlow, _, err := publicAPI.FrontendAPI.CreateNativeLoginFlow(ctx).Execute()
-	if err != nil {
-		return fmt.Errorf("create login flow failed: %w", err)
-	}
-
-	body := kratos.UpdateLoginFlowBody{
-		UpdateLoginFlowWithCodeMethod: &kratos.UpdateLoginFlowWithCodeMethod{
-			Method:     constants.MethodTypeCode.String(),
-			Identifier: &identifier,
-			Code:       &code,
-		},
-	}
-
-	_, _, err = publicAPI.FrontendAPI.UpdateLoginFlow(ctx).
-		Flow(loginFlow.Id).
-		UpdateLoginFlowBody(body).
-		Execute()
-	if err != nil {
-		return fmt.Errorf("OTP verification failed: %w", err)
 	}
 
 	return nil

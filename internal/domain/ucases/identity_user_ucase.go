@@ -547,6 +547,13 @@ func (u *userUseCase) ChallengeVerify(
 	}, nil
 }
 
+// TODO: Implement ChangeIdentifier
+func (u *userUseCase) ChangeIdentifier(ctx context.Context,
+	tenantID uuid.UUID,
+	payload dto.IdentityUserPreChangeDTO,
+) {
+}
+
 // Register registers a new user
 func (u *userUseCase) Register(
 	ctx context.Context,
