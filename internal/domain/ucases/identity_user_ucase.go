@@ -547,13 +547,13 @@ func (u *userUseCase) ChallengeVerify(
 	}, nil
 }
 
-// ChangeIdentifier changes the user's identifier (email or phone)
-func (u *userUseCase) ChangeIdentifier(
+// ChangeIdentifierWithRegisterFlow changes the user's identifier (email or phone) using a registration flow.
+func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	newIdentifier string,
 ) *dto.ErrorDTOResponse {
-	// 1. Determine the identifier type (email or phone)
+	// 1. Determine identifier type (email or phone)
 	identifierType, err := utils.GetIdentifierType(newIdentifier)
 	if err != nil {
 		return &dto.ErrorDTOResponse{
@@ -575,7 +575,7 @@ func (u *userUseCase) ChangeIdentifier(
 		}
 	}
 
-	// 3. Get identity session from Kratos
+	// 3. Fetch current session using WhoAmI
 	session, err := u.kratosService.WhoAmI(ctx, tenantID, currentSessionToken)
 	if err != nil {
 		return &dto.ErrorDTOResponse{
@@ -585,12 +585,14 @@ func (u *userUseCase) ChangeIdentifier(
 			Details: []any{err.Error()},
 		}
 	}
-	identityID := session.Identity.Id
 
-	// Log for auditing
-	logger.GetLogger().Infof("Initiating identifier change for user %s to %s", identityID, newIdentifier)
+	// 4. Check rate limit for identifier change attempts
+	key := "change:identifier:" + session.Identity.Id
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return errResp
+	}
 
-	// 4. Extract the current identifier from traits
+	// 5. Extract existing identity traits
 	traitsMap, ok := safeExtractTraits(session.Identity.Traits)
 	if !ok {
 		return &dto.ErrorDTOResponse{
@@ -599,37 +601,68 @@ func (u *userUseCase) ChangeIdentifier(
 			Message: "Unable to extract user traits",
 		}
 	}
-	currentIdentifier := extractStringFromTraits(traitsMap, identifierType, "")
+	tenantName := extractStringFromTraits(traitsMap, constants.IdentifierTenant.String(), "")
+	currentEmail := extractStringFromTraits(traitsMap, constants.IdentifierEmail.String(), "")
+	currentPhone := extractStringFromTraits(traitsMap, constants.IdentifierPhone.String(), "")
 
-	// 5. Check rate limit to prevent abuse
-	rateLimitKey := fmt.Sprintf("change:%s", currentIdentifier)
-	if errResp := utils.CheckRateLimit(u.rateLimiter, rateLimitKey, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
-		return errResp
-	}
-
-	// 6. Initialize a new verification flow for the new identifier
-	flow, err := u.kratosService.InitializeVerificationFlow(ctx, tenantID)
+	// 6. Initialize a new registration flow
+	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
 	if err != nil {
 		return &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "MSG_INITIALIZE_VERIFICATION_FAILED",
-			Message: "Failed to initialize verification flow",
+			Code:    "MSG_INITIALIZE_REGISTRATION_FAILED",
+			Message: "Failed to initialize registration flow",
 			Details: []any{err.Error()},
 		}
 	}
 
-	// 7. Submit the verification flow to send the code to the new identifier
-	_, err = u.kratosService.SubmitVerificationFlowWithTraits(ctx, tenantID, flow, identifierType, newIdentifier)
+	// 7. Prepare updated traits with new identifier
+	newTraits := map[string]any{
+		"tenant": tenantName,
+	}
+
+	// Ensure new identifier is different from current one
+	if identifierType == constants.IdentifierEmail.String() {
+		if newIdentifier == currentEmail {
+			return &dto.ErrorDTOResponse{
+				Status:  http.StatusBadRequest,
+				Code:    "MSG_IDENTIFIER_UNCHANGED",
+				Message: "New email must be different from the current one",
+			}
+		}
+		newTraits[constants.IdentifierEmail.String()] = newIdentifier
+		newTraits[constants.IdentifierPhone.String()] = currentPhone // optional
+	} else {
+		if newIdentifier == currentPhone {
+			return &dto.ErrorDTOResponse{
+				Status:  http.StatusBadRequest,
+				Code:    "MSG_IDENTIFIER_UNCHANGED",
+				Message: "New phone number must be different from the current one",
+			}
+		}
+		newTraits[constants.IdentifierPhone.String()] = newIdentifier
+		newTraits[constants.IdentifierEmail.String()] = currentEmail // optional
+	}
+	// TODO: Should check new identifier on tenant not exists in IAM
+
+	// 8. Submit registration flow to send verification code
+	_, err = u.kratosService.SubmitRegistrationFlow(
+		ctx,
+		tenantID,
+		flow,
+		constants.MethodTypeCode.String(),
+		newTraits,
+	)
 	if err != nil {
 		return &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_SEND_CODE_FAILED",
-			Message: "Failed to send verification code to new identifier",
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_REGISTRATION_SUBMIT_FAILED",
+			Message: "Failed to send verification code",
 			Details: []any{err.Error()},
 		}
 	}
 
-	// 8. Save challenge session for later verification (VerifyNewIdentifier)
+	// 9. Save challenge session for later verification
 	challenge := &domain.ChallengeSession{
 		Type:  identifierType,
 		Email: ifEmail(identifierType, newIdentifier),
@@ -637,16 +670,15 @@ func (u *userUseCase) ChangeIdentifier(
 		Flow:  flow.Id,
 	}
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, challenge, constants.DefaultChallengeDuration); err != nil {
-		logger.GetLogger().Errorf("Failed to save challenge session: %v", err)
 		return &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_SAVING_SESSION_FAILED",
-			Message: "Saving challenge session failed",
+			Message: "Failed to save challenge session",
 			Details: []any{err.Error()},
 		}
 	}
 
-	// 9. Revoke the current session to force re-authentication
+	// 9. Revoke current session to force re-authentication after identifier is changed
 	if err := u.kratosService.RevokeSession(ctx, tenantID, currentSessionToken); err != nil {
 		return &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,

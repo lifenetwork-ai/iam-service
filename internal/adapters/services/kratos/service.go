@@ -409,18 +409,6 @@ func (k *kratosServiceImpl) UpdateIdentifierTrait(
 	return nil
 }
 
-// SubmitVerificationFlowWithTraits submits a verification flow to send a code to a new identifier (email or phone).
-func (k *kratosServiceImpl) SubmitVerificationFlowWithTraits(
-	ctx context.Context,
-	tenantID uuid.UUID,
-	flow *kratos.VerificationFlow,
-	identifierType string,
-	newIdentifier string,
-) (*kratos.VerificationFlow, error) {
-	// TODO: Implement this method to handle identifier change flows
-	return nil, nil
-}
-
 // parseKratosErrorResponse parses error response from Kratos and returns appropriate error
 func (k *kratosServiceImpl) parseKratosErrorResponse(resp *http.Response, defaultErr error) error {
 	if resp == nil {

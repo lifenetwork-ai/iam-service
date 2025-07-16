@@ -34,9 +34,6 @@ type KratosService interface {
 	GetSession(ctx context.Context, tenantID uuid.UUID, sessionToken string) (*kratos.Session, error)
 	RevokeSession(ctx context.Context, tenantID uuid.UUID, sessionToken string) error
 	WhoAmI(ctx context.Context, tenantID uuid.UUID, sessionToken string) (*kratos.Session, error)
-
-	// Identifier change flow
-	SubmitVerificationFlowWithTraits(ctx context.Context, tenantID uuid.UUID, flow *kratos.VerificationFlow, identifierType, newIdentifier string) (*kratos.VerificationFlow, error)
 }
 
 // KratosResponse represents the structured response from Kratos API
