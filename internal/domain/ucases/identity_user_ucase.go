@@ -148,7 +148,7 @@ func (u *userUseCase) ChallengeWithEmail(
 			Message: "Invalid email",
 			Details: []any{
 				map[string]string{
-					"field": "email",
+					"field": constants.IdentifierEmail.String(),
 					"error": "Invalid email",
 				},
 			},
@@ -186,7 +186,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	// Create challenge session
 	sessionID := uuid.New().String()
 	err = u.challengeSessionRepo.SaveChallenge(ctx, sessionID, &domain.ChallengeSession{
-		Type:  "email",
+		Type:  constants.IdentifierEmail.String(),
 		Email: email,
 		Flow:  flow.Id,
 	}, constants.DefaultChallengeDuration)
@@ -253,8 +253,8 @@ func (u *userUseCase) VerifyRegister(
 		}
 	}
 
-	email := extractStringFromTraits(traits, "email", "")
-	phone := extractStringFromTraits(traits, "phone_number", "")
+	email := extractStringFromTraits(traits, constants.IdentifierEmail.String(), "")
+	phone := extractStringFromTraits(traits, constants.IdentifierPhone.String(), "")
 	tenantName := extractStringFromTraits(traits, "tenant", "")
 	tenantUserID := registrationResult.Session.Identity.Id
 
@@ -367,7 +367,7 @@ func (u *userUseCase) VerifyRegister(
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       tenantUserID,
-			UserName: extractStringFromTraits(traits, "username", ""),
+			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    email,
 			Phone:    phone,
 		},
@@ -446,9 +446,9 @@ func (u *userUseCase) VerifyLogin(
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       loginResult.Session.Identity.Id,
-			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
+			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
+			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -537,9 +537,9 @@ func (u *userUseCase) ChallengeVerify(
 		AuthenticatedAt: session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       session.Identity.Id,
-			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
+			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
+			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -547,11 +547,116 @@ func (u *userUseCase) ChallengeVerify(
 	}, nil
 }
 
-// TODO: Implement ChangeIdentifier
-func (u *userUseCase) ChangeIdentifier(ctx context.Context,
+// ChangeIdentifier changes the user's identifier (email or phone)
+func (u *userUseCase) ChangeIdentifier(
+	ctx context.Context,
 	tenantID uuid.UUID,
-	payload dto.IdentityUserPreChangeDTO,
-) {
+	newIdentifier string,
+) *dto.ErrorDTOResponse {
+	// 1. Determine the identifier type (email or phone)
+	identifierType, err := utils.GetIdentifierType(newIdentifier)
+	if err != nil {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_INVALID_IDENTIFIER",
+			Message: "Unsupported identifier format",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// 2. Retrieve session token from context
+	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
+	currentSessionToken, ok := sessionTokenVal.(string)
+	if !ok || currentSessionToken == "" {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "MSG_UNAUTHORIZED",
+			Message: "Unauthorized",
+		}
+	}
+
+	// 3. Get identity session from Kratos
+	session, err := u.kratosService.WhoAmI(ctx, tenantID, currentSessionToken)
+	if err != nil {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "MSG_INVALID_SESSION",
+			Message: "Invalid session",
+			Details: []any{err.Error()},
+		}
+	}
+	identityID := session.Identity.Id
+
+	// Log for auditing
+	logger.GetLogger().Infof("Initiating identifier change for user %s to %s", identityID, newIdentifier)
+
+	// 4. Extract the current identifier from traits
+	traitsMap, ok := safeExtractTraits(session.Identity.Traits)
+	if !ok {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_EXTRACT_TRAITS_FAILED",
+			Message: "Unable to extract user traits",
+		}
+	}
+	currentIdentifier := extractStringFromTraits(traitsMap, identifierType, "")
+
+	// 5. Check rate limit to prevent abuse
+	rateLimitKey := fmt.Sprintf("change:%s", currentIdentifier)
+	if errResp := utils.CheckRateLimit(u.rateLimiter, rateLimitKey, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return errResp
+	}
+
+	// 6. Initialize a new verification flow for the new identifier
+	flow, err := u.kratosService.InitializeVerificationFlow(ctx, tenantID)
+	if err != nil {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_INITIALIZE_VERIFICATION_FAILED",
+			Message: "Failed to initialize verification flow",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// 7. Submit the verification flow to send the code to the new identifier
+	_, err = u.kratosService.SubmitVerificationFlowWithTraits(ctx, tenantID, flow, identifierType, newIdentifier)
+	if err != nil {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_SEND_CODE_FAILED",
+			Message: "Failed to send verification code to new identifier",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// 8. Save challenge session for later verification (VerifyNewIdentifier)
+	challenge := &domain.ChallengeSession{
+		Type:  identifierType,
+		Email: ifEmail(identifierType, newIdentifier),
+		Phone: ifPhone(identifierType, newIdentifier),
+		Flow:  flow.Id,
+	}
+	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, challenge, constants.DefaultChallengeDuration); err != nil {
+		logger.GetLogger().Errorf("Failed to save challenge session: %v", err)
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_SAVING_SESSION_FAILED",
+			Message: "Saving challenge session failed",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// 9. Revoke the current session to force re-authentication
+	if err := u.kratosService.RevokeSession(ctx, tenantID, currentSessionToken); err != nil {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_SESSION_REVOKE_FAILED",
+			Message: "Failed to revoke session",
+			Details: []any{err.Error()},
+		}
+	}
+
+	return nil
 }
 
 // Register registers a new user
@@ -646,10 +751,10 @@ func (u *userUseCase) Register(
 		"tenant": tenant.Name,
 	}
 	if payload.Email != "" {
-		traits["email"] = payload.Email
+		traits[constants.IdentifierEmail.String()] = payload.Email
 	}
 	if payload.Phone != "" {
-		traits["phone_number"] = payload.Phone
+		traits[constants.IdentifierPhone.String()] = payload.Phone
 	}
 
 	// Submit registration flow
@@ -720,9 +825,9 @@ func (u *userUseCase) LogIn(
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       loginResult.Session.Identity.Id,
-			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
+			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
+			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -791,9 +896,9 @@ func (u *userUseCase) RefreshToken(
 		AuthenticatedAt: session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       session.Identity.Id,
-			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
+			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
+			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -857,6 +962,20 @@ func (u *userUseCase) Profile(
 	return &user, nil
 }
 
+func ifEmail(identifierType, val string) string {
+	if identifierType == constants.IdentifierEmail.String() {
+		return val
+	}
+	return ""
+}
+
+func ifPhone(identifierType, val string) string {
+	if identifierType == constants.IdentifierPhone.String() {
+		return val
+	}
+	return ""
+}
+
 // safeExtractTraits safely converts interface{} to map[string]interface{}
 // Returns the map and a boolean indicating success
 func safeExtractTraits(traits interface{}) (map[string]interface{}, bool) {
@@ -893,10 +1012,10 @@ func extractUserFromTraits(traits interface{}, fallbackEmail, fallbackPhone stri
 	}
 
 	return dto.IdentityUserDTO{
-		UserName: extractStringFromTraits(traitsMap, "username", ""),
-		Email:    extractStringFromTraits(traitsMap, "email", fallbackEmail),
-		Phone:    extractStringFromTraits(traitsMap, "phone_number", fallbackPhone),
-		Tenant:   extractStringFromTraits(traitsMap, "tenant", ""),
+		UserName: extractStringFromTraits(traitsMap, constants.IdentifierUsername.String(), ""),
+		Email:    extractStringFromTraits(traitsMap, constants.IdentifierEmail.String(), fallbackEmail),
+		Phone:    extractStringFromTraits(traitsMap, constants.IdentifierPhone.String(), fallbackPhone),
+		Tenant:   extractStringFromTraits(traitsMap, constants.IdentifierTenant.String(), ""),
 	}, nil
 }
 
