@@ -56,7 +56,7 @@ func XHeaderValidationMiddleware() gin.HandlerFunc {
 		if err != nil {
 			logger.GetLogger().Errorf("Failed to retrieve tenant from cache: %v", err)
 		}
-		logger.GetLogger().Infof("tenant: %v", tenant)
+
 		if tenant != nil {
 			c.Set(string(TenantIDKey), tenant.ID)
 			c.Set(string(TenantKey), tenant)
