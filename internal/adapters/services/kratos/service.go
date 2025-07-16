@@ -377,37 +377,64 @@ func (k *kratosServiceImpl) WhoAmI(ctx context.Context, tenantID uuid.UUID, sess
 	return session, nil
 }
 
-// ChangeIdentifier changes the user's identifier (email or phone number)
-func (k *kratosServiceImpl) ChangeIdentifier(
+// PreChangeIdentifier prepares for changing an identifier (email or phone number) by verifying the old identifier via OTP
+func (k *kratosServiceImpl) PreChangeIdentifier(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	sessionToken, oldIdentifier, oldCode, newIdentifier, identifierType string, // identifierType: "email" or "phone_number"
-) error {
+) (string, error) {
 	publicAPI, err := k.client.PublicAPI(tenantID)
 	if err != nil {
-		return fmt.Errorf("get public Kratos API failed: %w", err)
+		return "", fmt.Errorf("get public Kratos API failed: %w", err)
 	}
 
 	// Step 1: Get identity ID from session
 	session, _, err := publicAPI.FrontendAPI.ToSession(ctx).XSessionToken(sessionToken).Execute()
 	if err != nil {
-		return fmt.Errorf("get session failed: %w", err)
+		return "", fmt.Errorf("get session failed: %w", err)
 	}
 	identityID := session.Identity.Id
 
 	// Step 2: Verify old identifier via OTP
 	if err := k.verifyIdentifierViaOTP(ctx, publicAPI, oldIdentifier, oldCode); err != nil {
-		return fmt.Errorf("verify old identifier failed: %w", err)
+		return "", fmt.Errorf("verify old identifier failed: %w", err)
 	}
 
 	// Step 3: Revoke current session
 	if err := k.RevokeSession(ctx, tenantID, sessionToken); err != nil {
-		return fmt.Errorf("revoke session failed: %w", err)
+		return "", fmt.Errorf("revoke session failed: %w", err)
 	}
 
-	// Step 4: Update identity trait (email/phone_number)
-	if err := k.updateIdentifierTrait(ctx, tenantID, identityID, identifierType, newIdentifier); err != nil {
-		return fmt.Errorf("update identifier trait failed: %w", err)
+	return identityID, nil
+}
+
+// UpdateIdentifierTrait updates the identifier trait (email or phone number) in the identity
+func (k *kratosServiceImpl) UpdateIdentifierTrait(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	identityID, identifierType, newIdentifier string,
+) error {
+	adminAPI, err := k.client.AdminAPI(tenantID)
+	if err != nil {
+		return fmt.Errorf("get admin API failed: %w", err)
+	}
+
+	identity, _, err := adminAPI.IdentityAPI.GetIdentity(ctx, identityID).Execute()
+	if err != nil {
+		return fmt.Errorf("fetch identity failed: %w", err)
+	}
+
+	traits, ok := identity.Traits.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("identity traits cast failed")
+	}
+	traits[identifierType] = newIdentifier
+
+	update := kratos.UpdateIdentityBody{Traits: traits}
+	_, _, err = adminAPI.IdentityAPI.UpdateIdentity(ctx, identityID).
+		UpdateIdentityBody(update).Execute()
+	if err != nil {
+		return fmt.Errorf("update identity failed: %w", err)
 	}
 
 	return nil
@@ -438,38 +465,6 @@ func (k *kratosServiceImpl) verifyIdentifierViaOTP(
 		Execute()
 	if err != nil {
 		return fmt.Errorf("OTP verification failed: %w", err)
-	}
-
-	return nil
-}
-
-// updateIdentifierTrait updates the identifier trait (email or phone number) in the identity
-func (k *kratosServiceImpl) updateIdentifierTrait(
-	ctx context.Context,
-	tenantID uuid.UUID,
-	identityID, identifierType, newIdentifier string,
-) error {
-	adminAPI, err := k.client.AdminAPI(tenantID)
-	if err != nil {
-		return fmt.Errorf("get admin API failed: %w", err)
-	}
-
-	identity, _, err := adminAPI.IdentityAPI.GetIdentity(ctx, identityID).Execute()
-	if err != nil {
-		return fmt.Errorf("fetch identity failed: %w", err)
-	}
-
-	traits, ok := identity.Traits.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("identity traits cast failed")
-	}
-	traits[identifierType] = newIdentifier
-
-	update := kratos.UpdateIdentityBody{Traits: traits}
-	_, _, err = adminAPI.IdentityAPI.UpdateIdentity(ctx, identityID).
-		UpdateIdentityBody(update).Execute()
-	if err != nil {
-		return fmt.Errorf("update identity failed: %w", err)
 	}
 
 	return nil
