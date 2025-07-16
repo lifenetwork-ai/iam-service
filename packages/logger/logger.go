@@ -173,8 +173,13 @@ func (z *zapLogger) Panicf(format string, values ...interface{}) {
 
 // WithFields creates a new logger instance with additional fields.
 func (z *zapLogger) WithFields(fields map[string]interface{}) Logger {
+	args := make([]interface{}, 0, len(fields)*2)
+	for k, v := range fields {
+		args = append(args, k, v)
+	}
+
 	return &zapLogger{
-		sugaredLogger: z.sugaredLogger.With(fields),
+		sugaredLogger: z.sugaredLogger.With(args...),
 		currentLevel:  z.currentLevel,
 	}
 }
