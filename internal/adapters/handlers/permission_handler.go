@@ -21,6 +21,14 @@ func NewPermissionHandler(ketoClient *keto.Client) *permissionHandler {
 	}
 }
 
+// CreateRelationTuple creates a relation tuple
+// @Summary Create relation tuple
+// @Description Create a relation tuple
+// @Tags permissions
+// @Accept json
+// @Produce json
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Param request body dto.CreateRelationTupleRequestDTO true "Relation tuple creation request"
 func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 	_, err := middleware.GetTenantFromContext(c.Request.Context())
 	if err != nil {

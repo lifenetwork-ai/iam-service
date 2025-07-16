@@ -17,6 +17,35 @@ definitions:
       username:
         type: string
     type: object
+  dto.CheckPermissionRequestDTO:
+    properties:
+      action:
+        description: What they want to do (e.g., "read", "write", "delete")
+        type: string
+      namespace:
+        type: string
+      object:
+        description: What they want to do it to (e.g., "document:123")
+        type: string
+      subject_id:
+        description: Who wants to perform the action (user ID, role, etc.)
+        type: string
+      subject_set:
+        $ref: '#/definitions/dto.SubjectSet'
+    required:
+    - action
+    - namespace
+    - object
+    type: object
+  dto.CheckPermissionResponseDTO:
+    properties:
+      allowed:
+        description: Whether the action is allowed
+        type: boolean
+      reason:
+        description: Optional explanation for why permission was denied
+        type: string
+    type: object
   dto.CreateAdminAccountPayloadDTO:
     properties:
       password:
@@ -32,6 +61,23 @@ definitions:
     - password
     - role
     - username
+    type: object
+  dto.CreateRelationTupleRequestDTO:
+    properties:
+      namespace:
+        type: string
+      object:
+        type: string
+      relation:
+        type: string
+      subject_id:
+        type: string
+      subject_set:
+        $ref: '#/definitions/dto.SubjectSet'
+    required:
+    - namespace
+    - object
+    - relation
     type: object
   dto.CreateTenantPayloadDTO:
     properties:
@@ -161,6 +207,19 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  dto.SubjectSet:
+    properties:
+      namespace:
+        type: string
+      object:
+        type: string
+      relation:
+        type: string
+    required:
+    - namespace
+    - object
+    - relation
     type: object
   dto.TenantDTO:
     properties:
@@ -493,6 +552,41 @@ paths:
       summary: Update tenant status
       tags:
       - tenants
+  /api/v1/permissions/check:
+    post:
+      consumes:
+      - application/json
+      description: Check if a subject has permission to perform an action on an object
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Permission check request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CheckPermissionRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CheckPermissionResponseDTO'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Check permission
+      tags:
+      - permissions
   /api/v1/users/challenge-verify:
     post:
       consumes:
