@@ -564,6 +564,8 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		}
 	}
 
+	// TODO: should check newIdentifier against existing identifiers in IAM
+
 	// 2. Retrieve session token from context
 	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
 	currentSessionToken, ok := sessionTokenVal.(string)
