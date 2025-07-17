@@ -279,16 +279,17 @@ func (u *userUseCase) VerifyRegister(
 		}
 	}
 
-	// Determine whether it's a registration or change-identifier flow
+	// Determine the identifier type
+	var identifier string
+	var identityType string
 	sessionValue, _ := u.challengeSessionRepo.GetChallenge(ctx, flowID)
-
-	if sessionValue != nil && sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
-		// === Flow: CHANGE IDENTIFIER ===
-		identifier := sessionValue.Email
+	if sessionValue != nil {
+		identifier = sessionValue.Email
 		if sessionValue.Phone != "" {
 			identifier = sessionValue.Phone
 		}
-		identityType, err := utils.GetIdentifierType(identifier)
+
+		identityType, err = utils.GetIdentifierType(identifier)
 		if err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusBadRequest,
@@ -297,10 +298,14 @@ func (u *userUseCase) VerifyRegister(
 				Details: []interface{}{err.Error()},
 			}
 		}
+	}
+
+	// Determine whether it's a registration or change-identifier flow
+	if sessionValue != nil && sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
+		// === Flow: CHANGE IDENTIFIER ===
 
 		// Update trait in Kratos
-		err = u.kratosService.UpdateIdentifierTrait(ctx, tenant.ID, sessionValue.IdentityID, identityType, identifier)
-		if err != nil {
+		if err := u.kratosService.UpdateIdentifierTrait(ctx, tenant.ID, sessionValue.IdentityID, identityType, identifier); err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "MSG_UPDATE_KRATOS_FAILED",
@@ -309,13 +314,12 @@ func (u *userUseCase) VerifyRegister(
 			}
 		}
 
-		// Update IAM db in tx
-		err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Update identity in IAM
+		if err := u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			return u.handleChangeIdentifier(
 				ctx, tx, tenant, sessionValue.IdentityID, newTenantUserID, identityType, identifier,
 			)
-		})
-		if err != nil {
+		}); err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "MSG_IAM_UPDATE_FAILED",
@@ -325,10 +329,9 @@ func (u *userUseCase) VerifyRegister(
 		}
 	} else {
 		// === Flow: REGISTRATION ===
-		err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone)
-		})
-		if err != nil {
+		}); err != nil {
 			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusInternalServerError,
 				Code:    "MSG_IAM_REGISTRATION_FAILED",
@@ -368,7 +371,7 @@ func (u *userUseCase) handleChangeIdentifier(
 	identifierType string,
 	newIdentifier string,
 ) error {
-	// Step 1: Get current identity
+	// Get current identity
 	identity, err := u.userIdentityRepo.GetByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), currentTenantUserID)
 	if err != nil {
 		return fmt.Errorf("get current identity failed: %w", err)
@@ -377,23 +380,16 @@ func (u *userUseCase) handleChangeIdentifier(
 		return fmt.Errorf("current identity not found for user %s in tenant %s", currentTenantUserID, tenant.ID)
 	}
 
-	// Step 2: Handle same type update
+	// Handle identifier update
 	if identity.Type == identifierType {
-		return u.updateSameTypeIdentity(tx, identity, newIdentifier)
-	}
-
-	// Step 3: Handle switch to different type (create new identity)
-	return u.createNewIdentity(ctx, tx, tenant, newTenantUserID, identifierType, newIdentifier)
-}
-
-func (u *userUseCase) updateSameTypeIdentity(
-	tx *gorm.DB,
-	identity *domain.UserIdentity,
-	newValue string,
-) error {
-	identity.Value = newValue
-	if err := u.userIdentityRepo.Update(tx, identity); err != nil {
-		return fmt.Errorf("update identity failed: %w", err)
+		// Handle same type update
+		identity.Value = newIdentifier
+		if err := u.userIdentityRepo.Update(tx, identity); err != nil {
+			return fmt.Errorf("update identity failed: %w", err)
+		}
+	} else {
+		// Handle different type update (create new identity)
+		return u.createNewIdentity(ctx, tx, tenant, newTenantUserID, identifierType, newIdentifier)
 	}
 	return nil
 }
