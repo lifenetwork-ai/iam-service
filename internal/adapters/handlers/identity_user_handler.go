@@ -246,7 +246,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token(Bearer ory...)" default(Bearer <token>)
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Success 200 {object} response.SuccessResponse "Successful get user profile"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
@@ -302,7 +302,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token(Bearer ory...)" default(Bearer <token>)
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Param request body object true "Empty request body"
 // @Success 200 {object} response.SuccessResponse{data=interface{}} "Successful de-authenticate user"
 // @Failure 401 {object} response.ErrorResponse "Unauthorized - Invalid or missing token"

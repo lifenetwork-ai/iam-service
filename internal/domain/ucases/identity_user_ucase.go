@@ -13,7 +13,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
+	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/types"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -31,7 +31,7 @@ type userUseCase struct {
 	userIdentityRepo          repositories.UserIdentityRepository
 	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository
 	challengeSessionRepo      repositories.ChallengeSessionRepository
-	kratosService             services.KratosService
+	kratosService             kratos_types.KratosService
 }
 
 func NewIdentityUserUseCase(
@@ -42,7 +42,7 @@ func NewIdentityUserUseCase(
 	globalUserRepo repositories.GlobalUserRepository,
 	userIdentityRepo repositories.UserIdentityRepository,
 	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository,
-	kratosService services.KratosService,
+	kratosService kratos_types.KratosService,
 ) ucasetypes.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,
@@ -74,7 +74,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	if !utils.IsPhoneNumber(phone) {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
-			Code:    "INVALID_PHONE_NUMBER",
+			Code:    "MSG_INVALID_PHONE_NUMBER",
 			Message: "Invalid phone number",
 			Details: []interface{}{
 				map[string]string{
@@ -96,7 +96,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "VERIFICATION_FLOW_FAILED",
+			Code:    "MSG_VERIFICATION_FLOW_FAILED",
 			Message: "Failed to initialize verification flow",
 			Details: []any{err.Error()},
 		}
@@ -107,7 +107,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
-			Code:    "LOGIN_FAILED",
+			Code:    "MSG_LOGIN_FAILED",
 			Message: "Login failed",
 			Details: []any{err.Error()},
 		}
@@ -115,7 +115,7 @@ func (u *userUseCase) ChallengeWithPhone(
 
 	// Create challenge session
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
-		Type:  "phone",
+		Type:  constants.IdentifierPhone.String(),
 		Phone: phone,
 		Flow:  flow.Id,
 	}, constants.DefaultChallengeDuration)
@@ -144,11 +144,11 @@ func (u *userUseCase) ChallengeWithEmail(
 	if !utils.IsEmail(email) {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
-			Code:    "INVALID_EMAIL",
+			Code:    "MSG_INVALID_EMAIL",
 			Message: "Invalid email",
 			Details: []any{
 				map[string]string{
-					"field": "email",
+					"field": constants.IdentifierEmail.String(),
 					"error": "Invalid email",
 				},
 			},
@@ -166,7 +166,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "VERIFICATION_FLOW_FAILED",
+			Code:    "MSG_VERIFICATION_FLOW_FAILED",
 			Message: "Failed to initialize login flow",
 			Details: []any{err.Error()},
 		}
@@ -177,7 +177,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "VERIFICATION_FLOW_FAILED",
+			Code:    "MSG_VERIFICATION_FLOW_FAILED",
 			Message: "Failed to submit login flow",
 			Details: []any{err.Error()},
 		}
@@ -186,7 +186,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	// Create challenge session
 	sessionID := uuid.New().String()
 	err = u.challengeSessionRepo.SaveChallenge(ctx, sessionID, &domain.ChallengeSession{
-		Type:  "email",
+		Type:  constants.IdentifierEmail.String(),
 		Email: email,
 		Flow:  flow.Id,
 	}, constants.DefaultChallengeDuration)
@@ -248,15 +248,15 @@ func (u *userUseCase) VerifyRegister(
 		logger.GetLogger().Errorf("Failed to parse identity traits: %v", traits)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
-			Code:    "INVALID_TRAITS",
+			Code:    "MSG_INVALID_TRAITS",
 			Message: "Failed to parse identity traits",
 		}
 	}
 
-	email := extractStringFromTraits(traits, "email", "")
-	phone := extractStringFromTraits(traits, "phone_number", "")
+	email := extractStringFromTraits(traits, constants.IdentifierEmail.String(), "")
+	phone := extractStringFromTraits(traits, constants.IdentifierPhone.String(), "")
 	tenantName := extractStringFromTraits(traits, "tenant", "")
-	tenantUserID := registrationResult.Session.Identity.Id
+	newTenantUserID := registrationResult.Session.Identity.Id
 
 	// Get tenant by name
 	tenant, err := u.tenantRepo.GetByName(tenantName)
@@ -279,81 +279,65 @@ func (u *userUseCase) VerifyRegister(
 		}
 	}
 
-	// IAM mapping logic
-	err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var globalUserID string
-
-		// Try to find existing global user
-		if email != "" {
-			identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierEmail.String(), email)
-			if err == nil {
-				globalUserID = identity.GlobalUserID
-			}
-		}
-		if globalUserID == "" && phone != "" {
-			identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierPhone.String(), phone)
-			if err == nil {
-				globalUserID = identity.GlobalUserID
-			}
+	// Determine the identifier type
+	var identifier string
+	var identityType string
+	sessionValue, _ := u.challengeSessionRepo.GetChallenge(ctx, flowID)
+	if sessionValue != nil {
+		identifier = sessionValue.Email
+		if sessionValue.Phone != "" {
+			identifier = sessionValue.Phone
 		}
 
-		var globalUser *domain.GlobalUser
-		if globalUserID != "" {
-			globalUser = &domain.GlobalUser{ID: globalUserID}
+		identityType, err = utils.GetIdentifierType(identifier)
+		if err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusBadRequest,
+				Code:    "MSG_INVALID_IDENTIFIER",
+				Message: "Invalid identifier type",
+				Details: []interface{}{err.Error()},
+			}
+		}
+	}
 
-			// Check if mapping already exists
-			exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), tenantUserID)
-			if err != nil {
-				return fmt.Errorf("check mapping exists: %w", err)
-			}
-			if exists {
-				return nil
-			}
-		} else {
-			// Create global user
-			globalUser = &domain.GlobalUser{}
-			if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
-				return fmt.Errorf("create global user: %w", err)
+	// Determine whether it's a registration or change-identifier flow
+	if sessionValue != nil && sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
+		// === Flow: CHANGE IDENTIFIER ===
+
+		// Update trait in Kratos
+		if err := u.kratosService.UpdateIdentifierTrait(ctx, tenant.ID, sessionValue.IdentityID, identityType, identifier); err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "MSG_UPDATE_KRATOS_FAILED",
+				Message: "Failed to update identifier in Kratos",
+				Details: []interface{}{err.Error()},
 			}
 		}
 
-		// Create UserIdentity records
-		if email != "" {
-			if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
-				GlobalUserID: globalUser.ID,
-				Type:         constants.IdentifierEmail.String(),
-				Value:        email,
-			}); err != nil {
-				return fmt.Errorf("email identity: %w", err)
-			}
-		}
-		if phone != "" {
-			if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
-				GlobalUserID: globalUser.ID,
-				Type:         constants.IdentifierPhone.String(),
-				Value:        phone,
-			}); err != nil {
-				return fmt.Errorf("phone identity: %w", err)
-			}
-		}
-
-		// Create mapping
-		if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
-			GlobalUserID: globalUser.ID,
-			TenantID:     tenant.ID.String(),
-			TenantUserID: tenantUserID,
+		// Update identity in IAM
+		if err := u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			return u.handleChangeIdentifier(
+				ctx, tx, tenant, sessionValue.IdentityID, newTenantUserID, identityType, identifier,
+			)
 		}); err != nil {
-			return fmt.Errorf("create mapping: %w", err)
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "MSG_IAM_UPDATE_FAILED",
+				Message: "Failed to update identifier in IAM",
+				Details: []interface{}{err.Error()},
+			}
 		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "IAM_REGISTRATION_FAILED",
-			Message: "Failed to persist IAM records",
-			Details: []any{err.Error()},
+	} else {
+		// === Flow: REGISTRATION ===
+		if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone)
+		}); err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "MSG_IAM_REGISTRATION_FAILED",
+				Message: "Failed to bind IAM to registration",
+				Details: []interface{}{err.Error()},
+			}
 		}
 	}
 
@@ -366,8 +350,8 @@ func (u *userUseCase) VerifyRegister(
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
-			ID:       tenantUserID,
-			UserName: extractStringFromTraits(traits, "username", ""),
+			ID:       newTenantUserID,
+			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    email,
 			Phone:    phone,
 		},
@@ -375,6 +359,134 @@ func (u *userUseCase) VerifyRegister(
 			return *method.Method
 		}),
 	}, nil
+}
+
+// handleChangeIdentifier handles the logic for changing the user's identifier
+func (u *userUseCase) handleChangeIdentifier(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenant *domain.Tenant,
+	currentTenantUserID string,
+	newTenantUserID string,
+	identifierType string,
+	newIdentifier string,
+) error {
+	// Get current identity
+	identity, err := u.userIdentityRepo.GetByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), currentTenantUserID)
+	if err != nil {
+		return fmt.Errorf("get current identity failed: %w", err)
+	}
+	if identity == nil {
+		return fmt.Errorf("current identity not found for user %s in tenant %s", currentTenantUserID, tenant.ID)
+	}
+
+	// Handle identifier update
+	if identity.Type == identifierType {
+		// Handle same type update
+		identity.Value = newIdentifier
+		if err := u.userIdentityRepo.Update(tx, identity); err != nil {
+			return fmt.Errorf("update identity failed: %w", err)
+		}
+	} else {
+		// Handle different type update (create new identity)
+		return u.createNewIdentity(ctx, tx, tenant, newTenantUserID, identifierType, newIdentifier)
+	}
+	return nil
+}
+
+func (u *userUseCase) createNewIdentity(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenant *domain.Tenant,
+	newTenantUserID string,
+	identityType string,
+	newValue string,
+) error {
+	email, phone := "", ""
+	if identityType == constants.IdentifierEmail.String() {
+		email = newValue
+	} else {
+		phone = newValue
+	}
+
+	if err := u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone); err != nil {
+		return fmt.Errorf("bind new identity: %w", err)
+	}
+	return nil
+}
+
+// bindIAMToRegistration binds the IAM records to the registration flow
+func (u *userUseCase) bindIAMToRegistration(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenant *domain.Tenant,
+	newTenantUserID string,
+	email string,
+	phone string,
+) error {
+	var globalUserID string
+
+	// Lookup existing identity
+	if email != "" {
+		if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierEmail.String(), email); err == nil {
+			globalUserID = identity.GlobalUserID
+		}
+	}
+	if globalUserID == "" && phone != "" {
+		if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierPhone.String(), phone); err == nil {
+			globalUserID = identity.GlobalUserID
+		}
+	}
+
+	var globalUser *domain.GlobalUser
+	if globalUserID != "" {
+		globalUser = &domain.GlobalUser{ID: globalUserID}
+
+		// Check if already mapped
+		exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), newTenantUserID)
+		if err != nil {
+			return fmt.Errorf("check mapping exists: %w", err)
+		}
+		if exists {
+			return nil
+		}
+	} else {
+		globalUser = &domain.GlobalUser{}
+		if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
+			return fmt.Errorf("create global user: %w", err)
+		}
+	}
+
+	// Create identities
+	if email != "" {
+		if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
+			GlobalUserID: globalUser.ID,
+			Type:         constants.IdentifierEmail.String(),
+			Value:        email,
+		}); err != nil {
+			return fmt.Errorf("create email identity: %w", err)
+		}
+	}
+	if phone != "" {
+		if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
+			GlobalUserID: globalUser.ID,
+			Type:         constants.IdentifierPhone.String(),
+			Value:        phone,
+		}); err != nil {
+			return fmt.Errorf("create phone identity: %w", err)
+		}
+	}
+
+	// Create mapping
+	if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
+		GlobalUserID: globalUser.ID,
+		TenantID:     tenant.ID.String(),
+		TenantUserID: newTenantUserID,
+	}); err != nil {
+		return fmt.Errorf("create mapping: %w", err)
+	}
+
+	return nil
 }
 
 // VerifyLogin verifies the login flow
@@ -446,9 +558,9 @@ func (u *userUseCase) VerifyLogin(
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       loginResult.Session.Identity.Id,
-			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
+			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
+			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -537,13 +649,177 @@ func (u *userUseCase) ChallengeVerify(
 		AuthenticatedAt: session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       session.Identity.Id,
-			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
+			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
+			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
 		}),
+	}, nil
+}
+
+// ChangeIdentifierWithRegisterFlow changes the user's identifier (email or phone) using a registration flow.
+func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	newIdentifier string,
+) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
+	// 1. Determine identifier type (email or phone)
+	identifierType, err := utils.GetIdentifierType(newIdentifier)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_INVALID_IDENTIFIER",
+			Message: "Unsupported identifier format",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// 2. Retrieve session token from context
+	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
+	currentSessionToken, ok := sessionTokenVal.(string)
+	if !ok || currentSessionToken == "" {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "MSG_UNAUTHORIZED",
+			Message: "Unauthorized",
+		}
+	}
+
+	// 3. Fetch current session using WhoAmI
+	session, err := u.kratosService.WhoAmI(ctx, tenantID, currentSessionToken)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "MSG_INVALID_SESSION",
+			Message: "Invalid session",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// 4. Check rate limit for identifier change attempts
+	identityID := session.Identity.Id
+	key := "change:identifier:" + identityID
+	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
+		return nil, errResp
+	}
+
+	// 5. Extract current traits
+	traitsMap, ok := safeExtractTraits(session.Identity.Traits)
+	if !ok {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_EXTRACT_TRAITS_FAILED",
+			Message: "Unable to extract user traits",
+		}
+	}
+	tenantName := extractStringFromTraits(traitsMap, constants.IdentifierTenant.String(), "")
+	currentEmail := extractStringFromTraits(traitsMap, constants.IdentifierEmail.String(), "")
+	currentPhone := extractStringFromTraits(traitsMap, constants.IdentifierPhone.String(), "")
+
+	// 6. Initialize a new registration flow
+	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_INITIALIZE_REGISTRATION_FAILED",
+			Message: "Failed to initialize registration flow",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// 7. Prepare updated traits
+	newTraits := map[string]any{
+		"tenant": tenantName,
+	}
+	if identifierType == constants.IdentifierEmail.String() {
+		if newIdentifier == currentEmail {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusBadRequest,
+				Code:    "MSG_IDENTIFIER_UNCHANGED",
+				Message: "New email must be different from the current one",
+			}
+		}
+		newTraits[constants.IdentifierEmail.String()] = newIdentifier
+		newTraits[constants.IdentifierPhone.String()] = currentPhone
+	} else {
+		if newIdentifier == currentPhone {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusBadRequest,
+				Code:    "MSG_IDENTIFIER_UNCHANGED",
+				Message: "New phone number must be different from the current one",
+			}
+		}
+		newTraits[constants.IdentifierPhone.String()] = newIdentifier
+		newTraits[constants.IdentifierEmail.String()] = currentEmail
+	}
+
+	// 8. Check if new identifier already exists in IAM
+	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), identifierType, newIdentifier)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_IAM_LOOKUP_FAILED",
+			Message: "Failed to check identifier existence",
+			Details: []any{err.Error()},
+		}
+	}
+	if exists {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusConflict,
+			Code:    "MSG_IDENTIFIER_ALREADY_EXISTS",
+			Message: "This identifier is already in use",
+		}
+	}
+
+	// 9. Submit registration flow to trigger code
+	_, err = u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), newTraits)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_REGISTRATION_SUBMIT_FAILED",
+			Message: "Failed to send verification code",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// 10. Save challenge session
+	challenge := &domain.ChallengeSession{
+		ChallengeType: constants.ChallengeTypeChangeIdentifier,
+		Type:          identifierType,
+		Email:         ifEmail(identifierType, newIdentifier),
+		Phone:         ifPhone(identifierType, newIdentifier),
+		Flow:          flow.Id,
+		IdentityID:    identityID,
+	}
+	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, challenge, constants.DefaultChallengeDuration); err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_SAVING_SESSION_FAILED",
+			Message: "Failed to save challenge session",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// 11. Revoke current session
+	if err := u.kratosService.RevokeSession(ctx, tenantID, currentSessionToken); err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_SESSION_REVOKE_FAILED",
+			Message: "Failed to revoke session",
+			Details: []any{err.Error()},
+		}
+	}
+
+	// Return verification flow info
+	return &dto.IdentityUserAuthDTO{
+		VerificationNeeded: true,
+		VerificationFlow: &dto.IdentityUserChallengeDTO{
+			FlowID:      flow.Id,
+			Receiver:    newIdentifier,
+			ChallengeAt: time.Now().Unix(),
+		},
 	}, nil
 }
 
@@ -639,10 +915,10 @@ func (u *userUseCase) Register(
 		"tenant": tenant.Name,
 	}
 	if payload.Email != "" {
-		traits["email"] = payload.Email
+		traits[constants.IdentifierEmail.String()] = payload.Email
 	}
 	if payload.Phone != "" {
-		traits["phone_number"] = payload.Phone
+		traits[constants.IdentifierPhone.String()] = payload.Phone
 	}
 
 	// Submit registration flow
@@ -713,9 +989,9 @@ func (u *userUseCase) LogIn(
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       loginResult.Session.Identity.Id,
-			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
+			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
+			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -784,9 +1060,9 @@ func (u *userUseCase) RefreshToken(
 		AuthenticatedAt: session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
 			ID:       session.Identity.Id,
-			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "username", ""),
-			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "email", ""),
-			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), "phone_number", ""),
+			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
+			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
+			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -850,6 +1126,20 @@ func (u *userUseCase) Profile(
 	return &user, nil
 }
 
+func ifEmail(identifierType, val string) string {
+	if identifierType == constants.IdentifierEmail.String() {
+		return val
+	}
+	return ""
+}
+
+func ifPhone(identifierType, val string) string {
+	if identifierType == constants.IdentifierPhone.String() {
+		return val
+	}
+	return ""
+}
+
 // safeExtractTraits safely converts interface{} to map[string]interface{}
 // Returns the map and a boolean indicating success
 func safeExtractTraits(traits interface{}) (map[string]interface{}, bool) {
@@ -886,10 +1176,10 @@ func extractUserFromTraits(traits interface{}, fallbackEmail, fallbackPhone stri
 	}
 
 	return dto.IdentityUserDTO{
-		UserName: extractStringFromTraits(traitsMap, "username", ""),
-		Email:    extractStringFromTraits(traitsMap, "email", fallbackEmail),
-		Phone:    extractStringFromTraits(traitsMap, "phone_number", fallbackPhone),
-		Tenant:   extractStringFromTraits(traitsMap, "tenant", ""),
+		UserName: extractStringFromTraits(traitsMap, constants.IdentifierUsername.String(), ""),
+		Email:    extractStringFromTraits(traitsMap, constants.IdentifierEmail.String(), fallbackEmail),
+		Phone:    extractStringFromTraits(traitsMap, constants.IdentifierPhone.String(), fallbackPhone),
+		Tenant:   extractStringFromTraits(traitsMap, constants.IdentifierTenant.String(), ""),
 	}, nil
 }
 
