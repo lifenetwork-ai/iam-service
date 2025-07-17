@@ -616,7 +616,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "default": "Bearer \u003ctoken\u003e",
-                        "description": "Bearer Token(Bearer ory...)",
+                        "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -687,7 +687,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "default": "Bearer \u003ctoken\u003e",
-                        "description": "Bearer Token(Bearer ory...)",
+                        "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true

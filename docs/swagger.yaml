@@ -624,7 +624,7 @@ paths:
         required: true
         type: string
       - default: Bearer <token>
-        description: Bearer Token(Bearer ory...)
+        description: Bearer Token (Bearer ory...)
         in: header
         name: Authorization
         required: true
@@ -669,7 +669,7 @@ paths:
         required: true
         type: string
       - default: Bearer <token>
-        description: Bearer Token(Bearer ory...)
+        description: Bearer Token (Bearer ory...)
         in: header
         name: Authorization
         required: true
