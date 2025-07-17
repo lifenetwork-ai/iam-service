@@ -279,42 +279,62 @@ func (u *userUseCase) VerifyRegister(
 		}
 	}
 
-	err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		sessionValue, _ := u.challengeSessionRepo.GetChallenge(ctx, flowID)
-		if sessionValue != nil && sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
-			identifier := sessionValue.Email
-			if sessionValue.Phone != "" {
-				identifier = sessionValue.Phone
-			}
+	// Determine whether it's a registration or change-identifier flow
+	sessionValue, _ := u.challengeSessionRepo.GetChallenge(ctx, flowID)
 
-			// Update identifier trait in Kratos
-			identityType, err := utils.GetIdentifierType(identifier)
-			if err != nil {
-				return fmt.Errorf("get identifier type failed: %w", err)
-			}
-			err = u.kratosService.UpdateIdentifierTrait(
-				ctx, tenant.ID, sessionValue.IdentityID, identityType, identifier,
-			)
-			if err != nil {
-				return fmt.Errorf("update identifier trait failed: %w", err)
-			}
-
-			// Handle change identifier
-			currentTenantUserID := sessionValue.IdentityID
-			return u.handleChangeIdentifier(
-				ctx, tx, tenant, currentTenantUserID, newTenantUserID, identityType, identifier,
-			)
-		} else {
-			// IAM mapping logic
-			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone)
+	if sessionValue != nil && sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
+		// === Flow: CHANGE IDENTIFIER ===
+		identifier := sessionValue.Email
+		if sessionValue.Phone != "" {
+			identifier = sessionValue.Phone
 		}
-	})
-	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_IAM_REGISTRATION_FAILED",
-			Message: "Failed to process IAM registration transaction",
-			Details: []interface{}{err.Error()},
+		identityType, err := utils.GetIdentifierType(identifier)
+		if err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusBadRequest,
+				Code:    "MSG_INVALID_IDENTIFIER",
+				Message: "Invalid identifier type",
+				Details: []interface{}{err.Error()},
+			}
+		}
+
+		// Update trait in Kratos
+		err = u.kratosService.UpdateIdentifierTrait(ctx, tenant.ID, sessionValue.IdentityID, identityType, identifier)
+		if err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "MSG_UPDATE_KRATOS_FAILED",
+				Message: "Failed to update identifier in Kratos",
+				Details: []interface{}{err.Error()},
+			}
+		}
+
+		// Update IAM db in tx
+		err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			return u.handleChangeIdentifier(
+				ctx, tx, tenant, sessionValue.IdentityID, newTenantUserID, identityType, identifier,
+			)
+		})
+		if err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "MSG_IAM_UPDATE_FAILED",
+				Message: "Failed to update identifier in IAM",
+				Details: []interface{}{err.Error()},
+			}
+		}
+	} else {
+		// === Flow: REGISTRATION ===
+		err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone)
+		})
+		if err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "MSG_IAM_REGISTRATION_FAILED",
+				Message: "Failed to bind IAM to registration",
+				Details: []interface{}{err.Error()},
+			}
 		}
 	}
 
