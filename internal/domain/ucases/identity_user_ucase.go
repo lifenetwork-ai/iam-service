@@ -564,8 +564,6 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		}
 	}
 
-	// TODO: should check newIdentifier against existing identifiers in IAM
-
 	// 2. Retrieve session token from context
 	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
 	currentSessionToken, ok := sessionTokenVal.(string)
@@ -644,7 +642,25 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		newTraits[constants.IdentifierEmail.String()] = currentEmail
 	}
 
-	// 8. Submit registration flow to trigger code
+	// 8. Check if new identifier already exists in IAM
+	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), identifierType, newIdentifier)
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_IAM_LOOKUP_FAILED",
+			Message: "Failed to check identifier existence",
+			Details: []any{err.Error()},
+		}
+	}
+	if exists {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusConflict,
+			Code:    "MSG_IDENTIFIER_ALREADY_EXISTS",
+			Message: "This identifier is already in use",
+		}
+	}
+
+	// 9. Submit registration flow to trigger code
 	_, err = u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), newTraits)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
@@ -655,7 +671,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		}
 	}
 
-	// 9. Save challenge session
+	// 10. Save challenge session
 	challenge := &domain.ChallengeSession{
 		Type:  identifierType,
 		Email: ifEmail(identifierType, newIdentifier),
@@ -671,7 +687,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		}
 	}
 
-	// 10. Revoke current session
+	// 11. Revoke current session
 	if err := u.kratosService.RevokeSession(ctx, tenantID, currentSessionToken); err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
