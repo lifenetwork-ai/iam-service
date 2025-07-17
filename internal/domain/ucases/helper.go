@@ -17,7 +17,7 @@ func ifEmail(identifierType, val string) string {
 	return ""
 }
 
-// ifUsername checks if the identifierType is username and returns the value if true
+// ifPhone checks if the identifierType is phone and returns the value if true
 func ifPhone(identifierType, val string) string {
 	if identifierType == constants.IdentifierPhone.String() {
 		return val
