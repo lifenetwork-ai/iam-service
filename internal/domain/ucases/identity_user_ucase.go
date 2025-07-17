@@ -279,14 +279,19 @@ func (u *userUseCase) VerifyRegister(
 		}
 	}
 
-	// IAM mapping logic
-	err = u.bindIAMToRegistration(ctx, u.db, tenant, tenantUserID, email, phone)
-	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_IAM_REGISTRATION_FAILED",
-			Message: "Failed to persist IAM records",
-			Details: []any{err.Error()},
+	sessionValue, _ := u.challengeSessionRepo.GetChallenge(ctx, flowID)
+	if sessionValue != nil && sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
+		// TODO: need implement logic to handle change identifier
+	} else {
+		// IAM mapping logic
+		err = u.bindIAMToRegistration(ctx, u.db, tenant, tenantUserID, email, phone)
+		if err != nil {
+			return nil, &dto.ErrorDTOResponse{
+				Status:  http.StatusInternalServerError,
+				Code:    "MSG_IAM_REGISTRATION_FAILED",
+				Message: "Failed to persist IAM records",
+				Details: []any{err.Error()},
+			}
 		}
 	}
 
@@ -680,10 +685,11 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 
 	// 10. Save challenge session
 	challenge := &domain.ChallengeSession{
-		Type:  identifierType,
-		Email: ifEmail(identifierType, newIdentifier),
-		Phone: ifPhone(identifierType, newIdentifier),
-		Flow:  flow.Id,
+		ChallengeType: constants.ChallengeTypeChangeIdentifier,
+		Type:          identifierType,
+		Email:         ifEmail(identifierType, newIdentifier),
+		Phone:         ifPhone(identifierType, newIdentifier),
+		Flow:          flow.Id,
 	}
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, challenge, constants.DefaultChallengeDuration); err != nil {
 		return nil, &dto.ErrorDTOResponse{
