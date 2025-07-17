@@ -256,7 +256,7 @@ func (u *userUseCase) VerifyRegister(
 	email := extractStringFromTraits(traits, constants.IdentifierEmail.String(), "")
 	phone := extractStringFromTraits(traits, constants.IdentifierPhone.String(), "")
 	tenantName := extractStringFromTraits(traits, "tenant", "")
-	tenantUserID := registrationResult.Session.Identity.Id
+	newTenantUserID := registrationResult.Session.Identity.Id
 
 	// Get tenant by name
 	tenant, err := u.tenantRepo.GetByName(tenantName)
@@ -286,11 +286,13 @@ func (u *userUseCase) VerifyRegister(
 			if sessionValue.Phone != "" {
 				identifier = sessionValue.Phone
 			}
+			// TODO: need call Kratos to update the identifier
 			// Handle change identifier
-			return u.handleChangeIdentifier(ctx, tx, tenant, tenantUserID, identifier)
+			currentTenantUserID := sessionValue.IdentityID
+			return u.handleChangeIdentifier(ctx, tx, tenant, currentTenantUserID, newTenantUserID, identifier)
 		} else {
 			// IAM mapping logic
-			return u.bindIAMToRegistration(ctx, tx, tenant, tenantUserID, email, phone)
+			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone)
 		}
 	})
 	if err != nil {
@@ -311,7 +313,7 @@ func (u *userUseCase) VerifyRegister(
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
 		User: dto.IdentityUserDTO{
-			ID:       tenantUserID,
+			ID:       newTenantUserID,
 			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    email,
 			Phone:    phone,
@@ -327,10 +329,64 @@ func (u *userUseCase) handleChangeIdentifier(
 	ctx context.Context,
 	tx *gorm.DB,
 	tenant *domain.Tenant,
-	tenantUserID string,
+	currentTenantUserID string,
+	newTenantUserID string,
 	newIdentifier string,
 ) error {
-	// TODO: implement logic to handle change identifier
+	// Step 1: Get current identity
+	identity, err := u.userIdentityRepo.GetByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), currentTenantUserID)
+	if err != nil {
+		return fmt.Errorf("get current identity failed: %w", err)
+	}
+	if identity == nil {
+		return fmt.Errorf("current identity not found for user %s in tenant %s", currentTenantUserID, tenant.ID)
+	}
+
+	// Step 2: Determine new identifier type
+	identityType, err := utils.GetIdentifierType(newIdentifier)
+	if err != nil {
+		return fmt.Errorf("get identifier type failed: %w", err)
+	}
+
+	// Step 3: Handle same type update
+	if identity.Type == identityType {
+		return u.updateSameTypeIdentity(tx, identity, newIdentifier)
+	}
+
+	// Step 4: Handle switch to different type (create new identity)
+	return u.createNewIdentity(ctx, tx, tenant, newTenantUserID, identityType, newIdentifier)
+}
+
+func (u *userUseCase) updateSameTypeIdentity(
+	tx *gorm.DB,
+	identity *domain.UserIdentity,
+	newValue string,
+) error {
+	identity.Value = newValue
+	if err := u.userIdentityRepo.Update(tx, identity); err != nil {
+		return fmt.Errorf("update identity failed: %w", err)
+	}
+	return nil
+}
+
+func (u *userUseCase) createNewIdentity(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenant *domain.Tenant,
+	newTenantUserID string,
+	identityType string,
+	newValue string,
+) error {
+	email, phone := "", ""
+	if identityType == constants.IdentifierEmail.String() {
+		email = newValue
+	} else {
+		phone = newValue
+	}
+
+	if err := u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone); err != nil {
+		return fmt.Errorf("bind new identity: %w", err)
+	}
 	return nil
 }
 
@@ -339,7 +395,7 @@ func (u *userUseCase) bindIAMToRegistration(
 	ctx context.Context,
 	tx *gorm.DB,
 	tenant *domain.Tenant,
-	tenantUserID string,
+	newTenantUserID string,
 	email string,
 	phone string,
 ) error {
@@ -362,7 +418,7 @@ func (u *userUseCase) bindIAMToRegistration(
 		globalUser = &domain.GlobalUser{ID: globalUserID}
 
 		// Check if already mapped
-		exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), tenantUserID)
+		exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), newTenantUserID)
 		if err != nil {
 			return fmt.Errorf("check mapping exists: %w", err)
 		}
@@ -400,7 +456,7 @@ func (u *userUseCase) bindIAMToRegistration(
 	if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
 		GlobalUserID: globalUser.ID,
 		TenantID:     tenant.ID.String(),
-		TenantUserID: tenantUserID,
+		TenantUserID: newTenantUserID,
 	}); err != nil {
 		return fmt.Errorf("create mapping: %w", err)
 	}
@@ -618,7 +674,8 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	}
 
 	// 4. Check rate limit for identifier change attempts
-	key := "change:identifier:" + session.Identity.Id
+	identityID := session.Identity.Id
+	key := "change:identifier:" + identityID
 	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
 		return nil, errResp
 	}
@@ -709,6 +766,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		Email:         ifEmail(identifierType, newIdentifier),
 		Phone:         ifPhone(identifierType, newIdentifier),
 		Flow:          flow.Id,
+		IdentityID:    identityID,
 	}
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, challenge, constants.DefaultChallengeDuration); err != nil {
 		return nil, &dto.ErrorDTOResponse{

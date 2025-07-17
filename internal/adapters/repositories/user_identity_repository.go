@@ -33,11 +33,9 @@ func (r *userIdentityRepository) GetByTypeAndValue(
 ) (*domain.UserIdentity, error) {
 	var identity domain.UserIdentity
 
-	db := tx
-	if db == nil {
-		db = r.db.WithContext(ctx)
-	} else {
-		db = db.WithContext(ctx)
+	db := r.db.WithContext(ctx)
+	if tx != nil {
+		db = tx.WithContext(ctx)
 	}
 
 	if err := db.
@@ -83,4 +81,28 @@ func (r *userIdentityRepository) ExistsWithinTenant(ctx context.Context, tenantI
 		return false, err
 	}
 	return count > 0, nil
+}
+
+// GetByTenantAndTenantUserID retrieves a single user identity by tenant ID and tenant user ID
+func (r *userIdentityRepository) GetByTenantAndTenantUserID(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenantID, tenantUserID string,
+) (*domain.UserIdentity, error) {
+	var identity domain.UserIdentity
+
+	db := r.db.WithContext(ctx)
+	if tx != nil {
+		db = tx.WithContext(ctx)
+	}
+
+	err := db.
+		Model(&domain.UserIdentity{}).
+		Joins("JOIN user_identifier_mapping ON user_identifier_mapping.global_user_id = user_identities.global_user_id").
+		Where("user_identifier_mapping.tenant_id = ? AND user_identifier_mapping.tenant_user_id = ?", tenantID, tenantUserID).
+		First(&identity).Error
+	if err != nil {
+		return nil, err
+	}
+	return &identity, nil
 }

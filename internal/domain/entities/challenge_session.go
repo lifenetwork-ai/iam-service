@@ -8,4 +8,5 @@ type ChallengeSession struct {
 	OTP           string `json:"otp"`
 	Flow          string `json:"flow"`
 	KratosSession string `json:"kratos_session,omitempty"`
+	IdentityID    string `json:"identity_id,omitempty"`
 }
