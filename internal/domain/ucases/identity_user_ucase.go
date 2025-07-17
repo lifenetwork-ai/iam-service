@@ -279,19 +279,25 @@ func (u *userUseCase) VerifyRegister(
 		}
 	}
 
-	sessionValue, _ := u.challengeSessionRepo.GetChallenge(ctx, flowID)
-	if sessionValue != nil && sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
-		// TODO: need implement logic to handle change identifier
-	} else {
-		// IAM mapping logic
-		err = u.bindIAMToRegistration(ctx, u.db, tenant, tenantUserID, email, phone)
-		if err != nil {
-			return nil, &dto.ErrorDTOResponse{
-				Status:  http.StatusInternalServerError,
-				Code:    "MSG_IAM_REGISTRATION_FAILED",
-				Message: "Failed to persist IAM records",
-				Details: []any{err.Error()},
+	err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		sessionValue, _ := u.challengeSessionRepo.GetChallenge(ctx, flowID)
+		if sessionValue != nil && sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
+			identifier := sessionValue.Email
+			if sessionValue.Phone != "" {
+				identifier = sessionValue.Phone
 			}
+			return u.handleChangeIdentifier(ctx, tx, tenant, tenantUserID, identifier)
+		} else {
+			// IAM mapping logic
+			return u.bindIAMToRegistration(ctx, tx, tenant, tenantUserID, email, phone)
+		}
+	})
+	if err != nil {
+		return nil, &dto.ErrorDTOResponse{
+			Status:  http.StatusInternalServerError,
+			Code:    "MSG_IAM_REGISTRATION_FAILED",
+			Message: "Failed to process IAM registration transaction",
+			Details: []interface{}{err.Error()},
 		}
 	}
 
@@ -313,6 +319,18 @@ func (u *userUseCase) VerifyRegister(
 			return *method.Method
 		}),
 	}, nil
+}
+
+// handleChangeIdentifier handles the logic for changing the user's identifier
+func (u *userUseCase) handleChangeIdentifier(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenant *domain.Tenant,
+	tenantUserID string,
+	newIdentifier string,
+) error {
+	// TODO: implement logic to handle change identifier
+	return nil
 }
 
 // bindIAMToRegistration binds the IAM records to the registration flow
