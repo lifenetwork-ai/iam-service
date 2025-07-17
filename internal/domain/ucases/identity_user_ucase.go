@@ -286,10 +286,24 @@ func (u *userUseCase) VerifyRegister(
 			if sessionValue.Phone != "" {
 				identifier = sessionValue.Phone
 			}
-			// TODO: need call Kratos to update the identifier
+
+			// Update identifier trait in Kratos
+			identityType, err := utils.GetIdentifierType(identifier)
+			if err != nil {
+				return fmt.Errorf("get identifier type failed: %w", err)
+			}
+			err = u.kratosService.UpdateIdentifierTrait(
+				ctx, tenant.ID, sessionValue.IdentityID, identityType, identifier,
+			)
+			if err != nil {
+				return fmt.Errorf("update identifier trait failed: %w", err)
+			}
+
 			// Handle change identifier
 			currentTenantUserID := sessionValue.IdentityID
-			return u.handleChangeIdentifier(ctx, tx, tenant, currentTenantUserID, newTenantUserID, identifier)
+			return u.handleChangeIdentifier(
+				ctx, tx, tenant, currentTenantUserID, newTenantUserID, identityType, identifier,
+			)
 		} else {
 			// IAM mapping logic
 			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone)
@@ -331,6 +345,7 @@ func (u *userUseCase) handleChangeIdentifier(
 	tenant *domain.Tenant,
 	currentTenantUserID string,
 	newTenantUserID string,
+	identifierType string,
 	newIdentifier string,
 ) error {
 	// Step 1: Get current identity
@@ -342,19 +357,13 @@ func (u *userUseCase) handleChangeIdentifier(
 		return fmt.Errorf("current identity not found for user %s in tenant %s", currentTenantUserID, tenant.ID)
 	}
 
-	// Step 2: Determine new identifier type
-	identityType, err := utils.GetIdentifierType(newIdentifier)
-	if err != nil {
-		return fmt.Errorf("get identifier type failed: %w", err)
-	}
-
-	// Step 3: Handle same type update
-	if identity.Type == identityType {
+	// Step 2: Handle same type update
+	if identity.Type == identifierType {
 		return u.updateSameTypeIdentity(tx, identity, newIdentifier)
 	}
 
-	// Step 4: Handle switch to different type (create new identity)
-	return u.createNewIdentity(ctx, tx, tenant, newTenantUserID, identityType, newIdentifier)
+	// Step 3: Handle switch to different type (create new identity)
+	return u.createNewIdentity(ctx, tx, tenant, newTenantUserID, identifierType, newIdentifier)
 }
 
 func (u *userUseCase) updateSameTypeIdentity(
