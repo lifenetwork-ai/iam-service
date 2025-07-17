@@ -552,7 +552,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	newIdentifier string,
-) (*dto.IdentityUserChallengeDTO, *dto.ErrorDTOResponse) {
+) (*dto.IdentityUserAuthDTO, *dto.ErrorDTOResponse) {
 	// 1. Determine identifier type (email or phone)
 	identifierType, err := utils.GetIdentifierType(newIdentifier)
 	if err != nil {
@@ -679,11 +679,14 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		}
 	}
 
-	// ✅ Return verification flow info
-	return &dto.IdentityUserChallengeDTO{
-		FlowID:      flow.Id,
-		Receiver:    newIdentifier,
-		ChallengeAt: time.Now().Unix(),
+	// Return verification flow info
+	return &dto.IdentityUserAuthDTO{
+		VerificationNeeded: true,
+		VerificationFlow: &dto.IdentityUserChallengeDTO{
+			FlowID:      flow.Id,
+			Receiver:    newIdentifier,
+			ChallengeAt: time.Now().Unix(),
+		},
 	}, nil
 }
 

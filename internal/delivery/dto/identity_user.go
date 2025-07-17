@@ -29,15 +29,15 @@ type IdentityUserChallengeDTO struct {
 // IdentityUserAuthDTO represents the response for a successful authentication with Kratos session
 type IdentityUserAuthDTO struct {
 	// Core session fields from Kratos
-	SessionID       string     `json:"session_id"`
-	SessionToken    string     `json:"session_token"` // Token used for authenticating subsequent requests
-	Active          bool       `json:"active"`
+	SessionID       string     `json:"session_id,omitempty"`
+	SessionToken    string     `json:"session_token,omitempty"` // Token used for authenticating subsequent requests
+	Active          bool       `json:"active,omitempty"`
 	ExpiresAt       *time.Time `json:"expires_at,omitempty"`
 	IssuedAt        *time.Time `json:"issued_at,omitempty"`
 	AuthenticatedAt *time.Time `json:"authenticated_at,omitempty"`
 
 	// User information
-	User IdentityUserDTO `json:"user"`
+	User IdentityUserDTO `json:"user,omitempty"`
 
 	// Optional session metadata
 	AuthenticationMethods []string `json:"authentication_methods,omitempty"`
