@@ -30,7 +30,6 @@ func (h *userHandler) getTenant(ctx *gin.Context) (*domain.Tenant, error) {
 	if !ok {
 		return nil, errors.New("tenant not found in context")
 	}
-	logger.GetLogger().Infof("tenant: %v", tenant)
 	tenantObj, ok := tenant.(*domain.Tenant)
 	if !ok {
 		return nil, errors.New("invalid tenant type in context")
