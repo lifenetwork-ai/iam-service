@@ -731,7 +731,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Only email or phone must be provided, if both are provided then error will be returned. Tenant field is required(available value: ` + "`" + `genetica` + "`" + `,` + "`" + `life_ai` + "`" + `)",
+                        "description": "Only email or phone must be provided, if both are provided then error will be returned",
                         "name": "register",
                         "in": "body",
                         "required": true,
