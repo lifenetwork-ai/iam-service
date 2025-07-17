@@ -552,11 +552,11 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	newIdentifier string,
-) *dto.ErrorDTOResponse {
+) (*dto.IdentityUserChallengeDTO, *dto.ErrorDTOResponse) {
 	// 1. Determine identifier type (email or phone)
 	identifierType, err := utils.GetIdentifierType(newIdentifier)
 	if err != nil {
-		return &dto.ErrorDTOResponse{
+		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Code:    "MSG_INVALID_IDENTIFIER",
 			Message: "Unsupported identifier format",
@@ -568,7 +568,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
 	currentSessionToken, ok := sessionTokenVal.(string)
 	if !ok || currentSessionToken == "" {
-		return &dto.ErrorDTOResponse{
+		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
 			Code:    "MSG_UNAUTHORIZED",
 			Message: "Unauthorized",
@@ -578,7 +578,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	// 3. Fetch current session using WhoAmI
 	session, err := u.kratosService.WhoAmI(ctx, tenantID, currentSessionToken)
 	if err != nil {
-		return &dto.ErrorDTOResponse{
+		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,
 			Code:    "MSG_INVALID_SESSION",
 			Message: "Invalid session",
@@ -589,13 +589,13 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	// 4. Check rate limit for identifier change attempts
 	key := "change:identifier:" + session.Identity.Id
 	if errResp := utils.CheckRateLimit(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); errResp != nil {
-		return errResp
+		return nil, errResp
 	}
 
-	// 5. Extract existing identity traits
+	// 5. Extract current traits
 	traitsMap, ok := safeExtractTraits(session.Identity.Traits)
 	if !ok {
-		return &dto.ErrorDTOResponse{
+		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_EXTRACT_TRAITS_FAILED",
 			Message: "Unable to extract user traits",
@@ -608,7 +608,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	// 6. Initialize a new registration flow
 	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
 	if err != nil {
-		return &dto.ErrorDTOResponse{
+		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_INITIALIZE_REGISTRATION_FAILED",
 			Message: "Failed to initialize registration flow",
@@ -616,45 +616,36 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		}
 	}
 
-	// 7. Prepare updated traits with new identifier
+	// 7. Prepare updated traits
 	newTraits := map[string]any{
 		"tenant": tenantName,
 	}
-
-	// Ensure new identifier is different from current one
 	if identifierType == constants.IdentifierEmail.String() {
 		if newIdentifier == currentEmail {
-			return &dto.ErrorDTOResponse{
+			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusBadRequest,
 				Code:    "MSG_IDENTIFIER_UNCHANGED",
 				Message: "New email must be different from the current one",
 			}
 		}
 		newTraits[constants.IdentifierEmail.String()] = newIdentifier
-		newTraits[constants.IdentifierPhone.String()] = currentPhone // optional
+		newTraits[constants.IdentifierPhone.String()] = currentPhone
 	} else {
 		if newIdentifier == currentPhone {
-			return &dto.ErrorDTOResponse{
+			return nil, &dto.ErrorDTOResponse{
 				Status:  http.StatusBadRequest,
 				Code:    "MSG_IDENTIFIER_UNCHANGED",
 				Message: "New phone number must be different from the current one",
 			}
 		}
 		newTraits[constants.IdentifierPhone.String()] = newIdentifier
-		newTraits[constants.IdentifierEmail.String()] = currentEmail // optional
+		newTraits[constants.IdentifierEmail.String()] = currentEmail
 	}
-	// TODO: Should check new identifier on tenant not exists in IAM
 
-	// 8. Submit registration flow to send verification code
-	_, err = u.kratosService.SubmitRegistrationFlow(
-		ctx,
-		tenantID,
-		flow,
-		constants.MethodTypeCode.String(),
-		newTraits,
-	)
+	// 8. Submit registration flow to trigger code
+	_, err = u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), newTraits)
 	if err != nil {
-		return &dto.ErrorDTOResponse{
+		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusBadRequest,
 			Code:    "MSG_REGISTRATION_SUBMIT_FAILED",
 			Message: "Failed to send verification code",
@@ -662,7 +653,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		}
 	}
 
-	// 9. Save challenge session for later verification
+	// 9. Save challenge session
 	challenge := &domain.ChallengeSession{
 		Type:  identifierType,
 		Email: ifEmail(identifierType, newIdentifier),
@@ -670,7 +661,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		Flow:  flow.Id,
 	}
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, challenge, constants.DefaultChallengeDuration); err != nil {
-		return &dto.ErrorDTOResponse{
+		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_SAVING_SESSION_FAILED",
 			Message: "Failed to save challenge session",
@@ -678,9 +669,9 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		}
 	}
 
-	// 9. Revoke current session to force re-authentication after identifier is changed
+	// 10. Revoke current session
 	if err := u.kratosService.RevokeSession(ctx, tenantID, currentSessionToken); err != nil {
-		return &dto.ErrorDTOResponse{
+		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_SESSION_REVOKE_FAILED",
 			Message: "Failed to revoke session",
@@ -688,7 +679,12 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 		}
 	}
 
-	return nil
+	// ✅ Return verification flow info
+	return &dto.IdentityUserChallengeDTO{
+		FlowID:      flow.Id,
+		Receiver:    newIdentifier,
+		ChallengeAt: time.Now().Unix(),
+	}, nil
 }
 
 // Register registers a new user
