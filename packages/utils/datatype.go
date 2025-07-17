@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"html"
+	"net/mail"
 	"regexp"
 	"strings"
 
@@ -17,8 +18,8 @@ func IsPhoneNumber(phone string) bool {
 
 func IsEmail(email string) bool {
 	// Check if the email is valid
-	emailValidator := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	return emailValidator.MatchString(email)
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
 
 func GetIdentifierType(identifier string) (string, error) {

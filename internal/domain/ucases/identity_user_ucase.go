@@ -286,6 +286,7 @@ func (u *userUseCase) VerifyRegister(
 			if sessionValue.Phone != "" {
 				identifier = sessionValue.Phone
 			}
+			// Handle change identifier
 			return u.handleChangeIdentifier(ctx, tx, tenant, tenantUserID, identifier)
 		} else {
 			// IAM mapping logic
