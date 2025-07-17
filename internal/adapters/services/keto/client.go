@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	repo_types "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
@@ -23,105 +24,106 @@ type Client struct {
 }
 
 // NewClient creates a new Keto client
+// NewClient creates a new Keto client
 func NewClient(cfg *conf.KetoConfiguration, tenantRepo repo_types.TenantRepository) *Client {
 	ketoCfg := keto.NewConfiguration()
-	// Set the server URL from the configuration
+
 	ketoCfg.OperationServers = map[string]keto.ServerConfigurations{
-		// Write Operations - RelationshipApi (Admin endpoints)
-		"RelationshipApiService.CreateRelationship": {
+		// Write Operations
+		constants.OperationCreateRelationship: {
 			{
 				URL:         cfg.DefaultWriteURL,
-				Description: "Keto Write API",
+				Description: constants.KetoWriteApiDescription,
 			},
 		},
-		"RelationshipApiService.DeleteRelationships": {
+		constants.OperationDeleteRelationships: {
 			{
 				URL:         cfg.DefaultWriteURL,
-				Description: "Keto Write API",
+				Description: constants.KetoWriteApiDescription,
 			},
 		},
-		"RelationshipApiService.PatchRelationships": {
+		constants.OperationPatchRelationships: {
 			{
 				URL:         cfg.DefaultWriteURL,
-				Description: "Keto Write API",
+				Description: constants.KetoWriteApiDescription,
 			},
 		},
 
-		// Read Operations - RelationshipApi (Query endpoints)
-		"RelationshipApiService.GetRelationships": {
+		// Read Operations
+		constants.OperationGetRelationships: {
 			{
 				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
+				Description: constants.KetoReadApiDescription,
 			},
 		},
-		"RelationshipApiService.ListRelationshipNamespaces": {
+		constants.OperationListRelationshipNamespaces: {
 			{
 				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
-			},
-		},
-
-		// Permission Check Operations - PermissionApi (Read endpoints)
-		"PermissionApiService.CheckPermission": {
-			{
-				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
-			},
-		},
-		"PermissionApiService.CheckPermissionOrError": {
-			{
-				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
-			},
-		},
-		"PermissionApiService.PostCheckPermission": {
-			{
-				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
-			},
-		},
-		"PermissionApiService.PostCheckPermissionOrError": {
-			{
-				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
-			},
-		},
-		"PermissionApiService.ExpandPermissions": {
-			{
-				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
+				Description: constants.KetoReadApiDescription,
 			},
 		},
 
-		// OPL Syntax Check (can be either read or write, typically read)
-		"RelationshipApiService.CheckOplSyntax": {
+		// Permission Check Operations
+		constants.OperationCheckPermission: {
 			{
 				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
+				Description: constants.KetoReadApiDescription,
+			},
+		},
+		constants.OperationCheckPermissionOrError: {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: constants.KetoReadApiDescription,
+			},
+		},
+		constants.OperationPostCheckPermission: {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: constants.KetoReadApiDescription,
+			},
+		},
+		constants.OperationPostCheckPermissionOrError: {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: constants.KetoReadApiDescription,
+			},
+		},
+		constants.OperationExpandPermissions: {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: constants.KetoReadApiDescription,
+			},
+		},
+		constants.OperationCheckOplSyntax: {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: constants.KetoReadApiDescription,
 			},
 		},
 
-		// Health/Metadata Operations - MetadataApi (typically admin/read)
-		"MetadataApiService.GetVersion": {
+		// Metadata/Health
+		constants.OperationGetVersion: {
 			{
 				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
+				Description: constants.KetoReadApiDescription,
 			},
 		},
-		"MetadataApiService.IsAlive": {
+		constants.OperationIsAlive: {
 			{
 				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
+				Description: constants.KetoReadApiDescription,
 			},
 		},
-		"MetadataApiService.IsReady": {
+		constants.OperationIsReady: {
 			{
 				URL:         cfg.DefaultReadURL,
-				Description: "Keto Read API",
+				Description: constants.KetoReadApiDescription,
 			},
 		},
 	}
+
 	client := keto.NewAPIClient(ketoCfg)
+
 	return &Client{
 		tenantRepo: tenantRepo,
 		client:     client,
@@ -181,7 +183,7 @@ func (c *Client) BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPer
 	}
 
 	// Parse the URL
-	url, err := url.Parse(fmt.Sprintf("%s/check/permission/bulk", c.config.DefaultReadURL))
+	url, err := url.Parse(fmt.Sprintf("%s%s", c.config.DefaultReadURL, constants.BatchPermissionCheckEndpoint))
 	if err != nil {
 		return false, fmt.Errorf("failed to parse URL: %w", err)
 	}
@@ -191,7 +193,7 @@ func (c *Client) BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPer
 	if err != nil {
 		return false, fmt.Errorf("failed to create request: %w", err)
 	}
-	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Content-Type", constants.ContentTypeJson)
 
 	// Send the request
 	client := &http.Client{}
