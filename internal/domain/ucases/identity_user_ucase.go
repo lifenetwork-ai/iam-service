@@ -280,74 +280,7 @@ func (u *userUseCase) VerifyRegister(
 	}
 
 	// IAM mapping logic
-	err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var globalUserID string
-
-		// Try to find existing global user
-		if email != "" {
-			identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierEmail.String(), email)
-			if err == nil {
-				globalUserID = identity.GlobalUserID
-			}
-		}
-		if globalUserID == "" && phone != "" {
-			identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierPhone.String(), phone)
-			if err == nil {
-				globalUserID = identity.GlobalUserID
-			}
-		}
-
-		var globalUser *domain.GlobalUser
-		if globalUserID != "" {
-			globalUser = &domain.GlobalUser{ID: globalUserID}
-
-			// Check if mapping already exists
-			exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), tenantUserID)
-			if err != nil {
-				return fmt.Errorf("check mapping exists: %w", err)
-			}
-			if exists {
-				return nil
-			}
-		} else {
-			// Create global user
-			globalUser = &domain.GlobalUser{}
-			if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
-				return fmt.Errorf("create global user: %w", err)
-			}
-		}
-
-		// Create UserIdentity records
-		if email != "" {
-			if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
-				GlobalUserID: globalUser.ID,
-				Type:         constants.IdentifierEmail.String(),
-				Value:        email,
-			}); err != nil {
-				return fmt.Errorf("email identity: %w", err)
-			}
-		}
-		if phone != "" {
-			if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
-				GlobalUserID: globalUser.ID,
-				Type:         constants.IdentifierPhone.String(),
-				Value:        phone,
-			}); err != nil {
-				return fmt.Errorf("phone identity: %w", err)
-			}
-		}
-
-		// Create mapping
-		if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
-			GlobalUserID: globalUser.ID,
-			TenantID:     tenant.ID.String(),
-			TenantUserID: tenantUserID,
-		}); err != nil {
-			return fmt.Errorf("create mapping: %w", err)
-		}
-
-		return nil
-	})
+	err = u.bindIAMToRegistration(ctx, u.db, tenant, tenantUserID, email, phone)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
@@ -375,6 +308,80 @@ func (u *userUseCase) VerifyRegister(
 			return *method.Method
 		}),
 	}, nil
+}
+
+// bindIAMToRegistration binds the IAM records to the registration flow
+func (u *userUseCase) bindIAMToRegistration(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenant *domain.Tenant,
+	tenantUserID string,
+	email string,
+	phone string,
+) error {
+	var globalUserID string
+
+	// Lookup existing identity
+	if email != "" {
+		if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierEmail.String(), email); err == nil {
+			globalUserID = identity.GlobalUserID
+		}
+	}
+	if globalUserID == "" && phone != "" {
+		if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierPhone.String(), phone); err == nil {
+			globalUserID = identity.GlobalUserID
+		}
+	}
+
+	var globalUser *domain.GlobalUser
+	if globalUserID != "" {
+		globalUser = &domain.GlobalUser{ID: globalUserID}
+
+		// Check if already mapped
+		exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), tenantUserID)
+		if err != nil {
+			return fmt.Errorf("check mapping exists: %w", err)
+		}
+		if exists {
+			return nil
+		}
+	} else {
+		globalUser = &domain.GlobalUser{}
+		if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
+			return fmt.Errorf("create global user: %w", err)
+		}
+	}
+
+	// Create identities
+	if email != "" {
+		if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
+			GlobalUserID: globalUser.ID,
+			Type:         constants.IdentifierEmail.String(),
+			Value:        email,
+		}); err != nil {
+			return fmt.Errorf("create email identity: %w", err)
+		}
+	}
+	if phone != "" {
+		if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
+			GlobalUserID: globalUser.ID,
+			Type:         constants.IdentifierPhone.String(),
+			Value:        phone,
+		}); err != nil {
+			return fmt.Errorf("create phone identity: %w", err)
+		}
+	}
+
+	// Create mapping
+	if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
+		GlobalUserID: globalUser.ID,
+		TenantID:     tenant.ID.String(),
+		TenantUserID: tenantUserID,
+	}); err != nil {
+		return fmt.Errorf("create mapping: %w", err)
+	}
+
+	return nil
 }
 
 // VerifyLogin verifies the login flow
