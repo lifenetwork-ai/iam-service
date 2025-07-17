@@ -5,10 +5,10 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
-	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type contextKey string
@@ -31,14 +31,17 @@ func NewTenantMiddleware(tenantRepo interfaces.TenantRepository) *TenantMiddlewa
 	}
 }
 
-// GetTenantFromContext retrieves tenant ID from context
-func GetTenantFromContext(ctx context.Context) (*domain.Tenant, error) {
-	tenant, ok := ctx.Value(TenantKey).(*domain.Tenant)
+// getTenant extracts tenant from context
+func GetTenantFromContext(ctx *gin.Context) (*domain.Tenant, error) {
+	tenant, ok := ctx.Get(string(TenantKey))
 	if !ok {
-		logger.GetLogger().Errorf("tenant not found in context")
 		return nil, errors.New("tenant not found in context")
 	}
-	return tenant, nil
+	tenantObj, ok := tenant.(*domain.Tenant)
+	if !ok {
+		return nil, errors.New("invalid tenant type in context")
+	}
+	return tenantObj, nil
 }
 
 // Middleware handles tenant context in requests

@@ -573,7 +573,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Permission check result
           schema:
             $ref: '#/definitions/dto.CheckPermissionResponseDTO'
         "400":
@@ -585,6 +585,41 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Check permission
+      tags:
+      - permissions
+  /api/v1/permissions/relation-tuples:
+    post:
+      consumes:
+      - application/json
+      description: Create a relation tuple
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Relation tuple creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateRelationTupleRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Relation tuple created successfully
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create relation tuple
       tags:
       - permissions
   /api/v1/users/challenge-verify:

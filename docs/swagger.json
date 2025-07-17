@@ -441,9 +441,62 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Permission check result",
                         "schema": {
                             "$ref": "#/definitions/dto.CheckPermissionResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/permissions/relation-tuples": {
+            "post": {
+                "description": "Create a relation tuple",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "permissions"
+                ],
+                "summary": "Create relation tuple",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Relation tuple creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateRelationTupleRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Relation tuple created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {

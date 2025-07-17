@@ -57,7 +57,10 @@ func RegisterRoutes(
 	permissionHandler := handlers.NewPermissionHandler(ketoClient)
 	permissionRouter := v1.Group("permissions")
 	permissionRouter.Use(middleware.XHeaderValidationMiddleware())
-	permissionRouter.POST("/check", permissionHandler.CheckPermission)
+	{
+		permissionRouter.POST("/check", permissionHandler.CheckPermission)
+		permissionRouter.POST("/relation-tuples", permissionHandler.CreateRelationTuple)
+	}
 
 	// SECTION: users
 	userRouter := v1.Group("users")

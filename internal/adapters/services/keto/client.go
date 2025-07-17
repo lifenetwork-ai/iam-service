@@ -26,13 +26,101 @@ type Client struct {
 func NewClient(cfg *conf.KetoConfiguration, tenantRepo repo_types.TenantRepository) *Client {
 	ketoCfg := keto.NewConfiguration()
 	// Set the server URL from the configuration
-	ketoCfg.Servers = keto.ServerConfigurations{
-		{
-			URL:         cfg.DefaultReadURL,
-			Description: "Keto Read API",
+	ketoCfg.OperationServers = map[string]keto.ServerConfigurations{
+		// Write Operations - RelationshipApi (Admin endpoints)
+		"RelationshipApiService.CreateRelationship": {
+			{
+				URL:         cfg.DefaultWriteURL,
+				Description: "Keto Write API",
+			},
+		},
+		"RelationshipApiService.DeleteRelationships": {
+			{
+				URL:         cfg.DefaultWriteURL,
+				Description: "Keto Write API",
+			},
+		},
+		"RelationshipApiService.PatchRelationships": {
+			{
+				URL:         cfg.DefaultWriteURL,
+				Description: "Keto Write API",
+			},
+		},
+
+		// Read Operations - RelationshipApi (Query endpoints)
+		"RelationshipApiService.GetRelationships": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+		"RelationshipApiService.ListRelationshipNamespaces": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+
+		// Permission Check Operations - PermissionApi (Read endpoints)
+		"PermissionApiService.CheckPermission": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+		"PermissionApiService.CheckPermissionOrError": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+		"PermissionApiService.PostCheckPermission": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+		"PermissionApiService.PostCheckPermissionOrError": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+		"PermissionApiService.ExpandPermissions": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+
+		// OPL Syntax Check (can be either read or write, typically read)
+		"RelationshipApiService.CheckOplSyntax": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+
+		// Health/Metadata Operations - MetadataApi (typically admin/read)
+		"MetadataApiService.GetVersion": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+		"MetadataApiService.IsAlive": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
+		},
+		"MetadataApiService.IsReady": {
+			{
+				URL:         cfg.DefaultReadURL,
+				Description: "Keto Read API",
+			},
 		},
 	}
-
 	client := keto.NewAPIClient(ketoCfg)
 	return &Client{
 		tenantRepo: tenantRepo,
@@ -43,17 +131,7 @@ func NewClient(cfg *conf.KetoConfiguration, tenantRepo repo_types.TenantReposito
 
 // CheckPermission checks if a subject has permission to perform an action on an object
 func (c *Client) CheckPermission(ctx context.Context, dto dto.CheckPermissionRequestDTO) (bool, error) {
-	req := c.client.PermissionApi.PostCheckPermission(ctx).PostCheckPermissionBody(keto.PostCheckPermissionBody{
-		Namespace: &dto.Namespace,
-		Relation:  &dto.Action,
-		Object:    &dto.Object,
-		SubjectId: &dto.SubjectID,
-		SubjectSet: &keto.SubjectSet{
-			Namespace: dto.SubjectSet.Namespace,
-			Relation:  dto.SubjectSet.Relation,
-			Object:    dto.SubjectSet.Object,
-		},
-	})
+	req := c.client.PermissionApi.PostCheckPermission(ctx).PostCheckPermissionBody(dto.ToKetoPostCheckPermissionBody())
 	ketoResp, _, err := req.Execute()
 	if err != nil {
 		return false, err
@@ -148,25 +226,33 @@ func (c *Client) BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPer
 }
 
 // CreateRelationTuple creates a relation tuple
+// Note: The dto should be validated before calling this function
 func (c *Client) CreateRelationTuple(ctx context.Context, dto dto.CreateRelationTupleRequestDTO) error {
-	req := c.client.RelationshipApi.CreateRelationship(ctx).CreateRelationshipBody(keto.CreateRelationshipBody{
-		Namespace: &dto.Namespace,
-		Relation:  &dto.Relation,
-		Object:    &dto.Object,
-		SubjectId: &dto.SubjectID,
-		SubjectSet: &keto.SubjectSet{
-			Namespace: dto.SubjectSet.Namespace,
-		},
-	})
+	logger.GetLogger().Debugf("Creating relation tuple for namespace: %s, object: %s, relation: %s, subject_id: %s, subject_set: %v",
+		dto.Namespace, dto.Object, dto.Relation, dto.SubjectID, dto.SubjectSet)
+
+	req := c.client.RelationshipApi.CreateRelationship(ctx).CreateRelationshipBody(dto.ToKetoCreateRelationshipBody())
+
+	// Log the request details before execution
+	logger.GetLogger().Debugf("Sending request to Keto Write API URL: %s", c.config.DefaultWriteURL)
+	logger.GetLogger().Debugf("Request body: %+v", dto.ToKetoCreateRelationshipBody())
+
 	_, httpResp, err := req.Execute()
+	if httpResp != nil {
+		logger.GetLogger().Debugf("Response from Keto: Status: %d, Headers: %v", httpResp.StatusCode, httpResp.Header)
+	}
 	if err != nil {
-		return err
+		logger.GetLogger().Errorf("failed to create relation tuple: %v", err)
+		return fmt.Errorf("failed to create relation tuple: %v", err)
 	}
 
-	if httpResp.StatusCode != http.StatusOK {
-		logger.GetLogger().Errorf("failed to create relation tuple: %s", httpResp.Status)
-		return fmt.Errorf("failed to create relation tuple: %s", httpResp.Status)
+	// Keto returns 201 Created on success
+	if httpResp.StatusCode != http.StatusCreated {
+		logger.GetLogger().Errorf("failed to create relation tuple: unexpected status code %d", httpResp.StatusCode)
+		return fmt.Errorf("failed to create relation tuple: unexpected status code %d", httpResp.StatusCode)
 	}
 
+	logger.GetLogger().Debugf("Successfully created relation tuple for %s:%s#%s",
+		dto.Namespace, dto.Object, dto.Relation)
 	return nil
 }

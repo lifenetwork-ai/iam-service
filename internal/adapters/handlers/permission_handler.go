@@ -29,8 +29,12 @@ func NewPermissionHandler(ketoClient *keto.Client) *permissionHandler {
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
 // @Param request body dto.CreateRelationTupleRequestDTO true "Relation tuple creation request"
+// @Success 200 {object} response.SuccessResponse "Relation tuple created successfully"
+// @Failure 400 {object} response.ErrorResponse "Invalid request"
+// @Failure 500 {object} response.ErrorResponse "Internal server error"
+// @Router /api/v1/permissions/relation-tuples [post]
 func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
-	_, err := middleware.GetTenantFromContext(c.Request.Context())
+	_, err := middleware.GetTenantFromContext(c)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get tenant: %v", err)
 		httpresponse.Error(
@@ -42,7 +46,6 @@ func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 		)
 		return
 	}
-
 	var req dto.CreateRelationTupleRequestDTO
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
@@ -56,7 +59,7 @@ func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 		return
 	}
 
-	// Sanitize request
+	// Validate request payload
 	if err := req.Validate(); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
 		httpresponse.Error(
@@ -93,12 +96,12 @@ func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
 // @Param request body dto.CheckPermissionRequestDTO true "Permission check request"
-// @Success 200 {object} dto.CheckPermissionResponseDTO
+// @Success 200 {object} dto.CheckPermissionResponseDTO "Permission check result"
 // @Failure 400 {object} response.ErrorResponse "Invalid request"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/permissions/check [post]
 func (h *permissionHandler) CheckPermission(c *gin.Context) {
-	_, err := middleware.GetTenantFromContext(c.Request.Context())
+	_, err := middleware.GetTenantFromContext(c)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get tenant: %v", err)
 		httpresponse.Error(
