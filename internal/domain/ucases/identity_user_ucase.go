@@ -115,7 +115,7 @@ func (u *userUseCase) ChallengeWithPhone(
 
 	// Create challenge session
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
-		Type:  "phone",
+		Type:  constants.IdentifierPhone.String(),
 		Phone: phone,
 		Flow:  flow.Id,
 	}, constants.DefaultChallengeDuration)
