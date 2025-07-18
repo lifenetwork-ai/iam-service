@@ -441,8 +441,12 @@ func (u *userUseCase) VerifyLogin(
 	}
 
 	// Submit login flow with code
+	identifier := sessionValue.Phone
+	if sessionValue.Email != "" {
+		identifier = sessionValue.Email
+	}
 	loginResult, err := u.kratosService.SubmitLoginFlow(
-		ctx, tenantID, flow, constants.MethodTypeCode.String(), &sessionValue.Phone, nil, &code,
+		ctx, tenantID, flow, constants.MethodTypeCode.String(), &identifier, nil, &code,
 	)
 	if err != nil {
 		return nil, domainerrors.NewValidationError("MSG_LOGIN_FAILED", "Login failed", []interface{}{err.Error()})
@@ -778,11 +782,9 @@ func (u *userUseCase) LogOut(
 	tenantID uuid.UUID,
 ) *domainerrors.DomainError {
 	// Get session token from context
-	sessionToken := ctx.Value("session_token").(string)
-	if sessionToken == "" {
-		return domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized").WithDetails([]interface{}{
-			map[string]string{"field": "session_token", "error": "Session token not found"},
-		})
+	sessionToken, err := u.extractSessionToken(ctx)
+	if err != nil {
+		return err
 	}
 
 	// Revoke session
@@ -834,18 +836,9 @@ func (u *userUseCase) Profile(
 	tenantID uuid.UUID,
 ) (*dto.IdentityUserDTO, *domainerrors.DomainError) {
 	// Get session token from context
-	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
-	if sessionTokenVal == nil {
-		return nil, domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized").WithDetails([]interface{}{
-			map[string]string{"field": "session_token", "error": "Session token not found"},
-		})
-	}
-
-	sessionToken, ok := sessionTokenVal.(string)
-	if !ok || sessionToken == "" {
-		return nil, domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized").WithDetails([]interface{}{
-			map[string]string{"field": "session_token", "error": "Invalid session token format"},
-		})
+	sessionToken, sessionTokenErr := u.extractSessionToken(ctx)
+	if sessionTokenErr != nil {
+		return nil, sessionTokenErr
 	}
 
 	// Get session

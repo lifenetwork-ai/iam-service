@@ -250,7 +250,23 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	usecaseErr := h.ucase.LogOut(ctx.Request.Context(), tenant.ID)
+	// Get session token from gin context and create new context with it
+	sessionToken, exists := ctx.Get(string(middleware.SessionTokenKey))
+	if !exists {
+		httpresponse.Error(
+			ctx,
+			http.StatusUnauthorized,
+			"MSG_UNAUTHORIZED",
+			"Unauthorized",
+			[]interface{}{
+				map[string]string{"field": "session_token", "error": "Session token not found"},
+			},
+		)
+		return
+	}
+
+	reqCtx := context.WithValue(ctx.Request.Context(), middleware.SessionTokenKey, sessionToken)
+	usecaseErr := h.ucase.LogOut(reqCtx, tenant.ID)
 	if usecaseErr != nil {
 		h.handleDomainError(ctx, usecaseErr)
 		return
