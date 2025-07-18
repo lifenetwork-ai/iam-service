@@ -72,15 +72,15 @@ func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 		return
 	}
 
-	err = h.ucase.CreateRelationTuple(c.Request.Context(), req)
-	if err != nil {
+	ucaseErr := h.ucase.CreateRelationTuple(c.Request.Context(), req)
+	if ucaseErr != nil {
 		logger.GetLogger().Errorf("Failed to create relation tuple: %v", err)
 		httpresponse.Error(
 			c,
 			http.StatusInternalServerError,
 			"MSG_CREATE_RELATION_TUPLE_FAILED",
 			"Failed to create relation tuple",
-			err,
+			ucaseErr,
 		)
 		return
 	}
@@ -141,15 +141,15 @@ func (h *permissionHandler) CheckPermission(c *gin.Context) {
 	}
 
 	// Check permission using Keto
-	allowed, err := h.ucase.CheckPermission(c.Request.Context(), req)
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to check permission: %v", err)
+	allowed, ucaseErr := h.ucase.CheckPermission(c.Request.Context(), req)
+	if ucaseErr != nil {
+		logger.GetLogger().Errorf("Failed to check permission: %v", ucaseErr)
 		httpresponse.Error(
 			c,
 			http.StatusInternalServerError,
 			"MSG_PERMISSION_CHECK_FAILED",
 			"Failed to check permission",
-			err,
+			ucaseErr,
 		)
 		return
 	}
