@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
+	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
@@ -22,19 +23,31 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 	}
 }
 
+// handleDomainError is a centralized error handler for domain errors
+func (h *userHandler) handleDomainError(ctx *gin.Context, err *domainerrors.DomainError) {
+	switch err.Type {
+	case domainerrors.ErrorTypeValidation:
+		httpresponse.Error(ctx, http.StatusBadRequest, err.Code, err.Message, err.Details)
+	case domainerrors.ErrorTypeNotFound:
+		httpresponse.Error(ctx, http.StatusNotFound, err.Code, err.Message, err.Details)
+	case domainerrors.ErrorTypeUnauthorized:
+		httpresponse.Error(ctx, http.StatusUnauthorized, err.Code, err.Message, err.Details)
+	case domainerrors.ErrorTypeConflict:
+		httpresponse.Error(ctx, http.StatusConflict, err.Code, err.Message, err.Details)
+	case domainerrors.ErrorTypeRateLimit:
+		httpresponse.Error(ctx, http.StatusTooManyRequests, err.Code, err.Message, err.Details)
+	case domainerrors.ErrorTypeInternal:
+		// Log internal errors for debugging
+		logger.GetLogger().Errorf("Internal error: %v", err.Error())
+		httpresponse.Error(ctx, http.StatusInternalServerError, err.Code, err.Message, err.Details)
+	default:
+		// Fallback for unknown error types
+		logger.GetLogger().Errorf("Unknown error type: %v", err.Error())
+		httpresponse.Error(ctx, http.StatusInternalServerError, err.Code, err.Message, err.Details)
+	}
+}
+
 // ChallengeWithPhone to login with phone and otp.
-// @Summary Login with phone and otp
-// @Description Login with phone and otp
-// @Param X-Tenant-Id header string true "Tenant ID"
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param challenge body dto.IdentityChallengeWithPhoneDTO true "challenge payload"
-// @Success 200 {object} response.SuccessResponse "Successful make a challenge with Phone and OTP"
-// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
-// @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
-// @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/users/challenge-with-phone [post]
 func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
@@ -74,13 +87,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 
 	challenge, usecaseErr := h.ucase.ChallengeWithPhone(ctx, tenant.ID, reqPayload.Phone)
 	if usecaseErr != nil {
-		httpresponse.Error(
-			ctx,
-			http.StatusInternalServerError,
-			"MSG_FAILED_TO_MAKE_CHALLENGE",
-			"Failed to make a challenge",
-			usecaseErr.Details,
-		)
+		h.handleDomainError(ctx, usecaseErr)
 		return
 	}
 
@@ -88,18 +95,6 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 }
 
 // ChallengeWithEmail to login with email and otp.
-// @Summary Login with email and otp
-// @Description Login with email and otp
-// @Param X-Tenant-Id header string true "Tenant ID"
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param challenge body dto.IdentityChallengeWithEmailDTO true "challenge payload"
-// @Success 200 {object} response.SuccessResponse "Successful make a challenge with Email and OTP"
-// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
-// @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
-// @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/users/challenge-with-email [post]
 func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
@@ -139,35 +134,14 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 
 	challenge, usecaseErr := h.ucase.ChallengeWithEmail(ctx.Request.Context(), tenant.ID, reqPayload.Email)
 	if usecaseErr != nil {
-		httpresponse.Error(
-			ctx,
-			http.StatusInternalServerError,
-			"MSG_FAILED_TO_MAKE_CHALLENGE",
-			"Failed to make a challenge",
-			usecaseErr.Details,
-		)
+		h.handleDomainError(ctx, usecaseErr)
 		return
 	}
 
 	httpresponse.Success(ctx, http.StatusOK, challenge)
 }
 
-// Verify the challenge or registration
-// @Summary Verify the challenge or registration
-// @Description Verify either a login challenge or registration flow
-// @Param X-Tenant-Id header string true "Tenant ID"
-// Verify a login or registration challenge
-// @Summary Verify login or registration challenge
-// @Description Verify a one-time code sent to user for either login or registration challenge.
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param challenge body dto.IdentityChallengeVerifyDTO true "Verification payload. `type` must be one of: `register`, `login`"
-// @Success 200 {object} response.SuccessResponse "Verification successful"
-// @Failure 400 {object} response.ErrorResponse "Invalid request payload or code"
-// @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
-// @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/users/challenge-verify [post]
+// ChallengeVerify verifies the challenge or registration
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
@@ -196,20 +170,13 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	}
 
 	var auth *dto.IdentityUserAuthDTO
-	var usecaseErr *dto.ErrorDTOResponse
+	var usecaseErr *domainerrors.DomainError
+
 	switch reqPayload.Type {
 	case "register":
 		auth, usecaseErr = h.ucase.VerifyRegister(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
-		if usecaseErr != nil {
-			httpresponse.Error(ctx, usecaseErr.Status, usecaseErr.Code, usecaseErr.Message, usecaseErr.Details)
-			return
-		}
 	case "login":
 		auth, usecaseErr = h.ucase.VerifyLogin(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
-		if usecaseErr != nil {
-			httpresponse.Error(ctx, usecaseErr.Status, usecaseErr.Code, usecaseErr.Message, usecaseErr.Details)
-			return
-		}
 	default:
 		httpresponse.Error(
 			ctx,
@@ -221,20 +188,15 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 		return
 	}
 
+	if usecaseErr != nil {
+		h.handleDomainError(ctx, usecaseErr)
+		return
+	}
+
 	httpresponse.Success(ctx, http.StatusOK, auth)
 }
 
 // Me to get user profile.
-// @Summary Get user profile
-// @Description Get user profile
-// @Param X-Tenant-Id header string true "Tenant ID"
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
-// @Success 200 {object} response.SuccessResponse "Successful get user profile"
-// @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/users/me [get]
 func (h *userHandler) Me(ctx *gin.Context) {
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
@@ -265,15 +227,9 @@ func (h *userHandler) Me(ctx *gin.Context) {
 
 	reqCtx := context.WithValue(ctx.Request.Context(), middleware.SessionTokenKey, sessionToken)
 	requester, usecaseErr := h.ucase.Profile(reqCtx, tenant.ID)
+
 	if usecaseErr != nil {
-		logger.GetLogger().Errorf("Failed to get user profile: %v", usecaseErr.Error())
-		httpresponse.Error(
-			ctx,
-			http.StatusInternalServerError,
-			"MSG_FAILED_TO_GET_USER_PROFILE",
-			"Failed to get user profile",
-			usecaseErr.Details,
-		)
+		h.handleDomainError(ctx, usecaseErr)
 		return
 	}
 
@@ -281,18 +237,6 @@ func (h *userHandler) Me(ctx *gin.Context) {
 }
 
 // Logout to de-authenticate user.
-// @Summary De-authenticate user
-// @Description De-authenticate user
-// @Param X-Tenant-Id header string true "Tenant ID"
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
-// @Param request body object true "Empty request body"
-// @Success 200 {object} response.SuccessResponse{data=interface{}} "Successful de-authenticate user"
-// @Failure 401 {object} response.ErrorResponse "Unauthorized - Invalid or missing token"
-// @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/users/logout [post]
 func (h *userHandler) Logout(ctx *gin.Context) {
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
@@ -306,14 +250,9 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.ucase.LogOut(ctx.Request.Context(), tenant.ID); err != nil {
-		httpresponse.Error(
-			ctx,
-			err.Status,
-			err.Code,
-			err.Message,
-			err.Details,
-		)
+	usecaseErr := h.ucase.LogOut(ctx.Request.Context(), tenant.ID)
+	if usecaseErr != nil {
+		h.handleDomainError(ctx, usecaseErr)
 		return
 	}
 
@@ -321,19 +260,6 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 }
 
 // Register to register user.
-// @Summary Register a new user
-// @Description Register a new user
-// @Param X-Tenant-Id header string true "Tenant ID"
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, if both are provided then error will be returned"
-// @Success 200 {object} response.SuccessResponse{data=dto.IdentityUserAuthDTO} "Successful user registration with verification flow"
-// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
-// @Failure 409 {object} response.ErrorResponse "Email or phone number already exists"
-// @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
-// @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/users/register [post]
 func (h *userHandler) Register(ctx *gin.Context) {
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
@@ -373,13 +299,7 @@ func (h *userHandler) Register(ctx *gin.Context) {
 
 	auth, usecaseErr := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload)
 	if usecaseErr != nil {
-		httpresponse.Error(
-			ctx,
-			usecaseErr.Status,
-			usecaseErr.Code,
-			usecaseErr.Message,
-			usecaseErr.Details,
-		)
+		h.handleDomainError(ctx, usecaseErr)
 		return
 	}
 

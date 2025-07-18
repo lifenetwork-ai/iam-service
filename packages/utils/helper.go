@@ -11,6 +11,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
@@ -72,6 +73,35 @@ func CheckRateLimit(
 	if limited {
 		return &dto.ErrorDTOResponse{
 			Status:  http.StatusTooManyRequests,
+			Code:    "MSG_RATE_LIMIT_EXCEEDED",
+			Message: "Too many attempts, please try again later",
+		}
+	}
+	_ = limiter.RegisterAttempt(key, window)
+	return nil
+}
+
+// CheckRateLimitDomain checks if the rate limit has been exceeded for a given key.
+// Returns a domain error instead of DTO error
+func CheckRateLimitDomain(
+	limiter types.RateLimiter,
+	key string,
+	maxAttempts int,
+	window time.Duration,
+) error {
+	limited, err := limiter.IsLimited(key, maxAttempts, window)
+	if err != nil {
+		logger.GetLogger().Errorf("Rate limiter check failed for key %s: %v", key, err)
+		return &domainerrors.DomainError{
+			Type:    domainerrors.ErrorTypeInternal,
+			Code:    "MSG_RATE_LIMIT_CHECK_FAILED",
+			Message: "Could not check rate limit",
+			Cause:   err,
+		}
+	}
+	if limited {
+		return &domainerrors.DomainError{
+			Type:    domainerrors.ErrorTypeRateLimit,
 			Code:    "MSG_RATE_LIMIT_EXCEEDED",
 			Message: "Too many attempts, please try again later",
 		}
