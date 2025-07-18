@@ -1012,6 +1012,25 @@ func (u *userUseCase) LogOut(
 		return err
 	}
 
+	// Check if session is active
+	session, kratosErr := u.kratosService.GetSession(ctx, tenantID, sessionToken)
+	if kratosErr != nil {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "MSG_INVALID_SESSION",
+			Message: "Invalid session",
+			Details: []interface{}{kratosErr.Error()},
+		}
+	}
+
+	if !*session.Active {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "MSG_INVALID_SESSION",
+			Message: "Invalid session",
+		}
+	}
+
 	// Revoke session
 	if err := u.kratosService.Logout(ctx, tenantID, sessionToken); err != nil {
 		logger.GetLogger().Errorf("Failed to logout: %v", err)
