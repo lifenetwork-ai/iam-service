@@ -183,8 +183,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	// Create challenge session
-	sessionID := uuid.New().String()
-	err = u.challengeSessionRepo.SaveChallenge(ctx, sessionID, &domain.ChallengeSession{
+	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
 		Type:  constants.IdentifierEmail.String(),
 		Email: email,
 		Flow:  flow.Id,
