@@ -787,6 +787,17 @@ func (u *userUseCase) LogOut(
 		return err
 	}
 
+	// Check if session is active
+	session, kratosErr := u.kratosService.GetSession(ctx, tenantID, sessionToken)
+
+	if kratosErr != nil {
+		return domainerrors.NewUnauthorizedError("MSG_INVALID_SESSION", "Invalid session").WithCause(kratosErr)
+	}
+
+	if !*session.Active {
+		return domainerrors.NewUnauthorizedError("MSG_INVALID_SESSION", "Invalid session")
+	}
+
 	// Revoke session
 	if err := u.kratosService.Logout(ctx, tenantID, sessionToken); err != nil {
 		logger.GetLogger().Errorf("Failed to logout: %v", err)
