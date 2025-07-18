@@ -4,20 +4,20 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
+	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type permissionHandler struct {
-	ketoClient *keto.Client
+	ucase ucases.PermissionUseCase
 }
 
-func NewPermissionHandler(ketoClient *keto.Client) *permissionHandler {
+func NewPermissionHandler(ucase ucases.PermissionUseCase) *permissionHandler {
 	return &permissionHandler{
-		ketoClient: ketoClient,
+		ucase: ucase,
 	}
 }
 
@@ -72,7 +72,7 @@ func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 		return
 	}
 
-	err = h.ketoClient.CreateRelationTuple(c.Request.Context(), req)
+	err = h.ucase.CreateRelationTuple(c.Request.Context(), req)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to create relation tuple: %v", err)
 		httpresponse.Error(
@@ -141,7 +141,7 @@ func (h *permissionHandler) CheckPermission(c *gin.Context) {
 	}
 
 	// Check permission using Keto
-	allowed, err := h.ketoClient.CheckPermission(c.Request.Context(), req)
+	allowed, err := h.ucase.CheckPermission(c.Request.Context(), req)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to check permission: %v", err)
 		httpresponse.Error(

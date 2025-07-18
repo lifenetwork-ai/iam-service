@@ -47,6 +47,7 @@ func RunApp(config *conf.Configuration) {
 		db,
 		ucases.IdentityUserUCase,
 		ucases.AdminUCase,
+		ucases.PermissionUCase,
 	)
 
 	// Start server

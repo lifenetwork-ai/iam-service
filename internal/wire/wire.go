@@ -6,6 +6,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	keto "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
@@ -42,6 +43,7 @@ type UseCases struct {
 	IdentityUserUCase ucasetypes.IdentityUserUseCase
 	AdminUCase        ucasetypes.AdminUseCase
 	TenantUCase       ucasetypes.TenantUseCase
+	PermissionUCase   ucasetypes.PermissionUseCase
 }
 
 // Initialize use cases
@@ -60,7 +62,8 @@ func InitializeUseCases(db *gorm.DB, cacheRepo types.CacheRepository) *UseCases 
 			repos.UserIdentifierMappingRepo,
 			kratos.NewKratosService(repos.TenantRepo),
 		),
-		AdminUCase:  ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
-		TenantUCase: ucases.NewTenantUseCase(repos.TenantRepo),
+		AdminUCase:      ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
+		TenantUCase:     ucases.NewTenantUseCase(repos.TenantRepo),
+		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo)),
 	}
 }

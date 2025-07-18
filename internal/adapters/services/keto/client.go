@@ -10,7 +10,8 @@ import (
 
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
-	repo_types "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	ketotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto/types"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	keto "github.com/ory/keto-client-go"
@@ -18,14 +19,14 @@ import (
 
 // Client wraps the Keto client configuration
 type Client struct {
-	tenantRepo repo_types.TenantRepository
+	tenantRepo repotypes.TenantRepository
 	client     *keto.APIClient
 	config     *conf.KetoConfiguration
 }
 
 // NewClient creates a new Keto client
-// NewClient creates a new Keto client
-func NewClient(cfg *conf.KetoConfiguration, tenantRepo repo_types.TenantRepository) *Client {
+func NewKetoService(tenantRepo repotypes.TenantRepository) ketotypes.KetoService {
+	cfg := conf.GetKetoConfig()
 	ketoCfg := keto.NewConfiguration()
 
 	ketoCfg.OperationServers = map[string]keto.ServerConfigurations{

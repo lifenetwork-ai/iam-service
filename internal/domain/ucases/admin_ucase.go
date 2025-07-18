@@ -3,13 +3,13 @@ package ucases
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
@@ -26,52 +26,43 @@ func NewAdminUseCase(tenantRepo repositories.TenantRepository, adminAccountRepo 
 	}
 }
 
-func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.CreateAdminAccountPayloadDTO) (*dto.AdminAccountDTO, *dto.ErrorDTOResponse) {
+func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.CreateAdminAccountPayloadDTO) (*dto.AdminAccountDTO, *domainerrors.DomainError) {
 	// Check if admin account with same email exists
 	existingAccount, err := u.adminAccountRepo.GetByUsername(payload.Username)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_CREATE_ADMIN_FAILED",
-			Message: "Failed to check existing admin account",
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_CREATE_ADMIN_FAILED",
+			"Failed to check existing admin account",
+		)
 	}
 
 	if existingAccount != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusConflict,
-			Code:    "MSG_ADMIN_USERNAME_EXISTS",
-			Message: "Admin account with this username already exists",
-			Details: []interface{}{
-				map[string]string{
-					"field": "username",
-					"error": "Username already exists",
-				},
+		return nil, domainerrors.NewConflictError(
+			"MSG_ADMIN_USERNAME_EXISTS",
+			"Admin account with this username already exists",
+			map[string]string{
+				"field": "username",
+				"error": "Username already exists",
 			},
-		}
+		)
 	}
 
 	// Create new admin account
 	account := &domain.AdminAccount{}
 	if err := account.FromCreateDTO(payload); err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_CREATE_ADMIN_FAILED",
-			Message: "Failed to create admin account",
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_CREATE_ADMIN_FAILED",
+			"Failed to create admin account",
+		)
 	}
 
 	// Save to database
 	if err := u.adminAccountRepo.Create(account); err != nil {
 		logger.GetLogger().Errorf("Failed to save admin account: %v", err)
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_CREATE_ADMIN_FAILED",
-			Message: "Failed to save admin account",
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_CREATE_ADMIN_FAILED",
+			"Failed to save admin account",
+		)
 	}
 
 	// Return DTO
@@ -79,38 +70,33 @@ func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.Creat
 	return &dto, nil
 }
 
-func (u *adminUseCase) GetAdminAccountByUsername(ctx context.Context, username string) (*dto.AdminAccountDTO, *dto.ErrorDTOResponse) {
+func (u *adminUseCase) GetAdminAccountByUsername(ctx context.Context, username string) (*dto.AdminAccountDTO, *domainerrors.DomainError) {
 	account, err := u.adminAccountRepo.GetByUsername(username)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Code:    "MSG_GET_ADMIN_ACCOUNT_FAILED",
-			Message: err.Error(),
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_GET_ADMIN_ACCOUNT_FAILED",
+			"Failed to get admin account",
+		)
 	}
 
 	if account == nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusNotFound,
-			Code:    "MSG_ADMIN_ACCOUNT_NOT_FOUND",
-			Message: "Admin account not found",
-			Details: []interface{}{"Admin account not found"},
-		}
+		return nil, domainerrors.NewNotFoundError(
+			"MSG_ADMIN_ACCOUNT_NOT_FOUND",
+			"Admin account not found",
+		)
 	}
 
 	dto := account.ToDTO()
 	return &dto, nil
 }
 
-func (u *adminUseCase) ListTenants(ctx context.Context, page, size int, keyword string) (*dto.PaginationDTOResponse, *dto.ErrorDTOResponse) {
+func (u *adminUseCase) ListTenants(ctx context.Context, page, size int, keyword string) (*dto.PaginationDTOResponse, *domainerrors.DomainError) {
 	tenants, err := u.tenantRepo.List()
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_LIST_TENANTS_FAILED",
+			"Failed to list tenants",
+		)
 	}
 
 	// Filter by keyword if provided
@@ -168,34 +154,32 @@ func (u *adminUseCase) ListTenants(ctx context.Context, page, size int, keyword 
 	}, nil
 }
 
-func (u *adminUseCase) GetTenantByID(ctx context.Context, id string) (*dto.TenantDTO, *dto.ErrorDTOResponse) {
+func (u *adminUseCase) GetTenantByID(ctx context.Context, id string) (*dto.TenantDTO, *domainerrors.DomainError) {
 	tenantID, err := uuid.Parse(id)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid tenant ID format",
-			Details: []interface{}{"Invalid UUID format"},
-		}
+		return nil, domainerrors.NewValidationError(
+			"MSG_INVALID_TENANT_ID_FORMAT",
+			"Invalid tenant ID format",
+			map[string]string{
+				"field": "id",
+				"error": "Invalid UUID format",
+			},
+		)
 	}
 
 	tenant, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_GET_TENANT_FAILED",
+			"Failed to get tenant",
+		)
 	}
 
 	if tenant == nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusNotFound,
-			Code:    "MSG_TENANT_NOT_FOUND",
-			Message: "Tenant not found",
-			Details: []interface{}{
-				map[string]string{"field": "id", "error": "Tenant not found"},
-			},
-		}
+		return nil, domainerrors.NewNotFoundError(
+			"MSG_TENANT_NOT_FOUND",
+			"Tenant not found",
+		)
 	}
 
 	domainTenant := domain.Tenant{
@@ -210,25 +194,25 @@ func (u *adminUseCase) GetTenantByID(ctx context.Context, id string) (*dto.Tenan
 	return &dto, nil
 }
 
-func (u *adminUseCase) CreateTenant(ctx context.Context, payload dto.CreateTenantPayloadDTO) (*dto.TenantDTO, *dto.ErrorDTOResponse) {
+func (u *adminUseCase) CreateTenant(ctx context.Context, payload dto.CreateTenantPayloadDTO) (*dto.TenantDTO, *domainerrors.DomainError) {
 	// Check if tenant with same name exists
 	existingTenant, err := u.tenantRepo.GetByName(payload.Name)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_CREATE_TENANT_FAILED",
+			"Failed to create tenant",
+		)
 	}
 
 	if existingTenant != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusConflict,
-			Message: fmt.Sprintf("Tenant with name '%s' already exists", payload.Name),
-			Details: []interface{}{
-				map[string]string{"field": "name", "error": "Tenant name already exists"},
+		return nil, domainerrors.NewConflictError(
+			"MSG_TENANT_NAME_EXISTS",
+			fmt.Sprintf("Tenant with name '%s' already exists", payload.Name),
+			map[string]string{
+				"field": "name",
+				"error": "Tenant name already exists",
 			},
-		}
+		)
 	}
 
 	// Create new tenant
@@ -244,67 +228,64 @@ func (u *adminUseCase) CreateTenant(ctx context.Context, payload dto.CreateTenan
 
 	err = u.tenantRepo.Create(repoTenant)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_CREATE_TENANT_FAILED",
+			"Failed to create tenant",
+		)
 	}
 
 	dto := tenant.ToDTO()
 	return &dto, nil
 }
 
-func (u *adminUseCase) UpdateTenant(ctx context.Context, id string, payload dto.UpdateTenantPayloadDTO) (*dto.TenantDTO, *dto.ErrorDTOResponse) {
+func (u *adminUseCase) UpdateTenant(ctx context.Context, id string, payload dto.UpdateTenantPayloadDTO) (*dto.TenantDTO, *domainerrors.DomainError) {
 	tenantID, err := uuid.Parse(id)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid tenant ID format",
-			Details: []interface{}{"Invalid UUID format"},
-		}
+		return nil, domainerrors.NewValidationError(
+			"MSG_INVALID_TENANT_ID_FORMAT",
+			"Invalid tenant ID format",
+			map[string]string{
+				"field": "id",
+				"error": "Invalid UUID format",
+			},
+		)
 	}
 
 	// Get existing tenant
 	existingTenant, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_UPDATE_TENANT_FAILED",
+			"Failed to update tenant",
+		)
 	}
 
 	if existingTenant == nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusNotFound,
-			Code:    "MSG_TENANT_NOT_FOUND",
-			Message: "Tenant not found",
-			Details: []interface{}{
-				map[string]string{"field": "id", "error": "Tenant not found"},
-			},
-		}
+		return nil, domainerrors.NewNotFoundError(
+			"MSG_TENANT_NOT_FOUND",
+			"Tenant not found",
+		)
 	}
 
 	// Check name uniqueness if name is being updated
 	if payload.Name != "" && payload.Name != existingTenant.Name {
 		nameExists, err := u.tenantRepo.GetByName(payload.Name)
 		if err != nil {
-			return nil, &dto.ErrorDTOResponse{
-				Status:  http.StatusInternalServerError,
-				Message: err.Error(),
-				Details: []interface{}{err.Error()},
-			}
+			return nil, domainerrors.NewInternalError(
+				"MSG_UPDATE_TENANT_FAILED",
+				"Failed to update tenant",
+			)
 		}
 
 		if nameExists != nil {
-			return nil, &dto.ErrorDTOResponse{
-				Status:  http.StatusConflict,
-				Message: fmt.Sprintf("Tenant with name '%s' already exists", payload.Name),
-				Details: []interface{}{
-					map[string]string{"field": "name", "error": "Tenant name already exists"},
+			return nil, domainerrors.NewConflictError(
+				"MSG_TENANT_NAME_EXISTS",
+				fmt.Sprintf("Tenant with name '%s' already exists", payload.Name),
+				map[string]string{
+					"field": "name",
+					"error": "Tenant name already exists",
 				},
-			}
+			)
 		}
 	}
 
@@ -330,11 +311,10 @@ func (u *adminUseCase) UpdateTenant(ctx context.Context, id string, payload dto.
 
 		err = u.tenantRepo.Update(repoTenant)
 		if err != nil {
-			return nil, &dto.ErrorDTOResponse{
-				Status:  http.StatusInternalServerError,
-				Message: err.Error(),
-				Details: []interface{}{err.Error()},
-			}
+			return nil, domainerrors.NewInternalError(
+				"MSG_UPDATE_TENANT_FAILED",
+				"Failed to update tenant",
+			)
 		}
 	}
 
@@ -342,35 +322,33 @@ func (u *adminUseCase) UpdateTenant(ctx context.Context, id string, payload dto.
 	return &dto, nil
 }
 
-func (u *adminUseCase) DeleteTenant(ctx context.Context, id string) (*dto.TenantDTO, *dto.ErrorDTOResponse) {
+func (u *adminUseCase) DeleteTenant(ctx context.Context, id string) (*dto.TenantDTO, *domainerrors.DomainError) {
 	tenantID, err := uuid.Parse(id)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid tenant ID format",
-			Details: []interface{}{"Invalid UUID format"},
-		}
+		return nil, domainerrors.NewValidationError(
+			"MSG_INVALID_TENANT_ID_FORMAT",
+			"Invalid tenant ID format",
+			map[string]string{
+				"field": "id",
+				"error": "Invalid UUID format",
+			},
+		)
 	}
 
 	// Get existing tenant
 	existingTenant, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_DELETE_TENANT_FAILED",
+			"Failed to delete tenant",
+		)
 	}
 
 	if existingTenant == nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusNotFound,
-			Code:    "MSG_TENANT_NOT_FOUND",
-			Message: "Tenant not found",
-			Details: []interface{}{
-				map[string]string{"field": "id", "error": "Tenant not found"},
-			},
-		}
+		return nil, domainerrors.NewNotFoundError(
+			"MSG_TENANT_NOT_FOUND",
+			"Tenant not found",
+		)
 	}
 
 	// Convert to domain model for DTO conversion
@@ -386,21 +364,20 @@ func (u *adminUseCase) DeleteTenant(ctx context.Context, id string) (*dto.Tenant
 	// Delete tenant
 	err = u.tenantRepo.Delete(tenantID)
 	if err != nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
-			Details: []interface{}{err.Error()},
-		}
+		return nil, domainerrors.NewInternalError(
+			"MSG_DELETE_TENANT_FAILED",
+			"Failed to delete tenant",
+		)
 	}
 
 	dto := domainTenant.ToDTO()
 	return &dto, nil
 }
 
-func (u *adminUseCase) UpdateTenantStatus(ctx context.Context, tenantID string, payload dto.UpdateTenantStatusPayloadDTO) (*dto.TenantDTO, *dto.ErrorDTOResponse) {
+func (u *adminUseCase) UpdateTenantStatus(ctx context.Context, tenantID string, payload dto.UpdateTenantStatusPayloadDTO) (*dto.TenantDTO, *domainerrors.DomainError) {
 	// TODO: Implement tenant status update
-	return nil, &dto.ErrorDTOResponse{
-		Status:  http.StatusNotImplemented,
-		Message: "Tenant status update not implemented",
-	}
+	return nil, domainerrors.NewInternalError(
+		"MSG_UPDATE_TENANT_STATUS_NOT_IMPLEMENTED",
+		"Tenant status update not implemented",
+	)
 }
