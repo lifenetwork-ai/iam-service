@@ -791,20 +791,11 @@ func (u *userUseCase) LogOut(
 	session, kratosErr := u.kratosService.GetSession(ctx, tenantID, sessionToken)
 
 	if kratosErr != nil {
-		return &dto.ErrorDTOResponse{
-			Status:  http.StatusUnauthorized,
-			Code:    "MSG_INVALID_SESSION",
-			Message: "Invalid session",
-			Details: []interface{}{kratosErr.Error()},
-		}
+		return domainerrors.NewUnauthorizedError("MSG_INVALID_SESSION", "Invalid session").WithCause(kratosErr)
 	}
 
 	if !*session.Active {
-		return &dto.ErrorDTOResponse{
-			Status:  http.StatusUnauthorized,
-			Code:    "MSG_INVALID_SESSION",
-			Message: "Invalid session",
-		}
+		return domainerrors.NewUnauthorizedError("MSG_INVALID_SESSION", "Invalid session")
 	}
 
 	// Revoke session
