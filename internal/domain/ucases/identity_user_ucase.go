@@ -1003,16 +1003,9 @@ func (u *userUseCase) LogOut(
 	tenantID uuid.UUID,
 ) *dto.ErrorDTOResponse {
 	// Get session token from context
-	sessionToken := ctx.Value("session_token").(string)
-	if sessionToken == "" {
-		return &dto.ErrorDTOResponse{
-			Status:  http.StatusUnauthorized,
-			Code:    "MSG_UNAUTHORIZED",
-			Message: "Unauthorized",
-			Details: []interface{}{
-				map[string]string{"field": "session_token", "error": "Session token not found"},
-			},
-		}
+	sessionToken, err := u.extractSessionToken(ctx)
+	if err != nil {
+		return err
 	}
 
 	// Revoke session
@@ -1074,28 +1067,9 @@ func (u *userUseCase) Profile(
 	tenantID uuid.UUID,
 ) (*dto.IdentityUserDTO, *dto.ErrorDTOResponse) {
 	// Get session token from context
-	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
-	if sessionTokenVal == nil {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusUnauthorized,
-			Code:    "MSG_UNAUTHORIZED",
-			Message: "Unauthorized",
-			Details: []interface{}{
-				map[string]string{"field": "session_token", "error": "Session token not found"},
-			},
-		}
-	}
-
-	sessionToken, ok := sessionTokenVal.(string)
-	if !ok || sessionToken == "" {
-		return nil, &dto.ErrorDTOResponse{
-			Status:  http.StatusUnauthorized,
-			Code:    "MSG_UNAUTHORIZED",
-			Message: "Unauthorized",
-			Details: []interface{}{
-				map[string]string{"field": "session_token", "error": "Invalid session token format"},
-			},
-		}
+	sessionToken, sessionTokenErr := u.extractSessionToken(ctx)
+	if sessionTokenErr != nil {
+		return nil, sessionTokenErr
 	}
 
 	// Get session
@@ -1122,4 +1096,33 @@ func (u *userUseCase) Profile(
 	}
 
 	return &user, nil
+}
+
+// extractSessionToken extracts and validates the session token from context
+func (u *userUseCase) extractSessionToken(ctx context.Context) (string, *dto.ErrorDTOResponse) {
+	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
+	if sessionTokenVal == nil {
+		return "", &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "MSG_UNAUTHORIZED",
+			Message: "Unauthorized",
+			Details: []interface{}{
+				map[string]string{"field": "session_token", "error": "Session token not found"},
+			},
+		}
+	}
+
+	sessionToken, ok := sessionTokenVal.(string)
+	if !ok || sessionToken == "" {
+		return "", &dto.ErrorDTOResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "MSG_UNAUTHORIZED",
+			Message: "Unauthorized",
+			Details: []interface{}{
+				map[string]string{"field": "session_token", "error": "Invalid session token format"},
+			},
+		}
+	}
+
+	return sessionToken, nil
 }
