@@ -11,7 +11,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	repo_types "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
-	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/types"
+	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos/types"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 )

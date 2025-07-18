@@ -12,7 +12,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
-	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/types"
+	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos/types"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
