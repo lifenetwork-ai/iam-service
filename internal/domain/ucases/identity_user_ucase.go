@@ -1014,6 +1014,7 @@ func (u *userUseCase) LogOut(
 
 	// Check if session is active
 	session, kratosErr := u.kratosService.GetSession(ctx, tenantID, sessionToken)
+
 	if kratosErr != nil {
 		return &dto.ErrorDTOResponse{
 			Status:  http.StatusUnauthorized,

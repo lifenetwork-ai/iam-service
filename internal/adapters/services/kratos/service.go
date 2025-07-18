@@ -340,9 +340,7 @@ func (k *kratosServiceImpl) GetSession(ctx context.Context, tenantID uuid.UUID, 
 		return nil, fmt.Errorf("failed to get public API client: %w", err)
 	}
 
-	session, _, err := publicAPI.FrontendAPI.ToSession(ctx).
-		Cookie(fmt.Sprintf("ory_kratos_session=%s", sessionToken)).
-		Execute()
+	session, _, err := publicAPI.FrontendAPI.ToSession(ctx).XSessionToken(sessionToken).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
