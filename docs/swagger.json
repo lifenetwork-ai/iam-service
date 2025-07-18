@@ -408,6 +408,112 @@
                 }
             }
         },
+        "/api/v1/permissions/check": {
+            "post": {
+                "description": "Check if a subject has permission to perform an action on an object",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "permissions"
+                ],
+                "summary": "Check permission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Permission check request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CheckPermissionRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permission check result",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CheckPermissionResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/permissions/relation-tuples": {
+            "post": {
+                "description": "Create a relation tuple",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "permissions"
+                ],
+                "summary": "Create relation tuple",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Relation tuple creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateRelationTupleRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Relation tuple created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/challenge-verify": {
             "post": {
                 "description": "Verify either a login challenge or registration flow\nVerify a one-time code sent to user for either login or registration challenge.",
@@ -807,6 +913,47 @@
                 }
             }
         },
+        "dto.CheckPermissionRequestDTO": {
+            "type": "object",
+            "required": [
+                "action",
+                "namespace",
+                "object"
+            ],
+            "properties": {
+                "action": {
+                    "description": "What they want to do (e.g., \"read\", \"write\", \"delete\")",
+                    "type": "string"
+                },
+                "namespace": {
+                    "type": "string"
+                },
+                "object": {
+                    "description": "What they want to do it to (e.g., \"document:123\")",
+                    "type": "string"
+                },
+                "subject_id": {
+                    "description": "Who wants to perform the action (user ID, role, etc.)",
+                    "type": "string"
+                },
+                "subject_set": {
+                    "$ref": "#/definitions/dto.SubjectSet"
+                }
+            }
+        },
+        "dto.CheckPermissionResponseDTO": {
+            "type": "object",
+            "properties": {
+                "allowed": {
+                    "description": "Whether the action is allowed",
+                    "type": "boolean"
+                },
+                "reason": {
+                    "description": "Optional explanation for why permission was denied",
+                    "type": "string"
+                }
+            }
+        },
         "dto.CreateAdminAccountPayloadDTO": {
             "type": "object",
             "required": [
@@ -827,6 +974,31 @@
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.CreateRelationTupleRequestDTO": {
+            "type": "object",
+            "required": [
+                "namespace",
+                "object",
+                "relation"
+            ],
+            "properties": {
+                "namespace": {
+                    "type": "string"
+                },
+                "object": {
+                    "type": "string"
+                },
+                "relation": {
+                    "type": "string"
+                },
+                "subject_id": {
+                    "type": "string"
+                },
+                "subject_set": {
+                    "$ref": "#/definitions/dto.SubjectSet"
                 }
             }
         },
@@ -1022,6 +1194,25 @@
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.SubjectSet": {
+            "type": "object",
+            "required": [
+                "namespace",
+                "object",
+                "relation"
+            ],
+            "properties": {
+                "namespace": {
+                    "type": "string"
+                },
+                "object": {
+                    "type": "string"
+                },
+                "relation": {
+                    "type": "string"
                 }
             }
         },

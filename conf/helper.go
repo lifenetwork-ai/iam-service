@@ -4,10 +4,6 @@ func GetConfiguration() *Configuration {
 	return &configuration
 }
 
-func GetKratosConfig() *KratosConfiguration {
-	return &configuration.KratosConfig
-}
-
 func GetRedisConfiguration() *RedisConfiguration {
 	return &configuration.Redis
 }

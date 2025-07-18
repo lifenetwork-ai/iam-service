@@ -45,3 +45,6 @@ const (
 	ChallengeTypeRegister         = "register"
 	ChallengeTypeChangeIdentifier = "change_identifier"
 )
+
+// HTTP Headers
+const ContentTypeJson = "application/json"

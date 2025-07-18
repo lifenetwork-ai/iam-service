@@ -9,6 +9,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/handlers"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 )
@@ -22,6 +23,10 @@ func RegisterRoutes(
 	adminUCase interfaces.AdminUseCase,
 ) {
 	v1 := r.Group("/api/v1")
+
+	// Initialize Keto client
+	tenantRepo := repositories.NewTenantRepository(db)
+	ketoClient := keto.NewClient(&config.Keto, tenantRepo)
 
 	// SECTION: Admin routes
 	adminRepo := repositories.NewAdminAccountRepository(db)
@@ -46,6 +51,15 @@ func RegisterRoutes(
 		tenantRouter.PUT("/:id", adminHandler.UpdateTenant)
 		tenantRouter.DELETE("/:id", adminHandler.DeleteTenant)
 		tenantRouter.PUT("/:id/status", adminHandler.UpdateTenantStatus)
+	}
+
+	// SECTION: Permission routes
+	permissionHandler := handlers.NewPermissionHandler(ketoClient)
+	permissionRouter := v1.Group("permissions")
+	permissionRouter.Use(middleware.XHeaderValidationMiddleware())
+	{
+		permissionRouter.POST("/check", permissionHandler.CheckPermission)
+		permissionRouter.POST("/relation-tuples", permissionHandler.CreateRelationTuple)
 	}
 
 	// SECTION: users

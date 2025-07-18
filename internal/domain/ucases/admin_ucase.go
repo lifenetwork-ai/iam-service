@@ -11,6 +11,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type adminUseCase struct {
@@ -64,6 +65,7 @@ func (u *adminUseCase) CreateAdminAccount(ctx context.Context, payload dto.Creat
 
 	// Save to database
 	if err := u.adminAccountRepo.Create(account); err != nil {
+		logger.GetLogger().Errorf("Failed to save admin account: %v", err)
 		return nil, &dto.ErrorDTOResponse{
 			Status:  http.StatusInternalServerError,
 			Code:    "MSG_CREATE_ADMIN_FAILED",

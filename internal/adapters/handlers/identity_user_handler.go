@@ -2,13 +2,11 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
-	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
@@ -22,19 +20,6 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 	return &userHandler{
 		ucase: ucase,
 	}
-}
-
-// getTenant extracts tenant from context
-func (h *userHandler) getTenant(ctx *gin.Context) (*domain.Tenant, error) {
-	tenant, ok := ctx.Get(string(middleware.TenantKey))
-	if !ok {
-		return nil, errors.New("tenant not found in context")
-	}
-	tenantObj, ok := tenant.(*domain.Tenant)
-	if !ok {
-		return nil, errors.New("invalid tenant type in context")
-	}
-	return tenantObj, nil
 }
 
 // ChallengeWithPhone to login with phone and otp.
@@ -51,7 +36,7 @@ func (h *userHandler) getTenant(ctx *gin.Context) (*domain.Tenant, error) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-phone [post]
 func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
-	tenant, err := h.getTenant(ctx)
+	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -116,7 +101,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-with-email [post]
 func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
-	tenant, err := h.getTenant(ctx)
+	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -184,7 +169,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/challenge-verify [post]
 func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
-	tenant, err := h.getTenant(ctx)
+	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get tenant: %v", err)
 		httpresponse.Error(
@@ -251,7 +236,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
 func (h *userHandler) Me(ctx *gin.Context) {
-	tenant, err := h.getTenant(ctx)
+	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -309,7 +294,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/logout [post]
 func (h *userHandler) Logout(ctx *gin.Context) {
-	tenant, err := h.getTenant(ctx)
+	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
@@ -350,7 +335,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/register [post]
 func (h *userHandler) Register(ctx *gin.Context) {
-	tenant, err := h.getTenant(ctx)
+	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
 		httpresponse.Error(
 			ctx,
