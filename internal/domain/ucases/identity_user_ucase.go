@@ -534,8 +534,12 @@ func (u *userUseCase) VerifyLogin(
 	}
 
 	// Submit login flow with code
+	identifier := sessionValue.Phone
+	if sessionValue.Email != "" {
+		identifier = sessionValue.Email
+	}
 	loginResult, err := u.kratosService.SubmitLoginFlow(
-		ctx, tenantID, flow, constants.MethodTypeCode.String(), &sessionValue.Phone, nil, &code,
+		ctx, tenantID, flow, constants.MethodTypeCode.String(), &identifier, nil, &code,
 	)
 	if err != nil {
 		return nil, &dto.ErrorDTOResponse{
