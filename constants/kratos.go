@@ -8,8 +8,10 @@ func (t IdentifierType) String() string {
 }
 
 const (
-	IdentifierEmail IdentifierType = "email"
-	IdentifierPhone IdentifierType = "phone"
+	IdentifierEmail    IdentifierType = "email"
+	IdentifierPhone    IdentifierType = "phone_number"
+	IdentifierUsername IdentifierType = "username"
+	IdentifierTenant   IdentifierType = "tenant"
 )
 
 // MethodType represents the types of login/registration methods

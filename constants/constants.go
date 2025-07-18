@@ -39,5 +39,13 @@ const (
 // DefaultChallengeDuration is the default duration for a challenge session
 const DefaultChallengeDuration = 5 * time.Minute
 
+
+// Challenge Types
+const (
+	ChallengeTypeLogin            = "login"
+	ChallengeTypeRegister         = "register"
+	ChallengeTypeChangeIdentifier = "change_identifier"
+)
+
 // HTTP Headers
 const ContentTypeJson = "application/json"

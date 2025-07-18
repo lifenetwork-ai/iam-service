@@ -15,4 +15,5 @@ type UserIdentityRepository interface {
 	FirstOrCreate(tx *gorm.DB, identity *domain.UserIdentity) error
 	Update(tx *gorm.DB, identity *domain.UserIdentity) error
 	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
+	GetByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (*domain.UserIdentity, error)
 }

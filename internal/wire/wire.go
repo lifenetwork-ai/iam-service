@@ -6,7 +6,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/services"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
@@ -14,8 +14,7 @@ import (
 
 // Struct to hold all repositories
 type repos struct {
-	ChallengeSessionRepo repotypes.ChallengeSessionRepository
-
+	ChallengeSessionRepo      repotypes.ChallengeSessionRepository
 	GlobalUserRepo            repotypes.GlobalUserRepository
 	UserIdentityRepo          repotypes.UserIdentityRepository
 	UserIdentifierMappingRepo repotypes.UserIdentifierMappingRepository
@@ -27,13 +26,14 @@ type repos struct {
 func initializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *repos {
 	// Return all repositories
 	return &repos{
-		ChallengeSessionRepo: repositories.NewChallengeSessionRepository(cacheRepo),
-
+		ChallengeSessionRepo:      repositories.NewChallengeSessionRepository(cacheRepo),
 		GlobalUserRepo:            repositories.NewGlobalUserRepository(db),
 		UserIdentityRepo:          repositories.NewUserIdentityRepository(db),
 		UserIdentifierMappingRepo: repositories.NewUserIdentifierMappingRepository(db),
-		TenantRepo:                repositories.NewTenantRepositoryCache(repositories.NewTenantRepository(db), cacheRepo),
-		AdminAccountRepo:          repositories.NewAdminAccountRepository(db),
+		TenantRepo: repositories.NewTenantRepositoryCache(
+			repositories.NewTenantRepository(db), cacheRepo,
+		),
+		AdminAccountRepo: repositories.NewAdminAccountRepository(db),
 	}
 }
 
@@ -58,7 +58,7 @@ func InitializeUseCases(db *gorm.DB, cacheRepo types.CacheRepository) *UseCases 
 			repos.GlobalUserRepo,
 			repos.UserIdentityRepo,
 			repos.UserIdentifierMappingRepo,
-			services.NewKratosService(repos.TenantRepo),
+			kratos.NewKratosService(repos.TenantRepo),
 		),
 		AdminUCase:  ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
 		TenantUCase: ucases.NewTenantUseCase(repos.TenantRepo),

@@ -231,7 +231,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token(Bearer ory...)" default(Bearer <token>)
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Success 200 {object} response.SuccessResponse "Successful get user profile"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
@@ -287,7 +287,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token(Bearer ory...)" default(Bearer <token>)
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Param request body object true "Empty request body"
 // @Success 200 {object} response.SuccessResponse{data=interface{}} "Successful de-authenticate user"
 // @Failure 401 {object} response.ErrorResponse "Unauthorized - Invalid or missing token"
@@ -327,7 +327,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, if both are provided then error will be returned. Tenant field is required(available value: `genetica`,`life_ai`)"
+// @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, if both are provided then error will be returned"
 // @Success 200 {object} response.SuccessResponse{data=dto.IdentityUserAuthDTO} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 409 {object} response.ErrorResponse "Email or phone number already exists"

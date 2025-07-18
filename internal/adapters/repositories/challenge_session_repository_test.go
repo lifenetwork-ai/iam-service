@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/testutil"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	"github.com/stretchr/testify/assert"
@@ -65,7 +66,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		// Test data
 		sessionID := "test-session-456"
 		challenge := &domain.ChallengeSession{
-			Type:  "phone",
+			Type:  constants.IdentifierPhone.String(),
 			Phone: "+1234567890",
 			OTP:   "654321",
 		}

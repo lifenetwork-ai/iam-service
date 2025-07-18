@@ -753,7 +753,7 @@ paths:
         required: true
         type: string
       - default: Bearer <token>
-        description: Bearer Token(Bearer ory...)
+        description: Bearer Token (Bearer ory...)
         in: header
         name: Authorization
         required: true
@@ -798,7 +798,7 @@ paths:
         required: true
         type: string
       - default: Bearer <token>
-        description: Bearer Token(Bearer ory...)
+        description: Bearer Token (Bearer ory...)
         in: header
         name: Authorization
         required: true
@@ -828,8 +828,8 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: 'Only email or phone must be provided, if both are provided then
-          error will be returned. Tenant field is required(available value: `genetica`,`life_ai`)'
+      - description: Only email or phone must be provided, if both are provided then
+          error will be returned
         in: body
         name: register
         required: true

@@ -722,7 +722,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "default": "Bearer \u003ctoken\u003e",
-                        "description": "Bearer Token(Bearer ory...)",
+                        "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -793,7 +793,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "default": "Bearer \u003ctoken\u003e",
-                        "description": "Bearer Token(Bearer ory...)",
+                        "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -837,7 +837,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Only email or phone must be provided, if both are provided then error will be returned. Tenant field is required(available value: ` + "`" + `genetica` + "`" + `,` + "`" + `life_ai` + "`" + `)",
+                        "description": "Only email or phone must be provided, if both are provided then error will be returned",
                         "name": "register",
                         "in": "body",
                         "required": true,
