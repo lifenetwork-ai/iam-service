@@ -3,11 +3,11 @@ package types
 import (
 	"context"
 
-	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 )
 
 type KetoService interface {
-	CheckPermission(ctx context.Context, dto dto.CheckPermissionRequestDTO) (bool, error)
-	BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPermissionRequestDTO) (bool, error)
-	CreateRelationTuple(ctx context.Context, dto dto.CreateRelationTupleRequestDTO) error
+	CheckPermission(ctx context.Context, request ucasetypes.CheckPermissionRequest) (bool, error)
+	// BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPermissionRequestDTO) (bool, error)
+	CreateRelationTuple(ctx context.Context, request ucasetypes.CreateRelationTupleRequest) error
 }

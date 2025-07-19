@@ -7,16 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
-)
-
-type contextKey string
-
-const (
-	TenantIDKey     contextKey = "tenant_id"
-	TenantKey       contextKey = "tenant"
-	TenantHeaderKey            = "X-Tenant-ID"
 )
 
 // TenantMiddleware handles tenant context in requests
@@ -33,7 +26,7 @@ func NewTenantMiddleware(tenantRepo interfaces.TenantRepository) *TenantMiddlewa
 
 // getTenant extracts tenant from context
 func GetTenantFromContext(ctx *gin.Context) (*domain.Tenant, error) {
-	tenant, ok := ctx.Get(string(TenantKey))
+	tenant, ok := ctx.Get(string(constants.TenantKey))
 	if !ok {
 		return nil, errors.New("tenant not found in context")
 	}
@@ -47,7 +40,7 @@ func GetTenantFromContext(ctx *gin.Context) (*domain.Tenant, error) {
 // Middleware handles tenant context in requests
 func (m *TenantMiddleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tenantIDStr := r.Header.Get(TenantHeaderKey)
+		tenantIDStr := r.Header.Get(constants.TenantHeaderKey)
 		if tenantIDStr == "" {
 			http.Error(w, "Tenant ID header is required", http.StatusBadRequest)
 			return
@@ -71,7 +64,7 @@ func (m *TenantMiddleware) Middleware(next http.Handler) http.Handler {
 		}
 
 		// Add tenant ID to context
-		ctx := context.WithValue(r.Context(), TenantIDKey, tenantID)
+		ctx := context.WithValue(r.Context(), constants.TenantIDKey, tenantID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

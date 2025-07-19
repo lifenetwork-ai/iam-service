@@ -13,7 +13,6 @@ import (
 	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos/types"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
-	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
@@ -551,7 +550,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	}
 
 	// 2. Retrieve session token from context
-	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
+	sessionTokenVal := ctx.Value(constants.SessionTokenKey)
 	currentSessionToken, ok := sessionTokenVal.(string)
 	if !ok || currentSessionToken == "" {
 		return nil, domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized")
@@ -870,7 +869,7 @@ func (u *userUseCase) Profile(
 
 // extractSessionToken extracts and validates the session token from context
 func (u *userUseCase) extractSessionToken(ctx context.Context) (string, *domainerrors.DomainError) {
-	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
+	sessionTokenVal := ctx.Value(constants.SessionTokenKey)
 	if sessionTokenVal == nil {
 		return "", domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized").WithDetails([]interface{}{
 			map[string]string{"field": "session_token", "error": "Session token not found"},

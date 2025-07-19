@@ -1,18 +1,15 @@
 package keto
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	ketotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto/types"
-	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	keto "github.com/ory/keto-client-go"
 )
@@ -133,8 +130,8 @@ func NewKetoService(tenantRepo repotypes.TenantRepository) ketotypes.KetoService
 }
 
 // CheckPermission checks if a subject has permission to perform an action on an object
-func (c *Client) CheckPermission(ctx context.Context, dto dto.CheckPermissionRequestDTO) (bool, error) {
-	req := c.client.PermissionApi.PostCheckPermission(ctx).PostCheckPermissionBody(dto.ToKetoPostCheckPermissionBody())
+func (c *Client) CheckPermission(ctx context.Context, request ucasetypes.CheckPermissionRequest) (bool, error) {
+	req := c.client.PermissionApi.PostCheckPermission(ctx).PostCheckPermissionBody(request.ToKetoPostCheckPermissionBody())
 	ketoResp, _, err := req.Execute()
 	if err != nil {
 		return false, err
@@ -143,102 +140,87 @@ func (c *Client) CheckPermission(ctx context.Context, dto dto.CheckPermissionReq
 	return ketoResp.GetAllowed(), nil
 }
 
-// BatchCheckPermission checks if a subject has permission to perform an action on an object
-func (c *Client) BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPermissionRequestDTO) (bool, error) {
-	// Create the request body
-	type requestBody struct {
-		Namespace  string           `json:"namespace"`
-		Object     string           `json:"object"`
-		Relation   string           `json:"relation"`
-		SubjectID  string           `json:"subject_id,omitempty"`
-		SubjectSet *keto.SubjectSet `json:"subject_set,omitempty"`
-	}
+// // BatchCheckPermission checks if a subject has permission to perform an action on an object
+// func (c *Client) BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPermissionRequestDTO) (bool, error) {
+// 	// Create the request body
+// 	type requestBody struct {
+// 		Namespace  string           `json:"namespace"`
+// 		Object     string           `json:"object"`
+// 		Relation   string           `json:"relation"`
+// 	}
 
-	var requests []requestBody
-	for _, tuple := range dto.Tuples {
-		req := requestBody{
-			Namespace: tuple.Namespace,
-			Object:    tuple.Object,
-			Relation:  tuple.Action,
-		}
+// 	var requests []requestBody
+// 	for _, tuple := range dto.Tuples {
+// 		req := requestBody{
+// 			Namespace: tuple.Namespace,
+// 			Object:    tuple.Object,
+// 			Relation:  tuple.Relation,
+// 		}
+// 		requests = append(requests, req)
+// 	}
 
-		if tuple.SubjectID != "" {
-			req.SubjectID = tuple.SubjectID
-		}
+// 	// Marshal the request body
+// 	reqBody, err := json.Marshal(requests)
+// 	if err != nil {
+// 		return false, fmt.Errorf("failed to marshal request body: %w", err)
+// 	}
 
-		if tuple.SubjectSet != nil {
-			req.SubjectSet = &keto.SubjectSet{
-				Namespace: tuple.SubjectSet.Namespace,
-				Relation:  tuple.SubjectSet.Relation,
-				Object:    tuple.SubjectSet.Object,
-			}
-		}
+// 	// Parse the URL
+// 	url, err := url.Parse(fmt.Sprintf("%s%s", c.config.DefaultReadURL, constants.BatchPermissionCheckEndpoint))
+// 	if err != nil {
+// 		return false, fmt.Errorf("failed to parse URL: %w", err)
+// 	}
 
-		requests = append(requests, req)
-	}
+// 	// Create the HTTP request
+// 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewBuffer(reqBody))
+// 	if err != nil {
+// 		return false, fmt.Errorf("failed to create request: %w", err)
+// 	}
+// 	httpReq.Header.Set("Content-Type", constants.ContentTypeJson)
 
-	// Marshal the request body
-	reqBody, err := json.Marshal(requests)
-	if err != nil {
-		return false, fmt.Errorf("failed to marshal request body: %w", err)
-	}
+// 	// Send the request
+// 	client := &http.Client{}
+// 	resp, err := client.Do(httpReq)
+// 	if err != nil {
+// 		return false, fmt.Errorf("failed to send batch permission check request: %w", err)
+// 	}
+// 	defer resp.Body.Close()
 
-	// Parse the URL
-	url, err := url.Parse(fmt.Sprintf("%s%s", c.config.DefaultReadURL, constants.BatchPermissionCheckEndpoint))
-	if err != nil {
-		return false, fmt.Errorf("failed to parse URL: %w", err)
-	}
+// 	if resp.StatusCode != http.StatusOK {
+// 		return false, fmt.Errorf("batch permission check failed with status: %s", resp.Status)
+// 	}
 
-	// Create the HTTP request
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewBuffer(reqBody))
-	if err != nil {
-		return false, fmt.Errorf("failed to create request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", constants.ContentTypeJson)
+// 	// Parse response
+// 	type responseBody struct {
+// 		Allowed bool `json:"allowed"`
+// 	}
 
-	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return false, fmt.Errorf("failed to send batch permission check request: %w", err)
-	}
-	defer resp.Body.Close()
+// 	var responses []responseBody
+// 	if err := json.NewDecoder(resp.Body).Decode(&responses); err != nil {
+// 		return false, fmt.Errorf("failed to decode batch permission check response: %w", err)
+// 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("batch permission check failed with status: %s", resp.Status)
-	}
+// 	// Check if all permissions are allowed
+// 	for _, response := range responses {
+// 		if !response.Allowed {
+// 			return false, nil
+// 		}
+// 	}
 
-	// Parse response
-	type responseBody struct {
-		Allowed bool `json:"allowed"`
-	}
-
-	var responses []responseBody
-	if err := json.NewDecoder(resp.Body).Decode(&responses); err != nil {
-		return false, fmt.Errorf("failed to decode batch permission check response: %w", err)
-	}
-
-	// Check if all permissions are allowed
-	for _, response := range responses {
-		if !response.Allowed {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
+// 	return true, nil
+// }
 
 // CreateRelationTuple creates a relation tuple
 // Note: The dto should be validated before calling this function
-func (c *Client) CreateRelationTuple(ctx context.Context, dto dto.CreateRelationTupleRequestDTO) error {
-	logger.GetLogger().Debugf("Creating relation tuple for namespace: %s, object: %s, relation: %s, subject_id: %s, subject_set: %v",
-		dto.Namespace, dto.Object, dto.Relation, dto.SubjectID, dto.SubjectSet)
+func (c *Client) CreateRelationTuple(ctx context.Context, request ucasetypes.CreateRelationTupleRequest) error {
+	logger.GetLogger().Debugf("Creating relation tuple for namespace: %s, object: %s, relation: %s, subject_set: %v",
+		request.Namespace, request.Object, request.Relation, request.SubjectSet)
 
-	req := c.client.RelationshipApi.CreateRelationship(ctx).CreateRelationshipBody(dto.ToKetoCreateRelationshipBody())
+	req := c.client.RelationshipApi.CreateRelationship(ctx).CreateRelationshipBody(request.ToKetoCreateRelationshipBody())
 
 	// Log the request details before execution
 	logger.GetLogger().Debugf("Sending request to Keto Write API URL: %s", c.config.DefaultWriteURL)
-	logger.GetLogger().Debugf("Request body: %+v", dto.ToKetoCreateRelationshipBody())
+	logger.GetLogger().Debugf("Request body: %+v", request.ToKetoCreateRelationshipBody())
 
 	_, httpResp, err := req.Execute()
 	if httpResp != nil {
@@ -256,6 +238,6 @@ func (c *Client) CreateRelationTuple(ctx context.Context, dto dto.CreateRelation
 	}
 
 	logger.GetLogger().Debugf("Successfully created relation tuple for %s:%s#%s",
-		dto.Namespace, dto.Object, dto.Relation)
+		request.Namespace, request.Object, request.Relation)
 	return nil
 }

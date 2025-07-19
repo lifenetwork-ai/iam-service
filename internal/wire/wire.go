@@ -14,19 +14,21 @@ import (
 )
 
 // Struct to hold all repositories
-type repos struct {
+type Repos struct {
 	ChallengeSessionRepo      repotypes.ChallengeSessionRepository
 	GlobalUserRepo            repotypes.GlobalUserRepository
 	UserIdentityRepo          repotypes.UserIdentityRepository
 	UserIdentifierMappingRepo repotypes.UserIdentifierMappingRepository
 	TenantRepo                repotypes.TenantRepository
 	AdminAccountRepo          repotypes.AdminAccountRepository
+	CacheRepo                 types.CacheRepository
 }
 
 // Initialize repositories (only using cache where needed)
-func initializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *repos {
+func InitializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *Repos {
 	// Return all repositories
-	return &repos{
+	return &Repos{
+		CacheRepo:                 cacheRepo,
 		ChallengeSessionRepo:      repositories.NewChallengeSessionRepository(cacheRepo),
 		GlobalUserRepo:            repositories.NewGlobalUserRepository(db),
 		UserIdentityRepo:          repositories.NewUserIdentityRepository(db),
@@ -47,9 +49,7 @@ type UseCases struct {
 }
 
 // Initialize use cases
-func InitializeUseCases(db *gorm.DB, cacheRepo types.CacheRepository) *UseCases {
-	repos := initializeRepos(db, cacheRepo)
-
+func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
 	// Return all use cases
 	return &UseCases{
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(

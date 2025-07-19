@@ -36,18 +36,19 @@ func RunApp(config *conf.Configuration) {
 	// Initialize the cache repository
 	cacheRepository := instances.CacheRepositoryInstance(ctx)
 
+	// Init repositories
+	repos := wire.InitializeRepos(db, cacheRepository)
+
 	// Initialize use cases
-	ucases := wire.InitializeUseCases(db, cacheRepository)
+	ucases := wire.InitializeUseCases(db, repos)
 
 	// Register routes
 	routev1.RegisterRoutes(
 		ctx,
 		r,
 		config,
-		db,
-		ucases.IdentityUserUCase,
-		ucases.AdminUCase,
-		ucases.PermissionUCase,
+		ucases,
+		repos,
 	)
 
 	// Start server

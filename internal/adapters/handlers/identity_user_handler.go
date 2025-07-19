@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -236,7 +237,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 	}
 
 	// Get session token from gin context and create new context with it
-	sessionToken, exists := ctx.Get(string(middleware.SessionTokenKey))
+	sessionToken, exists := ctx.Get(string(constants.SessionTokenKey))
 	if !exists {
 		httpresponse.Error(
 			ctx,
@@ -250,7 +251,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 		return
 	}
 
-	reqCtx := context.WithValue(ctx.Request.Context(), middleware.SessionTokenKey, sessionToken)
+	reqCtx := context.WithValue(ctx.Request.Context(), constants.SessionTokenKey, sessionToken)
 	requester, usecaseErr := h.ucase.Profile(reqCtx, tenant.ID)
 
 	if usecaseErr != nil {
@@ -291,7 +292,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 	}
 
 	// Get session token from gin context and create new context with it
-	sessionToken, exists := ctx.Get(string(middleware.SessionTokenKey))
+	sessionToken, exists := ctx.Get(string(constants.SessionTokenKey))
 	if !exists {
 		httpresponse.Error(
 			ctx,
@@ -305,7 +306,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	reqCtx := context.WithValue(ctx.Request.Context(), middleware.SessionTokenKey, sessionToken)
+	reqCtx := context.WithValue(ctx.Request.Context(), constants.SessionTokenKey, sessionToken)
 	usecaseErr := h.ucase.LogOut(reqCtx, tenant.ID)
 	if usecaseErr != nil {
 		handleDomainError(ctx, usecaseErr)
