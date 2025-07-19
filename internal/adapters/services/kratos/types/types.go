@@ -2,6 +2,10 @@ package types
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	kratos "github.com/ory/kratos-client-go"
@@ -85,6 +89,47 @@ type KratosFlowResponse struct {
 			} `json:"attributes"`
 		} `json:"nodes"`
 	} `json:"ui"`
+}
+
+// FromHttpResp parses the response body into a KratosFlowResponse
+func FromHttpResp(resp *http.Response) (*KratosFlowResponse, error) {
+	var flowData KratosFlowResponse
+	if err := json.NewDecoder(resp.Body).Decode(&flowData); err != nil {
+		return nil, fmt.Errorf("failed to parse flow data: %w", err)
+	}
+	return &flowData, nil
+}
+
+// GetTraits extracts traits from the flow response
+func (r *KratosFlowResponse) GetTraits() map[string]any {
+	// Extract traits from nodes
+	traits := make(map[string]any)
+	for _, node := range r.UI.Nodes {
+		if node.Group != "default" || node.Type != "input" {
+			continue
+		}
+
+		name := node.Attributes.Name
+		if !strings.HasPrefix(name, "traits.") {
+			continue
+		}
+
+		traitKey := strings.TrimPrefix(name, "traits.")
+		if node.Attributes.Value != nil {
+			// Check for empty string values
+			if strVal, ok := node.Attributes.Value.(string); ok {
+				if strVal != "" {
+					traits[traitKey] = strVal
+				}
+			} else {
+				// For non-string values, add them as is
+				traits[traitKey] = node.Attributes.Value
+			}
+		}
+
+	}
+
+	return traits
 }
 
 // KratosErrorResponse represents the error response structure from Kratos API

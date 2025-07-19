@@ -65,10 +65,11 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 			Traits: traits,
 		}
 
+		// This method always return 400 error, even if the registration is successful
 		result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
 		if err != nil {
 			if resp != nil && resp.StatusCode == 400 {
-				if err := k.parseKratosErrorResponse(resp, fmt.Errorf("registration failed: %w", err)); err != nil {
+				if err := parseKratosErrorResponse(resp, fmt.Errorf("registration failed: %w", err)); err != nil {
 					return nil, err
 				}
 				return &kratos.SuccessfulNativeRegistration{}, nil
@@ -85,7 +86,7 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 		result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
 		if err != nil {
 			if resp != nil && resp.StatusCode == 400 {
-				if err := k.parseKratosErrorResponse(resp, err); err != nil {
+				if err := parseKratosErrorResponse(resp, err); err != nil {
 					return nil, err
 				}
 				return &kratos.SuccessfulNativeRegistration{}, nil
@@ -129,39 +130,12 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 	}
 	defer resp.Body.Close()
 
-	// Parse the response to extract traits
-	var flowData kratos_types.KratosFlowResponse
-	if err := json.NewDecoder(resp.Body).Decode(&flowData); err != nil {
+	flowData, err := kratos_types.FromHttpResp(resp)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse flow data: %w", err)
 	}
 
-	// Extract traits from nodes
-	traits := make(map[string]interface{})
-	for _, node := range flowData.UI.Nodes {
-		if node.Group != "default" || node.Type != "input" {
-			continue
-		}
-
-		name := node.Attributes.Name
-		if !strings.HasPrefix(name, "traits.") {
-			continue
-		}
-
-		traitKey := strings.TrimPrefix(name, "traits.")
-		if node.Attributes.Value != nil {
-			// Check for empty string values
-			if strVal, ok := node.Attributes.Value.(string); ok {
-				if strVal != "" {
-					traits[traitKey] = strVal
-				}
-			} else {
-				// For non-string values, add them as is
-				traits[traitKey] = node.Attributes.Value
-			}
-		}
-
-	}
-
+	traits := flowData.GetTraits()
 	if len(traits) == 0 {
 		return nil, fmt.Errorf("no traits found in registration flow")
 	}
@@ -179,7 +153,7 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 	result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
 	if err != nil {
 		if resp != nil && resp.StatusCode == 400 {
-			if err := k.parseKratosErrorResponse(resp, fmt.Errorf("registration failed: %w", err)); err != nil {
+			if err := parseKratosErrorResponse(resp, fmt.Errorf("registration failed: %w", err)); err != nil {
 				return nil, err
 			}
 			return &kratos.SuccessfulNativeRegistration{}, nil
@@ -246,7 +220,7 @@ func (k *kratosServiceImpl) SubmitLoginFlow(ctx context.Context, tenantID uuid.U
 	result, resp, err := submitFlow.UpdateLoginFlowBody(body).Execute()
 	if err != nil {
 		if resp != nil && resp.StatusCode == 400 {
-			if err := k.parseKratosErrorResponse(resp, fmt.Errorf("login failed: %w", err)); err != nil {
+			if err := parseKratosErrorResponse(resp, fmt.Errorf("login failed: %w", err)); err != nil {
 				return nil, err
 			}
 			return &kratos.SuccessfulNativeLogin{}, nil
@@ -304,7 +278,7 @@ func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID
 		Execute()
 	if err != nil {
 		if resp != nil && resp.StatusCode == 400 {
-			if err := k.parseKratosErrorResponse(resp, fmt.Errorf("verification failed: %w", err)); err != nil {
+			if err := parseKratosErrorResponse(resp, fmt.Errorf("verification failed: %w", err)); err != nil {
 				return nil, err
 			}
 			return flow, nil
@@ -408,7 +382,7 @@ func (k *kratosServiceImpl) UpdateIdentifierTrait(
 }
 
 // parseKratosErrorResponse parses error response from Kratos and returns appropriate error
-func (k *kratosServiceImpl) parseKratosErrorResponse(resp *http.Response, defaultErr error) error {
+func parseKratosErrorResponse(resp *http.Response, defaultErr error) error {
 	if resp == nil {
 		return defaultErr
 	}
