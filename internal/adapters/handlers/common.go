@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	domaintypes "github.com/lifenetwork-ai/iam-service/internal/domain/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
@@ -30,5 +32,15 @@ func handleDomainError(ctx *gin.Context, err *domainerrors.DomainError) {
 		// Fallback for unknown error types
 		logger.GetLogger().Errorf("Unknown error type: %v", err.Error())
 		httpresponse.Error(ctx, http.StatusInternalServerError, err.Code, err.Message, err.Details)
+	}
+}
+
+func ToPaginationDTOResponse[T any](response *domaintypes.PaginatedResponse[T]) *dto.PaginationDTOResponse[T] {
+	return &dto.PaginationDTOResponse[T]{
+		Items:      response.Items,
+		TotalCount: response.TotalCount,
+		Page:       response.Page,
+		PageSize:   response.PageSize,
+		NextPage:   response.NextPage,
 	}
 }

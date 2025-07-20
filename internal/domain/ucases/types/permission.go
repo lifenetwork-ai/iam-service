@@ -1,20 +1,10 @@
-package interfaces
+package types
 
 import (
-	"context"
 	"errors"
 
-	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	keto "github.com/ory/keto-client-go"
 )
-
-var TenantMemberRelation = "member"
-
-type PermissionUseCase interface {
-	CheckPermission(ctx context.Context, request CheckPermissionRequest) (bool, *domainerrors.DomainError)
-	// BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPermissionRequestDTO) (bool, *domainerrors.DomainError)
-	CreateRelationTuple(ctx context.Context, request CreateRelationTupleRequest) *domainerrors.DomainError
-}
 
 // CheckPermissionRequest represents a request to check permission
 type CheckPermissionRequest struct {
@@ -28,6 +18,8 @@ type TenantRelation struct {
 	TenantID string
 	UserID   string
 }
+
+var TenantMemberRelation = "member"
 
 // Validate validates the CheckPermissionRequest
 func (r *CheckPermissionRequest) Validate() error {

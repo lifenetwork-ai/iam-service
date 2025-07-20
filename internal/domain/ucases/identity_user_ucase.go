@@ -10,12 +10,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
-	repositories "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos/types"
-	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
-	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
 	client "github.com/ory/kratos-client-go"
@@ -24,24 +23,24 @@ import (
 type userUseCase struct {
 	db                        *gorm.DB
 	rateLimiter               ratelimiters.RateLimiter
-	tenantRepo                repositories.TenantRepository
-	globalUserRepo            repositories.GlobalUserRepository
-	userIdentityRepo          repositories.UserIdentityRepository
-	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository
-	challengeSessionRepo      repositories.ChallengeSessionRepository
+	tenantRepo                TenantRepository
+	globalUserRepo            GlobalUserRepository
+	userIdentityRepo          UserIdentityRepository
+	userIdentifierMappingRepo UserIdentifierMappingRepository
+	challengeSessionRepo      ChallengeSessionRepository
 	kratosService             kratos_types.KratosService
 }
 
 func NewIdentityUserUseCase(
 	db *gorm.DB,
 	rateLimiter ratelimiters.RateLimiter,
-	challengeSessionRepo repositories.ChallengeSessionRepository,
-	tenantRepo repositories.TenantRepository,
-	globalUserRepo repositories.GlobalUserRepository,
-	userIdentityRepo repositories.UserIdentityRepository,
-	userIdentifierMappingRepo repositories.UserIdentifierMappingRepository,
+	challengeSessionRepo ChallengeSessionRepository,
+	tenantRepo TenantRepository,
+	globalUserRepo GlobalUserRepository,
+	userIdentityRepo UserIdentityRepository,
+	userIdentifierMappingRepo UserIdentifierMappingRepository,
 	kratosService kratos_types.KratosService,
-) ucasetypes.IdentityUserUseCase {
+) interfaces.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,
 		rateLimiter:               rateLimiter,
@@ -59,7 +58,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	phone string,
-) (*dto.IdentityUserChallengeDTO, *domainerrors.DomainError) {
+) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	_, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
@@ -106,7 +105,7 @@ func (u *userUseCase) ChallengeWithPhone(
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
 	}
 
-	return &dto.IdentityUserChallengeDTO{
+	return &types.IdentityUserChallengeResponse{
 		FlowID:      flow.Id,
 		Receiver:    phone,
 		ChallengeAt: time.Now().Unix(),
@@ -118,7 +117,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	email string,
-) (*dto.IdentityUserChallengeDTO, *domainerrors.DomainError) {
+) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	if !utils.IsEmail(email) {
 		return nil, domainerrors.NewValidationError(
 			"MSG_INVALID_EMAIL",
@@ -161,7 +160,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	// Return challenge session
-	return &dto.IdentityUserChallengeDTO{
+	return &types.IdentityUserChallengeResponse{
 		FlowID:      flow.Id,
 		Receiver:    email,
 		ChallengeAt: time.Now().Unix(),
@@ -174,7 +173,7 @@ func (u *userUseCase) VerifyRegister(
 	tenantID uuid.UUID,
 	flowID string,
 	code string,
-) (*dto.IdentityUserAuthDTO, *domainerrors.DomainError) {
+) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
 	// Check rate limit for verification attempts
 	key := "verify:register:" + flowID
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
@@ -260,14 +259,14 @@ func (u *userUseCase) VerifyRegister(
 	}
 
 	// Return authentication response
-	return &dto.IdentityUserAuthDTO{
+	return &types.IdentityUserAuthResponse{
 		SessionID:       registrationResult.Session.Id,
 		SessionToken:    *registrationResult.SessionToken,
 		Active:          *registrationResult.Session.Active,
 		ExpiresAt:       registrationResult.Session.ExpiresAt,
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
-		User: dto.IdentityUserDTO{
+		User: types.IdentityUserResponse{
 			ID:       newTenantUserID,
 			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    email,
@@ -413,7 +412,7 @@ func (u *userUseCase) VerifyLogin(
 	tenantID uuid.UUID,
 	flowID string,
 	code string,
-) (*dto.IdentityUserAuthDTO, *domainerrors.DomainError) {
+) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
 	// Check rate limit for verification attempts
 	key := "verify:login:" + flowID
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
@@ -452,14 +451,14 @@ func (u *userUseCase) VerifyLogin(
 	}
 
 	// Return authentication response
-	return &dto.IdentityUserAuthDTO{
+	return &types.IdentityUserAuthResponse{
 		SessionID:       loginResult.Session.Id,
 		SessionToken:    *loginResult.SessionToken,
 		Active:          *loginResult.Session.Active,
 		ExpiresAt:       loginResult.Session.ExpiresAt,
 		IssuedAt:        loginResult.Session.IssuedAt,
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
-		User: dto.IdentityUserDTO{
+		User: types.IdentityUserResponse{
 			ID:       loginResult.Session.Identity.Id,
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
@@ -477,7 +476,7 @@ func (u *userUseCase) ChallengeVerify(
 	tenantID uuid.UUID,
 	sessionID string,
 	code string,
-) (*dto.IdentityUserAuthDTO, *domainerrors.DomainError) {
+) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
 	// Check rate limit for verification attempts
 	key := fmt.Sprintf("verify:%s", sessionID)
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
@@ -518,14 +517,14 @@ func (u *userUseCase) ChallengeVerify(
 	}
 
 	// Return authentication response
-	return &dto.IdentityUserAuthDTO{
+	return &types.IdentityUserAuthResponse{
 		SessionID:       session.Id,
 		SessionToken:    sessionValue.Flow,
 		Active:          *session.Active,
 		ExpiresAt:       session.ExpiresAt,
 		IssuedAt:        session.IssuedAt,
 		AuthenticatedAt: session.AuthenticatedAt,
-		User: dto.IdentityUserDTO{
+		User: types.IdentityUserResponse{
 			ID:       session.Identity.Id,
 			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
@@ -542,7 +541,7 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	newIdentifier string,
-) (*dto.IdentityUserAuthDTO, *domainerrors.DomainError) {
+) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
 	// 1. Determine identifier type (email or phone)
 	identifierType, err := utils.GetIdentifierType(newIdentifier)
 	if err != nil {
@@ -636,9 +635,9 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 	}
 
 	// Return verification flow info
-	return &dto.IdentityUserAuthDTO{
+	return &types.IdentityUserAuthResponse{
 		VerificationNeeded: true,
-		VerificationFlow: &dto.IdentityUserChallengeDTO{
+		VerificationFlow: &types.IdentityUserChallengeResponse{
 			FlowID:      flow.Id,
 			Receiver:    newIdentifier,
 			ChallengeAt: time.Now().Unix(),
@@ -650,25 +649,26 @@ func (u *userUseCase) ChangeIdentifierWithRegisterFlow(
 func (u *userUseCase) Register(
 	ctx context.Context,
 	tenantID uuid.UUID,
-	payload dto.IdentityUserRegisterDTO,
-) (*dto.IdentityUserAuthDTO, *domainerrors.DomainError) {
+	email string,
+	phone string,
+) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
 	// Validate phone number if provided
-	if payload.Phone != "" && !utils.IsPhoneNumber(payload.Phone) {
+	if phone != "" && !utils.IsPhoneNumber(phone) {
 		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number format", []any{"Phone number must be in international format (e.g., +1234567890)"})
 	}
 
 	// Check rate limit for registration attempts
-	key := "register:" + payload.Email
-	if payload.Phone != "" {
-		key = "register:" + payload.Phone
+	key := "register:" + email
+	if phone != "" {
+		key = "register:" + phone
 	}
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
 
 	// Check if identifier (email/phone) already exists in IAM
-	if payload.Email != "" {
-		exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), constants.IdentifierEmail.String(), payload.Email)
+	if email != "" {
+		exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), constants.IdentifierEmail.String(), email)
 		if err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing email identity")
 		}
@@ -677,8 +677,8 @@ func (u *userUseCase) Register(
 		}
 	}
 
-	if payload.Phone != "" {
-		exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), constants.IdentifierPhone.String(), payload.Phone)
+	if phone != "" {
+		exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), constants.IdentifierPhone.String(), phone)
 		if err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing phone identity")
 		}
@@ -705,11 +705,11 @@ func (u *userUseCase) Register(
 	traits := map[string]interface{}{
 		"tenant": tenant.Name,
 	}
-	if payload.Email != "" {
-		traits[constants.IdentifierEmail.String()] = payload.Email
+	if email != "" {
+		traits[constants.IdentifierEmail.String()] = email
 	}
-	if payload.Phone != "" {
-		traits[constants.IdentifierPhone.String()] = payload.Phone
+	if phone != "" {
+		traits[constants.IdentifierPhone.String()] = phone
 	}
 
 	// Submit registration flow
@@ -718,15 +718,15 @@ func (u *userUseCase) Register(
 		logger.GetLogger().Errorf("Failed to submit registration flow: %v", err)
 		return nil, domainerrors.NewValidationError("MSG_REGISTRATION_FAILED", "Registration failed", []interface{}{err.Error()})
 	}
-	receiver := payload.Email
+	receiver := email
 	if receiver == "" {
-		receiver = payload.Phone
+		receiver = phone
 	}
 
 	// Return success with verification flow info
-	return &dto.IdentityUserAuthDTO{
+	return &types.IdentityUserAuthResponse{
 		VerificationNeeded: true,
-		VerificationFlow: &dto.IdentityUserChallengeDTO{
+		VerificationFlow: &types.IdentityUserChallengeResponse{
 			FlowID:      flow.Id,
 			Receiver:    receiver,
 			ChallengeAt: time.Now().Unix(),
@@ -740,7 +740,7 @@ func (u *userUseCase) LogIn(
 	tenantID uuid.UUID,
 	username string,
 	password string,
-) (*dto.IdentityUserAuthDTO, *domainerrors.DomainError) {
+) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
 	// Initialize login flow
 	flow, err := u.kratosService.InitializeLoginFlow(ctx, tenantID)
 	if err != nil {
@@ -756,14 +756,14 @@ func (u *userUseCase) LogIn(
 	}
 
 	// Return authentication response
-	return &dto.IdentityUserAuthDTO{
+	return &types.IdentityUserAuthResponse{
 		SessionID:       loginResult.Session.Id,
 		SessionToken:    *loginResult.SessionToken,
 		Active:          *loginResult.Session.Active,
 		ExpiresAt:       loginResult.Session.ExpiresAt,
 		IssuedAt:        loginResult.Session.IssuedAt,
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
-		User: dto.IdentityUserDTO{
+		User: types.IdentityUserResponse{
 			ID:       loginResult.Session.Identity.Id,
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
@@ -812,7 +812,7 @@ func (u *userUseCase) RefreshToken(
 	tenantID uuid.UUID,
 	accessToken string,
 	refreshToken string,
-) (*dto.IdentityUserAuthDTO, *domainerrors.DomainError) {
+) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
 	// Get session
 	session, err := u.kratosService.GetSession(ctx, tenantID, accessToken)
 	if err != nil {
@@ -821,14 +821,14 @@ func (u *userUseCase) RefreshToken(
 	}
 
 	// Return authentication response
-	return &dto.IdentityUserAuthDTO{
+	return &types.IdentityUserAuthResponse{
 		SessionID:       session.Id,
 		SessionToken:    accessToken,
 		Active:          *session.Active,
 		ExpiresAt:       session.ExpiresAt,
 		IssuedAt:        session.IssuedAt,
 		AuthenticatedAt: session.AuthenticatedAt,
-		User: dto.IdentityUserDTO{
+		User: types.IdentityUserResponse{
 			ID:       session.Identity.Id,
 			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
@@ -844,7 +844,7 @@ func (u *userUseCase) RefreshToken(
 func (u *userUseCase) Profile(
 	ctx context.Context,
 	tenantID uuid.UUID,
-) (*dto.IdentityUserDTO, *domainerrors.DomainError) {
+) (*types.IdentityUserResponse, *domainerrors.DomainError) {
 	// Get session token from context
 	sessionToken, sessionTokenErr := u.extractSessionToken(ctx)
 	if sessionTokenErr != nil {

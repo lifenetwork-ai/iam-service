@@ -3,23 +3,23 @@ package ucases
 import (
 	"context"
 
-	ketotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
-	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type permissionUseCase struct {
-	ketoClient ketotypes.KetoService
+	ketoClient interfaces.AuthorizationService
 }
 
-func NewPermissionUseCase(ketoClient ketotypes.KetoService) ucasetypes.PermissionUseCase {
+func NewPermissionUseCase(ketoClient interfaces.AuthorizationService) interfaces.PermissionUseCase {
 	return &permissionUseCase{
 		ketoClient: ketoClient,
 	}
 }
 
-func (u *permissionUseCase) CheckPermission(ctx context.Context, request ucasetypes.CheckPermissionRequest) (bool, *domainerrors.DomainError) {
+func (u *permissionUseCase) CheckPermission(ctx context.Context, request types.CheckPermissionRequest) (bool, *domainerrors.DomainError) {
 	if err := request.Validate(); err != nil {
 		logger.GetLogger().Errorf("Invalid check permission request: %v", err)
 		return false, domainerrors.NewValidationError(
@@ -54,7 +54,7 @@ func (u *permissionUseCase) CheckPermission(ctx context.Context, request ucasety
 // 	return allowed, nil
 // }
 
-func (u *permissionUseCase) CreateRelationTuple(ctx context.Context, request ucasetypes.CreateRelationTupleRequest) *domainerrors.DomainError {
+func (u *permissionUseCase) CreateRelationTuple(ctx context.Context, request types.CreateRelationTupleRequest) *domainerrors.DomainError {
 	if err := request.Validate(); err != nil {
 		logger.GetLogger().Errorf("Invalid create relation tuple request: %v", err)
 		return domainerrors.NewValidationError(

@@ -2,12 +2,12 @@ package dto
 
 import "fmt"
 
-type PaginationDTOResponse struct {
-	NextPage int           `json:"next_page"`
-	Page     int           `json:"page"`
-	Size     int           `json:"size"`
-	Total    int64         `json:"total,omitempty"`
-	Data     []interface{} `json:"data"`
+type PaginationDTOResponse[T any] struct {
+	NextPage   int   `json:"next_page"`
+	Page       int   `json:"page"`
+	PageSize   int   `json:"page_size"`
+	TotalCount int64 `json:"total_count"`
+	Items      []T   `json:"items"`
 }
 
 type SuccessDTOResponse struct {

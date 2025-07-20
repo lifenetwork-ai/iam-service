@@ -8,7 +8,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
-	ketotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto/types"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	keto "github.com/ory/keto-client-go"
@@ -21,8 +21,10 @@ type Client struct {
 	config     *conf.KetoConfiguration
 }
 
+var _ interfaces.AuthorizationService = (*Client)(nil)
+
 // NewClient creates a new Keto client
-func NewKetoService(tenantRepo repotypes.TenantRepository) ketotypes.KetoService {
+func NewKetoService(tenantRepo repotypes.TenantRepository) interfaces.AuthorizationService {
 	cfg := conf.GetKetoConfig()
 	ketoCfg := keto.NewConfiguration()
 

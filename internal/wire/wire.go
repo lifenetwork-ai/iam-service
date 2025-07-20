@@ -9,7 +9,7 @@ import (
 	keto "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
-	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
@@ -42,10 +42,10 @@ func InitializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *Repos {
 
 // Struct to hold all use cases
 type UseCases struct {
-	IdentityUserUCase ucasetypes.IdentityUserUseCase
-	AdminUCase        ucasetypes.AdminUseCase
-	TenantUCase       ucasetypes.TenantUseCase
-	PermissionUCase   ucasetypes.PermissionUseCase
+	IdentityUserUCase interfaces.IdentityUserUseCase
+	AdminUCase        interfaces.AdminUseCase
+	TenantUCase       interfaces.TenantUseCase
+	PermissionUCase   interfaces.PermissionUseCase
 }
 
 // Initialize use cases

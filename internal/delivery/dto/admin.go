@@ -1,6 +1,11 @@
 package dto
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+)
 
 // AdminAccountDTO represents an admin account
 type AdminAccountDTO struct {
@@ -24,4 +29,31 @@ type CreateAdminAccountPayloadDTO struct {
 type UpdateTenantStatusPayloadDTO struct {
 	Status string `json:"status" binding:"required,oneof=active inactive suspended"`
 	Reason string `json:"reason" binding:"required_if=Status suspended"`
+}
+
+// FromCreateDTO creates domain entity AdminAccount from CreateAdminAccountPayloadDTO
+func FromCreateDTO(payload CreateAdminAccountPayloadDTO) domain.AdminAccount {
+	a := domain.AdminAccount{
+		ID:           uuid.New(),
+		Username:     payload.Username,
+		Role:         payload.Role,
+		Status:       "active",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+		PasswordHash: payload.Password,
+	}
+
+	return a
+}
+
+// ToDTO converts domain entity AdminAccount to AdminAccountDTO
+func ToAdminAccountDTO(a domain.AdminAccount) AdminAccountDTO {
+	return AdminAccountDTO{
+		ID:        a.ID.String(),
+		Username:  a.Username,
+		Role:      a.Role,
+		Status:    a.Status,
+		CreatedAt: a.CreatedAt,
+		UpdatedAt: a.UpdatedAt,
+	}
 }

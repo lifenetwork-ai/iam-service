@@ -6,7 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
@@ -101,11 +102,11 @@ func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 		return
 	}
 
-	usecaseReq := interfaces.CreateRelationTupleRequest{
+	usecaseReq := types.CreateRelationTupleRequest{
 		Namespace: req.Namespace,
 		Relation:  req.Relation,
 		Object:    req.Object,
-		SubjectSet: interfaces.TenantRelation{
+		SubjectSet: types.TenantRelation{
 			TenantID: tenant.ID.String(),
 			UserID:   user.ID,
 		},
@@ -192,11 +193,11 @@ func (h *permissionHandler) CheckPermission(c *gin.Context) {
 		return
 	}
 
-	ucaseReq := interfaces.CheckPermissionRequest{
+	ucaseReq := types.CheckPermissionRequest{
 		Namespace: req.Namespace,
 		Relation:  req.Relation,
 		Object:    req.Object,
-		TenantRelation: interfaces.TenantRelation{
+		TenantRelation: types.TenantRelation{
 			TenantID: tenant.ID.String(),
 			UserID:   user.ID,
 		},

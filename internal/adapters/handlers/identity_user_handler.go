@@ -9,7 +9,8 @@ import (
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
@@ -185,7 +186,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 		return
 	}
 
-	var auth *dto.IdentityUserAuthDTO
+	var auth *types.IdentityUserAuthResponse
 	var usecaseErr *domainerrors.DomainError
 
 	switch reqPayload.Type {
@@ -367,7 +368,7 @@ func (h *userHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	auth, usecaseErr := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload)
+	auth, usecaseErr := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload.Email, reqPayload.Phone)
 	if usecaseErr != nil {
 		handleDomainError(ctx, usecaseErr)
 		return

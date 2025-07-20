@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
@@ -49,7 +49,7 @@ func (h *adminHandler) CreateAdminAccount(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.CreateAdminAccount(ctx, reqPayload)
+	response, errResponse := h.ucase.CreateAdminAccount(ctx, reqPayload.Username, reqPayload.Password, reqPayload.Role)
 	if errResponse != nil {
 		handleDomainError(ctx, errResponse)
 		return
@@ -83,7 +83,9 @@ func (h *adminHandler) ListTenants(ctx *gin.Context) {
 		return
 	}
 
-	httpresponse.Success(ctx, http.StatusOK, response)
+	responseDTO := ToPaginationDTOResponse(response)
+
+	httpresponse.Success(ctx, http.StatusOK, responseDTO)
 }
 
 // GetTenant returns a tenant by ID
@@ -147,7 +149,7 @@ func (h *adminHandler) CreateTenant(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.CreateTenant(ctx, payload)
+	response, errResponse := h.ucase.CreateTenant(ctx, payload.Name, payload.PublicURL, payload.AdminURL)
 	if errResponse != nil {
 		handleDomainError(ctx, errResponse)
 		return
@@ -196,7 +198,7 @@ func (h *adminHandler) UpdateTenant(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.UpdateTenant(ctx, id, payload)
+	response, errResponse := h.ucase.UpdateTenant(ctx, id, payload.Name, payload.PublicURL, payload.AdminURL)
 	if errResponse != nil {
 		handleDomainError(ctx, errResponse)
 		return

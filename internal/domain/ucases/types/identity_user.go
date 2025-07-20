@@ -1,81 +1,48 @@
-package interfaces
+package types
 
-import (
-	"context"
+import "time"
 
-	"github.com/google/uuid"
-	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
-	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
-)
+// IdentityUserDTO represents an User.
+type IdentityUserResponse struct {
+	ID        string `json:"id"`
+	Seed      string `json:"seed"`
+	UserName  string `json:"user_name"`
+	Email     string `json:"email"`
+	Phone     string `json:"phone"`
+	Status    bool   `json:"status"`
+	Name      string `json:"name"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	FullName  string `json:"full_name"`
+	Tenant    string `json:"tenant"`
+	CreatedAt int64  `json:"created_at"`
+	UpdatedAt int64  `json:"updated_at"`
+}
 
-type IdentityUserUseCase interface {
-	ChallengeWithPhone(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		phone string,
-	) (*dto.IdentityUserChallengeDTO, *errors.DomainError)
+// IdentityUserChallengeDTO represents a challenge for identity verification.
+type IdentityUserChallengeResponse struct {
+	FlowID      string `json:"flow_id" description:"The flow ID of the challenge"`
+	Receiver    string `json:"receiver" description:"The receiver of the challenge"`
+	ChallengeAt int64  `json:"challenge_at" description:"Time challenge was sent"`
+}
 
-	ChallengeWithEmail(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		email string,
-	) (*dto.IdentityUserChallengeDTO, *errors.DomainError)
+// IdentityUserAuthDTO represents the response for a successful authentication with Kratos session
+type IdentityUserAuthResponse struct {
+	// Core session fields from Kratos
+	SessionID       string     `json:"session_id,omitempty"`
+	SessionToken    string     `json:"session_token,omitempty"` // Token used for authenticating subsequent requests
+	Active          bool       `json:"active,omitempty"`
+	ExpiresAt       *time.Time `json:"expires_at,omitempty"`
+	IssuedAt        *time.Time `json:"issued_at,omitempty"`
+	AuthenticatedAt *time.Time `json:"authenticated_at,omitempty"`
 
-	ChallengeVerify(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		sessionID string,
-		code string,
-	) (*dto.IdentityUserAuthDTO, *errors.DomainError)
+	// User information
+	User IdentityUserResponse `json:"user,omitempty"`
 
-	Register(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		payload dto.IdentityUserRegisterDTO,
-	) (*dto.IdentityUserAuthDTO, *errors.DomainError)
+	// Optional session metadata
+	AuthenticationMethods []string `json:"authentication_methods,omitempty"`
 
-	VerifyRegister(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		flowID string,
-		code string,
-	) (*dto.IdentityUserAuthDTO, *errors.DomainError)
-
-	VerifyLogin(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		flowID string,
-		code string,
-	) (*dto.IdentityUserAuthDTO, *errors.DomainError)
-
-	LogIn(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		username string,
-		password string,
-	) (*dto.IdentityUserAuthDTO, *errors.DomainError)
-
-	LogOut(
-		ctx context.Context,
-		tenantID uuid.UUID,
-	) *errors.DomainError
-
-	RefreshToken(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		accessToken string,
-		refreshToken string,
-	) (*dto.IdentityUserAuthDTO, *errors.DomainError)
-
-	Profile(
-		ctx context.Context,
-		tenantID uuid.UUID,
-	) (*dto.IdentityUserDTO, *errors.DomainError)
-
-	// ChangeIdentifierWithRegisterFlow changes the user's identifier (email or phone)
-	ChangeIdentifierWithRegisterFlow(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		newIdentifier string,
-	) (*dto.IdentityUserAuthDTO, *errors.DomainError)
+	// Verification flow (for incomplete registrations)
+	VerificationNeeded bool                           `json:"verification_needed,omitempty"`
+	VerificationFlow   *IdentityUserChallengeResponse `json:"verification_flow,omitempty"`
 }
