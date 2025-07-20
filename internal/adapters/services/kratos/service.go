@@ -354,7 +354,7 @@ func (k *kratosServiceImpl) RevokeSession(ctx context.Context, tenantID uuid.UUI
 		return fmt.Errorf("failed to get public API client: %w", err)
 	}
 
-	_, err = publicAPI.FrontendAPI.DisableMySession(ctx, sessionToken).Execute()
+	_, err = publicAPI.FrontendAPI.DisableMySession(ctx, sessionToken).XSessionToken(sessionToken).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to revoke session: %w", err)
 	}

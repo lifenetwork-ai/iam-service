@@ -330,7 +330,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 	}
 
 	reqCtx := context.WithValue(ctx.Request.Context(), middleware.SessionTokenKey, sessionToken)
-	usecaseErr := h.ucase.LogOut(reqCtx, tenant.ID)
+	usecaseErr := h.ucase.Logout(reqCtx, tenant.ID)
 	if usecaseErr != nil {
 		h.handleDomainError(ctx, usecaseErr)
 		return
