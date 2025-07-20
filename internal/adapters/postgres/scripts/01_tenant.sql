@@ -1,5 +1,17 @@
 -- Description: Create tenant table
 -- Version: 1.0.0
+SET TIMEZONE TO 'UTC';
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Create a trigger function to update 'updated_at' column on update
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at = NOW();
+   RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 BEGIN;
 
