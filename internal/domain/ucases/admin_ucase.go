@@ -6,13 +6,14 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/google/uuid"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domaintypes "github.com/lifenetwork-ai/iam-service/internal/domain/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type adminUseCase struct {
