@@ -1,13 +1,35 @@
 package ucases
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
+	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
+
+// extractSessionToken extracts and validates the session token from context
+func extractSessionToken(ctx context.Context) (string, *domainerrors.DomainError) {
+	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
+	if sessionTokenVal == nil {
+		return "", domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized").WithDetails([]interface{}{
+			map[string]string{"field": "session_token", "error": "Session token not found"},
+		})
+	}
+
+	sessionToken, ok := sessionTokenVal.(string)
+	if !ok || sessionToken == "" {
+		return "", domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized").WithDetails([]interface{}{
+			map[string]string{"field": "session_token", "error": "Invalid session token format"},
+		})
+	}
+
+	return sessionToken, nil
+}
 
 // safeExtractTraits safely converts interface{} to map[string]interface{}
 // Returns the map and a boolean indicating success
