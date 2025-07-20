@@ -5,10 +5,12 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/google/uuid"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 )
 
 type UserIdentityChangeLogRepository interface {
-	LogChange(tx *gorm.DB, log *domain.UserIdentityChangeLog) error
-	GetLogsByGlobalUserID(ctx context.Context, globalUserID string) ([]domain.UserIdentityChangeLog, error)
+	Create(ctx context.Context, tx *gorm.DB, log *domain.UserIdentityChangeLog) error
+	ListByGlobalUserID(ctx context.Context, globalUserID uuid.UUID) ([]*domain.UserIdentityChangeLog, error)
+	ListByTenantID(ctx context.Context, tenantID uuid.UUID) ([]*domain.UserIdentityChangeLog, error)
 }
