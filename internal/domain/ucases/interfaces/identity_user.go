@@ -49,14 +49,14 @@ type IdentityUserUseCase interface {
 		code string,
 	) (*types.IdentityUserAuthResponse, *errors.DomainError)
 
-	LogIn(
+	Login(
 		ctx context.Context,
 		tenantID uuid.UUID,
 		username string,
 		password string,
 	) (*types.IdentityUserAuthResponse, *errors.DomainError)
 
-	LogOut(
+	Logout(
 		ctx context.Context,
 		tenantID uuid.UUID,
 	) *errors.DomainError
@@ -72,11 +72,4 @@ type IdentityUserUseCase interface {
 		ctx context.Context,
 		tenantID uuid.UUID,
 	) (*types.IdentityUserResponse, *errors.DomainError)
-
-	// ChangeIdentifierWithRegisterFlow changes the user's identifier (email or phone)
-	ChangeIdentifierWithRegisterFlow(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		newIdentifier string,
-	) (*types.IdentityUserAuthResponse, *errors.DomainError)
 }

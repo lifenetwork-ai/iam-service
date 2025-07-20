@@ -481,7 +481,7 @@ func (k *kratosServiceImpl) SubmitSettingsFlow(
 	result, resp, err := submit.UpdateSettingsFlowBody(body).Execute()
 	if err != nil {
 		if resp != nil && resp.StatusCode == 400 {
-			if err := k.parseKratosErrorResponse(resp, fmt.Errorf("settings update failed: %w", err)); err != nil {
+			if err := parseKratosErrorResponse(resp, fmt.Errorf("settings update failed: %w", err)); err != nil {
 				return nil, err
 			}
 			return result, nil
