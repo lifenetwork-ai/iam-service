@@ -235,6 +235,9 @@ func (u *userUseCase) VerifyRegister(
 		return nil, domainerrors.WrapInternal(err, "MSG_IAM_REGISTRATION_FAILED", "Failed to bind IAM to registration")
 	}
 
+	// Delete challenge session
+	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
+
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
 		SessionID:       registrationResult.Session.Id,
@@ -354,6 +357,9 @@ func (u *userUseCase) VerifyLogin(
 	if err != nil {
 		return nil, domainerrors.NewValidationError("MSG_LOGIN_FAILED", "Login failed", []interface{}{err.Error()})
 	}
+
+	// Delete challenge session
+	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
 
 	// Return authentication response
 	return &dto.IdentityUserAuthDTO{
