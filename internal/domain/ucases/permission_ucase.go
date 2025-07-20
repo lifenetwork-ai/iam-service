@@ -10,15 +10,18 @@ import (
 )
 
 type permissionUseCase struct {
-	ketoClient interfaces.AuthorizationService
+	ketoClient KetoService
 }
 
-func NewPermissionUseCase(ketoClient interfaces.AuthorizationService) interfaces.PermissionUseCase {
+func NewPermissionUseCase(ketoClient KetoService) interfaces.PermissionUseCase {
 	return &permissionUseCase{
 		ketoClient: ketoClient,
 	}
 }
 
+// CheckPermission checks if a subject has permission to perform an action on an object.
+// This function will be used to check if a subject has permission to perform an action on an object.
+// Should only be used internally to check if a subject has permission to perform an action on an object.
 func (u *permissionUseCase) CheckPermission(ctx context.Context, request types.CheckPermissionRequest) (bool, *domainerrors.DomainError) {
 	if err := request.Validate(); err != nil {
 		logger.GetLogger().Errorf("Invalid check permission request: %v", err)
@@ -54,6 +57,9 @@ func (u *permissionUseCase) CheckPermission(ctx context.Context, request types.C
 // 	return allowed, nil
 // }
 
+// CreateRelationTuple creates a relation tuple
+// This function will be used to create a relation tuple for a tenant member
+// Should only be used internally to create a relation tuple for a tenant member
 func (u *permissionUseCase) CreateRelationTuple(ctx context.Context, request types.CreateRelationTupleRequest) *domainerrors.DomainError {
 	if err := request.Validate(); err != nil {
 		logger.GetLogger().Errorf("Invalid create relation tuple request: %v", err)

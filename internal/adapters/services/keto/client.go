@@ -2,13 +2,13 @@ package keto
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
-	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
+	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	keto "github.com/ory/keto-client-go"
@@ -21,10 +21,10 @@ type Client struct {
 	config     *conf.KetoConfiguration
 }
 
-var _ interfaces.AuthorizationService = (*Client)(nil)
+var _ ucases.KetoService = (*Client)(nil)
 
 // NewClient creates a new Keto client
-func NewKetoService(tenantRepo repotypes.TenantRepository) interfaces.AuthorizationService {
+func NewKetoService(tenantRepo repotypes.TenantRepository) ucases.KetoService {
 	cfg := conf.GetKetoConfig()
 	ketoCfg := keto.NewConfiguration()
 
@@ -132,11 +132,15 @@ func NewKetoService(tenantRepo repotypes.TenantRepository) interfaces.Authorizat
 }
 
 // CheckPermission checks if a subject has permission to perform an action on an object
-func (c *Client) CheckPermission(ctx context.Context, request ucasetypes.CheckPermissionRequest) (bool, error) {
+func (c *Client) CheckPermission(ctx context.Context, request ucasetypes.CheckPermissionRequest) (bool, *domainerrors.DomainError) {
 	req := c.client.PermissionApi.PostCheckPermission(ctx).PostCheckPermissionBody(request.ToKetoPostCheckPermissionBody())
 	ketoResp, _, err := req.Execute()
 	if err != nil {
-		return false, err
+		logger.GetLogger().Errorf("failed to check permission: %v", err)
+		return false, domainerrors.NewInternalError(
+			"MSG_FAILED_TO_CHECK_PERMISSION",
+			"Failed to check permission",
+		)
 	}
 
 	return ketoResp.GetAllowed(), nil
@@ -214,7 +218,7 @@ func (c *Client) CheckPermission(ctx context.Context, request ucasetypes.CheckPe
 
 // CreateRelationTuple creates a relation tuple
 // Note: The dto should be validated before calling this function
-func (c *Client) CreateRelationTuple(ctx context.Context, request ucasetypes.CreateRelationTupleRequest) error {
+func (c *Client) CreateRelationTuple(ctx context.Context, request ucasetypes.CreateRelationTupleRequest) *domainerrors.DomainError {
 	logger.GetLogger().Debugf("Creating relation tuple for namespace: %s, object: %s, relation: %s, subject_set: %v",
 		request.Namespace, request.Object, request.Relation, request.SubjectSet)
 
@@ -230,13 +234,19 @@ func (c *Client) CreateRelationTuple(ctx context.Context, request ucasetypes.Cre
 	}
 	if err != nil {
 		logger.GetLogger().Errorf("failed to create relation tuple: %v", err)
-		return fmt.Errorf("failed to create relation tuple: %v", err)
+		return domainerrors.NewInternalError(
+			"MSG_FAILED_TO_CREATE_RELATION_TUPLE",
+			"Failed to create relation tuple",
+		)
 	}
 
 	// Keto returns 201 Created on success
 	if httpResp.StatusCode != http.StatusCreated {
 		logger.GetLogger().Errorf("failed to create relation tuple: unexpected status code %d", httpResp.StatusCode)
-		return fmt.Errorf("failed to create relation tuple: unexpected status code %d", httpResp.StatusCode)
+		return domainerrors.NewInternalError(
+			"MSG_FAILED_TO_CREATE_RELATION_TUPLE",
+			"Failed to create relation tuple",
+		)
 	}
 
 	logger.GetLogger().Debugf("Successfully created relation tuple for %s:%s#%s",

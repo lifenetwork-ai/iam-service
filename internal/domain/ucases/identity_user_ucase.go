@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
-	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
@@ -28,7 +27,7 @@ type userUseCase struct {
 	userIdentityRepo          UserIdentityRepository
 	userIdentifierMappingRepo UserIdentifierMappingRepository
 	challengeSessionRepo      ChallengeSessionRepository
-	kratosService             kratos_types.KratosService
+	kratosService             KratosService
 }
 
 func NewIdentityUserUseCase(
@@ -39,7 +38,7 @@ func NewIdentityUserUseCase(
 	globalUserRepo GlobalUserRepository,
 	userIdentityRepo UserIdentityRepository,
 	userIdentifierMappingRepo UserIdentifierMappingRepository,
-	kratosService kratos_types.KratosService,
+	kratosService KratosService,
 ) interfaces.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,

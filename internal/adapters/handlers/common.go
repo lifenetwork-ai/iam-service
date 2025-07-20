@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domaintypes "github.com/lifenetwork-ai/iam-service/internal/domain/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
@@ -38,6 +39,23 @@ func handleDomainError(ctx *gin.Context, err *domainerrors.DomainError) {
 func ToPaginationDTOResponse[T any](response *domaintypes.PaginatedResponse[T]) *dto.PaginationDTOResponse[T] {
 	return &dto.PaginationDTOResponse[T]{
 		Items:      response.Items,
+		TotalCount: response.TotalCount,
+		Page:       response.Page,
+		PageSize:   response.PageSize,
+		NextPage:   response.NextPage,
+	}
+}
+
+// ToTenantPaginationDTOResponse converts a PaginatedResponse[*domain.Tenant] to TenantPaginationDTOResponse
+// This function is used specifically for swagger documentation compatibility
+func ToTenantPaginationDTOResponse(response *domaintypes.PaginatedResponse[*domain.Tenant]) *dto.TenantPaginationDTOResponse {
+	tenantDTOs := make([]dto.TenantDTO, len(response.Items))
+	for i, tenant := range response.Items {
+		tenantDTOs[i] = dto.ToTenantDTO(*tenant)
+	}
+
+	return &dto.TenantPaginationDTOResponse{
+		Items:      tenantDTOs,
 		TotalCount: response.TotalCount,
 		Page:       response.Page,
 		PageSize:   response.PageSize,

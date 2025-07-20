@@ -68,7 +68,7 @@ func (h *adminHandler) CreateAdminAccount(ctx *gin.Context) {
 // @Param page query int false "Page number (default: 1)"
 // @Param size query int false "Page size (default: 10)"
 // @Param keyword query string false "Search keyword"
-// @Success 200 {object} dto.PaginationDTOResponse
+// @Success 200 {object} dto.TenantPaginationDTOResponse
 // @Failure 400 {object} response.ErrorResponse
 // @Failure 401 {object} response.ErrorResponse
 // @Router /api/v1/admin/tenants [get]
@@ -83,7 +83,7 @@ func (h *adminHandler) ListTenants(ctx *gin.Context) {
 		return
 	}
 
-	responseDTO := ToPaginationDTOResponse(response)
+	responseDTO := ToTenantPaginationDTOResponse(response)
 
 	httpresponse.Success(ctx, http.StatusOK, responseDTO)
 }

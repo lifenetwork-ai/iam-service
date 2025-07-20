@@ -325,7 +325,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, if both are provided then error will be returned"
-// @Success 200 {object} response.SuccessResponse{data=dto.IdentityUserAuthDTO} "Successful user registration with verification flow"
+// @Success 200 {object} response.SuccessResponse{data=types.IdentityUserAuthResponse} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 409 {object} response.ErrorResponse "Email or phone number already exists"
 // @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
