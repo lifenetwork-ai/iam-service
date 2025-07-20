@@ -41,6 +41,11 @@ type KratosService interface {
 
 	// Update identifier trait
 	UpdateIdentifierTrait(ctx context.Context, tenantID uuid.UUID, identityID, identifierType, newIdentifier string) error
+
+	// Settings flow
+	InitializeSettingsFlow(ctx context.Context, tenantID uuid.UUID, sessionToken string) (*kratos.SettingsFlow, error)
+	SubmitSettingsFlow(ctx context.Context, tenantID uuid.UUID, flow *kratos.SettingsFlow, sessionToken, method string, traits KratosTraits) (*kratos.SettingsFlow, error)
+	GetSettingsFlow(ctx context.Context, tenantID uuid.UUID, flowID, sessionToken string) (*kratos.SettingsFlow, error)
 }
 
 // KratosResponse represents the structured response from Kratos API

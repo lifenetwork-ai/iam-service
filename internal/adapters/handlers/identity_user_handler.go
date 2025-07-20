@@ -190,9 +190,9 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	var usecaseErr *domainerrors.DomainError
 
 	switch reqPayload.Type {
-	case "register":
+	case constants.FlowTypeRegister.String():
 		auth, usecaseErr = h.ucase.VerifyRegister(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
-	case "login":
+	case constants.FlowTypeLogin.String():
 		auth, usecaseErr = h.ucase.VerifyLogin(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
 	default:
 		httpresponse.Error(

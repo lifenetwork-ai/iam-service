@@ -205,6 +205,16 @@ func (u *userUseCase) VerifyRegister(
 	tenantName := extractStringFromTraits(traits, "tenant", "")
 	newTenantUserID := registrationResult.Session.Identity.Id
 
+	// Determine identifier and type
+	identifier := email
+	if phone != "" {
+		identifier = phone
+	}
+	identifierType, err := utils.GetIdentifierType(identifier)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIER_TYPE_FAILED", "Failed to get identifier type")
+	}
+
 	// Get tenant by name
 	tenant, err := u.tenantRepo.GetByName(tenantName)
 	if err != nil {
@@ -216,47 +226,15 @@ func (u *userUseCase) VerifyRegister(
 		})
 	}
 
-	// Determine the identifier type
-	var identifier string
-	var identityType string
-	sessionValue, _ := u.challengeSessionRepo.GetChallenge(ctx, flowID)
-	if sessionValue != nil {
-		identifier = sessionValue.Email
-		if sessionValue.Phone != "" {
-			identifier = sessionValue.Phone
-		}
-
-		identityType, err = utils.GetIdentifierType(identifier)
-		if err != nil {
-			return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER", "Invalid identifier type", []interface{}{err.Error()})
-		}
+	// Bind IAM to registration
+	if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, identifier, identifierType)
+	}); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_IAM_REGISTRATION_FAILED", "Failed to bind IAM to registration")
 	}
 
-	// Determine whether it's a registration or change-identifier flow
-	if sessionValue != nil && sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
-		// === Flow: CHANGE IDENTIFIER ===
-
-		// Update trait in Kratos
-		if err := u.kratosService.UpdateIdentifierTrait(ctx, tenant.ID, sessionValue.IdentityID, identityType, identifier); err != nil {
-			return nil, domainerrors.WrapInternal(err, "MSG_UPDATE_KRATOS_FAILED", "Failed to update identifier in Kratos")
-		}
-
-		// Update identity in IAM
-		if err := u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			return u.handleChangeIdentifier(
-				ctx, tx, tenant, sessionValue.IdentityID, newTenantUserID, identityType, identifier,
-			)
-		}); err != nil {
-			return nil, domainerrors.WrapInternal(err, "MSG_IAM_UPDATE_FAILED", "Failed to update identifier in IAM")
-		}
-	} else {
-		// === Flow: REGISTRATION ===
-		if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone)
-		}); err != nil {
-			return nil, domainerrors.WrapInternal(err, "MSG_IAM_REGISTRATION_FAILED", "Failed to bind IAM to registration")
-		}
-	}
+	// Delete challenge session
+	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
 
 	// Return authentication response
 	return &types.IdentityUserAuthResponse{
@@ -278,81 +256,20 @@ func (u *userUseCase) VerifyRegister(
 	}, nil
 }
 
-// handleChangeIdentifier handles the logic for changing the user's identifier
-func (u *userUseCase) handleChangeIdentifier(
-	ctx context.Context,
-	tx *gorm.DB,
-	tenant *domain.Tenant,
-	currentTenantUserID string,
-	newTenantUserID string,
-	identifierType string,
-	newIdentifier string,
-) error {
-	// Get current identity
-	identity, err := u.userIdentityRepo.GetByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), currentTenantUserID)
-	if err != nil {
-		return fmt.Errorf("get current identity failed: %w", err)
-	}
-	if identity == nil {
-		return fmt.Errorf("current identity not found for user %s in tenant %s", currentTenantUserID, tenant.ID)
-	}
-
-	// Handle identifier update
-	if identity.Type == identifierType {
-		// Handle same type update
-		identity.Value = newIdentifier
-		if err := u.userIdentityRepo.Update(tx, identity); err != nil {
-			return fmt.Errorf("update identity failed: %w", err)
-		}
-	} else {
-		// Handle different type update (create new identity)
-		return u.createNewIdentity(ctx, tx, tenant, newTenantUserID, identifierType, newIdentifier)
-	}
-	return nil
-}
-
-func (u *userUseCase) createNewIdentity(
-	ctx context.Context,
-	tx *gorm.DB,
-	tenant *domain.Tenant,
-	newTenantUserID string,
-	identityType string,
-	newValue string,
-) error {
-	email, phone := "", ""
-	if identityType == constants.IdentifierEmail.String() {
-		email = newValue
-	} else {
-		phone = newValue
-	}
-
-	if err := u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, email, phone); err != nil {
-		return fmt.Errorf("bind new identity: %w", err)
-	}
-	return nil
-}
-
 // bindIAMToRegistration binds the IAM records to the registration flow
 func (u *userUseCase) bindIAMToRegistration(
 	ctx context.Context,
 	tx *gorm.DB,
 	tenant *domain.Tenant,
 	newTenantUserID string,
-	email string,
-	phone string,
+	identifier string,
+	identifierType string,
 ) error {
 	var globalUserID string
 
 	// Lookup existing identity
-	if email != "" {
-		if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierEmail.String(), email); err == nil {
-			globalUserID = identity.GlobalUserID
-		}
-	}
-	if globalUserID == "" && phone != "" {
-		if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, constants.IdentifierPhone.String(), phone); err == nil {
-			globalUserID = identity.GlobalUserID
-		}
+	if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, identifierType, identifier); err == nil {
+		globalUserID = identity.GlobalUserID
 	}
 
 	var globalUser *domain.GlobalUser
@@ -375,23 +292,12 @@ func (u *userUseCase) bindIAMToRegistration(
 	}
 
 	// Create identities
-	if email != "" {
-		if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
-			GlobalUserID: globalUser.ID,
-			Type:         constants.IdentifierEmail.String(),
-			Value:        email,
-		}); err != nil {
-			return fmt.Errorf("create email identity: %w", err)
-		}
-	}
-	if phone != "" {
-		if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
-			GlobalUserID: globalUser.ID,
-			Type:         constants.IdentifierPhone.String(),
-			Value:        phone,
-		}); err != nil {
-			return fmt.Errorf("create phone identity: %w", err)
-		}
+	if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
+		GlobalUserID: globalUser.ID,
+		Type:         identifierType,
+		Value:        identifier,
+	}); err != nil {
+		return fmt.Errorf("create identity: %w", err)
 	}
 
 	// Create mapping
@@ -449,6 +355,9 @@ func (u *userUseCase) VerifyLogin(
 	if err != nil {
 		return nil, domainerrors.NewValidationError("MSG_LOGIN_FAILED", "Login failed", []interface{}{err.Error()})
 	}
+
+	// Delete challenge session
+	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
 
 	// Return authentication response
 	return &types.IdentityUserAuthResponse{
@@ -734,8 +643,8 @@ func (u *userUseCase) Register(
 	}, nil
 }
 
-// LogIn logs in a user with username and password
-func (u *userUseCase) LogIn(
+// Login logs in a user with username and password
+func (u *userUseCase) Login(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	username string,
@@ -775,8 +684,8 @@ func (u *userUseCase) LogIn(
 	}, nil
 }
 
-// LogOut logs out a user
-func (u *userUseCase) LogOut(
+// Logout logs out a user
+func (u *userUseCase) Logout(
 	ctx context.Context,
 	tenantID uuid.UUID,
 ) *domainerrors.DomainError {
