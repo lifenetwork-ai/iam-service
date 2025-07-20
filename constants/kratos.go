@@ -14,7 +14,7 @@ const (
 	IdentifierTenant   IdentifierType = "tenant"
 )
 
-// MethodType represents the types of login/registration methods
+// MethodType represents the types of login/registration/setting methods
 type MethodType string
 
 func (t MethodType) String() string {
@@ -24,4 +24,18 @@ func (t MethodType) String() string {
 const (
 	MethodTypePassword MethodType = "password"
 	MethodTypeCode     MethodType = "code"
+	MethodTypeProfile  MethodType = "profile"
+)
+
+// FlowType represents the types of flows in the identity service
+type FlowType string
+
+func (t FlowType) String() string {
+	return string(t)
+}
+
+const (
+	FlowTypeLogin    FlowType = "login"
+	FlowTypeRegister FlowType = "register"
+	FlowTypeSetting  FlowType = "setting"
 )

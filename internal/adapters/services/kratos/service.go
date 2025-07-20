@@ -354,7 +354,7 @@ func (k *kratosServiceImpl) RevokeSession(ctx context.Context, tenantID uuid.UUI
 		return fmt.Errorf("failed to get public API client: %w", err)
 	}
 
-	_, err = publicAPI.FrontendAPI.DisableMySession(ctx, sessionToken).Execute()
+	_, err = publicAPI.FrontendAPI.DisableMySession(ctx, sessionToken).XSessionToken(sessionToken).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to revoke session: %w", err)
 	}
@@ -432,4 +432,88 @@ func (k *kratosServiceImpl) parseKratosErrorResponse(resp *http.Response, defaul
 	default:
 		return defaultErr
 	}
+}
+
+// InitializeSettingsFlow initializes a settings flow for the user
+func (k *kratosServiceImpl) InitializeSettingsFlow(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	sessionToken string,
+) (*kratos.SettingsFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+
+	flow, _, err := publicAPI.FrontendAPI.CreateNativeSettingsFlow(ctx).
+		XSessionToken(sessionToken).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize settings flow: %w", err)
+	}
+
+	return flow, nil
+}
+
+// GetSettingsFlow retrieves a settings flow by its ID
+func (k *kratosServiceImpl) GetSettingsFlow(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	flowID string,
+	sessionToken string,
+) (*kratos.SettingsFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+
+	flow, _, err := publicAPI.FrontendAPI.GetSettingsFlow(ctx).
+		Id(flowID).
+		XSessionToken(sessionToken).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings flow: %w", err)
+	}
+
+	return flow, nil
+}
+
+func (k *kratosServiceImpl) SubmitSettingsFlow(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	flow *kratos.SettingsFlow,
+	sessionToken string,
+	method string,
+	traits map[string]interface{},
+) (*kratos.SettingsFlow, error) {
+	publicAPI, err := k.client.PublicAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public API client: %w", err)
+	}
+
+	submit := publicAPI.FrontendAPI.UpdateSettingsFlow(ctx).Flow(flow.Id).XSessionToken(sessionToken)
+
+	var body kratos.UpdateSettingsFlowBody
+	switch method {
+	case constants.MethodTypeProfile.String():
+		body.UpdateSettingsFlowWithProfileMethod = &kratos.UpdateSettingsFlowWithProfileMethod{
+			Method: method,
+			Traits: traits,
+		}
+	default:
+		return nil, fmt.Errorf("unsupported settings method: %s", method)
+	}
+
+	result, resp, err := submit.UpdateSettingsFlowBody(body).Execute()
+	if err != nil {
+		if resp != nil && resp.StatusCode == 400 {
+			if err := k.parseKratosErrorResponse(resp, fmt.Errorf("settings update failed: %w", err)); err != nil {
+				return nil, err
+			}
+			return result, nil
+		}
+		return nil, fmt.Errorf("failed to submit settings flow: %w", err)
+	}
+
+	return result, nil
 }

@@ -9,22 +9,6 @@ import (
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
-// ifEmail checks if the identifierType is email and returns the value if true
-func ifEmail(identifierType, val string) string {
-	if identifierType == constants.IdentifierEmail.String() {
-		return val
-	}
-	return ""
-}
-
-// ifPhone checks if the identifierType is phone and returns the value if true
-func ifPhone(identifierType, val string) string {
-	if identifierType == constants.IdentifierPhone.String() {
-		return val
-	}
-	return ""
-}
-
 // safeExtractTraits safely converts interface{} to map[string]interface{}
 // Returns the map and a boolean indicating success
 func safeExtractTraits(traits interface{}) (map[string]interface{}, bool) {

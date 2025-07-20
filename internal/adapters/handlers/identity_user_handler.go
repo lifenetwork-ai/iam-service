@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -212,9 +213,9 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	var usecaseErr *domainerrors.DomainError
 
 	switch reqPayload.Type {
-	case "register":
+	case constants.FlowTypeRegister.String():
 		auth, usecaseErr = h.ucase.VerifyRegister(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
-	case "login":
+	case constants.FlowTypeLogin.String():
 		auth, usecaseErr = h.ucase.VerifyLogin(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
 	default:
 		httpresponse.Error(
@@ -330,7 +331,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 	}
 
 	reqCtx := context.WithValue(ctx.Request.Context(), middleware.SessionTokenKey, sessionToken)
-	usecaseErr := h.ucase.LogOut(reqCtx, tenant.ID)
+	usecaseErr := h.ucase.Logout(reqCtx, tenant.ID)
 	if usecaseErr != nil {
 		h.handleDomainError(ctx, usecaseErr)
 		return
