@@ -382,33 +382,6 @@ func (k *kratosServiceImpl) UpdateIdentifierTrait(
 	return nil
 }
 
-// parseKratosErrorResponse parses error response from Kratos and returns appropriate error
-func parseKratosErrorResponse(resp *http.Response, defaultErr error) error {
-	if resp == nil {
-		return defaultErr
-	}
-
-	var kratosResp kratos_types.KratosErrorResponse
-	if err := json.NewDecoder(resp.Body).Decode(&kratosResp); err != nil {
-		return defaultErr
-	}
-
-	errMsgs := kratosResp.GetErrorMessages()
-	if len(errMsgs) > 0 {
-		return fmt.Errorf("error occurred while submitting flow: %s", strings.Join(errMsgs, "; "))
-	}
-
-	// Handle different states if no explicit error messages
-	switch kratosResp.State {
-	case "sent_email":
-		return nil
-	case "choose_method":
-		return errors.New("error occurred while submitting flow")
-	default:
-		return defaultErr
-	}
-}
-
 // InitializeSettingsFlow initializes a settings flow for the user
 func (k *kratosServiceImpl) InitializeSettingsFlow(
 	ctx context.Context,
@@ -491,4 +464,31 @@ func (k *kratosServiceImpl) SubmitSettingsFlow(
 	}
 
 	return result, nil
+}
+
+// parseKratosErrorResponse parses error response from Kratos and returns appropriate error
+func parseKratosErrorResponse(resp *http.Response, defaultErr error) error {
+	if resp == nil {
+		return defaultErr
+	}
+
+	var kratosResp kratos_types.KratosErrorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&kratosResp); err != nil {
+		return defaultErr
+	}
+
+	errMsgs := kratosResp.GetErrorMessages()
+	if len(errMsgs) > 0 {
+		return fmt.Errorf("error occurred while submitting flow: %s", strings.Join(errMsgs, "; "))
+	}
+
+	// Handle different states if no explicit error messages
+	switch kratosResp.State {
+	case "sent_email":
+		return nil
+	case "choose_method":
+		return errors.New("error occurred while submitting flow")
+	default:
+		return defaultErr
+	}
 }

@@ -580,7 +580,7 @@ func (u *userUseCase) Logout(
 	tenantID uuid.UUID,
 ) *domainerrors.DomainError {
 	// Get session token from context
-	sessionToken, err := u.extractSessionToken(ctx)
+	sessionToken, err := extractSessionToken(ctx)
 	if err != nil {
 		return err
 	}
@@ -645,7 +645,7 @@ func (u *userUseCase) Profile(
 	tenantID uuid.UUID,
 ) (*types.IdentityUserResponse, *domainerrors.DomainError) {
 	// Get session token from context
-	sessionToken, sessionTokenErr := u.extractSessionToken(ctx)
+	sessionToken, sessionTokenErr := extractSessionToken(ctx)
 	if sessionTokenErr != nil {
 		return nil, sessionTokenErr
 	}
@@ -664,23 +664,4 @@ func (u *userUseCase) Profile(
 	}
 
 	return &user, nil
-}
-
-// extractSessionToken extracts and validates the session token from context
-func (u *userUseCase) extractSessionToken(ctx context.Context) (string, *domainerrors.DomainError) {
-	sessionTokenVal := ctx.Value(constants.SessionTokenKey)
-	if sessionTokenVal == nil {
-		return "", domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized").WithDetails([]interface{}{
-			map[string]string{"field": "session_token", "error": "Session token not found"},
-		})
-	}
-
-	sessionToken, ok := sessionTokenVal.(string)
-	if !ok || sessionToken == "" {
-		return "", domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized").WithDetails([]interface{}{
-			map[string]string{"field": "session_token", "error": "Invalid session token format"},
-		})
-	}
-
-	return sessionToken, nil
 }
