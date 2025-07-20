@@ -12,6 +12,7 @@ import (
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type adminUseCase struct {
@@ -47,10 +48,20 @@ func (u *adminUseCase) CreateAdminAccount(ctx context.Context, username, passwor
 		)
 	}
 
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to hash password: %v", err)
+		return nil, domainerrors.NewInternalError(
+			"MSG_CREATE_ADMIN_FAILED",
+			"Failed to hash admin password",
+		)
+	}
+
 	// Create new admin account
 	account := domain.AdminAccount{
 		Username:     username,
-		PasswordHash: password,
+		PasswordHash: string(hashedPassword),
 		Role:         role,
 		Status:       "active",
 		CreatedAt:    time.Now(),
