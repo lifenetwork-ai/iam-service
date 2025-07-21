@@ -20,8 +20,9 @@ func NewRedisOTPQueueRepository(client *redis.Client) types.OTPQueueRepository {
 	}
 }
 
+// Enqueue OTP
 func (r *redisOTPQueue) Enqueue(ctx context.Context, item types.OTPQueueItem, ttl time.Duration) error {
-	key := pendingOTPKeyPrefix + item.Receiver
+	key := pendingOTPKey(item.TenantName, item.Receiver)
 
 	data, err := json.Marshal(item)
 	if err != nil {
@@ -31,12 +32,12 @@ func (r *redisOTPQueue) Enqueue(ctx context.Context, item types.OTPQueueItem, tt
 	return r.client.Set(ctx, key, data, ttl).Err()
 }
 
-func (r *redisOTPQueue) Get(ctx context.Context, receiver string) (*types.OTPQueueItem, error) {
-	key := pendingOTPKeyPrefix + receiver
+func (r *redisOTPQueue) Get(ctx context.Context, tenantName, receiver string) (*types.OTPQueueItem, error) {
+	key := pendingOTPKey(tenantName, receiver)
 
 	data, err := r.client.Get(ctx, key).Result()
 	if err == redis.Nil {
-		return nil, fmt.Errorf("otp not found for %s", receiver)
+		return nil, fmt.Errorf("OTP not found for %s", receiver)
 	} else if err != nil {
 		return nil, fmt.Errorf("redis get failed: %w", err)
 	}
@@ -49,13 +50,13 @@ func (r *redisOTPQueue) Get(ctx context.Context, receiver string) (*types.OTPQue
 	return &item, nil
 }
 
-func (r *redisOTPQueue) Delete(ctx context.Context, receiver string) error {
-	key := pendingOTPKeyPrefix + receiver
+func (r *redisOTPQueue) Delete(ctx context.Context, tenantName, receiver string) error {
+	key := pendingOTPKey(tenantName, receiver)
 	return r.client.Del(ctx, key).Err()
 }
 
 func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, delay time.Duration) error {
-	key := retryOTPKeyPrefix
+	key := retryOTPKey(task.TenantName, task.Receiver)
 
 	data, err := json.Marshal(task)
 	if err != nil {
@@ -69,22 +70,31 @@ func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, 
 	}).Err()
 }
 
+// Retry Tasks
 func (r *redisOTPQueue) GetDueRetryTasks(ctx context.Context, now time.Time) ([]types.RetryTask, error) {
-	key := retryOTPKeyPrefix
-
-	results, err := r.client.ZRangeByScore(ctx, key, &redis.ZRangeBy{
-		Min: "0",
-		Max: fmt.Sprintf("%d", now.Unix()),
-	}).Result()
+	// Lấy tất cả key retry (toàn bộ tenants)
+	keys, err := r.client.Keys(ctx, retryOTPKeyPrefix+"*").Result()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch retry tasks: %w", err)
+		return nil, fmt.Errorf("failed to list retry keys: %w", err)
 	}
 
 	var tasks []types.RetryTask
-	for _, raw := range results {
-		var task types.RetryTask
-		if err := json.Unmarshal([]byte(raw), &task); err == nil {
-			tasks = append(tasks, task)
+
+	for _, key := range keys {
+		entries, err := r.client.ZRangeByScore(ctx, key, &redis.ZRangeBy{
+			Min: "0",
+			Max: fmt.Sprintf("%d", now.Unix()),
+		}).Result()
+
+		if err != nil && err != redis.Nil {
+			continue
+		}
+
+		for _, raw := range entries {
+			var task types.RetryTask
+			if err := json.Unmarshal([]byte(raw), &task); err == nil {
+				tasks = append(tasks, task)
+			}
 		}
 	}
 
@@ -92,11 +102,11 @@ func (r *redisOTPQueue) GetDueRetryTasks(ctx context.Context, now time.Time) ([]
 }
 
 func (r *redisOTPQueue) DeleteRetryTask(ctx context.Context, task types.RetryTask) error {
-	key := retryOTPKeyPrefix
+	key := retryOTPKey(task.TenantName, task.Receiver)
 
 	data, err := json.Marshal(task)
 	if err != nil {
-		return fmt.Errorf("failed to marshal task to delete: %w", err)
+		return fmt.Errorf("failed to marshal retry task: %w", err)
 	}
 
 	return r.client.ZRem(ctx, key, data).Err()
