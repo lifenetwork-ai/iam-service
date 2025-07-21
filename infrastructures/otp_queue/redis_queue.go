@@ -143,10 +143,10 @@ func (r *redisOTPQueue) ListReceivers(ctx context.Context, tenantName string) ([
 	iter := r.client.Scan(ctx, 0, prefix+"*", 0).Iterator()
 	for iter.Next(ctx) {
 		key := iter.Val()
-		// key format: otp:pending:<tenant>:<receiver>
-		parts := strings.SplitN(key, ":", 3)
-		if len(parts) == 3 {
-			receivers = append(receivers, parts[2]) // get <receiver>
+		// key should be: otp:pending:<tenant>:<receiver>
+		parts := strings.SplitN(key, ":", 4)
+		if len(parts) == 4 && parts[0] == "otp" && parts[1] == "pending" && parts[2] == tenantName {
+			receivers = append(receivers, parts[3])
 		}
 	}
 
