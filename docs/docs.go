@@ -356,6 +356,119 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/courier/available-channels": {
+            "get": {
+                "description": "Returns available delivery channels (SMS, WhatsApp, Zalo) based on receiver and tenant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "courier"
+                ],
+                "summary": "Get available delivery channels",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of available channels",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid receiver",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/courier/messages": {
+            "post": {
+                "description": "Receive courier content and enqueue it for delivery",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "courier"
+                ],
+                "summary": "Receive courier message (from webhook or sender)",
+                "parameters": [
+                    {
+                        "description": "Courier message payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CourierWebhookRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Courier message enqueued successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/permissions/check": {
             "post": {
                 "description": "Check if a subject has permission to perform an action on an object",
@@ -922,6 +1035,21 @@ const docTemplate = `{
                 },
                 "reason": {
                     "description": "Optional explanation for why permission was denied",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CourierWebhookRequestDTO": {
+            "type": "object",
+            "required": [
+                "Body",
+                "To"
+            ],
+            "properties": {
+                "Body": {
+                    "type": "string"
+                },
+                "To": {
                     "type": "string"
                 }
             }

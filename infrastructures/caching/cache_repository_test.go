@@ -1,4 +1,4 @@
-package caching
+package caching_test
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/mocks"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +21,7 @@ func TestSaveItem(t *testing.T) {
 
 		mockCacheClient := mocks.NewMockCacheClient(ctrl)
 		ctx := context.Background()
-		repo := NewCachingRepository(ctx, mockCacheClient)
+		repo := caching.NewCachingRepository(ctx, mockCacheClient)
 
 		// Create the mock Stringer properly
 		mockKey := mocks.NewMockStringer(ctrl)
@@ -45,7 +46,7 @@ func TestRetrieveItem(t *testing.T) {
 
 		mockClient := mocks.NewMockCacheClient(ctrl)
 		ctx := context.Background()
-		repo := NewCachingRepository(ctx, mockClient)
+		repo := caching.NewCachingRepository(ctx, mockClient)
 
 		// Create the mock Stringer properly
 		mockKey := mocks.NewMockStringer(ctrl)
@@ -69,7 +70,7 @@ func TestRemoveItem(t *testing.T) {
 
 		mockClient := mocks.NewMockCacheClient(ctrl)
 		ctx := context.Background()
-		repo := NewCachingRepository(ctx, mockClient)
+		repo := caching.NewCachingRepository(ctx, mockClient)
 
 		// Create the mock Stringer properly
 		mockKey := mocks.NewMockStringer(ctrl)

@@ -10,6 +10,9 @@ import (
 
 // TenantUseCase defines the interface for tenant use cases
 type TenantUseCase interface {
+	// GetAll retrieves all tenants
+	GetAll(ctx context.Context) ([]*domain.Tenant, *domainerrors.DomainError)
+
 	// List returns a paginated list of tenants
 	List(ctx context.Context, page, size int, keyword string) (*domaintypes.PaginatedResponse[domain.Tenant], *domainerrors.DomainError)
 

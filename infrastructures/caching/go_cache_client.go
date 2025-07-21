@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/patrickmn/go-cache"
 )
@@ -16,9 +15,9 @@ type goCacheClient struct {
 }
 
 // NewGoCacheClient initializes a new cache client with default expiration and cleanup interval
-func NewGoCacheClient() types.CacheClient {
+func NewGoCacheClient(client *cache.Cache) types.CacheClient {
 	return &goCacheClient{
-		cache: cache.New(constants.DefaultExpiration, constants.CleanupInterval),
+		cache: client,
 	}
 }
 

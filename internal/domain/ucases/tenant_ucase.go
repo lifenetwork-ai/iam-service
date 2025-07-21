@@ -23,6 +23,19 @@ func NewTenantUseCase(tenantRepo TenantRepository) interfaces.TenantUseCase {
 	}
 }
 
+// GetAll retrieves all tenants
+func (u *tenantUseCase) GetAll(ctx context.Context) ([]*domain.Tenant, *domainerrors.DomainError) {
+	tenants, err := u.tenantRepo.List()
+	if err != nil {
+		return nil, domainerrors.NewInternalError(
+			"MSG_GET_TENANT_LIST_FAILED",
+			"Failed to get tenant list",
+		)
+	}
+
+	return tenants, nil
+}
+
 func (u *tenantUseCase) List(
 	ctx context.Context,
 	page int,

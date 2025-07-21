@@ -20,7 +20,7 @@ type redisCacheClient struct {
 }
 
 // NewRedisCacheClient initializes Redis cache client with configuration
-func NewRedisCacheClient() types.CacheClient {
+func NewRedisCacheClient(client *redis.Client) types.CacheClient {
 	config := conf.GetRedisConfiguration()
 	ttl, err := time.ParseDuration(config.RedisTtl)
 	if err != nil {
@@ -28,12 +28,8 @@ func NewRedisCacheClient() types.CacheClient {
 		ttl = 10 * time.Minute
 	}
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: config.RedisAddress,
-	})
-
 	return &redisCacheClient{
-		client: redisClient,
+		client: client,
 		ttl:    ttl,
 	}
 }

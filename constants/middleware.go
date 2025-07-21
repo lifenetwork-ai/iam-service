@@ -8,7 +8,8 @@ const (
 )
 
 const (
-	TenantKey       contextKey = "tenant"
-	TenantIDKey     contextKey = "tenant_id"
-	TenantHeaderKey            = "X-Tenant-ID"
+	TenantKey   contextKey = "tenant"
+	TenantIDKey contextKey = "tenant_id"
 )
+
+const TenantHeaderKey = "X-Tenant-ID"
