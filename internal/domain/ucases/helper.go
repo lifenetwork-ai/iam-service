@@ -1,9 +1,12 @@
 package ucases
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
 	"strings"
 
 	"github.com/lifenetwork-ai/iam-service/constants"
@@ -118,16 +121,42 @@ func extractTenantNameFromBody(body string) string {
 	return strings.ToLower(body[1:end]) // normalize tenant name
 }
 
+var mockWebhookURL = os.Getenv("MOCK_WEBHOOK_URL")
+
+type mockMessage struct {
+	Channel  string `json:"channel"`
+	Receiver string `json:"receiver"`
+	Message  string `json:"message"`
+}
+
 // sendViaProvider simulates sending OTP via the specified channel.
 func sendViaProvider(ctx context.Context, channel, receiver, message string) error {
-	switch channel {
-	case constants.ChannelSMS:
-		return nil // Implement SMS sending logic here
-	case constants.ChannelWhatsApp:
-		return nil // Implement WhatsApp sending logic here
-	case constants.ChannelZalo:
-		return nil // Implement Zalo sending logic here
-	default:
-		return fmt.Errorf("unsupported channel: %s", channel)
+	payload := mockMessage{
+		Channel:  channel,
+		Receiver: receiver,
+		Message:  message,
 	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal mock payload: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", mockWebhookURL, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("failed to create mock HTTP request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send mock HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("mock webhook returned status: %s", resp.Status)
+	}
+
+	return nil
 }
