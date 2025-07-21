@@ -1,21 +1,33 @@
 package middleware
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lifenetwork-ai/iam-service/constants"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
-const (
-	SessionTokenKey contextKey = "session_token"
-)
+// AuthMiddleware handles the complete authentication flow
+type AuthMiddleware struct {
+	identityUseCase interfaces.IdentityUserUseCase
+}
 
-func validateAuthorizationHeader(
-	ctx *gin.Context,
-) (bool, string, string) {
-	// Get the Bearer token from the Authorization header
+// NewAuthMiddleware creates a new auth middleware with dependencies injected
+func NewAuthMiddleware(identityUseCase interfaces.IdentityUserUseCase) *AuthMiddleware {
+	return &AuthMiddleware{
+		identityUseCase: identityUseCase,
+	}
+}
+
+// validateAuthorizationHeader extracts and validates the authorization header format
+func (am *AuthMiddleware) validateAuthorizationHeader(ctx *gin.Context) (bool, string) {
 	authHeader := ctx.GetHeader("Authorization")
 	if authHeader == "" {
 		httpresponse.Error(
@@ -28,63 +40,140 @@ func validateAuthorizationHeader(
 				"error": "Authorization header is required",
 			}},
 		)
-		return false, "", ""
+		return false, ""
 	}
 
-	// Check if the token is a Bearer token
 	tokenParts := strings.Split(authHeader, " ")
-	tokenPrefix := tokenParts[0]
-	if len(tokenParts) != 2 || (tokenPrefix != "Bearer" && tokenPrefix != "Token") {
+	if len(tokenParts) != 2 || (tokenParts[0] != "Bearer" && tokenParts[0] != "Token") {
 		httpresponse.Error(
 			ctx,
 			http.StatusUnauthorized,
 			"UNAUTHORIZED",
-			"Authorization header is required",
+			"Invalid authorization header format",
 			[]map[string]string{{
 				"field": "Authorization",
-				"error": "Invalid authorization header format",
+				"error": "Invalid authorization header format. Expected 'Bearer <token>' or 'Token <token>'",
 			}},
 		)
-		return false, "", ""
+		return false, ""
 	}
 
-	return true, authHeader, strings.TrimSpace(tokenParts[1])
+	return true, strings.TrimSpace(tokenParts[1])
 }
 
-// RequestAuthenticationMiddleware returns a gin middleware for HTTP request authentication
-func RequestAuthenticationMiddleware() gin.HandlerFunc {
+// RequireAuth is a complete authentication middleware
+func (am *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		// Get the token from the header
-		isOK, _, token := validateAuthorizationHeader(ctx)
-		if !isOK {
+		// Extract token from header
+		isValid, token := am.validateAuthorizationHeader(ctx)
+		if !isValid {
+			ctx.Abort()
 			return
 		}
 
-		// // Query Redis to find profile with key is tokenMd5
-		// requester := cacheAuthentication(ctx, token)
-		// if requester == nil {
-		// 	requester = jwtAuthentication(ctx, token)
-		// 	saveToCache(ctx, requester, token)
-		// }
+		// Get tenant from context (assuming this is set by another middleware)
+		tenant, err := GetTenantFromContext(ctx)
+		if err != nil {
+			logger.GetLogger().Errorf("Failed to get tenant: %v", err)
+			httpresponse.Error(
+				ctx,
+				http.StatusBadRequest,
+				"MSG_INVALID_TENANT",
+				"Invalid tenant",
+				err,
+			)
+			ctx.Abort()
+			return
+		}
 
-		// if requester == nil {
-		// 	httpresponse.Error(
-		// 		ctx,
-		// 		http.StatusUnauthorized,
-		// 		"UNAUTHORIZED",
-		// 		"Invalid token",
-		// 		[]map[string]string{{
-		// 			"field": "Authorization",
-		// 			"error": "Invalid token",
-		// 		}},
-		// 	)
-		// 	return
-		// }
+		// Set session token into request.Context()
+		ctxWithToken := context.WithValue(ctx.Request.Context(), constants.SessionTokenKey, token)
+		ctx.Request = ctx.Request.WithContext(ctxWithToken)
 
-		// Set the user in the context
-		// ctx.Set("requesterId", requester.ID)
-		// ctx.Set("requester", requester)
-		ctx.Set(string(SessionTokenKey), token)
+		// Validate token and get user
+		user, ucaseErr := am.identityUseCase.Profile(ctx.Request.Context(), tenant.ID)
+		if ucaseErr != nil {
+			logger.GetLogger().Errorf("Token validation failed: %v", ucaseErr)
+			httpresponse.Error(
+				ctx,
+				http.StatusUnauthorized,
+				"UNAUTHORIZED",
+				"Invalid or expired token",
+				ucaseErr,
+			)
+			ctx.Abort()
+			return
+		}
+
+		// Set user and token in context for downstream handlers
+		ctx.Set(string(constants.SessionTokenKey), token)
+		ctx.Set(string(constants.UserContextKey), user)
+
 		ctx.Next()
 	}
+}
+
+// OptionalAuth middleware that doesn't require authentication but sets user context if token is present
+func (am *AuthMiddleware) OptionalAuth() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authHeader := ctx.GetHeader("Authorization")
+		if authHeader == "" {
+			ctx.Next()
+			return
+		}
+
+		isValid, token := am.validateAuthorizationHeader(ctx)
+		if !isValid {
+			ctx.Next()
+			return
+		}
+
+		tenant, err := GetTenantFromContext(ctx)
+		if err != nil {
+			ctx.Next()
+			return
+		}
+
+		user, ucaseErr := am.identityUseCase.Profile(ctx, tenant.ID)
+		if ucaseErr != nil {
+			// Log but don't fail for optional auth
+			logger.GetLogger().Warnf("Optional auth failed: %v", ucaseErr)
+			ctx.Next()
+			return
+		}
+
+		ctx.Set(string(constants.SessionTokenKey), token)
+		ctx.Set(string(constants.UserContextKey), user)
+
+		ctx.Next()
+	}
+}
+
+// Helper functions to extract data from context
+func GetUserFromContext(ctx *gin.Context) (*types.IdentityUserResponse, error) {
+	user, exists := ctx.Get(string(constants.UserContextKey))
+	if !exists {
+		return nil, errors.New("user not found in context")
+	}
+
+	userObj, ok := user.(*types.IdentityUserResponse)
+	if !ok {
+		return nil, errors.New("invalid user type in context")
+	}
+
+	return userObj, nil
+}
+
+func GetTokenFromContext(ctx *gin.Context) (string, error) {
+	token, exists := ctx.Get(string(constants.SessionTokenKey))
+	if !exists {
+		return "", errors.New("token not found in context")
+	}
+
+	tokenStr, ok := token.(string)
+	if !ok {
+		return "", errors.New("invalid token type in context")
+	}
+
+	return tokenStr, nil
 }

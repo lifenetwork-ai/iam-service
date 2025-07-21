@@ -122,7 +122,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.PaginationDTOResponse"
+                            "$ref": "#/definitions/dto.TenantPaginationDTOResponse"
                         }
                     },
                     "400": {
@@ -356,65 +356,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/admin/tenants/{id}/status": {
-            "put": {
-                "description": "Update a tenant's status (requires root or admin account)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tenants"
-                ],
-                "summary": "Update tenant status",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Tenant ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Tenant status details",
-                        "name": "status",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateTenantStatusPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TenantDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/permissions/check": {
             "post": {
                 "description": "Check if a subject has permission to perform an action on an object",
@@ -470,7 +411,12 @@ const docTemplate = `{
         },
         "/api/v1/permissions/relation-tuples": {
             "post": {
-                "description": "Create a relation tuple",
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Create a relation tuple for a tenant member",
                 "consumes": [
                     "application/json"
                 ],
@@ -486,6 +432,14 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Tenant ID",
                         "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     },
@@ -876,7 +830,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.IdentityUserAuthDTO"
+                                            "$ref": "#/definitions/types.IdentityUserAuthResponse"
                                         }
                                     }
                                 }
@@ -941,15 +895,11 @@ const docTemplate = `{
         "dto.CheckPermissionRequestDTO": {
             "type": "object",
             "required": [
-                "action",
                 "namespace",
-                "object"
+                "object",
+                "relation"
             ],
             "properties": {
-                "action": {
-                    "description": "What they want to do (e.g., \"read\", \"write\", \"delete\")",
-                    "type": "string"
-                },
                 "namespace": {
                     "type": "string"
                 },
@@ -957,12 +907,9 @@ const docTemplate = `{
                     "description": "What they want to do it to (e.g., \"document:123\")",
                     "type": "string"
                 },
-                "subject_id": {
-                    "description": "Who wants to perform the action (user ID, role, etc.)",
+                "relation": {
+                    "description": "What they want to do (e.g., \"read\", \"write\", \"delete\")",
                     "type": "string"
-                },
-                "subject_set": {
-                    "$ref": "#/definitions/dto.SubjectSet"
                 }
             }
         },
@@ -1018,12 +965,6 @@ const docTemplate = `{
                 },
                 "relation": {
                     "type": "string"
-                },
-                "subject_id": {
-                    "type": "string"
-                },
-                "subject_set": {
-                    "$ref": "#/definitions/dto.SubjectSet"
                 }
             }
         },
@@ -1085,7 +1026,117 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.IdentityUserAuthDTO": {
+        "dto.IdentityUserRegisterDTO": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TenantDTO": {
+            "type": "object",
+            "properties": {
+                "admin_url": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "public_url": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TenantPaginationDTOResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TenantDTO"
+                    }
+                },
+                "next_page": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.UpdateTenantPayloadDTO": {
+            "type": "object",
+            "properties": {
+                "admin_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "public_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.IdentityUserAuthResponse": {
             "type": "object",
             "properties": {
                 "active": {
@@ -1119,12 +1170,12 @@ const docTemplate = `{
                     "description": "User information",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/dto.IdentityUserDTO"
+                            "$ref": "#/definitions/types.IdentityUserResponse"
                         }
                     ]
                 },
                 "verification_flow": {
-                    "$ref": "#/definitions/dto.IdentityUserChallengeDTO"
+                    "$ref": "#/definitions/types.IdentityUserChallengeResponse"
                 },
                 "verification_needed": {
                     "description": "Verification flow (for incomplete registrations)",
@@ -1132,7 +1183,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.IdentityUserChallengeDTO": {
+        "types.IdentityUserChallengeResponse": {
             "type": "object",
             "properties": {
                 "challenge_at": {
@@ -1146,7 +1197,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.IdentityUserDTO": {
+        "types.IdentityUserResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -1187,152 +1238,6 @@ const docTemplate = `{
                 },
                 "user_name": {
                     "type": "string"
-                }
-            }
-        },
-        "dto.IdentityUserRegisterDTO": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.PaginationDTOResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {}
-                },
-                "next_page": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "size": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "dto.SubjectSet": {
-            "type": "object",
-            "required": [
-                "namespace",
-                "object",
-                "relation"
-            ],
-            "properties": {
-                "namespace": {
-                    "type": "string"
-                },
-                "object": {
-                    "type": "string"
-                },
-                "relation": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.TenantDTO": {
-            "type": "object",
-            "properties": {
-                "admin_url": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "public_url": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateTenantPayloadDTO": {
-            "type": "object",
-            "properties": {
-                "admin_url": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "public_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateTenantStatusPayloadDTO": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
-                "reason": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "active",
-                        "inactive",
-                        "suspended"
-                    ]
-                }
-            }
-        },
-        "response.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": true
-                    }
-                },
-                "message": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "integer"
-                }
-            }
-        },
-        "response.SuccessResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "data": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "message": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "integer"
                 }
             }
         }

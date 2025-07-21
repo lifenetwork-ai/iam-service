@@ -2,12 +2,24 @@ package dto
 
 import "fmt"
 
-type PaginationDTOResponse struct {
-	NextPage int           `json:"next_page"`
-	Page     int           `json:"page"`
-	Size     int           `json:"size"`
-	Total    int64         `json:"total,omitempty"`
-	Data     []interface{} `json:"data"`
+// PaginationDTOResponse is a generic response for pagination
+// It is used to return a paginated list of items
+type PaginationDTOResponse[T any] struct {
+	NextPage   int   `json:"next_page"`
+	Page       int   `json:"page"`
+	PageSize   int   `json:"page_size"`
+	TotalCount int64 `json:"total_count"`
+	Items      []T   `json:"items"`
+}
+
+// TenantPaginationDTOResponse is a concrete response for tenant pagination
+// This is used specifically for swagger documentation compatibility
+type TenantPaginationDTOResponse struct {
+	NextPage   int         `json:"next_page"`
+	Page       int         `json:"page"`
+	PageSize   int         `json:"page_size"`
+	TotalCount int64       `json:"total_count"`
+	Items      []TenantDTO `json:"items"`
 }
 
 type SuccessDTOResponse struct {

@@ -6,15 +6,14 @@ import (
 	"fmt"
 
 	"github.com/lifenetwork-ai/iam-service/constants"
-	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
-	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 // extractSessionToken extracts and validates the session token from context
 func extractSessionToken(ctx context.Context) (string, *domainerrors.DomainError) {
-	sessionTokenVal := ctx.Value(middleware.SessionTokenKey)
+	sessionTokenVal := ctx.Value(constants.SessionTokenKey)
 	if sessionTokenVal == nil {
 		return "", domainerrors.NewUnauthorizedError("MSG_UNAUTHORIZED", "Unauthorized").WithDetails([]interface{}{
 			map[string]string{"field": "session_token", "error": "Session token not found"},
@@ -60,13 +59,13 @@ func safeExtractTraits(traits interface{}) (map[string]interface{}, bool) {
 }
 
 // extractUserFromTraits safely extracts user data from traits
-func extractUserFromTraits(traits interface{}, fallbackEmail, fallbackPhone string) (dto.IdentityUserDTO, error) {
+func extractUserFromTraits(traits interface{}, fallbackEmail, fallbackPhone string) (types.IdentityUserResponse, error) {
 	traitsMap, ok := safeExtractTraits(traits)
 	if !ok {
-		return dto.IdentityUserDTO{}, fmt.Errorf("unable to extract traits from interface{}")
+		return types.IdentityUserResponse{}, fmt.Errorf("unable to extract traits from interface{}")
 	}
 
-	return dto.IdentityUserDTO{
+	return types.IdentityUserResponse{
 		UserName: extractStringFromTraits(traitsMap, constants.IdentifierUsername.String(), ""),
 		Email:    extractStringFromTraits(traitsMap, constants.IdentifierEmail.String(), fallbackEmail),
 		Phone:    extractStringFromTraits(traitsMap, constants.IdentifierPhone.String(), fallbackPhone),

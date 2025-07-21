@@ -19,23 +19,18 @@ definitions:
     type: object
   dto.CheckPermissionRequestDTO:
     properties:
-      action:
-        description: What they want to do (e.g., "read", "write", "delete")
-        type: string
       namespace:
         type: string
       object:
         description: What they want to do it to (e.g., "document:123")
         type: string
-      subject_id:
-        description: Who wants to perform the action (user ID, role, etc.)
+      relation:
+        description: What they want to do (e.g., "read", "write", "delete")
         type: string
-      subject_set:
-        $ref: '#/definitions/dto.SubjectSet'
     required:
-    - action
     - namespace
     - object
+    - relation
     type: object
   dto.CheckPermissionResponseDTO:
     properties:
@@ -70,10 +65,6 @@ definitions:
         type: string
       relation:
         type: string
-      subject_id:
-        type: string
-      subject_set:
-        $ref: '#/definitions/dto.SubjectSet'
     required:
     - namespace
     - object
@@ -118,7 +109,79 @@ definitions:
       phone:
         type: string
     type: object
-  dto.IdentityUserAuthDTO:
+  dto.IdentityUserRegisterDTO:
+    properties:
+      email:
+        type: string
+      phone:
+        type: string
+    type: object
+  dto.TenantDTO:
+    properties:
+      admin_url:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      public_url:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.TenantPaginationDTOResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dto.TenantDTO'
+        type: array
+      next_page:
+        type: integer
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total_count:
+        type: integer
+    type: object
+  dto.UpdateTenantPayloadDTO:
+    properties:
+      admin_url:
+        type: string
+      name:
+        type: string
+      public_url:
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      code:
+        type: string
+      errors:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+  response.SuccessResponse:
+    properties:
+      code:
+        type: string
+      data:
+        additionalProperties: true
+        type: object
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+  types.IdentityUserAuthResponse:
     properties:
       active:
         type: boolean
@@ -141,15 +204,15 @@ definitions:
         type: string
       user:
         allOf:
-        - $ref: '#/definitions/dto.IdentityUserDTO'
+        - $ref: '#/definitions/types.IdentityUserResponse'
         description: User information
       verification_flow:
-        $ref: '#/definitions/dto.IdentityUserChallengeDTO'
+        $ref: '#/definitions/types.IdentityUserChallengeResponse'
       verification_needed:
         description: Verification flow (for incomplete registrations)
         type: boolean
     type: object
-  dto.IdentityUserChallengeDTO:
+  types.IdentityUserChallengeResponse:
     properties:
       challenge_at:
         type: integer
@@ -158,7 +221,7 @@ definitions:
       receiver:
         type: string
     type: object
-  dto.IdentityUserDTO:
+  types.IdentityUserResponse:
     properties:
       created_at:
         type: integer
@@ -186,103 +249,6 @@ definitions:
         type: integer
       user_name:
         type: string
-    type: object
-  dto.IdentityUserRegisterDTO:
-    properties:
-      email:
-        type: string
-      phone:
-        type: string
-    type: object
-  dto.PaginationDTOResponse:
-    properties:
-      data:
-        items: {}
-        type: array
-      next_page:
-        type: integer
-      page:
-        type: integer
-      size:
-        type: integer
-      total:
-        type: integer
-    type: object
-  dto.SubjectSet:
-    properties:
-      namespace:
-        type: string
-      object:
-        type: string
-      relation:
-        type: string
-    required:
-    - namespace
-    - object
-    - relation
-    type: object
-  dto.TenantDTO:
-    properties:
-      admin_url:
-        type: string
-      created_at:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      public_url:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  dto.UpdateTenantPayloadDTO:
-    properties:
-      admin_url:
-        type: string
-      name:
-        type: string
-      public_url:
-        type: string
-    type: object
-  dto.UpdateTenantStatusPayloadDTO:
-    properties:
-      reason:
-        type: string
-      status:
-        enum:
-        - active
-        - inactive
-        - suspended
-        type: string
-    required:
-    - status
-    type: object
-  response.ErrorResponse:
-    properties:
-      code:
-        type: string
-      errors:
-        items:
-          additionalProperties: true
-          type: object
-        type: array
-      message:
-        type: string
-      status:
-        type: integer
-    type: object
-  response.SuccessResponse:
-    properties:
-      code:
-        type: string
-      data:
-        additionalProperties: true
-        type: object
-      message:
-        type: string
-      status:
-        type: integer
     type: object
 info:
   contact:
@@ -357,7 +323,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.PaginationDTOResponse'
+            $ref: '#/definitions/dto.TenantPaginationDTOResponse'
         "400":
           description: Bad Request
           schema:
@@ -513,45 +479,6 @@ paths:
       summary: Update a tenant
       tags:
       - tenants
-  /api/v1/admin/tenants/{id}/status:
-    put:
-      consumes:
-      - application/json
-      description: Update a tenant's status (requires root or admin account)
-      parameters:
-      - description: Tenant ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Tenant status details
-        in: body
-        name: status
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateTenantStatusPayloadDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.TenantDTO'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      summary: Update tenant status
-      tags:
-      - tenants
   /api/v1/permissions/check:
     post:
       consumes:
@@ -591,11 +518,17 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a relation tuple
+      description: Create a relation tuple for a tenant member
       parameters:
       - description: Tenant ID
         in: header
         name: X-Tenant-Id
+        required: true
+        type: string
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
         required: true
         type: string
       - description: Relation tuple creation request
@@ -619,6 +552,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
       summary: Create relation tuple
       tags:
       - permissions
@@ -857,7 +792,7 @@ paths:
             - $ref: '#/definitions/response.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.IdentityUserAuthDTO'
+                  $ref: '#/definitions/types.IdentityUserAuthResponse'
               type: object
         "400":
           description: Invalid request payload

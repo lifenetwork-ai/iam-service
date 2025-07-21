@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
@@ -49,15 +49,9 @@ func (h *adminHandler) CreateAdminAccount(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.CreateAdminAccount(ctx, reqPayload)
+	response, errResponse := h.ucase.CreateAdminAccount(ctx, reqPayload.Username, reqPayload.Password, reqPayload.Role)
 	if errResponse != nil {
-		httpresponse.Error(
-			ctx,
-			errResponse.Status,
-			errResponse.Code,
-			errResponse.Message,
-			errResponse.Details,
-		)
+		handleDomainError(ctx, errResponse)
 		return
 	}
 
@@ -74,7 +68,7 @@ func (h *adminHandler) CreateAdminAccount(ctx *gin.Context) {
 // @Param page query int false "Page number (default: 1)"
 // @Param size query int false "Page size (default: 10)"
 // @Param keyword query string false "Search keyword"
-// @Success 200 {object} dto.PaginationDTOResponse
+// @Success 200 {object} dto.TenantPaginationDTOResponse
 // @Failure 400 {object} response.ErrorResponse
 // @Failure 401 {object} response.ErrorResponse
 // @Router /api/v1/admin/tenants [get]
@@ -85,17 +79,13 @@ func (h *adminHandler) ListTenants(ctx *gin.Context) {
 
 	response, errResponse := h.ucase.ListTenants(ctx, page, size, keyword)
 	if errResponse != nil {
-		httpresponse.Error(
-			ctx,
-			errResponse.Status,
-			errResponse.Code,
-			errResponse.Message,
-			errResponse.Details,
-		)
+		handleDomainError(ctx, errResponse)
 		return
 	}
 
-	httpresponse.Success(ctx, http.StatusOK, response)
+	responseDTO := ToTenantPaginationDTOResponse(response)
+
+	httpresponse.Success(ctx, http.StatusOK, responseDTO)
 }
 
 // GetTenant returns a tenant by ID
@@ -126,13 +116,7 @@ func (h *adminHandler) GetTenant(ctx *gin.Context) {
 
 	response, errResponse := h.ucase.GetTenantByID(ctx, id)
 	if errResponse != nil {
-		httpresponse.Error(
-			ctx,
-			errResponse.Status,
-			errResponse.Code,
-			errResponse.Message,
-			errResponse.Details,
-		)
+		handleDomainError(ctx, errResponse)
 		return
 	}
 
@@ -165,15 +149,9 @@ func (h *adminHandler) CreateTenant(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.CreateTenant(ctx, payload)
+	response, errResponse := h.ucase.CreateTenant(ctx, payload.Name, payload.PublicURL, payload.AdminURL)
 	if errResponse != nil {
-		httpresponse.Error(
-			ctx,
-			errResponse.Status,
-			errResponse.Code,
-			errResponse.Message,
-			errResponse.Details,
-		)
+		handleDomainError(ctx, errResponse)
 		return
 	}
 
@@ -220,15 +198,9 @@ func (h *adminHandler) UpdateTenant(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.UpdateTenant(ctx, id, payload)
+	response, errResponse := h.ucase.UpdateTenant(ctx, id, payload.Name, payload.PublicURL, payload.AdminURL)
 	if errResponse != nil {
-		httpresponse.Error(
-			ctx,
-			errResponse.Status,
-			errResponse.Code,
-			errResponse.Message,
-			errResponse.Details,
-		)
+		handleDomainError(ctx, errResponse)
 		return
 	}
 
@@ -262,67 +234,7 @@ func (h *adminHandler) DeleteTenant(ctx *gin.Context) {
 
 	response, errResponse := h.ucase.DeleteTenant(ctx, id)
 	if errResponse != nil {
-		httpresponse.Error(
-			ctx,
-			errResponse.Status,
-			errResponse.Code,
-			errResponse.Message,
-			errResponse.Details,
-		)
-		return
-	}
-
-	httpresponse.Success(ctx, http.StatusOK, response)
-}
-
-// UpdateTenantStatus updates a tenant's status
-// @Summary Update tenant status
-// @Description Update a tenant's status (requires root or admin account)
-// @Tags tenants
-// @Accept json
-// @Produce json
-// @Param id path string true "Tenant ID"
-// @Param status body dto.UpdateTenantStatusPayloadDTO true "Tenant status details"
-// @Success 200 {object} dto.TenantDTO
-// @Failure 400 {object} response.ErrorResponse
-// @Failure 401 {object} response.ErrorResponse
-// @Failure 404 {object} response.ErrorResponse
-// @Router /api/v1/admin/tenants/{id}/status [put]
-func (h *adminHandler) UpdateTenantStatus(ctx *gin.Context) {
-	id := ctx.Param("id")
-	if id == "" {
-		httpresponse.Error(
-			ctx,
-			http.StatusBadRequest,
-			"MSG_INVALID_TENANT_ID",
-			"Invalid tenant ID",
-			nil,
-		)
-		return
-	}
-
-	var payload dto.UpdateTenantStatusPayloadDTO
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		logger.GetLogger().Errorf("Invalid payload: %v", err)
-		httpresponse.Error(
-			ctx,
-			http.StatusBadRequest,
-			"MSG_INVALID_PAYLOAD",
-			"Invalid request payload",
-			err,
-		)
-		return
-	}
-
-	response, errResponse := h.ucase.UpdateTenantStatus(ctx, id, payload)
-	if errResponse != nil {
-		httpresponse.Error(
-			ctx,
-			errResponse.Status,
-			errResponse.Code,
-			errResponse.Message,
-			errResponse.Details,
-		)
+		handleDomainError(ctx, errResponse)
 		return
 	}
 
