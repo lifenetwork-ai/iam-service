@@ -10,11 +10,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	_ "github.com/lifenetwork-ai/iam-service/docs" // Import generated docs
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	routev1 "github.com/lifenetwork-ai/iam-service/internal/delivery/http/route"
 	"github.com/lifenetwork-ai/iam-service/internal/wire"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
+	"github.com/lifenetwork-ai/iam-service/internal/workers"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	swaggerfiles "github.com/swaggo/files"
 	ginswagger "github.com/swaggo/gin-swagger"
@@ -53,6 +55,15 @@ func RunApp(config *conf.Configuration) {
 
 	// Start server
 	startServer(r, config)
+
+	// Start workers
+	otpWorker := workers.NewOTPDeliveryWorker(
+		ucases.CourierUCase,
+		ucases.TenantUCase,
+		instances.OTPQueueRepositoryInstance(ctx),
+	)
+	// Run the worker in background
+	go otpWorker.Start(ctx, constants.OTPWorkerInterval)
 
 	// Handle shutdown signals
 	waitForShutdownSignal(cancel)

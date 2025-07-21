@@ -63,4 +63,7 @@ const (
 	// Retry related constants
 	MaxOTPRetryCount   = 3
 	RetryDelayDuration = 30 * time.Second
+
+	// OTP worker interval
+	OTPWorkerInterval = 10 * time.Second
 )
