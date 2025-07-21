@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/constants"
 	otpqueue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
@@ -19,7 +20,7 @@ func NewCourierUseCase(
 ) interfaces.CourierUseCase {
 	return &courierUseCase{
 		queue:      queue,
-		defaultTTL: 5 * time.Minute,
+		defaultTTL: constants.DefaultChallengeDuration,
 	}
 }
 
