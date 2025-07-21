@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -85,8 +86,12 @@ func (am *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
+		// Set session token into request.Context()
+		ctxWithToken := context.WithValue(ctx.Request.Context(), constants.SessionTokenKey, token)
+		ctx.Request = ctx.Request.WithContext(ctxWithToken)
+
 		// Validate token and get user
-		user, ucaseErr := am.identityUseCase.Profile(ctx, tenant.ID)
+		user, ucaseErr := am.identityUseCase.Profile(ctx.Request.Context(), tenant.ID)
 		if ucaseErr != nil {
 			logger.GetLogger().Errorf("Token validation failed: %v", ucaseErr)
 			httpresponse.Error(
