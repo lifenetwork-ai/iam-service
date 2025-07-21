@@ -9,7 +9,8 @@ import (
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
@@ -21,30 +22,6 @@ type userHandler struct {
 func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
 	return &userHandler{
 		ucase: ucase,
-	}
-}
-
-// handleDomainError is a centralized error handler for domain errors
-func (h *userHandler) handleDomainError(ctx *gin.Context, err *domainerrors.DomainError) {
-	switch err.Type {
-	case domainerrors.ErrorTypeValidation:
-		httpresponse.Error(ctx, http.StatusBadRequest, err.Code, err.Message, err.Details)
-	case domainerrors.ErrorTypeNotFound:
-		httpresponse.Error(ctx, http.StatusNotFound, err.Code, err.Message, err.Details)
-	case domainerrors.ErrorTypeUnauthorized:
-		httpresponse.Error(ctx, http.StatusUnauthorized, err.Code, err.Message, err.Details)
-	case domainerrors.ErrorTypeConflict:
-		httpresponse.Error(ctx, http.StatusConflict, err.Code, err.Message, err.Details)
-	case domainerrors.ErrorTypeRateLimit:
-		httpresponse.Error(ctx, http.StatusTooManyRequests, err.Code, err.Message, err.Details)
-	case domainerrors.ErrorTypeInternal:
-		// Log internal errors for debugging
-		logger.GetLogger().Errorf("Internal error: %v", err.Error())
-		httpresponse.Error(ctx, http.StatusInternalServerError, err.Code, err.Message, err.Details)
-	default:
-		// Fallback for unknown error types
-		logger.GetLogger().Errorf("Unknown error type: %v", err.Error())
-		httpresponse.Error(ctx, http.StatusInternalServerError, err.Code, err.Message, err.Details)
 	}
 }
 
@@ -100,7 +77,7 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 
 	challenge, usecaseErr := h.ucase.ChallengeWithPhone(ctx, tenant.ID, reqPayload.Phone)
 	if usecaseErr != nil {
-		h.handleDomainError(ctx, usecaseErr)
+		handleDomainError(ctx, usecaseErr)
 		return
 	}
 
@@ -159,7 +136,7 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 
 	challenge, usecaseErr := h.ucase.ChallengeWithEmail(ctx.Request.Context(), tenant.ID, reqPayload.Email)
 	if usecaseErr != nil {
-		h.handleDomainError(ctx, usecaseErr)
+		handleDomainError(ctx, usecaseErr)
 		return
 	}
 
@@ -209,7 +186,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 		return
 	}
 
-	var auth *dto.IdentityUserAuthDTO
+	var auth *types.IdentityUserAuthResponse
 	var usecaseErr *domainerrors.DomainError
 
 	switch reqPayload.Type {
@@ -229,7 +206,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 	}
 
 	if usecaseErr != nil {
-		h.handleDomainError(ctx, usecaseErr)
+		handleDomainError(ctx, usecaseErr)
 		return
 	}
 
@@ -261,7 +238,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 	}
 
 	// Get session token from gin context and create new context with it
-	sessionToken, exists := ctx.Get(string(middleware.SessionTokenKey))
+	sessionToken, exists := ctx.Get(string(constants.SessionTokenKey))
 	if !exists {
 		httpresponse.Error(
 			ctx,
@@ -275,11 +252,11 @@ func (h *userHandler) Me(ctx *gin.Context) {
 		return
 	}
 
-	reqCtx := context.WithValue(ctx.Request.Context(), middleware.SessionTokenKey, sessionToken)
+	reqCtx := context.WithValue(ctx.Request.Context(), constants.SessionTokenKey, sessionToken)
 	requester, usecaseErr := h.ucase.Profile(reqCtx, tenant.ID)
 
 	if usecaseErr != nil {
-		h.handleDomainError(ctx, usecaseErr)
+		handleDomainError(ctx, usecaseErr)
 		return
 	}
 
@@ -316,7 +293,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 	}
 
 	// Get session token from gin context and create new context with it
-	sessionToken, exists := ctx.Get(string(middleware.SessionTokenKey))
+	sessionToken, exists := ctx.Get(string(constants.SessionTokenKey))
 	if !exists {
 		httpresponse.Error(
 			ctx,
@@ -330,10 +307,10 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	reqCtx := context.WithValue(ctx.Request.Context(), middleware.SessionTokenKey, sessionToken)
+	reqCtx := context.WithValue(ctx.Request.Context(), constants.SessionTokenKey, sessionToken)
 	usecaseErr := h.ucase.Logout(reqCtx, tenant.ID)
 	if usecaseErr != nil {
-		h.handleDomainError(ctx, usecaseErr)
+		handleDomainError(ctx, usecaseErr)
 		return
 	}
 
@@ -348,7 +325,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, if both are provided then error will be returned"
-// @Success 200 {object} response.SuccessResponse{data=dto.IdentityUserAuthDTO} "Successful user registration with verification flow"
+// @Success 200 {object} response.SuccessResponse{data=types.IdentityUserAuthResponse} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 409 {object} response.ErrorResponse "Email or phone number already exists"
 // @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
@@ -391,9 +368,9 @@ func (h *userHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	auth, usecaseErr := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload)
+	auth, usecaseErr := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload.Email, reqPayload.Phone)
 	if usecaseErr != nil {
-		h.handleDomainError(ctx, usecaseErr)
+		handleDomainError(ctx, usecaseErr)
 		return
 	}
 

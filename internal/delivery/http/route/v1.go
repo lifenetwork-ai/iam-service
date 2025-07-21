@@ -3,37 +3,28 @@ package route
 import (
 	"context"
 
-	"gorm.io/gorm"
-
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/handlers"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/wire"
 )
 
 func RegisterRoutes(
 	ctx context.Context,
 	r *gin.Engine,
 	config *conf.Configuration,
-	db *gorm.DB,
-	userUCase interfaces.IdentityUserUseCase,
-	adminUCase interfaces.AdminUseCase,
+	ucases *wire.UseCases,
+	repos *wire.Repos,
 ) {
+	authMiddleware := middleware.NewAuthMiddleware(ucases.IdentityUserUCase)
 	v1 := r.Group("/api/v1")
 
-	// Initialize Keto client
-	tenantRepo := repositories.NewTenantRepository(db)
-	ketoClient := keto.NewClient(&config.Keto, tenantRepo)
-
 	// SECTION: Admin routes
-	adminRepo := repositories.NewAdminAccountRepository(db)
 	adminRouter := v1.Group("admin")
 
 	// Admin Tenant Management subgroup
-	adminHandler := handlers.NewAdminHandler(adminUCase)
+	adminHandler := handlers.NewAdminHandler(ucases.AdminUCase)
 	accountRouter := adminRouter.Group("accounts")
 	{
 		accountRouter.Use(
@@ -44,19 +35,18 @@ func RegisterRoutes(
 
 	tenantRouter := adminRouter.Group("tenants")
 	{
-		tenantRouter.Use(middleware.AdminAuthMiddleware(adminRepo))
+		tenantRouter.Use(middleware.AdminAuthMiddleware(repos.AdminAccountRepo))
 		tenantRouter.GET("/", adminHandler.ListTenants)
 		tenantRouter.GET("/:id", adminHandler.GetTenant)
 		tenantRouter.POST("/", adminHandler.CreateTenant)
 		tenantRouter.PUT("/:id", adminHandler.UpdateTenant)
 		tenantRouter.DELETE("/:id", adminHandler.DeleteTenant)
-		tenantRouter.PUT("/:id/status", adminHandler.UpdateTenantStatus)
 	}
 
 	// SECTION: Permission routes
-	permissionHandler := handlers.NewPermissionHandler(ketoClient)
+	permissionHandler := handlers.NewPermissionHandler(ucases.PermissionUCase)
 	permissionRouter := v1.Group("permissions")
-	permissionRouter.Use(middleware.XHeaderValidationMiddleware())
+	permissionRouter.Use(middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware())
 	{
 		permissionRouter.POST("/check", permissionHandler.CheckPermission)
 		permissionRouter.POST("/relation-tuples", permissionHandler.CreateRelationTuple)
@@ -65,9 +55,9 @@ func RegisterRoutes(
 	// SECTION: users
 	userRouter := v1.Group("users")
 	userRouter.Use(
-		middleware.XHeaderValidationMiddleware(),
+		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
 	)
-	userHandler := handlers.NewIdentityUserHandler(userUCase)
+	userHandler := handlers.NewIdentityUserHandler(ucases.IdentityUserUCase)
 	userRouter.POST(
 		"/challenge-with-phone",
 		userHandler.ChallengeWithPhone,
@@ -90,12 +80,12 @@ func RegisterRoutes(
 
 	userRouter.POST(
 		"/logout",
-		middleware.RequestAuthenticationMiddleware(),
+		authMiddleware.RequireAuth(),
 		userHandler.Logout,
 	)
 	userRouter.GET(
 		"/me",
-		middleware.RequestAuthenticationMiddleware(),
+		authMiddleware.RequireAuth(),
 		userHandler.Me,
 	)
 }

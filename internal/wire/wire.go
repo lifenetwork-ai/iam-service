@@ -6,26 +6,29 @@ import (
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	keto "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
-	ucasetypes "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 // Struct to hold all repositories
-type repos struct {
+type Repos struct {
 	ChallengeSessionRepo      repotypes.ChallengeSessionRepository
 	GlobalUserRepo            repotypes.GlobalUserRepository
 	UserIdentityRepo          repotypes.UserIdentityRepository
 	UserIdentifierMappingRepo repotypes.UserIdentifierMappingRepository
 	TenantRepo                repotypes.TenantRepository
 	AdminAccountRepo          repotypes.AdminAccountRepository
+	CacheRepo                 types.CacheRepository
 }
 
 // Initialize repositories (only using cache where needed)
-func initializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *repos {
+func InitializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *Repos {
 	// Return all repositories
-	return &repos{
+	return &Repos{
+		CacheRepo:                 cacheRepo,
 		ChallengeSessionRepo:      repositories.NewChallengeSessionRepository(cacheRepo),
 		GlobalUserRepo:            repositories.NewGlobalUserRepository(db),
 		UserIdentityRepo:          repositories.NewUserIdentityRepository(db),
@@ -39,15 +42,14 @@ func initializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *repos {
 
 // Struct to hold all use cases
 type UseCases struct {
-	IdentityUserUCase ucasetypes.IdentityUserUseCase
-	AdminUCase        ucasetypes.AdminUseCase
-	TenantUCase       ucasetypes.TenantUseCase
+	IdentityUserUCase interfaces.IdentityUserUseCase
+	AdminUCase        interfaces.AdminUseCase
+	TenantUCase       interfaces.TenantUseCase
+	PermissionUCase   interfaces.PermissionUseCase
 }
 
 // Initialize use cases
-func InitializeUseCases(db *gorm.DB, cacheRepo types.CacheRepository) *UseCases {
-	repos := initializeRepos(db, cacheRepo)
-
+func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
 	// Return all use cases
 	return &UseCases{
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
@@ -60,7 +62,8 @@ func InitializeUseCases(db *gorm.DB, cacheRepo types.CacheRepository) *UseCases 
 			repos.UserIdentifierMappingRepo,
 			kratos.NewKratosService(repos.TenantRepo),
 		),
-		AdminUCase:  ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
-		TenantUCase: ucases.NewTenantUseCase(repos.TenantRepo),
+		AdminUCase:      ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
+		TenantUCase:     ucases.NewTenantUseCase(repos.TenantRepo),
+		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo)),
 	}
 }

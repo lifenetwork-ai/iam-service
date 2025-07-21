@@ -10,8 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
-	repo_types "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos/types"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 )
@@ -21,7 +22,7 @@ type kratosServiceImpl struct {
 }
 
 // NewKratosService creates a new instance of KratosService
-func NewKratosService(tenantRepo repo_types.TenantRepository) kratos_types.KratosService {
+func NewKratosService(tenantRepo repotypes.TenantRepository) ucases.KratosService {
 	config := conf.GetKratosConfig()
 	client := NewClient(config, tenantRepo)
 	return &kratosServiceImpl{
@@ -65,6 +66,7 @@ func (k *kratosServiceImpl) SubmitRegistrationFlow(
 			Traits: traits,
 		}
 
+		// This method always return 400 error, even if the registration is successful
 		result, resp, err := submitFlow.UpdateRegistrationFlowBody(body).Execute()
 		if err != nil {
 			if resp != nil && resp.StatusCode == 400 {
@@ -129,39 +131,12 @@ func (k *kratosServiceImpl) SubmitRegistrationFlowWithCode(ctx context.Context, 
 	}
 	defer resp.Body.Close()
 
-	// Parse the response to extract traits
-	var flowData kratos_types.KratosFlowResponse
-	if err := json.NewDecoder(resp.Body).Decode(&flowData); err != nil {
+	flowData, err := kratos_types.FromHttpResp(resp)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse flow data: %w", err)
 	}
 
-	// Extract traits from nodes
-	traits := make(map[string]interface{})
-	for _, node := range flowData.UI.Nodes {
-		if node.Group != "default" || node.Type != "input" {
-			continue
-		}
-
-		name := node.Attributes.Name
-		if !strings.HasPrefix(name, "traits.") {
-			continue
-		}
-
-		traitKey := strings.TrimPrefix(name, "traits.")
-		if node.Attributes.Value != nil {
-			// Check for empty string values
-			if strVal, ok := node.Attributes.Value.(string); ok {
-				if strVal != "" {
-					traits[traitKey] = strVal
-				}
-			} else {
-				// For non-string values, add them as is
-				traits[traitKey] = node.Attributes.Value
-			}
-		}
-
-	}
-
+	traits := flowData.GetTraits()
 	if len(traits) == 0 {
 		return nil, fmt.Errorf("no traits found in registration flow")
 	}
