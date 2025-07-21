@@ -121,20 +121,21 @@ func extractTenantNameFromBody(body string) string {
 	return strings.ToLower(body[1:end]) // normalize tenant name
 }
 
+// TODO: refactor this later
+// mockWebhookURL is the URL to send mock messages to
 var mockWebhookURL = os.Getenv("MOCK_WEBHOOK_URL")
 
-type mockMessage struct {
-	Channel  string `json:"channel"`
-	Receiver string `json:"receiver"`
-	Message  string `json:"message"`
+type otpMessage struct {
+	Body string `json:"Body"`
+	To   string `json:"To"`
 }
 
 // sendViaProvider simulates sending OTP via the specified channel.
 func sendViaProvider(ctx context.Context, channel, receiver, message string) error {
-	payload := mockMessage{
-		Channel:  channel,
-		Receiver: receiver,
-		Message:  message,
+	logger.GetLogger().Infof("Sending mock message to %s via %s: %s", receiver, channel, message)
+	payload := otpMessage{
+		Body: message,
+		To:   receiver,
 	}
 
 	body, err := json.Marshal(payload)
