@@ -1,4 +1,4 @@
-package caching
+package caching_test
 
 import (
 	"context"
@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -16,7 +19,7 @@ import (
 // TestSuite for Redis cache client tests using testcontainers
 type RedisCacheTestSuite struct {
 	suite.Suite
-	client         *redisCacheClient
+	client         types.CacheClient
 	ctx            context.Context
 	redisContainer testcontainers.Container
 	redisHost      string
@@ -57,7 +60,7 @@ func (suite *RedisCacheTestSuite) SetupSuite() {
 	redisConfiguration.RedisTtl = "5m"
 
 	// Initialize the Redis cache client
-	suite.client = NewRedisCacheClient().(*redisCacheClient)
+	suite.client = caching.NewRedisCacheClient(instances.RedisClientInstance())
 }
 
 func (suite *RedisCacheTestSuite) TearDownSuite() {
@@ -338,8 +341,7 @@ func TestRedisCacheWithContainer(t *testing.T) {
 	redisConfiguration.RedisAddress = fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 	redisConfiguration.RedisTtl = "5m"
 
-	client := NewRedisCacheClient().(*redisCacheClient)
-
+	client := caching.NewRedisCacheClient(instances.RedisClientInstance())
 	// Basic functionality test
 	t.Run("Basic_Set_And_Get", func(t *testing.T) {
 		key := "basic_test_key"

@@ -5,12 +5,9 @@ import (
 	"sync"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
-	"github.com/lifenetwork-ai/iam-service/constants"
 	queue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue"
 	queuetypes "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
-	"github.com/patrickmn/go-cache"
-	"github.com/redis/go-redis/v9"
 )
 
 var (
@@ -25,15 +22,10 @@ func OTPQueueRepositoryInstance(ctx context.Context) queuetypes.OTPQueueReposito
 		switch cacheType {
 		case "redis":
 			logger.GetLogger().Info("Using Redis for OTP queue")
-			config := conf.GetRedisConfiguration()
-			redisClient := redis.NewClient(&redis.Options{
-				Addr: config.RedisAddress,
-			})
-			otpQueueRepo = queue.NewRedisOTPQueueRepository(redisClient)
+			otpQueueRepo = queue.NewRedisOTPQueueRepository(RedisClientInstance())
 		default:
 			logger.GetLogger().Info("Using in-memory cache for OTP queue")
-			memCache := cache.New(constants.DefaultExpiration, constants.CleanupInterval)
-			otpQueueRepo = queue.NewMemoryOTPQueueRepository(memCache)
+			otpQueueRepo = queue.NewMemoryOTPQueueRepository(GoCacheClientInstance())
 		}
 	})
 	return otpQueueRepo

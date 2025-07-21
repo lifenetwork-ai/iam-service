@@ -1,23 +1,25 @@
-package caching
+package caching_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewGoCacheClient(t *testing.T) {
 	t.Run("NewGoCacheClient", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		require.NotNil(t, client)
 	})
 }
 
 func TestGoCacheClient_Set(t *testing.T) {
 	t.Run("GoCacheClient_Set", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "GoCacheClient_Set_Key"
 		value := "GoCacheClient_Set_Value"
@@ -35,7 +37,7 @@ func TestGoCacheClient_Set(t *testing.T) {
 
 func TestGoCacheClient_Get(t *testing.T) {
 	t.Run("GoCacheClient_Get", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "GoCacheClient_Get_Key"
 		value := "GoCacheClient_Get_Value"
@@ -51,7 +53,7 @@ func TestGoCacheClient_Get(t *testing.T) {
 	})
 
 	t.Run("GoCacheClient_Get_ItemNotFound", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "nonExistentKey"
 
@@ -62,7 +64,7 @@ func TestGoCacheClient_Get(t *testing.T) {
 	})
 
 	t.Run("GoCacheClient_Get_InvalidDestination", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "GoCacheClient_Get_InvalidDestination_Key"
 		value := "GoCacheClient_Get_InvalidDestination_Value"
@@ -78,7 +80,7 @@ func TestGoCacheClient_Get(t *testing.T) {
 	})
 
 	t.Run("GoCacheClient_Get_NilDestination", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "GoCacheClient_Get_NilDestination_Key"
 		value := "GoCacheClient_Get_NilDestination_Value"
@@ -96,7 +98,7 @@ func TestGoCacheClient_Get(t *testing.T) {
 
 func TestGoCacheClient_Del(t *testing.T) {
 	t.Run("GoCacheClient_Del", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "GoCacheClient_Del_Key"
 		value := "GoCacheClient_Del_Value"
@@ -116,7 +118,7 @@ func TestGoCacheClient_Del(t *testing.T) {
 }
 
 func TestGoCacheClient_CacheMapValue(t *testing.T) {
-	client := NewGoCacheClient()
+	client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 	ctx := context.Background()
 	key := "GoCacheClient_Map_Key"
 
@@ -138,7 +140,7 @@ func TestGoCacheClient_CacheMapValue(t *testing.T) {
 }
 
 func TestGoCacheClient_Expiration(t *testing.T) {
-	client := NewGoCacheClient()
+	client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 	ctx := context.Background()
 	key := "GoCacheClient_Expiration_Key"
 	value := "temp value"
@@ -155,7 +157,7 @@ func TestGoCacheClient_Expiration(t *testing.T) {
 }
 
 func TestGoCacheClient_Overwrite(t *testing.T) {
-	client := NewGoCacheClient()
+	client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 	ctx := context.Background()
 	key := "GoCacheClient_Overwrite_Key"
 	value1 := "first"
@@ -178,7 +180,7 @@ type TestUser struct {
 
 func TestGoCacheClient_TypeConversions(t *testing.T) {
 	t.Run("StructValue_To_PointerStruct", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "struct_to_pointer"
 
@@ -203,7 +205,7 @@ func TestGoCacheClient_TypeConversions(t *testing.T) {
 	})
 
 	t.Run("PointerStruct_To_StructValue", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "pointer_to_struct"
 
@@ -227,7 +229,7 @@ func TestGoCacheClient_TypeConversions(t *testing.T) {
 	})
 
 	t.Run("PointerStruct_To_PointerStruct", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "pointer_to_pointer"
 
@@ -252,7 +254,7 @@ func TestGoCacheClient_TypeConversions(t *testing.T) {
 	})
 
 	t.Run("StructValue_To_StructValue", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "struct_to_struct"
 
@@ -278,7 +280,7 @@ func TestGoCacheClient_TypeConversions(t *testing.T) {
 
 func TestGoCacheClient_TypeConversion_EdgeCases(t *testing.T) {
 	t.Run("NilPointer_Storage", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "nil_pointer"
 
@@ -295,7 +297,7 @@ func TestGoCacheClient_TypeConversion_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("IncompatibleTypes_ShouldFail", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "incompatible_types"
 
@@ -311,7 +313,7 @@ func TestGoCacheClient_TypeConversion_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("DifferentStructTypes_ShouldFail", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "different_struct_types"
 
@@ -335,7 +337,7 @@ func TestGoCacheClient_TypeConversion_EdgeCases(t *testing.T) {
 
 func TestGoCacheClient_PrimitiveTypeConversions(t *testing.T) {
 	t.Run("IntValue_To_IntPointer", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "int_to_int_pointer"
 
@@ -353,7 +355,7 @@ func TestGoCacheClient_PrimitiveTypeConversions(t *testing.T) {
 	})
 
 	t.Run("StringPointer_To_StringValue", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "string_pointer_to_string"
 
@@ -372,7 +374,7 @@ func TestGoCacheClient_PrimitiveTypeConversions(t *testing.T) {
 
 func TestGoCacheClient_SliceAndMapConversions(t *testing.T) {
 	t.Run("SliceValue_To_SlicePointer", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "slice_to_slice_pointer"
 
@@ -390,7 +392,7 @@ func TestGoCacheClient_SliceAndMapConversions(t *testing.T) {
 	})
 
 	t.Run("MapPointer_To_MapValue", func(t *testing.T) {
-		client := NewGoCacheClient()
+		client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 		ctx := context.Background()
 		key := "map_pointer_to_map"
 
@@ -409,7 +411,7 @@ func TestGoCacheClient_SliceAndMapConversions(t *testing.T) {
 
 // Benchmark tests for type conversion performance
 func BenchmarkGoCacheClient_TypeConversions(b *testing.B) {
-	client := NewGoCacheClient()
+	client := caching.NewGoCacheClient(instances.GoCacheClientInstance())
 	ctx := context.Background()
 
 	user := TestUser{

@@ -23,12 +23,12 @@ func CacheRepositoryInstance(ctx context.Context) types.CacheRepository {
 		case "redis":
 			// Using Redis cache
 			logger.GetLogger().Info("Using Redis cache")
-			cacheClient := caching.NewRedisCacheClient()
+			cacheClient := caching.NewRedisCacheClient(RedisClientInstance())
 			cacheRepo = caching.NewCachingRepository(ctx, cacheClient)
 		default:
 			// Using in-memory cache (default)
 			logger.GetLogger().Info("Using in-memory cache (default)")
-			cacheClient := caching.NewGoCacheClient()
+			cacheClient := caching.NewGoCacheClient(GoCacheClientInstance())
 			cacheRepo = caching.NewCachingRepository(ctx, cacheClient)
 		}
 	})
