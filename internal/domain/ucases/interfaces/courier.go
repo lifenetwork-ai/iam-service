@@ -1,0 +1,14 @@
+package interfaces
+
+import (
+	"context"
+	"time"
+
+	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
+)
+
+type CourierUseCase interface {
+	ReceiveOTP(ctx context.Context, receiver, body string) *domainerrors.DomainError
+	DeliverOTP(ctx context.Context, receiver, channel string) *domainerrors.DomainError
+	RetryFailedOTPs(ctx context.Context, now time.Time) *domainerrors.DomainError
+}

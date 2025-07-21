@@ -1,4 +1,4 @@
-package otpqueue
+package otp_queue
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lifenetwork-ai/iam-service/infrastructures/otpqueue/types"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
 	"github.com/redis/go-redis/v9"
 )
 
