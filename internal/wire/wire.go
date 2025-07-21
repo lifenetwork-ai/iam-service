@@ -1,6 +1,8 @@
 package wire
 
 import (
+	"context"
+
 	"gorm.io/gorm"
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
@@ -46,6 +48,7 @@ type UseCases struct {
 	AdminUCase        interfaces.AdminUseCase
 	TenantUCase       interfaces.TenantUseCase
 	PermissionUCase   interfaces.PermissionUseCase
+	CourierUCase      interfaces.CourierUseCase
 }
 
 // Initialize use cases
@@ -65,5 +68,6 @@ func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
 		AdminUCase:      ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
 		TenantUCase:     ucases.NewTenantUseCase(repos.TenantRepo),
 		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo)),
+		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background())),
 	}
 }

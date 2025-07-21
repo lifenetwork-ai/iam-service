@@ -88,4 +88,16 @@ func RegisterRoutes(
 		authMiddleware.RequireAuth(),
 		userHandler.Me,
 	)
+
+	// SECTION: Courier (OTP delivery) routes
+	courierHandler := handlers.NewCourierHandler(ucases.CourierUCase)
+	courierRouter := v1.Group("courier")
+
+	courierRouter.POST("/messages", courierHandler.ReceiveCourierMessageHandler)
+
+	courierRouter.GET(
+		"/available-channels",
+		authMiddleware.RequireAuth(),
+		courierHandler.GetAvailableChannelsHandler,
+	)
 }
