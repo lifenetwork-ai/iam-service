@@ -489,6 +489,44 @@ paths:
       summary: Update a tenant
       tags:
       - tenants
+  /api/v1/courier/available-channels:
+    get:
+      consumes:
+      - application/json
+      description: Returns available delivery channels (SMS, WhatsApp, Zalo) based
+        on receiver and tenant
+      parameters:
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of available channels
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "400":
+          description: Invalid receiver
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get available delivery channels
+      tags:
+      - otp
   /api/v1/courier/messages:
     post:
       consumes:

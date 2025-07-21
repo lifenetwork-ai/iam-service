@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 )
@@ -48,4 +49,41 @@ func (h *courierHandler) ReceiveCourierMessageHandler(ctx *gin.Context) {
 	}
 
 	httpresponse.Success(ctx, http.StatusOK, gin.H{"message": "OTP received successfully"})
+}
+
+// GetAvailableChannelsHandler returns available OTP delivery channels based on tenant and receiver
+// @Summary Get available delivery channels
+// @Description Returns available delivery channels (SMS, WhatsApp, Zalo) based on receiver and tenant
+// @Tags otp
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
+// @Success 200 {object} response.SuccessResponse{data=[]string} "List of available channels"
+// @Failure 400 {object} response.ErrorResponse "Invalid receiver"
+// @Failure 401 {object} response.ErrorResponse "Unauthorized"
+// @Router /api/v1/courier/available-channels [get]
+func (h *courierHandler) GetAvailableChannelsHandler(ctx *gin.Context) {
+	// Get authenticated user from context
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "MSG_UNAUTHORIZED", "Unauthorized", err)
+		return
+	}
+
+	// Get tenant from context
+	tenant, err := middleware.GetTenantFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
+		return
+	}
+
+	// Only support phone number
+	receiver := user.Phone
+	if receiver == "" {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_RECEIVER", "Receiver phone number is required", nil)
+		return
+	}
+
+	channels := h.ucase.GetAvailableChannels(ctx, tenant.Name, receiver)
+	httpresponse.Success(ctx, http.StatusOK, channels)
 }
