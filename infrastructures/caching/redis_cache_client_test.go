@@ -10,6 +10,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -341,7 +342,9 @@ func TestRedisCacheWithContainer(t *testing.T) {
 	redisConfiguration.RedisAddress = fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 	redisConfiguration.RedisTtl = "5m"
 
-	client := caching.NewRedisCacheClient(instances.RedisClientInstance())
+	client := caching.NewRedisCacheClient(redis.NewClient(&redis.Options{
+		Addr: fmt.Sprintf("%s:%s", hostIP, mappedPort.Port()),
+	}))
 	// Basic functionality test
 	t.Run("Basic_Set_And_Get", func(t *testing.T) {
 		key := "basic_test_key"
