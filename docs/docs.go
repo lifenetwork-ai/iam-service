@@ -366,10 +366,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "otp"
+                    "courier"
                 ],
                 "summary": "Get available delivery channels",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "default": "Bearer \u003ctoken\u003e",

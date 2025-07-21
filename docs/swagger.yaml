@@ -496,6 +496,11 @@ paths:
       description: Returns available delivery channels (SMS, WhatsApp, Zalo) based
         on receiver and tenant
       parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
       - default: Bearer <token>
         description: Bearer Token (Bearer ory...)
         in: header
@@ -526,7 +531,7 @@ paths:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Get available delivery channels
       tags:
-      - otp
+      - courier
   /api/v1/courier/messages:
     post:
       consumes:

@@ -54,7 +54,8 @@ func (h *courierHandler) ReceiveCourierMessageHandler(ctx *gin.Context) {
 // GetAvailableChannelsHandler returns available OTP delivery channels based on tenant and receiver
 // @Summary Get available delivery channels
 // @Description Returns available delivery channels (SMS, WhatsApp, Zalo) based on receiver and tenant
-// @Tags otp
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Tags courier
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
