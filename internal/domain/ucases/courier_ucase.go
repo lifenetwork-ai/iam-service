@@ -2,6 +2,7 @@ package ucases
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,6 +49,20 @@ func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) 
 	}
 
 	return nil
+}
+
+func (u *courierUseCase) GetAvailableChannels(ctx context.Context, tenantName, receiver string) []string {
+	var channels []string
+
+	// Always supported SMS and WhatsApp channels
+	channels = append(channels, constants.ChannelSMS, constants.ChannelWhatsApp)
+
+	// If the receiver is a Vietnamese number and the tenant supports Zalo, add Zalo
+	if strings.HasPrefix(receiver, "+84") && strings.ToLower(tenantName) == constants.TenantGenetica {
+		channels = append(channels, constants.ChannelZalo)
+	}
+
+	return channels
 }
 
 func (u *courierUseCase) DeliverOTP(ctx context.Context, receiver, channel string) *domainerrors.DomainError {

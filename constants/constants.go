@@ -55,3 +55,9 @@ const (
 	ChannelWhatsApp = "whatsapp"
 	ChannelZalo     = "zalo"
 )
+
+// Suported tenants
+const (
+	TenantLifeAI   = "life_ai"
+	TenantGenetica = "genetica"
+)

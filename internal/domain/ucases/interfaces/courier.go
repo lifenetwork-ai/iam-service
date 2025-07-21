@@ -9,6 +9,7 @@ import (
 
 type CourierUseCase interface {
 	ReceiveOTP(ctx context.Context, receiver, body string) *domainerrors.DomainError
+	GetAvailableChannels(ctx context.Context, tenantName, receiver string) []string
 	DeliverOTP(ctx context.Context, receiver, channel string) *domainerrors.DomainError
 	RetryFailedOTPs(ctx context.Context, now time.Time) *domainerrors.DomainError
 }
