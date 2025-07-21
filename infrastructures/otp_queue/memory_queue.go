@@ -101,13 +101,9 @@ func (q *memoryOTPQueue) ListReceivers(ctx context.Context, tenantName string) (
 	prefix := pendingOTPKeyPrefix + tenantName + ":"
 
 	for k := range q.cache.Items() {
-		if strings.HasPrefix(k, prefix) {
-			parts := strings.SplitN(k, ":", 3)
-			if len(parts) == 3 {
-				receivers = append(receivers, parts[2]) // extract <receiver>
-			}
+		if after, ok := strings.CutPrefix(k, prefix); ok {
+			receivers = append(receivers, after)
 		}
 	}
-
 	return receivers, nil
 }
