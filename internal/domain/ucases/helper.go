@@ -117,3 +117,17 @@ func extractTenantNameFromBody(body string) string {
 	}
 	return strings.ToLower(body[1:end]) // normalize tenant name
 }
+
+// sendViaProvider simulates sending OTP via the specified channel.
+func sendViaProvider(ctx context.Context, channel, receiver, message string) error {
+	switch channel {
+	case constants.ChannelSMS:
+		return nil // Implement SMS sending logic here
+	case constants.ChannelWhatsApp:
+		return nil // Implement WhatsApp sending logic here
+	case constants.ChannelZalo:
+		return nil // Implement Zalo sending logic here
+	default:
+		return fmt.Errorf("unsupported channel: %s", channel)
+	}
+}

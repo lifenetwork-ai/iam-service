@@ -65,7 +65,35 @@ func (u *courierUseCase) GetAvailableChannels(ctx context.Context, tenantName, r
 	return channels
 }
 
-func (u *courierUseCase) DeliverOTP(ctx context.Context, receiver, channel string) *domainerrors.DomainError {
+func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, channel string) *domainerrors.DomainError {
+	// Get OTP from queue
+	item, err := u.queue.Get(ctx, tenantName, receiver)
+	if err != nil {
+		return domainerrors.NewInternalError("MSG_GET_OTP_FAILED", "Failed to get OTP from queue").WithCause(err)
+	}
+
+	// Send OTP via the corresponding provider
+	if err := sendViaProvider(ctx, channel, receiver, item.Message); err != nil {
+		delay := 30 * time.Second
+		retryTask := otpqueue.RetryTask{
+			Receiver:   receiver,
+			Message:    item.Message,
+			Channel:    channel,
+			TenantName: tenantName,
+			RetryCount: 1,
+			ReadyAt:    time.Now().Add(delay),
+		}
+		if err := u.queue.EnqueueRetry(ctx, retryTask, delay); err != nil {
+			return domainerrors.NewInternalError("MSG_RETRY_ENQUEUE_FAILED", "Failed to enqueue retry task").WithCause(err)
+		}
+		return domainerrors.NewInternalError("MSG_DELIVER_FAILED", "Failed to deliver OTP. Will retry later").WithCause(err)
+	}
+
+	// Send success => delete OTP from queue
+	if err := u.queue.Delete(ctx, tenantName, receiver); err != nil {
+		return domainerrors.NewInternalError("MSG_DELETE_OTP_FAILED", "Failed to delete OTP after successful delivery").WithCause(err)
+	}
+
 	return nil
 }
 

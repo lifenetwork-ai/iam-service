@@ -57,13 +57,35 @@ func (r *redisOTPQueue) Delete(ctx context.Context, tenantName, receiver string)
 
 func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, delay time.Duration) error {
 	key := retryOTPKey(task.TenantName, task.Receiver)
+	// Get existing tasks to check for duplicates
+	existingTasks, err := r.client.ZRange(ctx, key, 0, -1).Result()
+	if err != nil && err != redis.Nil {
+		return fmt.Errorf("failed to fetch retry tasks: %w", err)
+	}
 
+	for _, raw := range existingTasks {
+		var existing types.RetryTask
+		if err := json.Unmarshal([]byte(raw), &existing); err == nil {
+			if existing.Receiver == task.Receiver && existing.TenantName == task.TenantName {
+				task.RetryCount = existing.RetryCount + 1
+				// Remove the old task
+				_ = r.client.ZRem(ctx, key, raw).Err()
+				break
+			}
+		}
+	}
+
+	if task.RetryCount == 0 {
+		task.RetryCount = 1
+	}
+
+	// Calculate the score based on the ready time
+	score := float64(time.Now().Add(delay).Unix())
 	data, err := json.Marshal(task)
 	if err != nil {
 		return fmt.Errorf("failed to marshal retry task: %w", err)
 	}
 
-	score := float64(time.Now().Add(delay).Unix())
 	return r.client.ZAdd(ctx, key, redis.Z{
 		Score:  score,
 		Member: data,
