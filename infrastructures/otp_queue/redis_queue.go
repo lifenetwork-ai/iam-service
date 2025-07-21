@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
@@ -132,4 +133,26 @@ func (r *redisOTPQueue) DeleteRetryTask(ctx context.Context, task types.RetryTas
 	}
 
 	return r.client.ZRem(ctx, key, data).Err()
+}
+
+// ListReceivers returns all receiver IDs that have pending OTPs for a given tenant
+func (r *redisOTPQueue) ListReceivers(ctx context.Context, tenantName string) ([]string, error) {
+	var receivers []string
+	prefix := pendingOTPKeyPrefix + tenantName + ":"
+
+	iter := r.client.Scan(ctx, 0, prefix+"*", 0).Iterator()
+	for iter.Next(ctx) {
+		key := iter.Val()
+		// key format: otp:pending:<tenant>:<receiver>
+		parts := strings.SplitN(key, ":", 3)
+		if len(parts) == 3 {
+			receivers = append(receivers, parts[2]) // get <receiver>
+		}
+	}
+
+	if err := iter.Err(); err != nil {
+		return nil, fmt.Errorf("failed to scan redis keys: %w", err)
+	}
+
+	return receivers, nil
 }

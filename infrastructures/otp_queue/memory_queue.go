@@ -94,3 +94,20 @@ func (q *memoryOTPQueue) DeleteRetryTask(ctx context.Context, task types.RetryTa
 	q.cache.Delete(key)
 	return nil
 }
+
+// ListReceivers returns all receiver IDs that have pending OTPs for a given tenant
+func (q *memoryOTPQueue) ListReceivers(ctx context.Context, tenantName string) ([]string, error) {
+	var receivers []string
+	prefix := pendingOTPKeyPrefix + tenantName + ":"
+
+	for k := range q.cache.Items() {
+		if strings.HasPrefix(k, prefix) {
+			parts := strings.SplitN(k, ":", 3)
+			if len(parts) == 3 {
+				receivers = append(receivers, parts[2]) // extract <receiver>
+			}
+		}
+	}
+
+	return receivers, nil
+}
