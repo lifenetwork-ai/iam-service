@@ -48,3 +48,10 @@ const (
 
 // HTTP Headers
 const ContentTypeJson = "application/json"
+
+// Channel names
+const (
+	ChannelSMS      = "sms"
+	ChannelWhatsApp = "whatsapp"
+	ChannelZalo     = "zalo"
+)
