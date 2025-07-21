@@ -8,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/constants"
-	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
@@ -150,13 +150,13 @@ func (am *AuthMiddleware) OptionalAuth() gin.HandlerFunc {
 }
 
 // Helper functions to extract data from context
-func GetUserFromContext(ctx *gin.Context) (*domain.UserIdentity, error) {
+func GetUserFromContext(ctx *gin.Context) (*types.IdentityUserResponse, error) {
 	user, exists := ctx.Get(string(constants.UserContextKey))
 	if !exists {
 		return nil, errors.New("user not found in context")
 	}
 
-	userObj, ok := user.(*domain.UserIdentity)
+	userObj, ok := user.(*types.IdentityUserResponse)
 	if !ok {
 		return nil, errors.New("invalid user type in context")
 	}
