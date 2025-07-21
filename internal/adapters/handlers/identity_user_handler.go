@@ -225,42 +225,21 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me [get]
 func (h *userHandler) Me(ctx *gin.Context) {
-	tenant, err := middleware.GetTenantFromContext(ctx)
+	user, err := middleware.GetUserFromContext(ctx)
 	if err != nil {
-		httpresponse.Error(
-			ctx,
-			http.StatusBadRequest,
-			"MSG_INVALID_TENANT",
-			"Invalid tenant",
-			err,
-		)
-		return
-	}
-
-	// Get session token from gin context and create new context with it
-	sessionToken, exists := ctx.Get(string(constants.SessionTokenKey))
-	if !exists {
 		httpresponse.Error(
 			ctx,
 			http.StatusUnauthorized,
 			"MSG_UNAUTHORIZED",
 			"Unauthorized",
 			[]interface{}{
-				map[string]string{"field": "session_token", "error": "Session token not found"},
+				map[string]string{"field": "user", "error": "User not found"},
 			},
 		)
 		return
 	}
 
-	reqCtx := context.WithValue(ctx.Request.Context(), constants.SessionTokenKey, sessionToken)
-	requester, usecaseErr := h.ucase.Profile(reqCtx, tenant.ID)
-
-	if usecaseErr != nil {
-		handleDomainError(ctx, usecaseErr)
-		return
-	}
-
-	httpresponse.Success(ctx, http.StatusOK, *requester)
+	httpresponse.Success(ctx, http.StatusOK, *user)
 }
 
 // Logout to de-authenticate user.
