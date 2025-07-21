@@ -92,14 +92,12 @@ func RegisterRoutes(
 	// SECTION: Courier (OTP delivery) routes
 	courierHandler := handlers.NewCourierHandler(ucases.CourierUCase)
 	courierRouter := v1.Group("courier")
-	courierRouter.Use(
-		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
-	)
 
 	courierRouter.POST("/messages", courierHandler.ReceiveCourierMessageHandler)
 
 	courierRouter.GET(
 		"/available-channels",
+		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
 		authMiddleware.RequireAuth(),
 		courierHandler.GetAvailableChannelsHandler,
 	)
