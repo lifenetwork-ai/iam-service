@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	otpqueue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -25,6 +26,27 @@ func NewCourierUseCase(
 }
 
 func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) *domainerrors.DomainError {
+	tenantName := extractTenantNameFromBody(body)
+	if tenantName == "" {
+		return domainerrors.NewValidationError(
+			"MSG_INVALID_TENANT",
+			"Cannot extract tenant from body",
+			[]any{"Tenant name must be life_ai or genetica"},
+		)
+	}
+
+	item := otpqueue.OTPQueueItem{
+		ID:         uuid.New().String(),
+		Receiver:   receiver,
+		Message:    body,
+		TenantName: tenantName,
+		CreatedAt:  time.Now(),
+	}
+
+	if err := u.queue.Enqueue(ctx, item, u.defaultTTL); err != nil {
+		return domainerrors.NewInternalError("MSG_QUEUE_ENQUEUE_FAILED", "Failed to enqueue OTP").WithCause(err)
+	}
+
 	return nil
 }
 

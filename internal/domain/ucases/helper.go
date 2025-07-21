@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/lifenetwork-ai/iam-service/constants"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -102,4 +103,17 @@ func extractStringFromTraits(traits map[string]interface{}, key, defaultValue st
 		// Convert other types to string as fallback
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+// extractTenantNameFromBody extracts the tenant name from the message body
+func extractTenantNameFromBody(body string) string {
+	// Eg: [genetica] Your login code is: 123456...
+	if len(body) < 3 || body[0] != '[' {
+		return ""
+	}
+	end := strings.Index(body, "]")
+	if end <= 1 {
+		return ""
+	}
+	return strings.ToLower(body[1:end]) // normalize tenant name
 }
