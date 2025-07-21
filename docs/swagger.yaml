@@ -41,6 +41,16 @@ definitions:
         description: Optional explanation for why permission was denied
         type: string
     type: object
+  dto.CourierWebhookRequestDTO:
+    properties:
+      Body:
+        type: string
+      To:
+        type: string
+    required:
+    - Body
+    - To
+    type: object
   dto.CreateAdminAccountPayloadDTO:
     properties:
       password:
@@ -479,6 +489,36 @@ paths:
       summary: Update a tenant
       tags:
       - tenants
+  /api/v1/courier/messages:
+    post:
+      consumes:
+      - application/json
+      description: Receive courier content and enqueue it for delivery
+      parameters:
+      - description: Courier message payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CourierWebhookRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Courier message enqueued successfully
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Receive courier message (from webhook or sender)
+      tags:
+      - courier
   /api/v1/permissions/check:
     post:
       consumes:
