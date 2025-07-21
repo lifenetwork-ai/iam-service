@@ -49,15 +49,18 @@ const (
 // HTTP Headers
 const ContentTypeJson = "application/json"
 
-// Channel names
+// Courier constants
 const (
+	// Supported channels
 	ChannelSMS      = "sms"
 	ChannelWhatsApp = "whatsapp"
 	ChannelZalo     = "zalo"
-)
 
-// Suported tenants
-const (
+	// Tenant names
 	TenantLifeAI   = "life_ai"
 	TenantGenetica = "genetica"
+
+	// Retry related constants
+	MaxOTPRetryCount   = 3
+	RetryDelayDuration = 30 * time.Second
 )

@@ -10,6 +10,7 @@ import (
 	otpqueue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type courierUseCase struct {
@@ -74,7 +75,7 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 
 	// Send OTP via the corresponding provider
 	if err := sendViaProvider(ctx, channel, receiver, item.Message); err != nil {
-		delay := 30 * time.Second
+		delay := constants.RetryDelayDuration
 		retryTask := otpqueue.RetryTask{
 			Receiver:   receiver,
 			Message:    item.Message,
@@ -98,5 +99,34 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 }
 
 func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) *domainerrors.DomainError {
+	tasks, err := u.queue.GetDueRetryTasks(ctx, now)
+	if err != nil {
+		return domainerrors.NewInternalError("MSG_GET_RETRY_TASKS_FAILED", "Failed to fetch retry tasks").WithCause(err)
+	}
+
+	for _, task := range tasks {
+		// Try sending again
+		err := sendViaProvider(ctx, task.Channel, task.Receiver, task.Message)
+		if err != nil {
+			// Retry again if under retry threshold
+			if task.RetryCount < constants.MaxOTPRetryCount {
+				task.RetryCount++
+				task.ReadyAt = time.Now().Add(constants.RetryDelayDuration)
+
+				if err := u.queue.EnqueueRetry(ctx, task, constants.RetryDelayDuration); err != nil {
+					// Log but continue processing others
+					logger.GetLogger().Errorf("Failed to re-enqueue retry task for %s: %v", task.Receiver, err)
+				}
+			}
+			// Always delete the old retry task (successful or not)
+			_ = u.queue.DeleteRetryTask(ctx, task)
+			continue
+		}
+
+		// If success, delete from retry queue and also from OTP queue
+		_ = u.queue.DeleteRetryTask(ctx, task)
+		_ = u.queue.Delete(ctx, task.TenantName, task.Receiver)
+	}
+
 	return nil
 }
