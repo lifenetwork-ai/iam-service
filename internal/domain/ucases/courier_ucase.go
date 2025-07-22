@@ -111,24 +111,36 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) *do
 	sem := make(chan struct{}, constants.MaxConcurrency)
 
 	for _, task := range tasks {
+		currentTask := task // capture task is necessary for goroutine safety
+
 		g.Go(func() error {
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			err := sendViaProvider(ctx, task.Channel, task.Receiver, task.Message)
-			if err != nil {
-				if task.RetryCount < constants.MaxOTPRetryCount {
-					task.RetryCount++
-					backoffDelay := utils.ComputeBackoffDuration(task.RetryCount)
-					task.ReadyAt = time.Now().Add(backoffDelay)
-					_ = u.queue.EnqueueRetry(ctx, task, backoffDelay)
-				}
-				_ = u.queue.DeleteRetryTask(ctx, task)
+			// Check OTP still valid before retrying
+			_, getErr := u.queue.Get(ctx, currentTask.TenantName, currentTask.Receiver)
+			if getErr != nil {
+				// OTP expired → skip and clean up retry task
+				_ = u.queue.DeleteRetryTask(ctx, currentTask)
 				return nil
 			}
 
-			_ = u.queue.DeleteRetryTask(ctx, task)
-			_ = u.queue.Delete(ctx, task.TenantName, task.Receiver)
+			// Try sending
+			err := sendViaProvider(ctx, currentTask.Channel, currentTask.Receiver, currentTask.Message)
+			if err != nil {
+				if currentTask.RetryCount < constants.MaxOTPRetryCount {
+					currentTask.RetryCount++
+					backoffDelay := utils.ComputeBackoffDuration(currentTask.RetryCount)
+					currentTask.ReadyAt = time.Now().Add(backoffDelay)
+					_ = u.queue.EnqueueRetry(ctx, currentTask, backoffDelay)
+				}
+				_ = u.queue.DeleteRetryTask(ctx, currentTask)
+				return nil
+			}
+
+			// Success: cleanup OTP and retry task
+			_ = u.queue.DeleteRetryTask(ctx, currentTask)
+			_ = u.queue.Delete(ctx, currentTask.TenantName, currentTask.Receiver)
 			return nil
 		})
 	}
