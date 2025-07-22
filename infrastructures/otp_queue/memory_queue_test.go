@@ -2,6 +2,7 @@ package otp_queue_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -172,4 +173,74 @@ func TestMemoryOTPQueue_ListReceivers(t *testing.T) {
 			require.ElementsMatch(t, receivers, tt.expectedEmails)
 		})
 	}
+}
+
+func TestMemoryOTPQueue_PerformanceUnderLoad(t *testing.T) {
+	const totalOps = 25000
+	const tenant = "perfTenant"
+	ctx := context.Background()
+	q := newTestQueue()
+
+	start := time.Now()
+
+	// Enqueue test
+	for i := range totalOps {
+		item := types.OTPQueueItem{
+			ID:         fmt.Sprintf("id-%d", i),
+			TenantName: tenant,
+			Receiver:   fmt.Sprintf("user%d@example.com", i),
+			Message:    "otp",
+			CreatedAt:  time.Now(),
+		}
+		err := q.Enqueue(ctx, item, 2*time.Minute)
+		require.NoError(t, err)
+	}
+	enqueueDuration := time.Since(start)
+	t.Logf("[PERF] Enqueued %d items in %v (avg: %v/op)", totalOps, enqueueDuration, enqueueDuration/time.Duration(totalOps))
+
+	// Get test
+	start = time.Now()
+	for i := range totalOps {
+		receiver := fmt.Sprintf("user%d@example.com", i)
+		_, err := q.Get(ctx, tenant, receiver)
+		require.NoError(t, err)
+	}
+	getDuration := time.Since(start)
+	t.Logf("[PERF] Retrieved %d items in %v (avg: %v/op)", totalOps, getDuration, getDuration/time.Duration(getDuration.Nanoseconds()/int64(totalOps)))
+}
+
+func TestMemoryOTPQueue_Performance_RetryTasks(t *testing.T) {
+	const totalTasks = 25000
+	const tenant = "retryPerfTenant"
+	ctx := context.Background()
+	q := newTestQueue()
+
+	// Enqueue retry tasks with slight delay
+	start := time.Now()
+	for i := range totalTasks {
+		task := types.RetryTask{
+			TenantName: tenant,
+			Receiver:   fmt.Sprintf("user%d@example.com", i),
+			Channel:    "sms",
+			Message:    "retry-otp",
+			RetryCount: 1,
+			ReadyAt:    time.Now().Add(500 * time.Millisecond), // due soon
+		}
+		err := q.EnqueueRetry(ctx, task, 500*time.Millisecond)
+		require.NoError(t, err)
+	}
+	enqueueDur := time.Since(start)
+	t.Logf("[PERF] Enqueued %d retry tasks in %v (avg: %v/task)", totalTasks, enqueueDur, enqueueDur/time.Duration(totalTasks))
+
+	// Wait for tasks to be due
+	time.Sleep(600 * time.Millisecond)
+
+	// Fetch due retry tasks
+	start = time.Now()
+	tasks, err := q.GetDueRetryTasks(ctx, time.Now())
+	require.NoError(t, err)
+	require.Len(t, tasks, totalTasks)
+
+	fetchDur := time.Since(start)
+	t.Logf("[PERF] Retrieved %d retry tasks in %v (avg: %v/task)", totalTasks, fetchDur, fetchDur/time.Duration(totalTasks))
 }
