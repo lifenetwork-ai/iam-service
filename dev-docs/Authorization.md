@@ -12,9 +12,7 @@ sequenceDiagram
     Client->>API: POST /api/v1/permissions/self-check
     Note right of Client: Header: Authorization: Bearer {session_token}
     Note right of Client: Body: {namespace, relation, object}
-    API->>API: Extract user from session token
     API->>Keto: Check Permission
-    Note right of API: Query: Can user perform relation on object?
     Keto-->>API: Permission Result
     API-->>Client: 200 OK {allowed, reason}
     
@@ -22,7 +20,6 @@ sequenceDiagram
     Client->>API: POST /api/v1/permissions/check
     Note right of Client: Body: {namespace, relation, object, tenant_member}
     API->>Keto: Check Permission
-    Note right of API: Query: Can tenant_member perform relation on object?
     Keto-->>API: Permission Result
     API-->>Client: 200 OK {allowed, reason}
     
@@ -30,9 +27,7 @@ sequenceDiagram
     Client->>API: POST /api/v1/permissions/relation-tuples
     Note right of Client: Header: Authorization: Bearer {session_token}
     Note right of Client: Body: {namespace, relation, object, identifier}
-    API->>API: Extract user from session token
     API->>Keto: Create Relation Tuple
-    Note right of API: Create: identifier relation object@namespace
     Keto-->>API: Relation Tuple Created
     API-->>Client: 200 OK
     
@@ -40,13 +35,10 @@ sequenceDiagram
     Client->>API: POST /api/v1/permissions/delegate
     Note right of Client: Header: Authorization: Bearer {session_token}
     Note right of Client: Body: {resource_type, resource_id, permission, identifier}
-    API->>API: Extract user from session token
     API->>Keto: Check Delegation Permission
-    Note right of API: Query: Can user delegate resource_type:resource_id?
     Keto-->>API: Delegation Permission Result
     alt Has delegation permission
         API->>Keto: Delegate Access
-        Note right of API: Grant: identifier permission resource_type:resource_id
         Keto-->>API: Access Delegated
         API-->>Client: 200 OK {result}
     else No delegation permission
