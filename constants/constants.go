@@ -67,5 +67,5 @@ const (
 
 	// OTP worker interval
 	OTPDeliveryWorkerInterval = 10 * time.Second
-	OTPRetryWorkerInterval    = 30 * time.Minute
+	OTPRetryWorkerInterval    = 30 * time.Second
 )
