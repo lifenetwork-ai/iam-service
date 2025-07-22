@@ -9,9 +9,11 @@ type PermissionRequest interface {
 	GetIdentifier() string
 }
 
-var _ PermissionRequest = &CheckPermissionRequest{}
-var _ PermissionRequest = &CreateRelationTupleRequest{}
-var _ PermissionRequest = &DelegateAccessRequest{}
+var (
+	_ PermissionRequest = &CheckPermissionRequest{}
+	_ PermissionRequest = &CreateRelationTupleRequest{}
+	_ PermissionRequest = &DelegateAccessRequest{}
+)
 
 // CheckPermissionRequest represents a request to check permission
 type CheckPermissionRequest struct {

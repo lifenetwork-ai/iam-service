@@ -10,7 +10,6 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
-	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 // TenantMiddleware handles tenant context in requests
@@ -19,7 +18,7 @@ type TenantMiddleware struct {
 }
 
 // NewTenantMiddleware creates a new tenant middleware
-func NewTenantMiddleware(tenantRepo ucases.TenantRepository) *TenantMiddleware {
+func NewTenantMiddleware(tenantRepo domainrepo.TenantRepository) *TenantMiddleware {
 	return &TenantMiddleware{
 		tenantRepo: tenantRepo,
 	}

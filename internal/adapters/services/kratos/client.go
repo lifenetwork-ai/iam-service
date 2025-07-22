@@ -8,13 +8,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
-	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	kratos "github.com/ory/kratos-client-go"
 )
 
 // Client wraps the Kratos client configuration
 type Client struct {
-	tenantRepo ucases.TenantRepository
+	tenantRepo domainrepo.TenantRepository
 	clientMap  sync.Map // map[uuid.UUID]*tenantClient
 	config     *conf.KratosConfiguration
 }
