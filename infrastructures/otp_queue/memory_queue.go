@@ -13,6 +13,7 @@ import (
 const (
 	pendingOTPKeyPrefix = "otp:pending:" // otp:pending:<tenant>:<receiver>
 	retryOTPKeyPrefix   = "otp:retry:"   // otp:retry:<tenant>:<receiver>
+	retryTaskTTL        = 5 * time.Minute
 )
 
 type memoryOTPQueue struct {
@@ -61,7 +62,7 @@ func (q *memoryOTPQueue) Delete(ctx context.Context, tenantName, receiver string
 func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, delay time.Duration) error {
 	key := retryOTPKey(task.TenantName, task.Receiver)
 
-	// Check if the task already exists increment retry count
+	// Increment retry count if task already exists
 	if existing, found := q.cache.Get(key); found {
 		if prevTask, ok := existing.(types.RetryTask); ok {
 			task.RetryCount = prevTask.RetryCount + 1
@@ -70,8 +71,11 @@ func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask,
 		task.RetryCount = 1
 	}
 
+	// Set ReadyAt timestamp
 	task.ReadyAt = time.Now().Add(delay)
-	q.cache.Set(key, task, delay)
+
+	// Save with long-enough TTL to allow GetDueRetryTasks to fetch it later
+	q.cache.Set(key, task, retryTaskTTL)
 	return nil
 }
 
