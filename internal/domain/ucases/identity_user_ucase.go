@@ -77,7 +77,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Check rate limit for phone challenges
-	key := "challenge:phone:" + phone
+	key := fmt.Sprintf("challenge:phone:tenant:%s:%s", phone, tenantID.String())
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
@@ -131,7 +131,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	// Check rate limit for email challenges
-	key := "challenge:email:" + email
+	key := fmt.Sprintf("challenge:email:tenant:%s:%s", email, tenantID.String())
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
@@ -457,9 +457,11 @@ func (u *userUseCase) Register(
 	}
 
 	// Check rate limit for registration attempts
-	key := "register:" + email
+	var key string
 	if phone != "" {
-		key = "register:" + phone
+		key = fmt.Sprintf("register:phone:tenant:%s:%s", phone, tenantID.String())
+	} else {
+		key = fmt.Sprintf("register:email:tenant:%s:%s", email, tenantID.String())
 	}
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
