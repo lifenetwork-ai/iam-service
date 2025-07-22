@@ -11,6 +11,16 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	retryZSetKey    = "otp:retry_tasks"
+	retryTaskMapKey = "otp:retry_map" // This is a Redis Hash: field = taskKey, value = json
+)
+
+// Helper to generate a unique task key (used as ZSET member and HASH field)
+func makeTaskKey(task types.RetryTask) string {
+	return fmt.Sprintf("%s:%s:%s", task.TenantName, task.Receiver, task.Channel)
+}
+
 type redisOTPQueue struct {
 	client *redis.Client
 }
@@ -56,67 +66,69 @@ func (r *redisOTPQueue) Delete(ctx context.Context, tenantName, receiver string)
 	return r.client.Del(ctx, key).Err()
 }
 
+// EnqueueRetry adds a retry task to the queue
 func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, delay time.Duration) error {
-	key := retryOTPKey(task.TenantName, task.Receiver)
-	// Get existing tasks to check for duplicates
-	existingTasks, err := r.client.ZRange(ctx, key, 0, -1).Result()
-	if err != nil && err != redis.Nil {
-		return fmt.Errorf("failed to fetch retry tasks: %w", err)
-	}
+	taskKey := makeTaskKey(task)
 
-	for _, raw := range existingTasks {
+	// Get existing task from hash
+	raw, err := r.client.HGet(ctx, retryTaskMapKey, taskKey).Result()
+	if err != nil && err != redis.Nil {
+		return fmt.Errorf("failed to get existing retry task: %w", err)
+	}
+	if err == nil {
 		var existing types.RetryTask
 		if err := json.Unmarshal([]byte(raw), &existing); err == nil {
-			if existing.Receiver == task.Receiver && existing.TenantName == task.TenantName {
-				task.RetryCount = existing.RetryCount + 1
-				// Remove the old task
-				_ = r.client.ZRem(ctx, key, raw).Err()
-				break
-			}
+			task.RetryCount = existing.RetryCount + 1
 		}
 	}
-
 	if task.RetryCount == 0 {
 		task.RetryCount = 1
 	}
 
-	// Calculate the score based on the ready time
-	score := float64(time.Now().Add(delay).Unix())
+	task.ReadyAt = time.Now().Add(delay)
 	data, err := json.Marshal(task)
 	if err != nil {
 		return fmt.Errorf("failed to marshal retry task: %w", err)
 	}
 
-	return r.client.ZAdd(ctx, key, redis.Z{
+	score := float64(task.ReadyAt.Unix())
+	pipe := r.client.TxPipeline()
+	pipe.ZAdd(ctx, retryZSetKey, redis.Z{
 		Score:  score,
-		Member: data,
-	}).Err()
+		Member: taskKey,
+	})
+	pipe.HSet(ctx, retryTaskMapKey, taskKey, data)
+
+	_, err = pipe.Exec(ctx)
+	return err
 }
 
-// Retry Tasks
+// GetDueRetryTasks retrieves all retry tasks that are due
 func (r *redisOTPQueue) GetDueRetryTasks(ctx context.Context, now time.Time) ([]types.RetryTask, error) {
-	// Lấy tất cả key retry (toàn bộ tenants)
-	keys, err := r.client.Keys(ctx, retryOTPKeyPrefix+"*").Result()
+	// Get due task keys from ZSET
+	taskKeys, err := r.client.ZRangeByScore(ctx, retryZSetKey, &redis.ZRangeBy{
+		Min: "0",
+		Max: fmt.Sprintf("%d", now.Unix()),
+	}).Result()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list retry keys: %w", err)
+		return nil, fmt.Errorf("failed to get retry task keys: %w", err)
+	}
+	if len(taskKeys) == 0 {
+		return nil, nil
+	}
+
+	// Fetch JSON payloads from hash
+	taskJSONs, err := r.client.HMGet(ctx, retryTaskMapKey, taskKeys...).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch retry tasks from hash: %w", err)
 	}
 
 	var tasks []types.RetryTask
-
-	for _, key := range keys {
-		entries, err := r.client.ZRangeByScore(ctx, key, &redis.ZRangeBy{
-			Min: "0",
-			Max: fmt.Sprintf("%d", now.Unix()),
-		}).Result()
-
-		if err != nil && err != redis.Nil {
-			continue
-		}
-
-		for _, raw := range entries {
-			var task types.RetryTask
-			if err := json.Unmarshal([]byte(raw), &task); err == nil {
-				tasks = append(tasks, task)
+	for _, raw := range taskJSONs {
+		if rawStr, ok := raw.(string); ok {
+			var t types.RetryTask
+			if err := json.Unmarshal([]byte(rawStr), &t); err == nil {
+				tasks = append(tasks, t)
 			}
 		}
 	}
@@ -125,25 +137,13 @@ func (r *redisOTPQueue) GetDueRetryTasks(ctx context.Context, now time.Time) ([]
 }
 
 func (r *redisOTPQueue) DeleteRetryTask(ctx context.Context, task types.RetryTask) error {
-	key := retryOTPKey(task.TenantName, task.Receiver)
+	taskKey := makeTaskKey(task)
 
-	entries, err := r.client.ZRange(ctx, key, 0, -1).Result()
-	if err != nil {
-		return fmt.Errorf("failed to ZRange: %w", err)
-	}
-
-	for _, raw := range entries {
-		var t types.RetryTask
-		if err := json.Unmarshal([]byte(raw), &t); err != nil {
-			continue
-		}
-
-		if t.Receiver == task.Receiver && t.TenantName == task.TenantName {
-			return r.client.ZRem(ctx, key, raw).Err()
-		}
-	}
-
-	return nil // silently ignore if nothing to delete
+	pipe := r.client.TxPipeline()
+	pipe.ZRem(ctx, retryZSetKey, taskKey)
+	pipe.HDel(ctx, retryTaskMapKey, taskKey)
+	_, err := pipe.Exec(ctx)
+	return err
 }
 
 // ListReceivers returns all receiver IDs that have pending OTPs for a given tenant
