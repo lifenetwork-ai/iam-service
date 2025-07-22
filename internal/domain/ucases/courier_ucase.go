@@ -75,7 +75,7 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 
 	// Send OTP via the corresponding provider
 	if err := sendViaProvider(ctx, channel, receiver, item.Message); err != nil {
-		delay := constants.RetryDelayDuration
+		delay := computeBackoffDuration(1)
 		retryTask := otpqueue.RetryTask{
 			Receiver:   receiver,
 			Message:    item.Message,
@@ -111,9 +111,10 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) *do
 			// Retry again if under retry threshold
 			if task.RetryCount < constants.MaxOTPRetryCount {
 				task.RetryCount++
-				task.ReadyAt = time.Now().Add(constants.RetryDelayDuration)
+				backoffDelay := computeBackoffDuration(task.RetryCount)
+				task.ReadyAt = time.Now().Add(backoffDelay)
 
-				if err := u.queue.EnqueueRetry(ctx, task, constants.RetryDelayDuration); err != nil {
+				if err := u.queue.EnqueueRetry(ctx, task, backoffDelay); err != nil {
 					// Log but continue processing others
 					logger.GetLogger().Errorf("Failed to re-enqueue retry task for %s: %v", task.Receiver, err)
 				}
