@@ -2,6 +2,7 @@ package workers
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	otp_queue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
@@ -13,6 +14,9 @@ import (
 type otpRetryWorker struct {
 	curierUseCase interfaces.CourierUseCase
 	queue         otp_queue.OTPQueueRepository
+
+	mu      sync.Mutex
+	running bool
 }
 
 // NewOTPRetryWorker creates a new worker instance
@@ -40,18 +44,34 @@ func (w *otpRetryWorker) Start(ctx context.Context, interval time.Duration) {
 	for {
 		select {
 		case <-ticker.C:
-			w.retryFailedOTPs(ctx)
+			go w.safeRetry(ctx)
 		case <-ctx.Done():
-			logger.GetLogger().Info("OTPRetryWorker stopped")
+			logger.GetLogger().Infof("[%s] stopped", w.Name())
 			return
 		}
 	}
 }
 
-// retryFailedOTPs retries failed OTP deliveries
-func (w *otpRetryWorker) retryFailedOTPs(ctx context.Context) {
+// safeRetry checks and prevents concurrent execution
+func (w *otpRetryWorker) safeRetry(ctx context.Context) {
+	w.mu.Lock()
+	if w.running {
+		w.mu.Unlock()
+		logger.GetLogger().Warnf("[%s] retry already in progress, skipping", w.Name())
+		return
+	}
+	w.running = true
+	w.mu.Unlock()
+
+	defer func() {
+		w.mu.Lock()
+		w.running = false
+		w.mu.Unlock()
+	}()
+
+	logger.GetLogger().Infof("[%s] retry started", w.Name())
 	err := w.curierUseCase.RetryFailedOTPs(ctx, time.Now())
 	if err != nil {
-		logger.GetLogger().Errorf("Failed to retry OTPs: %v", err)
+		logger.GetLogger().Errorf("[%s] retry failed: %v", w.Name(), err)
 	}
 }
