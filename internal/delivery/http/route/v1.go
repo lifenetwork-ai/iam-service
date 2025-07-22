@@ -51,6 +51,7 @@ func RegisterRoutes(
 		permissionRouter.POST("/self-check", authMiddleware.RequireAuth(), permissionHandler.SelfCheckPermission)
 		permissionRouter.POST("/check", permissionHandler.CheckPermission)
 		permissionRouter.POST("/relation-tuples", authMiddleware.RequireAuth(), permissionHandler.CreateRelationTuple)
+		permissionRouter.POST("/delegate", authMiddleware.RequireAuth(), permissionHandler.DelegateAccess)
 	}
 
 	// SECTION: users

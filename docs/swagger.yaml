@@ -73,6 +73,8 @@ definitions:
     type: object
   dto.CreateRelationTupleRequestDTO:
     properties:
+      identifier:
+        type: string
       namespace:
         type: string
       object:
@@ -80,6 +82,7 @@ definitions:
       relation:
         type: string
     required:
+    - identifier
     - namespace
     - object
     - relation
@@ -96,6 +99,25 @@ definitions:
     - admin_url
     - name
     - public_url
+    type: object
+  dto.DelegateAccessRequestDTO:
+    properties:
+      identifier:
+        type: string
+      permission:
+        type: string
+      resource_id:
+        type: string
+      resource_type:
+        type: string
+      tenant_id:
+        type: string
+    required:
+    - identifier
+    - permission
+    - resource_id
+    - resource_type
+    - tenant_id
     type: object
   dto.IdentityChallengeVerifyDTO:
     properties:
@@ -628,6 +650,47 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Check permission
+      tags:
+      - permissions
+  /api/v1/permissions/delegate:
+    post:
+      consumes:
+      - application/json
+      description: Delegate access to a resource
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Delegate access request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DelegateAccessRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access delegated successfully
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delegate access
       tags:
       - permissions
   /api/v1/permissions/relation-tuples:

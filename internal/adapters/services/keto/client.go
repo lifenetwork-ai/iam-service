@@ -193,7 +193,7 @@ func (c *Client) toKetoCheckPermissionBody(req ucasetypes.CheckPermissionRequest
 		Namespace: &req.Namespace,
 		Relation:  &req.Relation,
 		Object:    &req.Object,
-		SubjectId: &req.TenantRelation.Identifier,
+		SubjectId: &req.GlobalUserID,
 	}
 }
 

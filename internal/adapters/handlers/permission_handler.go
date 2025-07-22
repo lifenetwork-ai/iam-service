@@ -37,9 +37,9 @@ func NewPermissionHandler(ucase interfaces.PermissionUseCase) *permissionHandler
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/permissions/relation-tuples [post]
 func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
-	_, err := middleware.GetTenantFromContext(c)
+	tenant, err := middleware.GetTenantFromContext(c)
 	if err != nil {
-		logger.GetLogger().Errorf("Failed to get tenant: %v", err)
+		logger.GetLogger().Errorf("Failed to get tenant from context: %v", err)
 		httpresponse.Error(
 			c,
 			http.StatusBadRequest,
@@ -50,14 +50,14 @@ func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 		return
 	}
 
-	tenant, err := middleware.GetTenantFromContext(c)
+	_, err = middleware.GetUserFromContext(c)
 	if err != nil {
-		logger.GetLogger().Errorf("Failed to get tenant from context: %v", err)
+		logger.GetLogger().Errorf("Failed to get user profile: %v", err)
 		httpresponse.Error(
 			c,
-			http.StatusBadRequest,
-			"MSG_INVALID_TENANT",
-			"Invalid tenant",
+			http.StatusInternalServerError,
+			"MSG_GET_USER_PROFILE_FAILED",
+			"Failed to get user profile",
 			err,
 		)
 		return
@@ -89,6 +89,41 @@ func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 		return
 	}
 
+	// // Check if the user has permission to create relation tuples
+	// checkReq := types.CheckPermissionRequest{
+	// 	Namespace: req.Namespace,
+	// 	Relation:  "manage",
+	// 	Object:    req.Object,
+	// 	TenantRelation: types.TenantRelation{
+	// 		TenantID:   tenant.ID.String(),
+	// 		Identifier: user.Email,
+	// 	},
+	// }
+
+	// canManage, ucaseErr := h.ucase.CheckPermission(c.Request.Context(), checkReq)
+	// if ucaseErr != nil {
+	// 	logger.GetLogger().Errorf("Failed to check management permission: %v", ucaseErr)
+	// 	httpresponse.Error(
+	// 		c,
+	// 		http.StatusInternalServerError,
+	// 		"MSG_CHECK_MANAGEMENT_PERMISSION_FAILED",
+	// 		"Failed to check management permission",
+	// 		ucaseErr,
+	// 	)
+	// 	return
+	// }
+
+	// if !canManage {
+	// 	httpresponse.Error(
+	// 		c,
+	// 		http.StatusForbidden,
+	// 		"MSG_MANAGEMENT_NOT_ALLOWED",
+	// 		"You don't have permission to manage relation tuples for this resource",
+	// 		nil,
+	// 	)
+	// 	return
+	// }
+
 	usecaseReq := types.CreateRelationTupleRequest{
 		Namespace: req.Namespace,
 		Relation:  req.Relation,
@@ -101,7 +136,7 @@ func (h *permissionHandler) CreateRelationTuple(c *gin.Context) {
 
 	ucaseErr := h.ucase.CreateRelationTuple(c.Request.Context(), usecaseReq)
 	if ucaseErr != nil {
-		logger.GetLogger().Errorf("Failed to create relation tuple: %v", err)
+		logger.GetLogger().Errorf("Failed to create relation tuple: %v", ucaseErr)
 		httpresponse.Error(
 			c,
 			http.StatusInternalServerError,
@@ -234,7 +269,6 @@ func (h *permissionHandler) SelfCheckPermission(c *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/permissions/delegate [post]
 func (h *permissionHandler) DelegateAccess(c *gin.Context) {
-
 	tenant, err := middleware.GetTenantFromContext(c)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get tenant: %v", err)
@@ -286,7 +320,40 @@ func (h *permissionHandler) DelegateAccess(c *gin.Context) {
 		return
 	}
 
-	resourceId := fmt.Sprintf("%s:%s:%s", req.ResourceType, req.ResourceID, user.ID)
+	// Check if the delegator has permission to delegate
+	checkReq := types.CheckPermissionRequest{
+		Namespace: req.ResourceType,
+		Relation:  "delegate",
+		Object:    fmt.Sprintf("%s:%s", req.ResourceType, req.ResourceID),
+		TenantRelation: types.TenantRelation{
+			TenantID:   tenant.ID.String(),
+			Identifier: user.Email,
+		},
+	}
+
+	canDelegate, ucaseErr := h.ucase.CheckPermission(c.Request.Context(), checkReq)
+	if ucaseErr != nil {
+		logger.GetLogger().Errorf("Failed to check delegation permission: %v", ucaseErr)
+		httpresponse.Error(
+			c,
+			http.StatusInternalServerError,
+			"MSG_CHECK_DELEGATION_PERMISSION_FAILED",
+			"Failed to check delegation permission",
+			ucaseErr,
+		)
+		return
+	}
+
+	if !canDelegate {
+		httpresponse.Error(
+			c,
+			http.StatusForbidden,
+			"MSG_DELEGATION_NOT_ALLOWED",
+			"You don't have permission to delegate access to this resource",
+			nil,
+		)
+		return
+	}
 
 	ucaseReq := types.DelegateAccessRequest{
 		ResourceType: req.ResourceType,

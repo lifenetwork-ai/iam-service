@@ -71,7 +71,7 @@ type CreateRelationTupleRequest struct {
 }
 
 func (r *CreateRelationTupleRequest) GetIdentifier() string {
-	return r.GlobalUserID
+	return r.TenantRelation.Identifier
 }
 
 func (r *CreateRelationTupleRequest) Validate() error {

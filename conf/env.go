@@ -65,6 +65,7 @@ var defaultConfigurations = map[string]any{
 	"IAM_ROOT_PASSWORD":              "",
 	"KETO_DEFAULT_READ_URL":          "",
 	"KETO_DEFAULT_WRITE_URL":         "",
+	"MOCK_WEBHOOK_URL":               "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations
