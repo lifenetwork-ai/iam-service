@@ -1,4 +1,4 @@
-package ucases
+package domain
 
 import (
 	"context"
@@ -38,11 +38,18 @@ type TenantRepository interface {
 	GetByName(name string) (*domain.Tenant, error)
 }
 
+type UserIdentityChangeLogRepository interface {
+	Create(ctx context.Context, tx *gorm.DB, log *domain.UserIdentityChangeLog) error
+	ListByGlobalUserID(ctx context.Context, globalUserID uuid.UUID) ([]*domain.UserIdentityChangeLog, error)
+	ListByTenantID(ctx context.Context, tenantID uuid.UUID) ([]*domain.UserIdentityChangeLog, error)
+}
+
 type UserIdentifierMappingRepository interface {
 	ExistsByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (bool, error)
 	GetByGlobalUserID(ctx context.Context, globalUserID string) ([]domain.UserIdentifierMapping, error)
 	ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error)
 	Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
+	GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error)
 }
 
 type UserIdentityRepository interface {

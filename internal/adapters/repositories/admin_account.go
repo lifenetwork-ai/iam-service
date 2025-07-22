@@ -4,8 +4,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type adminAccountRepository struct {
@@ -13,7 +13,7 @@ type adminAccountRepository struct {
 }
 
 // NewAdminAccountRepository creates a new admin account repository
-func NewAdminAccountRepository(db *gorm.DB) interfaces.AdminAccountRepository {
+func NewAdminAccountRepository(db *gorm.DB) domainrepo.AdminAccountRepository {
 	return &adminAccountRepository{
 		db: db,
 	}

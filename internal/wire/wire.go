@@ -7,22 +7,22 @@ import (
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
-	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	keto "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 // Struct to hold all repositories
 type Repos struct {
-	ChallengeSessionRepo      repotypes.ChallengeSessionRepository
-	GlobalUserRepo            repotypes.GlobalUserRepository
-	UserIdentityRepo          repotypes.UserIdentityRepository
-	UserIdentifierMappingRepo repotypes.UserIdentifierMappingRepository
-	TenantRepo                repotypes.TenantRepository
-	AdminAccountRepo          repotypes.AdminAccountRepository
+	ChallengeSessionRepo      domainrepo.ChallengeSessionRepository
+	GlobalUserRepo            domainrepo.GlobalUserRepository
+	UserIdentityRepo          domainrepo.UserIdentityRepository
+	UserIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository
+	TenantRepo                domainrepo.TenantRepository
+	AdminAccountRepo          domainrepo.AdminAccountRepository
 	CacheRepo                 types.CacheRepository
 }
 

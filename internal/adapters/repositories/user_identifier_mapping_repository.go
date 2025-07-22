@@ -5,15 +5,15 @@ import (
 
 	"gorm.io/gorm"
 
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type userIdentifierMappingRepository struct {
 	db *gorm.DB
 }
 
-func NewUserIdentifierMappingRepository(db *gorm.DB) interfaces.UserIdentifierMappingRepository {
+func NewUserIdentifierMappingRepository(db *gorm.DB) domainrepo.UserIdentifierMappingRepository {
 	return &userIdentifierMappingRepository{db: db}
 }
 
@@ -38,6 +38,17 @@ func (r *userIdentifierMappingRepository) GetByGlobalUserID(ctx context.Context,
 		return nil, err
 	}
 	return mappings, nil
+}
+
+func (r *userIdentifierMappingRepository) GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error) {
+	var mapping domain.UserIdentifierMapping
+	if err := r.db.WithContext(ctx).
+		Joins("JOIN user_identities ON user_identities.global_user_id = user_identifier_mapping.global_user_id").
+		Where("user_identities.type = ? AND user_identities.value = ? AND user_identifier_mapping.tenant_id = ?", identifierType, identifierValue, tenantID).
+		First(&mapping).Error; err != nil {
+		return "", err
+	}
+	return mapping.TenantUserID, nil
 }
 
 func (r *userIdentifierMappingRepository) ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error) {

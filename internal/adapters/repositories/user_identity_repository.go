@@ -5,15 +5,15 @@ import (
 
 	"gorm.io/gorm"
 
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type userIdentityRepository struct {
 	db *gorm.DB
 }
 
-func NewUserIdentityRepository(db *gorm.DB) interfaces.UserIdentityRepository {
+func NewUserIdentityRepository(db *gorm.DB) domainrepo.UserIdentityRepository {
 	return &userIdentityRepository{db: db}
 }
 

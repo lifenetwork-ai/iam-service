@@ -9,6 +9,6 @@ import (
 
 type PermissionUseCase interface {
 	CheckPermission(ctx context.Context, request types.CheckPermissionRequest) (bool, *domainerrors.DomainError)
-	// BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPermissionRequestDTO) (bool, *domainerrors.DomainError)
+	DelegateAccess(ctx context.Context, request types.DelegateAccessRequest) (bool, *domainerrors.DomainError)
 	CreateRelationTuple(ctx context.Context, request types.CreateRelationTupleRequest) *domainerrors.DomainError
 }

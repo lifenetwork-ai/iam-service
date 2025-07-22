@@ -524,11 +524,6 @@ const docTemplate = `{
         },
         "/api/v1/permissions/relation-tuples": {
             "post": {
-                "security": [
-                    {
-                        "BasicAuth": []
-                    }
-                ],
                 "description": "Create a relation tuple for a tenant member",
                 "consumes": [
                     "application/json"
@@ -571,6 +566,59 @@ const docTemplate = `{
                         "description": "Relation tuple created successfully",
                         "schema": {
                             "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/permissions/self-check": {
+            "post": {
+                "description": "Check if a subject has permission to perform an action on an object",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "permissions"
+                ],
+                "summary": "User-facing permission check",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Permission check request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SelfCheckPermissionRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permission check result",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CheckPermissionResponseDTO"
                         }
                     },
                     "400": {
@@ -1010,19 +1058,26 @@ const docTemplate = `{
             "required": [
                 "namespace",
                 "object",
-                "relation"
+                "relation",
+                "tenant_member"
             ],
             "properties": {
                 "namespace": {
                     "type": "string"
                 },
                 "object": {
-                    "description": "What they want to do it to (e.g., \"document:123\")",
                     "type": "string"
                 },
                 "relation": {
-                    "description": "What they want to do (e.g., \"read\", \"write\", \"delete\")",
                     "type": "string"
+                },
+                "tenant_member": {
+                    "description": "SubjectSet defines the subject that is being checked permission for",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.TenantMemberDTO"
+                        }
+                    ]
                 }
             }
         },
@@ -1165,6 +1220,28 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.SelfCheckPermissionRequestDTO": {
+            "type": "object",
+            "required": [
+                "namespace",
+                "object",
+                "relation"
+            ],
+            "properties": {
+                "namespace": {
+                    "description": "Name of the resource's group (e.g., \"document\", \"user\")",
+                    "type": "string"
+                },
+                "object": {
+                    "description": "The specific resource (e.g., \"document:123\")",
+                    "type": "string"
+                },
+                "relation": {
+                    "description": "The relation between the subject and the object (e.g., \"read\", \"write\", \"delete\")",
+                    "type": "string"
+                }
+            }
+        },
         "dto.TenantDTO": {
             "type": "object",
             "properties": {
@@ -1184,6 +1261,22 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TenantMemberDTO": {
+            "type": "object",
+            "required": [
+                "identifier",
+                "tenant_id"
+            ],
+            "properties": {
+                "identifier": {
+                    "description": "Identifier is the identifier of the tenant member (can be email or phone number)",
+                    "type": "string"
+                },
+                "tenant_id": {
                     "type": "string"
                 }
             }
