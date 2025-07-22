@@ -45,7 +45,6 @@ func (w *otpDeliveryWorker) Start(ctx context.Context, interval time.Duration) {
 		select {
 		case <-ticker.C:
 			w.processPendingOTPs(ctx)
-			w.retryFailedOTPs(ctx)
 		case <-ctx.Done():
 			logger.GetLogger().Info("OTPDeliveryWorker stopped")
 			return
@@ -80,13 +79,5 @@ func (w *otpDeliveryWorker) processPendingOTPs(ctx context.Context) {
 				logger.GetLogger().Warnf("Failed to deliver OTP to %s: %v", receiver, err)
 			}
 		}
-	}
-}
-
-// retryFailedOTPs retries failed OTP deliveries
-func (w *otpDeliveryWorker) retryFailedOTPs(ctx context.Context) {
-	err := w.curierUseCase.RetryFailedOTPs(ctx, time.Now())
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to retry OTPs: %v", err)
 	}
 }

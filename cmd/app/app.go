@@ -57,13 +57,16 @@ func RunApp(config *conf.Configuration) {
 	startServer(r, config)
 
 	// Start workers
-	otpWorker := workers.NewOTPDeliveryWorker(
+	go workers.NewOTPDeliveryWorker(
 		ucases.CourierUCase,
 		ucases.TenantUCase,
 		instances.OTPQueueRepositoryInstance(ctx),
-	)
-	// Run the worker in background
-	go otpWorker.Start(ctx, constants.OTPWorkerInterval)
+	).Start(ctx, constants.OTPDeliveryWorkerInterval)
+
+	go workers.NewOTPRetryWorker(
+		ucases.CourierUCase,
+		instances.OTPQueueRepositoryInstance(ctx),
+	).Start(ctx, constants.OTPRetryWorkerInterval)
 
 	// Handle shutdown signals
 	waitForShutdownSignal(cancel)
