@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters"
-	"github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
+	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/rate_limiter"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/rate_limiter/types"
 )
 
 var (

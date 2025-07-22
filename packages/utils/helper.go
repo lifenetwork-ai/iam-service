@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/constants"
-	"github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/rate_limiter/types"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"

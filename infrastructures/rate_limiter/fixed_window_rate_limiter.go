@@ -1,10 +1,10 @@
-package ratelimiters
+package rate_limiter
 
 import (
 	"time"
 
 	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
-	"github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/rate_limiter/types"
 )
 
 type fixedWindowRateLimiter struct {

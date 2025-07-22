@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
-	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/ratelimiters/types"
+	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/rate_limiter/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
