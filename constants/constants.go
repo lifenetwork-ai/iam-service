@@ -19,10 +19,10 @@ const (
 )
 
 // Webhook constants
-const (
-	MaxWebhookWorkers = 10
-	WebhookTimeout    = 5 * time.Second
-)
+const WebhookTimeout = 5 * time.Second
+
+// Concurrency
+const MaxConcurrency = 10
 
 // Order direction
 type OrderDirection string

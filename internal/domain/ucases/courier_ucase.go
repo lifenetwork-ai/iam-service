@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	otpqueue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
@@ -104,29 +106,34 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) *do
 		return domainerrors.NewInternalError("MSG_GET_RETRY_TASKS_FAILED", "Failed to fetch retry tasks").WithCause(err)
 	}
 
+	g, ctx := errgroup.WithContext(ctx)
+	sem := make(chan struct{}, constants.MaxConcurrency)
+
 	for _, task := range tasks {
-		// Try sending again
-		err := sendViaProvider(ctx, task.Channel, task.Receiver, task.Message)
-		if err != nil {
-			// Retry again if under retry threshold
-			if task.RetryCount < constants.MaxOTPRetryCount {
-				task.RetryCount++
-				backoffDelay := computeBackoffDuration(task.RetryCount)
-				task.ReadyAt = time.Now().Add(backoffDelay)
+		g.Go(func() error {
+			sem <- struct{}{}
+			defer func() { <-sem }()
 
-				if err := u.queue.EnqueueRetry(ctx, task, backoffDelay); err != nil {
-					// Log but continue processing others
-					logger.GetLogger().Errorf("Failed to re-enqueue retry task for %s: %v", task.Receiver, err)
+			err := sendViaProvider(ctx, task.Channel, task.Receiver, task.Message)
+			if err != nil {
+				if task.RetryCount < constants.MaxOTPRetryCount {
+					task.RetryCount++
+					backoffDelay := computeBackoffDuration(task.RetryCount)
+					task.ReadyAt = time.Now().Add(backoffDelay)
+					_ = u.queue.EnqueueRetry(ctx, task, backoffDelay)
 				}
+				_ = u.queue.DeleteRetryTask(ctx, task)
+				return nil
 			}
-			// Always delete the old retry task (successful or not)
-			_ = u.queue.DeleteRetryTask(ctx, task)
-			continue
-		}
 
-		// If success, delete from retry queue and also from OTP queue
-		_ = u.queue.DeleteRetryTask(ctx, task)
-		_ = u.queue.Delete(ctx, task.TenantName, task.Receiver)
+			_ = u.queue.DeleteRetryTask(ctx, task)
+			_ = u.queue.Delete(ctx, task.TenantName, task.Receiver)
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		logger.GetLogger().Errorf("Error retrying OTPs: %v", err)
 	}
 
 	return nil

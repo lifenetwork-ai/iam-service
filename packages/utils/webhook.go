@@ -50,7 +50,7 @@ func SendWebhooks(
 	}
 
 	// Limit concurrency with a semaphore
-	sem := make(chan struct{}, constants.MaxWebhookWorkers)
+	sem := make(chan struct{}, constants.MaxConcurrency)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var errors []error
