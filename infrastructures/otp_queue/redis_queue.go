@@ -127,12 +127,23 @@ func (r *redisOTPQueue) GetDueRetryTasks(ctx context.Context, now time.Time) ([]
 func (r *redisOTPQueue) DeleteRetryTask(ctx context.Context, task types.RetryTask) error {
 	key := retryOTPKey(task.TenantName, task.Receiver)
 
-	data, err := json.Marshal(task)
+	entries, err := r.client.ZRange(ctx, key, 0, -1).Result()
 	if err != nil {
-		return fmt.Errorf("failed to marshal retry task: %w", err)
+		return fmt.Errorf("failed to ZRange: %w", err)
 	}
 
-	return r.client.ZRem(ctx, key, data).Err()
+	for _, raw := range entries {
+		var t types.RetryTask
+		if err := json.Unmarshal([]byte(raw), &t); err != nil {
+			continue
+		}
+
+		if t.Receiver == task.Receiver && t.TenantName == task.TenantName {
+			return r.client.ZRem(ctx, key, raw).Err()
+		}
+	}
+
+	return nil // silently ignore if nothing to delete
 }
 
 // ListReceivers returns all receiver IDs that have pending OTPs for a given tenant
