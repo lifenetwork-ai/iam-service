@@ -109,3 +109,15 @@ func CheckRateLimitDomain(
 	_ = limiter.RegisterAttempt(key, window)
 	return nil
 }
+
+// ComputeBackoffDuration calculates the backoff duration based on retry count
+func ComputeBackoffDuration(retryCount int) time.Duration {
+	base := constants.BaseRetryDuration
+	maxDelay := constants.DefaultChallengeDuration
+
+	delay := time.Duration(1<<retryCount) * base // 2^retryCount * base
+	if delay > maxDelay {
+		return maxDelay
+	}
+	return delay
+}

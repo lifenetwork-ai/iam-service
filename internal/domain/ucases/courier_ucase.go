@@ -13,6 +13,7 @@ import (
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 type courierUseCase struct {
@@ -77,7 +78,7 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 
 	// Send OTP via the corresponding provider
 	if err := sendViaProvider(ctx, channel, receiver, item.Message); err != nil {
-		delay := computeBackoffDuration(1)
+		delay := utils.ComputeBackoffDuration(1)
 		retryTask := otpqueue.RetryTask{
 			Receiver:   receiver,
 			Message:    item.Message,
@@ -118,7 +119,7 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) *do
 			if err != nil {
 				if task.RetryCount < constants.MaxOTPRetryCount {
 					task.RetryCount++
-					backoffDelay := computeBackoffDuration(task.RetryCount)
+					backoffDelay := utils.ComputeBackoffDuration(task.RetryCount)
 					task.ReadyAt = time.Now().Add(backoffDelay)
 					_ = u.queue.EnqueueRetry(ctx, task, backoffDelay)
 				}

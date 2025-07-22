@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/lifenetwork-ai/iam-service/constants"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -161,16 +160,4 @@ func sendViaProvider(ctx context.Context, channel, receiver, message string) err
 	}
 
 	return nil
-}
-
-// computeBackoffDuration calculates the backoff duration based on retry count
-func computeBackoffDuration(retryCount int) time.Duration {
-	base := constants.BaseRetryDuration
-	maxDelay := constants.DefaultChallengeDuration
-
-	delay := time.Duration(1<<retryCount) * base // 2^retryCount * base
-	if delay > maxDelay {
-		return maxDelay
-	}
-	return delay
 }
