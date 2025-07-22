@@ -66,5 +66,6 @@ const (
 	BaseRetryDuration  = 10 * time.Second // Base duration for exponential backoff
 
 	// OTP worker interval
-	OTPWorkerInterval = 10 * time.Second
+	OTPDeliveryWorkerInterval = 10 * time.Second
+	OTPRetryWorkerInterval    = 30 * time.Second
 )
