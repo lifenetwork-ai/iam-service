@@ -181,14 +181,11 @@ func (u *permissionUseCase) CreateRelationTuple(ctx context.Context, request typ
 
 func (u *permissionUseCase) getGlobalUserID(ctx context.Context, req types.PermissionRequest) (string, error) {
 	identifierType, err := utils.GetIdentifierType(req.GetIdentifier())
-	fmt.Println("identifierType", identifierType)
-	fmt.Println("req.GetIdentifier()", req.GetIdentifier())
 	if err != nil {
 		logger.GetLogger().Errorf("Invalid identifier: %v", err)
 		return "", err
 	}
-	fmt.Println("identifierType", identifierType)
-	fmt.Println("req.GetIdentifier()", req.GetIdentifier())
+
 	userIdentity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, identifierType, req.GetIdentifier())
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get user identity: %v", err)
