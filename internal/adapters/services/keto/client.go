@@ -2,7 +2,6 @@ package keto
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
@@ -157,12 +156,9 @@ func (c *Client) CreateRelationTuple(ctx context.Context, request ucasetypes.Cre
 
 	// Log the request details before execution
 	logger.GetLogger().Debugf("Sending request to Keto Write API URL: %s", c.config.DefaultWriteURL)
-	fmt.Println("request", c.toKetoCreateRelationshipBody(request))
-	fmt.Println("url", c.config.DefaultWriteURL)
 	logger.GetLogger().Debugf("Request body: %+v", c.toKetoCreateRelationshipBody(request))
 
 	_, httpResp, err := req.Execute()
-	fmt.Println("httpResp", httpResp)
 	if httpResp != nil {
 		logger.GetLogger().Debugf("Response from Keto: Status: %d, Headers: %v", httpResp.StatusCode, httpResp.Header)
 	}
