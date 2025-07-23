@@ -5,15 +5,15 @@ import (
 
 	"gorm.io/gorm"
 
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type globalUserRepository struct {
 	db *gorm.DB
 }
 
-func NewGlobalUserRepository(db *gorm.DB) interfaces.GlobalUserRepository {
+func NewGlobalUserRepository(db *gorm.DB) domainrepo.GlobalUserRepository {
 	return &globalUserRepository{db: db}
 }
 

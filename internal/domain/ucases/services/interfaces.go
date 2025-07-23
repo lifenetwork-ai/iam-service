@@ -1,4 +1,4 @@
-package ucases
+package domain
 
 import (
 	"context"

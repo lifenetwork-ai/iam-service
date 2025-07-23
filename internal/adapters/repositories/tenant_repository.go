@@ -6,15 +6,15 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
-	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type tenantRepository struct {
 	db *gorm.DB
 }
 
-func NewTenantRepository(db *gorm.DB) repotypes.TenantRepository {
+func NewTenantRepository(db *gorm.DB) domainrepo.TenantRepository {
 	return &tenantRepository{
 		db: db,
 	}

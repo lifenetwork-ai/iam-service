@@ -10,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 )
 
@@ -125,7 +125,7 @@ func RootAuthMiddleware() gin.HandlerFunc {
 }
 
 // AdminAuthMiddleware returns a gin middleware for admin authentication
-func AdminAuthMiddleware(adminRepo interfaces.AdminAccountRepository) gin.HandlerFunc {
+func AdminAuthMiddleware(adminRepo ucases.AdminAccountRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Skip auth for Swagger UI
 		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {

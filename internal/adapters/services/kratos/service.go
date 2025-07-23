@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
-	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	kratos_types "github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos/types"
-	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
+	domainservice "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/pkg/errors"
 )
@@ -22,7 +22,7 @@ type kratosServiceImpl struct {
 }
 
 // NewKratosService creates a new instance of KratosService
-func NewKratosService(tenantRepo repotypes.TenantRepository) ucases.KratosService {
+func NewKratosService(tenantRepo domainrepo.TenantRepository) domainservice.KratosService {
 	config := conf.GetKratosConfig()
 	client := NewClient(config, tenantRepo)
 	return &kratosServiceImpl{

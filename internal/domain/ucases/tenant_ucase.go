@@ -11,13 +11,14 @@ import (
 	domaintypes "github.com/lifenetwork-ai/iam-service/internal/domain/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type tenantUseCase struct {
-	tenantRepo TenantRepository
+	tenantRepo domainrepo.TenantRepository
 }
 
-func NewTenantUseCase(tenantRepo TenantRepository) interfaces.TenantUseCase {
+func NewTenantUseCase(tenantRepo domainrepo.TenantRepository) interfaces.TenantUseCase {
 	return &tenantUseCase{
 		tenantRepo: tenantRepo,
 	}

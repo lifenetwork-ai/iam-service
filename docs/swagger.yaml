@@ -22,15 +22,19 @@ definitions:
       namespace:
         type: string
       object:
-        description: What they want to do it to (e.g., "document:123")
         type: string
       relation:
-        description: What they want to do (e.g., "read", "write", "delete")
         type: string
+      tenant_member:
+        allOf:
+        - $ref: '#/definitions/dto.TenantMemberDTO'
+        description: SubjectSet defines the subject that is being checked permission
+          for
     required:
     - namespace
     - object
     - relation
+    - tenant_member
     type: object
   dto.CheckPermissionResponseDTO:
     properties:
@@ -69,6 +73,8 @@ definitions:
     type: object
   dto.CreateRelationTupleRequestDTO:
     properties:
+      identifier:
+        type: string
       namespace:
         type: string
       object:
@@ -76,6 +82,7 @@ definitions:
       relation:
         type: string
     required:
+    - identifier
     - namespace
     - object
     - relation
@@ -92,6 +99,25 @@ definitions:
     - admin_url
     - name
     - public_url
+    type: object
+  dto.DelegateAccessRequestDTO:
+    properties:
+      identifier:
+        type: string
+      permission:
+        type: string
+      resource_id:
+        type: string
+      resource_type:
+        type: string
+      tenant_id:
+        type: string
+    required:
+    - identifier
+    - permission
+    - resource_id
+    - resource_type
+    - tenant_id
     type: object
   dto.IdentityChallengeVerifyDTO:
     properties:
@@ -126,6 +152,23 @@ definitions:
       phone:
         type: string
     type: object
+  dto.SelfCheckPermissionRequestDTO:
+    properties:
+      namespace:
+        description: Name of the resource's group (e.g., "document", "user")
+        type: string
+      object:
+        description: The specific resource (e.g., "document:123")
+        type: string
+      relation:
+        description: The relation between the subject and the object (e.g., "read",
+          "write", "delete")
+        type: string
+    required:
+    - namespace
+    - object
+    - relation
+    type: object
   dto.TenantDTO:
     properties:
       admin_url:
@@ -140,6 +183,18 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  dto.TenantMemberDTO:
+    properties:
+      identifier:
+        description: Identifier is the identifier of the tenant member (can be email
+          or phone number)
+        type: string
+      tenant_id:
+        type: string
+    required:
+    - identifier
+    - tenant_id
     type: object
   dto.TenantPaginationDTOResponse:
     properties:
@@ -597,6 +652,47 @@ paths:
       summary: Check permission
       tags:
       - permissions
+  /api/v1/permissions/delegate:
+    post:
+      consumes:
+      - application/json
+      description: Delegate access to a resource
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Delegate access request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DelegateAccessRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access delegated successfully
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delegate access
+      tags:
+      - permissions
   /api/v1/permissions/relation-tuples:
     post:
       consumes:
@@ -635,9 +731,42 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      security:
-      - BasicAuth: []
       summary: Create relation tuple
+      tags:
+      - permissions
+  /api/v1/permissions/self-check:
+    post:
+      consumes:
+      - application/json
+      description: Check if a subject has permission to perform an action on an object
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Permission check request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SelfCheckPermissionRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permission check result
+          schema:
+            $ref: '#/definitions/dto.CheckPermissionResponseDTO'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: User-facing permission check
       tags:
       - permissions
   /api/v1/users/challenge-verify:

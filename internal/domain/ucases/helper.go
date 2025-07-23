@@ -132,6 +132,12 @@ type otpMessage struct {
 
 // sendViaProvider simulates sending OTP via the specified channel.
 func sendViaProvider(ctx context.Context, channel, receiver, message string) error {
+	// Check if mock webhook URL is configured
+	if mockWebhookURL == "" {
+		logger.GetLogger().Warnf("MOCK_WEBHOOK_URL environment variable is not set, skipping mock message delivery to %s", receiver)
+		return fmt.Errorf("mock webhook URL not configured")
+	}
+
 	logger.GetLogger().Infof("Sending mock message to %s via %s: %s", receiver, channel, message)
 	payload := otpMessage{
 		Body: message,

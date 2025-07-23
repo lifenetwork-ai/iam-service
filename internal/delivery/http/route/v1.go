@@ -48,8 +48,10 @@ func RegisterRoutes(
 	permissionRouter := v1.Group("permissions")
 	permissionRouter.Use(middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware())
 	{
+		permissionRouter.POST("/self-check", authMiddleware.RequireAuth(), permissionHandler.SelfCheckPermission)
 		permissionRouter.POST("/check", permissionHandler.CheckPermission)
-		permissionRouter.POST("/relation-tuples", permissionHandler.CreateRelationTuple)
+		permissionRouter.POST("/relation-tuples", authMiddleware.RequireAuth(), permissionHandler.CreateRelationTuple)
+		permissionRouter.POST("/delegate", authMiddleware.RequireAuth(), permissionHandler.DelegateAccess)
 	}
 
 	// SECTION: users

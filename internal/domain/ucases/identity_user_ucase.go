@@ -13,6 +13,8 @@ import (
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
+	domainservice "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
@@ -22,23 +24,23 @@ import (
 type userUseCase struct {
 	db                        *gorm.DB
 	rateLimiter               ratelimiters.RateLimiter
-	tenantRepo                TenantRepository
-	globalUserRepo            GlobalUserRepository
-	userIdentityRepo          UserIdentityRepository
-	userIdentifierMappingRepo UserIdentifierMappingRepository
-	challengeSessionRepo      ChallengeSessionRepository
-	kratosService             KratosService
+	tenantRepo                domainrepo.TenantRepository
+	globalUserRepo            domainrepo.GlobalUserRepository
+	userIdentityRepo          domainrepo.UserIdentityRepository
+	userIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository
+	challengeSessionRepo      domainrepo.ChallengeSessionRepository
+	kratosService             domainservice.KratosService
 }
 
 func NewIdentityUserUseCase(
 	db *gorm.DB,
 	rateLimiter ratelimiters.RateLimiter,
-	challengeSessionRepo ChallengeSessionRepository,
-	tenantRepo TenantRepository,
-	globalUserRepo GlobalUserRepository,
-	userIdentityRepo UserIdentityRepository,
-	userIdentifierMappingRepo UserIdentifierMappingRepository,
-	kratosService KratosService,
+	challengeSessionRepo domainrepo.ChallengeSessionRepository,
+	tenantRepo domainrepo.TenantRepository,
+	globalUserRepo domainrepo.GlobalUserRepository,
+	userIdentityRepo domainrepo.UserIdentityRepository,
+	userIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository,
+	kratosService domainservice.KratosService,
 ) interfaces.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,
@@ -58,6 +60,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	tenantID uuid.UUID,
 	phone string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
+	// Get tenant
 	_, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
@@ -664,6 +667,9 @@ func (u *userUseCase) Profile(
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_EXTRACT_USER_FAILED", "Failed to extract user traits")
 	}
+
+	// Set user id
+	user.ID = session.Identity.Id
 
 	return &user, nil
 }

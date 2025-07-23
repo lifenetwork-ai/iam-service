@@ -13,15 +13,16 @@ import (
 	domaintypes "github.com/lifenetwork-ai/iam-service/internal/domain/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type adminUseCase struct {
-	tenantRepo       TenantRepository
-	adminAccountRepo AdminAccountRepository
+	tenantRepo       domainrepo.TenantRepository
+	adminAccountRepo domainrepo.AdminAccountRepository
 }
 
-func NewAdminUseCase(tenantRepo TenantRepository, adminAccountRepo AdminAccountRepository) interfaces.AdminUseCase {
+func NewAdminUseCase(tenantRepo domainrepo.TenantRepository, adminAccountRepo domainrepo.AdminAccountRepository) interfaces.AdminUseCase {
 	return &adminUseCase{
 		tenantRepo:       tenantRepo,
 		adminAccountRepo: adminAccountRepo,

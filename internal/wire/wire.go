@@ -7,22 +7,22 @@ import (
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
-	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	keto "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 // Struct to hold all repositories
 type Repos struct {
-	ChallengeSessionRepo      repotypes.ChallengeSessionRepository
-	GlobalUserRepo            repotypes.GlobalUserRepository
-	UserIdentityRepo          repotypes.UserIdentityRepository
-	UserIdentifierMappingRepo repotypes.UserIdentifierMappingRepository
-	TenantRepo                repotypes.TenantRepository
-	AdminAccountRepo          repotypes.AdminAccountRepository
+	ChallengeSessionRepo      domainrepo.ChallengeSessionRepository
+	GlobalUserRepo            domainrepo.GlobalUserRepository
+	UserIdentityRepo          domainrepo.UserIdentityRepository
+	UserIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository
+	TenantRepo                domainrepo.TenantRepository
+	AdminAccountRepo          domainrepo.AdminAccountRepository
 	CacheRepo                 types.CacheRepository
 }
 
@@ -67,7 +67,7 @@ func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
 		),
 		AdminUCase:      ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
 		TenantUCase:     ucases.NewTenantUseCase(repos.TenantRepo),
-		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo)),
+		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo), repos.UserIdentityRepo),
 		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background())),
 	}
 }

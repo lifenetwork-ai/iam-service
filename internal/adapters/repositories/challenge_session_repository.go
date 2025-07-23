@@ -5,15 +5,15 @@ import (
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type challengeSessionRepository struct {
 	cache types.CacheRepository
 }
 
-func NewChallengeSessionRepository(cache types.CacheRepository) interfaces.ChallengeSessionRepository {
+func NewChallengeSessionRepository(cache types.CacheRepository) domainrepo.ChallengeSessionRepository {
 	return &challengeSessionRepository{
 		cache: cache,
 	}

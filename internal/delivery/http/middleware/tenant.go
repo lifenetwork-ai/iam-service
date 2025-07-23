@@ -8,17 +8,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 // TenantMiddleware handles tenant context in requests
 type TenantMiddleware struct {
-	tenantRepo interfaces.TenantRepository
+	tenantRepo domainrepo.TenantRepository
 }
 
 // NewTenantMiddleware creates a new tenant middleware
-func NewTenantMiddleware(tenantRepo interfaces.TenantRepository) *TenantMiddleware {
+func NewTenantMiddleware(tenantRepo domainrepo.TenantRepository) *TenantMiddleware {
 	return &TenantMiddleware{
 		tenantRepo: tenantRepo,
 	}

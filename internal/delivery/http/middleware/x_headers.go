@@ -7,14 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
-	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type XHeaderValidationMiddleware struct {
-	tenantRepo repotypes.TenantRepository
+	tenantRepo domainrepo.TenantRepository
 }
 
-func NewXHeaderValidationMiddleware(tenantRepo repotypes.TenantRepository) *XHeaderValidationMiddleware {
+func NewXHeaderValidationMiddleware(tenantRepo domainrepo.TenantRepository) *XHeaderValidationMiddleware {
 	return &XHeaderValidationMiddleware{
 		tenantRepo: tenantRepo,
 	}

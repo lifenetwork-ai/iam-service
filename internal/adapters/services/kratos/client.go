@@ -7,13 +7,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/conf"
-	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	kratos "github.com/ory/kratos-client-go"
 )
 
 // Client wraps the Kratos client configuration
 type Client struct {
-	tenantRepo repotypes.TenantRepository
+	tenantRepo domainrepo.TenantRepository
 	clientMap  sync.Map // map[uuid.UUID]*tenantClient
 	config     *conf.KratosConfiguration
 }
@@ -24,7 +24,7 @@ type tenantClient struct {
 }
 
 // NewClient creates a new Kratos client
-func NewClient(cfg *conf.KratosConfiguration, tenantRepo repotypes.TenantRepository) *Client {
+func NewClient(cfg *conf.KratosConfiguration, tenantRepo domainrepo.TenantRepository) *Client {
 	return &Client{
 		tenantRepo: tenantRepo,
 		config:     cfg,

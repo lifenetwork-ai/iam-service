@@ -6,22 +6,22 @@ import (
 
 	"github.com/google/uuid"
 	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
-	repotypes "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	entities "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 const tenantCacheTTL = 7 * 24 * time.Hour
 
 type tenantRepositoryCache struct {
-	repo  repotypes.TenantRepository
+	repo  domainrepo.TenantRepository
 	cache cachetypes.CacheRepository
 }
 
 func NewTenantRepositoryCache(
-	repo repotypes.TenantRepository,
+	repo domainrepo.TenantRepository,
 	cache cachetypes.CacheRepository,
-) repotypes.TenantRepository {
+) domainrepo.TenantRepository {
 	return &tenantRepositoryCache{
 		repo:  repo,
 		cache: cache,

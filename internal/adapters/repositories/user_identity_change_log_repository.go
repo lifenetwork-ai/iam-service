@@ -6,15 +6,15 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type userIdentityChangeLogRepository struct {
 	db *gorm.DB
 }
 
-func NewUserIdentityChangeLogRepository(db *gorm.DB) interfaces.UserIdentityChangeLogRepository {
+func NewUserIdentityChangeLogRepository(db *gorm.DB) domainrepo.UserIdentityChangeLogRepository {
 	return &userIdentityChangeLogRepository{db: db}
 }
 
