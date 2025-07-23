@@ -57,7 +57,7 @@ sequenceDiagram
     - `Authorization`: Bearer {session_token} (required)
   - Request Body:
 
-    ```json
+    ```jsonc
     {
       "namespace": "string",  // Name of the resource's group (e.g., "document", "user")
       "relation": "string",   // The relation between the subject and the object (e.g., "read", "write", "delete")
@@ -67,10 +67,10 @@ sequenceDiagram
 
   - Response:
 
-    ```json
+    ```jsonc
     {
       "data": {
-        "allowed": boolean,
+        "allowed": "boolean",
         "reason": "string"  // Optional explanation for why permission was denied
       }
     }
@@ -83,7 +83,7 @@ sequenceDiagram
     - `X-Tenant-Id`: string (required)
   - Request Body:
 
-    ```json
+    ```jsonc
     {
       "namespace": "string",  // Name of the resource's group (e.g., "document", "user")
       "relation": "string",   // The relation between the subject and the object (e.g., "read", "write", "delete")
@@ -97,10 +97,10 @@ sequenceDiagram
 
   - Response:
 
-    ```json
+    ```jsonc
     {
       "data": {
-        "allowed": boolean,
+        "allowed": "boolean",
         "reason": "string"  // Optional explanation for why permission was denied
       }
     }
@@ -115,7 +115,7 @@ sequenceDiagram
     - `Authorization`: Bearer {session_token} (required)
   - Request Body:
 
-    ```json
+    ```jsonc
     {
       "namespace": "string",   // Name of the resource's group (e.g., "document", "user")
       "relation": "string",    // The relation to create (e.g., "read", "write", "delete")
@@ -126,7 +126,7 @@ sequenceDiagram
 
   - Response:
 
-    ```json
+    ```jsonc
     {
       "data": {
         "message": "Relation tuple created successfully"
@@ -140,7 +140,7 @@ sequenceDiagram
 > Without it, the API will respond with `403 Forbidden`.
 **Example Relation Tuple to Allow Delegation:**
 
-```json
+```jsonc
 {
   "namespace": "document",
   "relation": "delegate",
@@ -154,7 +154,7 @@ sequenceDiagram
     - `Authorization`: Bearer {session_token} (required)
   - Request Body:
 
-    ```json
+    ```jsonc
     {
       "resource_type": "string",  // Type of resource (e.g., "document", "user")
       "resource_id": "string",    // ID of the specific resource
@@ -165,10 +165,10 @@ sequenceDiagram
 
   - Response:
 
-    ```json
+    ```jsonc
     {
       "data": {
-        "result": boolean  // Whether the delegation was successful
+        "result": "boolean"  // Whether the delegation was successful
       }
     }
     ```
@@ -192,7 +192,7 @@ The entity requesting access, identified by their email or phone number within a
 ## Common Permission Patterns
 
 ### Document Access Control
-```json
+```jsonc
 {
   "namespace": "document",
   "relation": "read",
@@ -201,7 +201,7 @@ The entity requesting access, identified by their email or phone number within a
 ```
 
 ### User Management
-```json
+```jsonc
 {
   "namespace": "user",
   "relation": "manage",
@@ -210,7 +210,7 @@ The entity requesting access, identified by their email or phone number within a
 ```
 
 ### Project Collaboration
-```json
+```jsonc
 {
   "namespace": "project",
   "relation": "write",
@@ -222,7 +222,7 @@ The entity requesting access, identified by their email or phone number within a
 
 All endpoints may return the following error responses:
 
-```json
+```jsonc
 {
   "status": number,    // HTTP status code
   "code": "string",    // Error code
