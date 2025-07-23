@@ -233,16 +233,16 @@ func (k *kratosServiceImpl) SubmitLoginFlow(ctx context.Context, tenantID uuid.U
 }
 
 // InitializeVerificationFlow initiates a new verification flow
-func (k *kratosServiceImpl) InitializeVerificationFlow(ctx context.Context, tenantID uuid.UUID) (*kratos.VerificationFlow, error) {
+func (k *kratosServiceImpl) InitializeVerificationFlow(ctx context.Context, tenantID uuid.UUID) (string, error) {
 	publicAPI, err := k.client.PublicAPI(tenantID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get public API client: %w", err)
+		return "", fmt.Errorf("failed to get public API client: %w", err)
 	}
 	flow, _, err := publicAPI.FrontendAPI.CreateNativeVerificationFlow(ctx).Execute()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize verification flow: %w", err)
+		return "", fmt.Errorf("failed to initialize verification flow: %w", err)
 	}
-	return flow, nil
+	return flow.Id, nil
 }
 
 // GetVerificationFlow gets a verification flow
