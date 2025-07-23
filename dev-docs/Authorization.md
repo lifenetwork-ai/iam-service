@@ -32,6 +32,7 @@ sequenceDiagram
     API-->>Client: 200 OK
     
     Note over Client,Keto: Delegate Access Flow
+    Note right of Client: ⚠️ Requires "delegate" relation tuple to be created first
     Client->>API: POST /api/v1/permissions/delegate
     Note right of Client: Header: Authorization: Bearer {session_token}
     Note right of Client: Body: {resource_type, resource_id, permission, identifier}
@@ -106,7 +107,8 @@ sequenceDiagram
     ```
 
 ### Create Relation Tuple
-
+> Currently, this endpoint is open for any user to call,
+> This should restricted access to only admin or authorized service, with tenant-scoped access
 - `POST /api/v1/permissions/relation-tuples`
   - Headers:
     - `X-Tenant-Id`: string (required)
@@ -133,6 +135,18 @@ sequenceDiagram
     ```
 
 ### Delegate Access
+> ⚠️ **Important**: Before calling this endpoint, you must first create a `delegate` relation tuple via `/api/v1/permissions/relation-tuples`.  
+> This tuple grants the caller the right to delegate the specified permission on the target resource.  
+> Without it, the API will respond with `403 Forbidden`.
+**Example Relation Tuple to Allow Delegation:**
+
+```json
+{
+  "namespace": "document",
+  "relation": "delegate",
+  "object": "document:123",
+  "identifier": "alice@example.com"
+}
 
 - `POST /api/v1/permissions/delegate`
   - Headers:
