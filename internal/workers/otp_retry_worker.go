@@ -69,9 +69,10 @@ func (w *otpRetryWorker) safeRetry(ctx context.Context) {
 		w.mu.Unlock()
 	}()
 
-	logger.GetLogger().Infof("[%s] retry started", w.Name())
-	err := w.curierUseCase.RetryFailedOTPs(ctx, time.Now())
+	count, err := w.curierUseCase.RetryFailedOTPs(ctx, time.Now())
 	if err != nil {
 		logger.GetLogger().Errorf("[%s] retry failed: %v", w.Name(), err)
+	} else if count > 0 {
+		logger.GetLogger().Infof("[%s] retried %d OTPs", w.Name(), count)
 	}
 }

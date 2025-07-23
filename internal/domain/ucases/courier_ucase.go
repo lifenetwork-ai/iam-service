@@ -101,10 +101,10 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 	return nil
 }
 
-func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) *domainerrors.DomainError {
+func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (int, *domainerrors.DomainError) {
 	tasks, err := u.queue.GetDueRetryTasks(ctx, now)
 	if err != nil {
-		return domainerrors.NewInternalError("MSG_GET_RETRY_TASKS_FAILED", "Failed to fetch retry tasks").WithCause(err)
+		return 0, domainerrors.NewInternalError("MSG_GET_RETRY_TASKS_FAILED", "Failed to fetch retry tasks").WithCause(err)
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -149,5 +149,5 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) *do
 		logger.GetLogger().Errorf("Error retrying OTPs: %v", err)
 	}
 
-	return nil
+	return len(tasks), nil
 }
