@@ -427,6 +427,7 @@ func (h *permissionHandler) CheckPermission(c *gin.Context) {
 			"Invalid request payload",
 			err,
 		)
+		return
 	}
 
 	ucaseReq := types.CheckPermissionRequest{
