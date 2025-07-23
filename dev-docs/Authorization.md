@@ -147,6 +147,7 @@ sequenceDiagram
   "object": "document:123",
   "identifier": "alice@example.com"
 }
+```
 
 - `POST /api/v1/permissions/delegate`
   - Headers:
