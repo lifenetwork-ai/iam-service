@@ -99,9 +99,9 @@ func (u *userUseCase) ChallengeWithPhone(
 
 	// Create challenge session
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
-		Type:  constants.IdentifierPhone.String(),
-		Phone: phone,
-		Flow:  flow.Id,
+		IdentifierType: constants.IdentifierPhone.String(),
+		Phone:          phone,
+		FlowID:         flow.Id,
 	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
@@ -153,9 +153,9 @@ func (u *userUseCase) ChallengeWithEmail(
 
 	// Create challenge session
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
-		Type:  constants.IdentifierEmail.String(),
-		Email: email,
-		Flow:  flow.Id,
+		IdentifierType: constants.IdentifierEmail.String(),
+		Email:          email,
+		FlowID:         flow.Id,
 	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
@@ -407,7 +407,7 @@ func (u *userUseCase) ChallengeVerify(
 	}
 
 	// Get the verification flow
-	flow, err := u.kratosService.GetVerificationFlow(ctx, tenantID, sessionValue.Flow)
+	flow, err := u.kratosService.GetVerificationFlow(ctx, tenantID, sessionValue.FlowID)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get verification flow: %v", err)
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_FLOW_FAILED", "Failed to get verification flow")
@@ -421,7 +421,7 @@ func (u *userUseCase) ChallengeVerify(
 	}
 
 	// Get session
-	session, err := u.kratosService.GetSession(ctx, tenantID, sessionValue.Flow)
+	session, err := u.kratosService.GetSession(ctx, tenantID, sessionValue.FlowID)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get session: %v", err)
 		return nil, domainerrors.NewUnauthorizedError("MSG_INVALID_SESSION", "Invalid session").WithCause(err)
@@ -430,7 +430,7 @@ func (u *userUseCase) ChallengeVerify(
 	// Return authentication response
 	return &types.IdentityUserAuthResponse{
 		SessionID:       session.Id,
-		SessionToken:    sessionValue.Flow,
+		SessionToken:    sessionValue.FlowID,
 		Active:          *session.Active,
 		ExpiresAt:       session.ExpiresAt,
 		IssuedAt:        session.IssuedAt,
@@ -727,9 +727,10 @@ func (u *userUseCase) AddNewIdentifier(
 
 	// 6. Save challenge session
 	session := &domain.ChallengeSession{
-		Type:         identifierType,
-		Flow:         flow.Id,
-		GlobalUserID: globalUserID,
+		IdentifierType: identifierType,
+		FlowID:         flow.Id,
+		GlobalUserID:   globalUserID,
+		ChanllengeType: constants.ChallengeTypeAddIdentifier,
 	}
 	if identifierType == constants.IdentifierEmail.String() {
 		session.Email = identifier

@@ -44,6 +44,7 @@ const (
 	ChallengeTypeLogin            = "login"
 	ChallengeTypeRegister         = "register"
 	ChallengeTypeChangeIdentifier = "change_identifier"
+	ChallengeTypeAddIdentifier    = "add_identifier"
 )
 
 // HTTP Headers
