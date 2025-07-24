@@ -262,17 +262,16 @@ func (k *kratosServiceImpl) GetVerificationFlow(ctx context.Context, tenantID uu
 }
 
 // SubmitVerificationFlow submits a verification flow
-func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flowID, code string) (*kratos.VerificationFlow, error) {
+func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flowID string, code *string) (*kratos.VerificationFlow, error) {
 	publicAPI, err := k.client.PublicAPI(tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get public API client: %w", err)
 	}
 
-	codePtr := code
 	body := kratos.UpdateVerificationFlowBody{
 		UpdateVerificationFlowWithCodeMethod: &kratos.UpdateVerificationFlowWithCodeMethod{
 			Method: constants.MethodTypeCode.String(),
-			Code:   &codePtr,
+			Code:   code,
 		},
 	}
 
@@ -293,14 +292,14 @@ func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID
 	return result, nil
 }
 
-// SubmitVerificationFlowWithIdentifier submits a verification flow with an identifier (email or phone)
-func (k *kratosServiceImpl) SubmitVerificationFlowWithIdentifier(
+// CompleteVerificationFlow completes a verification flow with identifier and code
+func (k *kratosServiceImpl) CompleteVerificationFlow(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	flowID string,
-	code string,
 	identifier string,
 	identifierType string,
+	code *string,
 ) (*kratos.VerificationFlow, error) {
 	publicAPI, err := k.client.PublicAPI(tenantID)
 	if err != nil {
@@ -312,8 +311,7 @@ func (k *kratosServiceImpl) SubmitVerificationFlowWithIdentifier(
 	endpoint := fmt.Sprintf("%s/self-service/verification?flow=%s", publicURL, flowID)
 
 	payload := map[string]interface{}{
-		"code":   code,
-		"method": "code",
+		"method": constants.MethodTypeCode.String(),
 	}
 
 	switch identifierType {
@@ -321,6 +319,11 @@ func (k *kratosServiceImpl) SubmitVerificationFlowWithIdentifier(
 		payload["phone"] = identifier
 	default:
 		payload["email"] = identifier
+	}
+
+	// Only include code if not nil
+	if code != nil {
+		payload["code"] = *code
 	}
 
 	reqBody, err := json.Marshal(payload)

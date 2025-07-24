@@ -414,7 +414,7 @@ func (u *userUseCase) ChallengeVerify(
 	}
 
 	// Submit verification flow with code
-	_, err = u.kratosService.SubmitVerificationFlow(ctx, tenantID, flow.Id, code)
+	_, err = u.kratosService.SubmitVerificationFlow(ctx, tenantID, flow.Id, &code)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to submit verification flow with code: %v", err)
 		return nil, domainerrors.NewValidationError("MSG_VERIFICATION_FAILED", "Verification failed", []interface{}{err.Error()})
