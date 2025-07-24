@@ -182,6 +182,11 @@ func (u *userUseCase) VerifyRegister(
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
 
+	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, flowID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_CHALLENGE_SESSION_NOT_FOUND", "Challenge session not found")
+	}
+
 	flow, err := u.kratosService.GetRegistrationFlow(ctx, tenantID, flowID)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get registration flow: %v", err)
@@ -228,11 +233,22 @@ func (u *userUseCase) VerifyRegister(
 		})
 	}
 
-	// Bind IAM to registration
-	if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, identifier, identifierType)
-	}); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_IAM_REGISTRATION_FAILED", "Failed to bind IAM to registration")
+	if sessionValue.ChallengeType == constants.ChallengeTypeAddIdentifier {
+		// Handle add identifier challenge
+		if err := u.userIdentityRepo.FirstOrCreate(u.db, &domain.UserIdentity{
+			GlobalUserID: sessionValue.GlobalUserID,
+			Type:         identifierType,
+			Value:        identifier,
+		}); err != nil {
+			return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add new identifier")
+		}
+	} else {
+		// Bind IAM to registration
+		if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, identifier, identifierType)
+		}); err != nil {
+			return nil, domainerrors.WrapInternal(err, "MSG_IAM_REGISTRATION_FAILED", "Failed to bind IAM to registration")
+		}
 	}
 
 	// Delete challenge session
@@ -722,15 +738,13 @@ func (u *userUseCase) AddNewIdentifier(
 		identifierType: identifier,
 	}
 	if _, err := u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Adding identifier failed").WithCause(err)
+		return nil, domainerrors.WrapInternal(err, "MSG_REGISTRATION_FAILED", "Registration failed").WithCause(err)
 	}
 
 	// 6. Save challenge session
 	session := &domain.ChallengeSession{
-		IdentifierType: identifierType,
-		FlowID:         flow.Id,
-		GlobalUserID:   globalUserID,
-		ChanllengeType: constants.ChallengeTypeAddIdentifier,
+		GlobalUserID:  globalUserID,
+		ChallengeType: constants.ChallengeTypeAddIdentifier,
 	}
 	if identifierType == constants.IdentifierEmail.String() {
 		session.Email = identifier

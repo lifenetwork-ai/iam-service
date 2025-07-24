@@ -3,7 +3,7 @@ package domain
 type ChallengeSession struct {
 	GlobalUserID   string `json:"global_user_id"`
 	IdentifierType string `json:"identifier_type"`
-	ChanllengeType string `json:"challenge_type"`
+	ChallengeType  string `json:"challenge_type"`
 	Email          string `json:"email,omitempty"`
 	Phone          string `json:"phone,omitempty"`
 	OTP            string `json:"otp"`
