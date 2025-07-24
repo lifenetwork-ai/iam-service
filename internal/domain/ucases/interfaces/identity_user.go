@@ -72,4 +72,12 @@ type IdentityUserUseCase interface {
 		ctx context.Context,
 		tenantID uuid.UUID,
 	) (*types.IdentityUserResponse, *errors.DomainError)
+
+	AddNewIdentifier(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		globalUserID string,
+		identifier string,
+		identifierType string,
+	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
 }

@@ -46,18 +46,17 @@ type UserIdentityChangeLogRepository interface {
 
 type UserIdentifierMappingRepository interface {
 	ExistsByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (bool, error)
-	GetByGlobalUserID(ctx context.Context, globalUserID string) ([]domain.UserIdentifierMapping, error)
 	ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error)
 	Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
 	GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error)
 }
 
 type UserIdentityRepository interface {
-	GetByGlobalUserID(ctx context.Context, globalUserID string) ([]domain.UserIdentity, error)
 	GetByTypeAndValue(ctx context.Context, tx *gorm.DB, identityType, value string) (*domain.UserIdentity, error)
-	FindGlobalUserIDByIdentity(ctx context.Context, identityType, value string) (string, error)
+	FindGlobalUserIDByIdentity(ctx context.Context, tenantID, identityType, value string) (string, error)
 	FirstOrCreate(tx *gorm.DB, identity *domain.UserIdentity) error
 	Update(tx *gorm.DB, identity *domain.UserIdentity) error
 	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
 	GetByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (*domain.UserIdentity, error)
+	ExistsByGlobalUserIDAndType(ctx context.Context, globalUserID, identityType string) (bool, error)
 }

@@ -28,9 +28,9 @@ func TestChallengeSessionRepository(t *testing.T) {
 		// Test data
 		sessionID := "test-session-123"
 		challenge := &domain.ChallengeSession{
-			Type:  "email",
-			Email: "test@example.com",
-			OTP:   "123456",
+			IdentifierType: "email",
+			Email:          "test@example.com",
+			OTP:            "123456",
 		}
 		ttl := 5 * time.Minute
 
@@ -42,7 +42,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		var retrieved *domain.ChallengeSession
 		err = mockCache.RetrieveItem(sessionKey(sessionID), &retrieved)
 		require.NoError(t, err)
-		assert.Equal(t, challenge.Type, retrieved.Type)
+		assert.Equal(t, challenge.IdentifierType, retrieved.IdentifierType)
 		assert.Equal(t, challenge.Email, retrieved.Email)
 		assert.Equal(t, challenge.OTP, retrieved.OTP)
 
@@ -50,7 +50,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		retrievedChallenge, err := repo.GetChallenge(ctx, sessionID)
 		require.NoError(t, err)
 		assert.NotNil(t, retrievedChallenge)
-		assert.Equal(t, challenge.Type, retrievedChallenge.Type)
+		assert.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
 		assert.Equal(t, challenge.Email, retrievedChallenge.Email)
 		assert.Equal(t, challenge.OTP, retrievedChallenge.OTP)
 	})
@@ -66,9 +66,9 @@ func TestChallengeSessionRepository(t *testing.T) {
 		// Test data
 		sessionID := "test-session-456"
 		challenge := &domain.ChallengeSession{
-			Type:  constants.IdentifierPhone.String(),
-			Phone: "+1234567890",
-			OTP:   "654321",
+			IdentifierType: constants.IdentifierPhone.String(),
+			Phone:          "+1234567890",
+			OTP:            "654321",
 		}
 		ttl := 5 * time.Minute
 
@@ -80,7 +80,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		var retrieved *domain.ChallengeSession
 		err = mockCache.RetrieveItem(sessionKey(sessionID), &retrieved)
 		require.NoError(t, err)
-		assert.Equal(t, challenge.Type, retrieved.Type)
+		assert.Equal(t, challenge.IdentifierType, retrieved.IdentifierType)
 		assert.Equal(t, challenge.Phone, retrieved.Phone)
 		assert.Equal(t, challenge.OTP, retrieved.OTP)
 
@@ -88,7 +88,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		retrievedChallenge, err := repo.GetChallenge(ctx, sessionID)
 		require.NoError(t, err)
 		assert.NotNil(t, retrievedChallenge)
-		assert.Equal(t, challenge.Type, retrievedChallenge.Type)
+		assert.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
 		assert.Equal(t, challenge.Phone, retrievedChallenge.Phone)
 		assert.Equal(t, challenge.OTP, retrievedChallenge.OTP)
 	})

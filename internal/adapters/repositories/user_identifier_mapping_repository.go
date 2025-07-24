@@ -30,16 +30,6 @@ func (r *userIdentifierMappingRepository) ExistsByTenantAndTenantUserID(
 	return count > 0, nil
 }
 
-func (r *userIdentifierMappingRepository) GetByGlobalUserID(ctx context.Context, globalUserID string) ([]domain.UserIdentifierMapping, error) {
-	var mappings []domain.UserIdentifierMapping
-	if err := r.db.WithContext(ctx).
-		Where("global_user_id = ?", globalUserID).
-		Find(&mappings).Error; err != nil {
-		return nil, err
-	}
-	return mappings, nil
-}
-
 func (r *userIdentifierMappingRepository) GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error) {
 	var mapping domain.UserIdentifierMapping
 	if err := r.db.WithContext(ctx).

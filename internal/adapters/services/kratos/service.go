@@ -18,7 +18,8 @@ import (
 )
 
 type kratosServiceImpl struct {
-	client *Client
+	client     *Client
+	httpClient *http.Client
 }
 
 // NewKratosService creates a new instance of KratosService
@@ -26,7 +27,8 @@ func NewKratosService(tenantRepo domainrepo.TenantRepository) domainservice.Krat
 	config := conf.GetKratosConfig()
 	client := NewClient(config, tenantRepo)
 	return &kratosServiceImpl{
-		client: client,
+		client:     client,
+		httpClient: http.DefaultClient,
 	}
 }
 
@@ -233,16 +235,16 @@ func (k *kratosServiceImpl) SubmitLoginFlow(ctx context.Context, tenantID uuid.U
 }
 
 // InitializeVerificationFlow initiates a new verification flow
-func (k *kratosServiceImpl) InitializeVerificationFlow(ctx context.Context, tenantID uuid.UUID) (*kratos.VerificationFlow, error) {
+func (k *kratosServiceImpl) InitializeVerificationFlow(ctx context.Context, tenantID uuid.UUID) (string, error) {
 	publicAPI, err := k.client.PublicAPI(tenantID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get public API client: %w", err)
+		return "", fmt.Errorf("failed to get public API client: %w", err)
 	}
 	flow, _, err := publicAPI.FrontendAPI.CreateNativeVerificationFlow(ctx).Execute()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize verification flow: %w", err)
+		return "", fmt.Errorf("failed to initialize verification flow: %w", err)
 	}
-	return flow, nil
+	return flow.Id, nil
 }
 
 // GetVerificationFlow gets a verification flow
@@ -259,22 +261,21 @@ func (k *kratosServiceImpl) GetVerificationFlow(ctx context.Context, tenantID uu
 }
 
 // SubmitVerificationFlow submits a verification flow
-func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flow *kratos.VerificationFlow, code string) (*kratos.VerificationFlow, error) {
+func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flowID string, code *string) (*kratos.VerificationFlow, error) {
 	publicAPI, err := k.client.PublicAPI(tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get public API client: %w", err)
 	}
 
-	codePtr := code
 	body := kratos.UpdateVerificationFlowBody{
 		UpdateVerificationFlowWithCodeMethod: &kratos.UpdateVerificationFlowWithCodeMethod{
 			Method: constants.MethodTypeCode.String(),
-			Code:   &codePtr,
+			Code:   code,
 		},
 	}
 
 	result, resp, err := publicAPI.FrontendAPI.UpdateVerificationFlow(ctx).
-		Flow(flow.Id).
+		Flow(flowID).
 		UpdateVerificationFlowBody(body).
 		Execute()
 	if err != nil {
@@ -282,7 +283,7 @@ func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID
 			if err := parseKratosErrorResponse(resp, fmt.Errorf("verification failed: %w", err)); err != nil {
 				return nil, err
 			}
-			return flow, nil
+			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to submit verification flow: %w", err)
 	}

@@ -17,14 +17,6 @@ func NewUserIdentityRepository(db *gorm.DB) domainrepo.UserIdentityRepository {
 	return &userIdentityRepository{db: db}
 }
 
-func (r *userIdentityRepository) GetByGlobalUserID(ctx context.Context, globalUserID string) ([]domain.UserIdentity, error) {
-	var list []domain.UserIdentity
-	if err := r.db.WithContext(ctx).Where("global_user_id = ?", globalUserID).Find(&list).Error; err != nil {
-		return nil, err
-	}
-	return list, nil
-}
-
 func (r *userIdentityRepository) GetByTypeAndValue(
 	ctx context.Context,
 	tx *gorm.DB,
@@ -47,14 +39,24 @@ func (r *userIdentityRepository) GetByTypeAndValue(
 	return &identity, nil
 }
 
-func (r *userIdentityRepository) FindGlobalUserIDByIdentity(ctx context.Context, identityType, value string) (string, error) {
+func (r *userIdentityRepository) FindGlobalUserIDByIdentity(
+	ctx context.Context,
+	tenantID string,
+	identityType string,
+	value string,
+) (string, error) {
 	var identity domain.UserIdentity
-	if err := r.db.WithContext(ctx).
-		Select("global_user_id").
-		Where("type = ? AND value = ?", identityType, value).
-		First(&identity).Error; err != nil {
+
+	err := r.db.WithContext(ctx).
+		Model(&domain.UserIdentity{}).
+		Select("user_identities.global_user_id").
+		Joins("JOIN user_identifier_mapping ON user_identifier_mapping.global_user_id = user_identities.global_user_id").
+		Where("user_identifier_mapping.tenant_id = ? AND user_identities.type = ? AND user_identities.value = ?", tenantID, identityType, value).
+		First(&identity).Error
+	if err != nil {
 		return "", err
 	}
+
 	return identity.GlobalUserID, nil
 }
 
@@ -105,4 +107,17 @@ func (r *userIdentityRepository) GetByTenantAndTenantUserID(
 		return nil, err
 	}
 	return &identity, nil
+}
+
+// ExistsByGlobalUserIDAndType checks if a user identity exists by global user ID and type
+func (r *userIdentityRepository) ExistsByGlobalUserIDAndType(ctx context.Context, globalUserID, identityType string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&domain.UserIdentity{}).
+		Where("global_user_id = ? AND type = ?", globalUserID, identityType).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

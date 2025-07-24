@@ -145,6 +145,14 @@ definitions:
       phone:
         type: string
     type: object
+  dto.IdentityUserAddIdentifierDTO:
+    properties:
+      new_identifier:
+        description: email address or phone number
+        type: string
+    required:
+    - new_identifier
+    type: object
   dto.IdentityUserRegisterDTO:
     properties:
       email:
@@ -295,6 +303,8 @@ definitions:
       first_name:
         type: string
       full_name:
+        type: string
+      global_user_id:
         type: string
       id:
         type: string
@@ -974,6 +984,59 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Get user profile
+      tags:
+      - users
+  /api/v1/users/me/add-identifier:
+    post:
+      consumes:
+      - application/json
+      description: Add a verified identifier (email or phone) to current user
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Identifier info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserAddIdentifierDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent for verification
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.IdentityUserChallengeResponse'
+              type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Identifier or type already exists
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Add new identifier (email or phone)
       tags:
       - users
   /api/v1/users/register:
