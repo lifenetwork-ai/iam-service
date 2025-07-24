@@ -25,7 +25,8 @@ type KratosService interface {
 	// Verification flow
 	InitializeVerificationFlow(ctx context.Context, tenantID uuid.UUID) (string, error)
 	GetVerificationFlow(ctx context.Context, tenantID uuid.UUID, flowID string) (*kratos.VerificationFlow, error)
-	SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flow *kratos.VerificationFlow, code string) (*kratos.VerificationFlow, error)
+	SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flowID, code string) (*kratos.VerificationFlow, error)
+	SubmitVerificationFlowWithIdentifier(ctx context.Context, tenantID uuid.UUID, flowID, code, identifier, identifierType string) (*kratos.VerificationFlow, error)
 
 	// Logout flow
 	Logout(ctx context.Context, tenantID uuid.UUID, sessionToken string) error
