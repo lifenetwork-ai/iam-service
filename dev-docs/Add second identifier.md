@@ -5,7 +5,7 @@ This document describes the process by which an authenticated user can add a new
 
 ---
 
-## 🔁 Sequence Diagram
+## Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -34,7 +34,7 @@ sequenceDiagram
 
 ---
 
-## 🧩 API Endpoint
+## API Endpoint
 
 ### `POST /api/v1/users/me/add-identifier`
 
@@ -67,7 +67,7 @@ Allows an authenticated user to add an additional identifier (email or phone) to
 
 ---
 
-## 🔐 Flow Logic
+## Flow Logic
 
 | Step | Description |
 |------|-------------|
@@ -81,7 +81,7 @@ Allows an authenticated user to add an additional identifier (email or phone) to
 
 ---
 
-## 🚫 Error Responses
+## Error Responses
 
 All responses follow the standard error format:
 
@@ -118,7 +118,7 @@ All responses follow the standard error format:
 
 ---
 
-## 🛡️ Security Considerations
+## Security Considerations
 
 | Area | Control |
 |------|---------|
@@ -131,7 +131,7 @@ All responses follow the standard error format:
 
 ---
 
-## ✅ Best Practices
+## Best Practices
 
 ### System Design
 
@@ -154,7 +154,7 @@ All responses follow the standard error format:
 
 ---
 
-## 🧪 Example Request
+## Example Request
 
 ```http
 POST /api/v1/users/me/add-identifier
