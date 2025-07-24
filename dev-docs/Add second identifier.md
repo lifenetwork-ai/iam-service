@@ -71,13 +71,13 @@ Allows an authenticated user to add an additional identifier (email or phone) to
 
 | Step | Description |
 |------|-------------|
-| ✅ 1 | Validate identifier format (email or phone) |
-| ✅ 2 | Ensure identifier is **not already registered** within tenant |
-| ✅ 3 | Ensure user doesn't already have another identifier of the same type |
-| ✅ 4 | Initialize Kratos registration flow |
-| ✅ 5 | Submit minimal `traits` to Kratos (email or phone only) to trigger OTP |
-| ✅ 6 | Save challenge session to database |
-| ✅ 7 | Return flow info to client for verification |
+| 1 | Validate identifier format (email or phone) |
+| 2 | Ensure identifier is **not already registered** within tenant |
+| 3 | Ensure user doesn't already have another identifier of the same type |
+| 4 | Initialize Kratos registration flow |
+| 5 | Submit minimal `traits` to Kratos (email or phone only) to trigger OTP |
+| 6 | Save challenge session to database |
+| 7 | Return flow info to client for verification |
 
 ---
 
