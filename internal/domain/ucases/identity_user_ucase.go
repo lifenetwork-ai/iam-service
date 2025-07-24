@@ -681,8 +681,26 @@ func (u *userUseCase) Profile(
 		return nil, domainerrors.WrapInternal(err, "MSG_EXTRACT_USER_FAILED", "Failed to extract user traits")
 	}
 
+	// If user has no email or phone, return error
+	identifier := user.Email
+	if identifier == "" {
+		identifier = user.Phone
+	}
+
+	identifierType, err := utils.GetIdentifierType(identifier)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIER_TYPE_FAILED", "Failed to get identifier type")
+	}
+
+	// Lookup global user ID
+	globalUserID, err := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, tenantID.String(), identifierType, identifier)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_LOOKUP_FAILED", "Failed to lookup user ID")
+	}
+
 	// Set user id
 	user.ID = session.Identity.Id
+	user.GlobalUserID = globalUserID
 
 	return &user, nil
 }

@@ -26,3 +26,8 @@ type IdentityUserLoginDTO struct {
 	UserName string `json:"user_name"`
 	Password string `json:"password"`
 }
+
+// IdentityUserChangeIdentifierDTO represents the request for changing an identifier.
+type IdentityUserAddIdentifierDTO struct {
+	Identifier string `json:"identifier" binding:"required"` // email address or phone number
+}

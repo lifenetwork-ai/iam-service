@@ -13,6 +13,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 type userHandler struct {
@@ -374,4 +375,54 @@ func validateRegisterPayload(reqPayload dto.IdentityUserRegisterDTO) *dto.ErrorD
 	}
 
 	return nil
+}
+
+// AddIdentifier to bind additional login identifier to current user.
+// @Summary Add new identifier (email or phone)
+// @Description Add a verified identifier (email or phone) to current user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)"
+// @Param body body dto.IdentityUserAddIdentifierDTO true "Identifier info"
+// @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent for verification"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 409 {object} response.ErrorResponse "Identifier or type already exists"
+// @Failure 429 {object} response.ErrorResponse "Rate limit exceeded"
+// @Failure 500 {object} response.ErrorResponse "Internal server error"
+// @Router /api/v1/users/me/add-identifier [post]
+func (h *userHandler) AddIdentifier(ctx *gin.Context) {
+	tenant, err := middleware.GetTenantFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
+		return
+	}
+
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "MSG_UNAUTHORIZED", "Unauthorized", nil)
+		return
+	}
+
+	var req dto.IdentityUserAddIdentifierDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
+		return
+	}
+
+	// Validate identifier type
+	identifierType, err := utils.GetIdentifierType(req.Identifier)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", err)
+		return
+	}
+
+	result, usecaseErr := h.ucase.AddNewIdentifier(ctx, tenant.ID, user.GlobalUserID, req.Identifier, identifierType)
+	if usecaseErr != nil {
+		handleDomainError(ctx, usecaseErr)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, result)
 }
