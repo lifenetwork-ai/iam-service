@@ -730,7 +730,7 @@ func (u *userUseCase) AddNewIdentifier(
 		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_ALREADY_EXISTS", "Identifier has already been registered", nil)
 	}
 
-	// 2b. Check if user already has this identifier type
+	// 3. Check if user already has this identifier type
 	hasType, err := u.userIdentityRepo.ExistsByGlobalUserIDAndType(ctx, globalUserID, identifierType)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identity type")
@@ -739,27 +739,36 @@ func (u *userUseCase) AddNewIdentifier(
 		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS", fmt.Sprintf("User already has an identifier of type %s", identifierType), nil)
 	}
 
-	// 3. Rate limit
+	// 4. Rate limit
 	key := fmt.Sprintf("challenge:add:%s:%s", identifierType, identifier)
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
 
-	// 4. Init Kratos Registration Flow
+	// 5. Init Kratos Registration Flow
 	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_INIT_REG_FLOW_FAILED", "Failed to initialize registration flow")
 	}
 
-	// 5. Submit minimal traits to trigger OTP (email or phone)
-	traits := map[string]interface{}{
-		identifierType: identifier,
+	tenant, err := u.tenantRepo.GetByID(tenantID)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to initialize registration flow: %v", err)
+		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
+
+	// Prepare traits
+	traits := map[string]interface{}{
+		"tenant": tenant.Name,
+	}
+	traits[identifierType] = identifier
+
+	// 6. Submit minimal traits to trigger OTP (email or phone)
 	if _, err := u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_REGISTRATION_FAILED", "Registration failed").WithCause(err)
 	}
 
-	// 6. Save challenge session
+	// 7. Save challenge session
 	session := &domain.ChallengeSession{
 		GlobalUserID:  globalUserID,
 		ChallengeType: constants.ChallengeTypeAddIdentifier,
@@ -775,7 +784,7 @@ func (u *userUseCase) AddNewIdentifier(
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
 	}
 
-	// 7. Return response
+	// 8. Return response
 	return &types.IdentityUserChallengeResponse{
 		FlowID:      flow.Id,
 		Receiver:    identifier,
