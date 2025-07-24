@@ -17,14 +17,6 @@ func NewUserIdentityRepository(db *gorm.DB) domainrepo.UserIdentityRepository {
 	return &userIdentityRepository{db: db}
 }
 
-func (r *userIdentityRepository) GetByGlobalUserID(ctx context.Context, globalUserID string) ([]domain.UserIdentity, error) {
-	var list []domain.UserIdentity
-	if err := r.db.WithContext(ctx).Where("global_user_id = ?", globalUserID).Find(&list).Error; err != nil {
-		return nil, err
-	}
-	return list, nil
-}
-
 func (r *userIdentityRepository) GetByTypeAndValue(
 	ctx context.Context,
 	tx *gorm.DB,
