@@ -1,5 +1,5 @@
 
-# Add Identifier Flow Documentation
+# Add Second Identifier Flow Documentation
 
 This document describes the process by which an authenticated user can add a new login identifier (email or phone) to their account using an OTP-based verification flow. This flow is handled separately from login and registration flows to ensure user identity remains consistent.
 
