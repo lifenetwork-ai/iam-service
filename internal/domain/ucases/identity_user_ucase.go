@@ -471,25 +471,22 @@ func (u *userUseCase) Register(
 	}
 
 	// Check if identifier (email/phone) already exists in IAM
+	var identifierType string
+	var identifierValue string
 	if email != "" {
-		exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), constants.IdentifierEmail.String(), email)
-		if err != nil {
-			return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing email identity")
-		}
-		if exists {
-			return nil, domainerrors.NewConflictError("MSG_EMAIL_ALREADY_EXISTS", "Email has already been registered", nil)
-		}
+		identifierType = constants.IdentifierEmail.String()
+		identifierValue = email
+	} else {
+		identifierType = constants.IdentifierPhone.String()
+		identifierValue = phone
 	}
 
-	if phone != "" {
-		exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), constants.IdentifierPhone.String(), phone)
-		if err != nil {
-			return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing phone identity")
-		}
-
-		if exists {
-			return nil, domainerrors.NewConflictError("MSG_PHONE_ALREADY_EXISTS", "Phone number has already been registered", nil)
-		}
+	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), identifierType, identifierValue)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
+	}
+	if exists {
+		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_ALREADY_EXISTS", "Identifier has already been registered", nil)
 	}
 
 	// Initialize registration flow with Kratos
@@ -672,4 +669,83 @@ func (u *userUseCase) Profile(
 	user.ID = session.Identity.Id
 
 	return &user, nil
+}
+
+// AddNewIdentifier adds a new identifier (email or phone) to a user
+func (u *userUseCase) AddNewIdentifier(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	globalUserID string,
+	identifier string,
+	identifierType string,
+) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
+	// 1. Validate input
+	if identifierType == constants.IdentifierEmail.String() && !utils.IsEmail(identifier) {
+		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
+	}
+	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneNumber(identifier) {
+		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number", nil)
+	}
+
+	// 2. Check if identifier already exists globally
+	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), identifierType, identifier)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
+	}
+	if exists {
+		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_ALREADY_EXISTS", "Identifier has already been registered", nil)
+	}
+
+	// 2b. Check if user already has this identifier type
+	hasType, err := u.userIdentityRepo.ExistsByGlobalUserIDAndType(ctx, globalUserID, identifierType)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identity type")
+	}
+	if hasType {
+		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS", fmt.Sprintf("User already has an identifier of type %s", identifierType), nil)
+	}
+
+	// 3. Rate limit
+	key := fmt.Sprintf("challenge:add:%s:%s", identifierType, identifier)
+	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+	}
+
+	// 4. Init Kratos Registration Flow
+	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_INIT_REG_FLOW_FAILED", "Failed to initialize registration flow")
+	}
+
+	// 5. Submit minimal traits to trigger OTP (email or phone)
+	traits := map[string]interface{}{
+		identifierType: identifier,
+	}
+	if _, err := u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Adding identifier failed").WithCause(err)
+	}
+
+	// 6. Save challenge session
+	session := &domain.ChallengeSession{
+		Type:         identifierType,
+		Flow:         flow.Id,
+		GlobalUserID: globalUserID,
+	}
+	if identifierType == constants.IdentifierEmail.String() {
+		session.Email = identifier
+	}
+	if identifierType == constants.IdentifierPhone.String() {
+		session.Phone = identifier
+	}
+
+	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
+	}
+
+	// 7. Return response
+	return &types.IdentityUserChallengeResponse{
+		FlowID:      flow.Id,
+		Receiver:    identifier,
+		ChallengeAt: time.Now().Unix(),
+	}, nil
 }
