@@ -85,10 +85,17 @@ func RegisterRoutes(
 		authMiddleware.RequireAuth(),
 		userHandler.Logout,
 	)
+
 	userRouter.GET(
 		"/me",
 		authMiddleware.RequireAuth(),
 		userHandler.Me,
+	)
+
+	userRouter.POST(
+		"/me/add-identifier",
+		authMiddleware.RequireAuth(),
+		userHandler.AddIdentifier,
 	)
 
 	// SECTION: Courier (OTP delivery) routes

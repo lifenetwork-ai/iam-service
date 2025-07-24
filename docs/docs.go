@@ -1388,10 +1388,10 @@ const docTemplate = `{
         "dto.IdentityUserAddIdentifierDTO": {
             "type": "object",
             "required": [
-                "identifier"
+                "new_identifier"
             ],
             "properties": {
-                "identifier": {
+                "new_identifier": {
                     "description": "email address or phone number",
                     "type": "string"
                 }

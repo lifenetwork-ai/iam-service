@@ -147,11 +147,11 @@ definitions:
     type: object
   dto.IdentityUserAddIdentifierDTO:
     properties:
-      identifier:
+      new_identifier:
         description: email address or phone number
         type: string
     required:
-    - identifier
+    - new_identifier
     type: object
   dto.IdentityUserRegisterDTO:
     properties:
