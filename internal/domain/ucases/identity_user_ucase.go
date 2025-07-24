@@ -740,7 +740,7 @@ func (u *userUseCase) AddNewIdentifier(
 	}
 
 	// 4. Rate limit
-	key := fmt.Sprintf("challenge:add:%s:%s", identifierType, identifier)
+	key := fmt.Sprintf("challenge:add:tenant:%s:%s", identifier, tenantID.String())
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
