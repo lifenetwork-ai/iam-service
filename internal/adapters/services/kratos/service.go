@@ -1,7 +1,6 @@
 package kratos
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -290,77 +289,6 @@ func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID
 	}
 
 	return result, nil
-}
-
-// CompleteVerificationFlow completes a verification flow with identifier and code
-func (k *kratosServiceImpl) CompleteVerificationFlow(
-	ctx context.Context,
-	tenantID uuid.UUID,
-	flowID string,
-	identifier string,
-	identifierType string,
-	code *string,
-) (*kratos.VerificationFlow, error) {
-	publicAPI, err := k.client.PublicAPI(tenantID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get public API client: %w", err)
-	}
-
-	publicURL := publicAPI.GetConfig().Host
-
-	endpoint := fmt.Sprintf("%s/self-service/verification?flow=%s", publicURL, flowID)
-
-	payload := map[string]interface{}{
-		"method": constants.MethodTypeCode.String(),
-	}
-
-	switch identifierType {
-	case constants.IdentifierPhone.String():
-		payload["phone"] = identifier
-	default:
-		payload["email"] = identifier
-	}
-
-	// Only include code if not nil
-	if code != nil {
-		payload["code"] = *code
-	}
-
-	reqBody, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal payload: %w", err)
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Accept", "application/json")
-
-	resp, err := k.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Handle response
-	if resp.StatusCode == http.StatusOK {
-		var result kratos.VerificationFlow
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			return nil, fmt.Errorf("failed to decode verification flow response: %w", err)
-		}
-		return &result, nil
-	}
-
-	if resp.StatusCode == http.StatusBadRequest {
-		if err := parseKratosErrorResponse(resp, fmt.Errorf("verification failed")); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}
-
-	return nil, fmt.Errorf("unexpected response from verification API: %s", resp.Status)
 }
 
 // Logout logs out the user

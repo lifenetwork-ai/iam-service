@@ -106,3 +106,16 @@ func (r *userIdentityRepository) GetByTenantAndTenantUserID(
 	}
 	return &identity, nil
 }
+
+// ExistsByGlobalUserIDAndType checks if a user identity exists by global user ID and type
+func (r *userIdentityRepository) ExistsByGlobalUserIDAndType(ctx context.Context, globalUserID, identityType string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&domain.UserIdentity{}).
+		Where("global_user_id = ? AND type = ?", globalUserID, identityType).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
