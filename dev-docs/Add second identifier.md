@@ -180,4 +180,4 @@ X-Tenant-Id: tenant-123
 
 ---
 
-> ✅ Continue verification via `POST /api/v1/users/challenge-verify` with the returned `flow_id` and OTP `code` to complete the identifier linking. `type` must be "register" when verifying a new identifier.
+> Continue verification via `POST /api/v1/users/challenge-verify` with the returned `flow_id` and OTP `code` to complete the identifier linking. `type` must be "register" when verifying a new identifier.
