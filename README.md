@@ -9,9 +9,6 @@ go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 - `make swagger`
 - http://localhost:8080/swagger/index.html
 
-### How to wire dependencies
-- `make wiring`
-
 ### How to run linter
 - `make lint`
 
