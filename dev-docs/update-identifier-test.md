@@ -4,15 +4,15 @@
 - Base URL: http://localhost:8080
 - Test Tenant: c7928076-2cfc-49c3-b7ea-d7519ad52929 (Genetica)
 - Test User Email: testuser@example.com
-- Test User Phone: +84321339333
+- Test User Phone: +84321555555
 - New Email for Update: updated@example.com
-- New Phone for Update: +84321339334
+- New Phone for Update: +84321666666
 - Webhook URL: https://webhook.site/50c8ecda-46f3-439f-ab7b-9ae576ecde23
 
 ## Test Plan: Full Happy Case Flow
 
 ### Step 1: User Registration (Initial Setup) ✅ COMPLETED
-First, we need to register a user with an initial identifier (email or phone).
+First, we need to register a user with an initial identifier (phone).
 
 ```bash
 # Register user with phone
@@ -21,7 +21,7 @@ curl -X POST 'http://localhost:8080/api/v1/users/register' \
   -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
   -H 'Content-Type: application/json' \
   -d '{
-    "phone": "+84321339666"
+    "phone": "+84321555555"
   }'
 
 # Response:
@@ -32,31 +32,31 @@ curl -X POST 'http://localhost:8080/api/v1/users/register' \
   "data": {
     "verification_needed": true,
     "verification_flow": {
-      "flow_id": "4413975e-2c3a-45fe-9202-6f1082aa7ba5",
-      "receiver": "+84321339333",
-      "challenge_at": 1753604648
+      "flow_id": "10fb4dbb-19ef-4804-b36d-8c6fc6e2536e",
+      "receiver": "+84321555555",
+      "challenge_at": 1753632307
     }
   }
 }
 ```
 
 ### Step 2: Verify Registration with OTP ✅ COMPLETED
-**STATUS**: Challenge sessions are now working correctly with proper TTL
+**STATUS**: Challenge sessions are working correctly with proper TTL
 
 ```bash
 # Get OTP from webhook
 curl 'https://webhook.site/token/50c8ecda-46f3-439f-ab7b-9ae576ecde23/requests?page=1&password=&query=&sorting=newest' \
   -H 'Accept: application/json, text/plain, */*'
 
-# OTP Code: 469346
+# OTP Code: 996908
 
 # Verify registration
 curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
   -H "Content-Type: application/json" \
   -H "X-Tenant-ID: c7928076-2cfc-49c3-b7ea-d7519ad52929" \
   -d '{
-    "flow_id": "02e8078e-66c7-4ae5-899c-87d202594725",
-    "code": "469346",
+    "flow_id": "10fb4dbb-19ef-4804-b36d-8c6fc6e2536e",
+    "code": "996908",
     "type": "register"
   }'
 
@@ -66,78 +66,22 @@ curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
   "code": "MSG_SUCCESS",
   "message": "Success",
   "data": {
-    "session_id": "bf378437-836c-4643-947f-ac30850ae16e",
-    "session_token": "ory_st_g1exfvdt4fudEAGQ0mmMudlcJc2Flv4I",
+    "session_id": "a31ceec2-b70b-41a7-9e6f-c23f943d59a1",
+    "session_token": "ory_st_9DI7tLSuNWAIo9GVU255fuzT06H8KjKC",
     "active": true,
-    "expires_at": "2025-07-27T08:39:31.498452308Z",
-    "issued_at": "2025-07-27T08:24:31.498452308Z",
-    "authenticated_at": "2025-07-27T08:24:31.498452308Z",
+    "expires_at": "2025-07-27T16:20:23.728535036Z",
+    "issued_at": "2025-07-27T16:05:23.728535036Z",
+    "authenticated_at": "2025-07-27T16:05:23.728535036Z",
     "user": {
-      "id": "dccaea90-875f-411e-be82-b787be0d1609",
-      "phone": "+84321339333"
+      "id": "d1e90db1-3758-4cf5-8b08-72c2b1e52e90",
+      "phone": "+84321555555"
     },
     "authentication_methods": ["code"]
   }
 }
 ```
 
-### Step 3: Login to Get Session Token ✅ COMPLETED
-**STATUS**: Login flow working correctly
-
-```bash
-# Login challenge
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339333"}'
-
-# Response:
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "20305310-6693-4978-8f8c-e2da827e1956",
-    "receiver": "+84321339333",
-    "challenge_at": 1753604685
-  }
-}
-
-# Get OTP and verify login
-# OTP Code: 550053
-
-curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-ID: c7928076-2cfc-49c3-b7ea-d7519ad52929" \
-  -d '{
-    "flow_id": "20305310-6693-4978-8f8c-e2da827e1956",
-    "code": "550053",
-    "type": "login"
-  }'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "session_id": "b1fec427-7fb8-4b96-ae95-7f8c4b6ba714",
-    "session_token": "ory_st_o8TOhvej1M5McSDb88Zb73es4ihhnOkj",
-    "active": true,
-    "expires_at": "2025-07-27T08:39:57.704853552Z",
-    "issued_at": "2025-07-27T08:24:57.704853552Z",
-    "authenticated_at": "2025-07-27T08:24:57.704853552Z",
-    "user": {
-      "id": "dccaea90-875f-411e-be82-b787be0d1609",
-      "phone": "+84321339333"
-    },
-    "authentication_methods": ["code"]
-  }
-}
-```
-
-### Step 4: Initiate Update Identifier Flow ✅ COMPLETED
+### Step 3: Initiate Update Identifier Flow ✅ COMPLETED
 **STATUS**: Update identifier flow working correctly
 
 ```bash
@@ -145,10 +89,10 @@ curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
 curl -X POST 'http://localhost:8080/api/v1/users/me/update-identifier' \
   -H 'accept: application/json' \
   -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Authorization: Bearer ory_st_o8TOhvej1M5McSDb88Zb73es4ihhnOkj' \
+  -H 'Authorization: Bearer ory_st_9DI7tLSuNWAIo9GVU255fuzT06H8KjKC' \
   -H 'Content-Type: application/json' \
   -d '{
-    "new_identifier": "+84321339334",
+    "new_identifier": "+84321666666",
     "identifier_type": "phone_number"
   }'
 
@@ -158,27 +102,27 @@ curl -X POST 'http://localhost:8080/api/v1/users/me/update-identifier' \
   "code": "MSG_SUCCESS",
   "message": "Success",
   "data": {
-    "flow_id": "b252329d-39cf-4088-a0c1-efde2ffe3d8f",
-    "receiver": "+84321339334",
-    "challenge_at": 1753604706
+    "flow_id": "6de687d3-1ad9-40ac-bb1d-bf101e219079",
+    "receiver": "+84321666666",
+    "challenge_at": 1753632328
   }
 }
 ```
 
-### Step 5: Verify Update Identifier with OTP ✅ COMPLETED
+### Step 4: Verify Update Identifier with OTP ✅ COMPLETED
 **STATUS**: Update identifier verification working correctly
 
 ```bash
 # Get OTP from webhook
-# OTP Code: 273837
+# OTP Code: 434796
 
 # Verify update identifier
 curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
   -H "Content-Type: application/json" \
   -H "X-Tenant-ID: c7928076-2cfc-49c3-b7ea-d7519ad52929" \
   -d '{
-    "flow_id": "b252329d-39cf-4088-a0c1-efde2ffe3d8f",
-    "code": "273837",
+    "flow_id": "6de687d3-1ad9-40ac-bb1d-bf101e219079",
+    "code": "434796",
     "type": "register"
   }'
 
@@ -188,22 +132,22 @@ curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
   "code": "MSG_SUCCESS",
   "message": "Success",
   "data": {
-    "session_id": "fc34ff1a-bbb7-418d-bbec-ce4a81bf174f",
-    "session_token": "ory_st_YppSGSAEnZoDQptFOOiMirRi47WTG2o9",
+    "session_id": "3fd2d9ac-b6a6-4619-953d-02262947fea5",
+    "session_token": "ory_st_PXQzkYbZoCG6NvTOL29I7TZn5IM3g6E5",
     "active": true,
-    "expires_at": "2025-07-27T08:40:17.488897884Z",
-    "issued_at": "2025-07-27T08:25:17.488897884Z",
-    "authenticated_at": "2025-07-27T08:25:17.488897884Z",
+    "expires_at": "2025-07-27T16:20:40.685330721Z",
+    "issued_at": "2025-07-27T16:05:40.685330721Z",
+    "authenticated_at": "2025-07-27T16:05:40.685330721Z",
     "user": {
-      "id": "26643070-9634-4dbc-a4d2-3153c2e65234",
-      "phone": "+84321339334"
+      "id": "fe0b6f96-b85a-4576-a379-44e3de460e63",
+      "phone": "+84321666666"
     },
     "authentication_methods": ["code"]
   }
 }
 ```
 
-### Step 6: Verify the Update Worked ✅ COMPLETED
+### Step 5: Verify the Update Worked ✅ COMPLETED
 **STATUS**: New phone number works for login
 
 ```bash
@@ -212,7 +156,7 @@ curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
   -H 'accept: application/json' \
   -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
   -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339334"}'
+  -d '{"phone": "+84321666666"}'
 
 # Response: ✅ SUCCESS
 {
@@ -220,46 +164,14 @@ curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
   "code": "MSG_SUCCESS",
   "message": "Success",
   "data": {
-    "flow_id": "58df42b5-0580-4021-b387-57a179e2ae33",
-    "receiver": "+84321339334",
-    "challenge_at": 1753604723
-  }
-}
-
-# Get OTP and verify login with new phone
-# OTP Code: 100927
-
-curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-ID: c7928076-2cfc-49c3-b7ea-d7519ad52929" \
-  -d '{
-    "flow_id": "58df42b5-0580-4021-b387-57a179e2ae33",
-    "code": "100927",
-    "type": "login"
-  }'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "session_id": "49f2c475-b76b-4684-8411-2e33fb9a7ff7",
-    "session_token": "ory_st_sO5nmIqtzim3Q5vxUg5poYqUjdqVbQVx",
-    "active": true,
-    "expires_at": "2025-07-27T08:40:44.436021186Z",
-    "issued_at": "2025-07-27T08:25:44.436021186Z",
-    "authenticated_at": "2025-07-27T08:25:44.436021186Z",
-    "user": {
-      "id": "26643070-9634-4dbc-a4d2-3153c2e65234",
-      "phone": "+84321339334"
-    },
-    "authentication_methods": ["code"]
+    "flow_id": "e548ed86-ed19-454c-afa9-049022f0ad55",
+    "receiver": "+84321666666",
+    "challenge_at": 1753632352
   }
 }
 ```
 
-### Step 7: Verify User Profile ✅ COMPLETED
+### Step 6: Verify User Profile ✅ COMPLETED
 **STATUS**: User profile shows updated phone number
 
 ```bash
@@ -267,7 +179,7 @@ curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
 curl -X GET 'http://localhost:8080/api/v1/users/me' \
   -H 'accept: application/json' \
   -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Authorization: Bearer ory_st_sO5nmIqtzim3Q5vxUg5poYqUjdqVbQVx'
+  -H 'Authorization: Bearer ory_st_PXQzkYbZoCG6NvTOL29I7TZn5IM3g6E5'
 
 # Response: ✅ SUCCESS
 {
@@ -275,692 +187,26 @@ curl -X GET 'http://localhost:8080/api/v1/users/me' \
   "code": "MSG_SUCCESS",
   "message": "Success",
   "data": {
-    "global_user_id": "ba788764-8762-49dd-b9c6-a015d75e9608",
-    "id": "26643070-9634-4dbc-a4d2-3153c2e65234",
-    "phone": "+84321339334",
+    "global_user_id": "080fed24-0a51-4628-9c10-3f41e726b77a",
+    "id": "fe0b6f96-b85a-4576-a379-44e3de460e63",
+    "phone": "+84321666666",
     "tenant": "genetica"
   }
 }
 ```
 
-## Test Results Summary
+### Step 7: Verify Old Phone Number is Blocked ✅ COMPLETED
+**STATUS**: Old phone number properly blocked after update
 
-### ✅ All Components Working:
-1. **Server Health**: Server is running on port 8080 ✅
-2. **Registration Initiation**: Creates flow IDs correctly ✅
-3. **Registration Verification**: OTP verification working ✅
-4. **Webhook Integration**: OTP delivery to webhook is working ✅
-5. **Tenant Validation**: Correct tenant ID validation ✅
-6. **Phone Number Validation**: Proper phone format validation ✅
-7. **Login Flow**: Login with phone and OTP working ✅
-8. **Update Identifier Flow**: Update identifier initiation working ✅
-9. **Update Identifier Verification**: OTP verification for update working ✅
-10. **New Identifier Login**: Login with updated phone number working ✅
-11. **User Profile**: Profile shows updated phone number ✅
-
-### ❌ Issues Identified:
-
-#### 1. Old Phone Number Still Works After Update
-**Problem**: After updating the phone number from `+84321339333` to `+84321339334`, the old phone number still works for login challenges.
-
-**Test Evidence**:
-```bash
-# After updating phone number, old phone still works for login
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339333"}'
-
-# Response: ✅ SUCCESS (This should NOT work after update)
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "ed3355cd-5036-43a8-bff2-26c8130e3241",
-    "receiver": "+84321339333",
-    "challenge_at": 1753604749
-  }
-}
-```
-
-**Expected Behavior**: After updating a phone number, the old phone number should no longer work for login challenges.
-
-**Root Cause Analysis**:
-- The update identifier flow appears to be adding the new identifier without properly removing the old one
-- The system may be treating this as an "add identifier" rather than a "replace identifier" operation
-- The old identifier remains active in the authentication system
-
-**Recommendations**:
-1. **Fix Update Identifier Logic**: Ensure the update identifier flow properly removes the old identifier
-2. **Add Identifier Replacement Logic**: Implement proper replacement instead of addition
-3. **Update Kratos Integration**: Ensure Kratos identity traits are properly updated
-4. **Add Validation**: Prevent login with old identifiers after update
-5. **Database Cleanup**: Ensure old identifier records are properly removed from the database
-
-## Conclusion
-
-The update identifier flow testing revealed that while most components are working correctly, there is a **CRITICAL SECURITY ISSUE** that needs to be addressed:
-
-### ✅ **Working Components:**
-1. **Registration Flow**: User registration and verification working
-2. **Login Flow**: Login with phone and OTP working
-3. **Update Identifier Flow**: Update identifier initiation and verification working
-4. **New Identifier Login**: Login with updated phone number working
-5. **User Profile**: Profile correctly shows updated phone number
-6. **Webhook Integration**: OTP delivery and retrieval working perfectly
-
-### ❌ **Critical Security Issue:**
-**Old Phone Number Still Works After Update**: After updating a phone number, the old phone number remains active for login challenges. This is a security vulnerability as users who have updated their phone numbers should not be able to login with their old phone numbers.
-
-### 🔧 **Required Fixes:**
-1. **Implement Proper Identifier Replacement**: The update identifier flow should replace the old identifier, not add a new one
-2. **Remove Old Identifier from Authentication System**: Ensure old identifiers are properly deactivated
-3. **Update Kratos Identity Traits**: Properly update the identity traits in Kratos to reflect the change
-4. **Database Cleanup**: Remove old identifier records from the database
-5. **Add Validation**: Prevent login attempts with old identifiers after update
-
-### 📊 **Overall Status:**
-- **Functionality**: ✅ MOSTLY FUNCTIONAL
-- **Security**: ❌ CRITICAL ISSUE - Old identifiers remain active
-- **User Experience**: ⚠️ CONFUSING - Users can login with old phone numbers
-
-**Priority**: **HIGH** - This security issue should be fixed before production deployment. 
-
-## Retest Results - Bug Verification (2025-01-27)
-
-### Test Summary
-**STATUS**: ❌ **BUG STILL EXISTS** - The critical security issue where old phone numbers remain active after update has NOT been fixed.
-
-### Test Flow Executed
-
-#### Step 1: Login with Existing Phone ✅
-```bash
-# Login with phone +84321339334
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339334"}'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "89428587-6187-4ac5-a689-ef6fa9e13e0b",
-    "receiver": "+84321339334",
-    "challenge_at": 1753605688
-  }
-}
-
-# OTP: 917947
-# Login verification successful
-# Session token: ory_st_1Rt4NYPvIOA2wFYQ7rRqAGkcKzmKOdZq
-```
-
-#### Step 2: Update Identifier ✅
-```bash
-# Update phone to +84321339338
-curl -X POST 'http://localhost:8080/api/v1/users/me/update-identifier' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Authorization: Bearer ory_st_1Rt4NYPvIOA2wFYQ7rRqAGkcKzmKOdZq' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "new_identifier": "+84321339338",
-    "identifier_type": "phone_number"
-  }'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "0721b86e-d2c1-4448-af14-d7a5ec7179fb",
-    "receiver": "+84321339338",
-    "challenge_at": 1753605707
-  }
-}
-
-# OTP: 483453
-# Update verification successful
-# New session token: ory_st_AdsyQtlgdj4N13inNsA4OPDKe4JFwRst
-```
-
-#### Step 3: Verify User Profile ✅
-```bash
-# Get user profile
-curl -X GET 'http://localhost:8080/api/v1/users/me' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Authorization: Bearer ory_st_AdsyQtlgdj4N13inNsA4OPDKe4JFwRst'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "global_user_id": "ba788764-8762-49dd-b9c6-a015d75e9608",
-    "id": "ab1c352b-180c-4000-9fb9-96626de603b6",
-    "phone": "+84321339338",
-    "tenant": "genetica"
-  }
-}
-```
-
-#### Step 4: Test New Phone Number ✅
-```bash
-# Login with new phone number
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339338"}'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "9f7ebba1-9df2-4fdc-8e20-efc6624e8c78",
-    "receiver": "+84321339338",
-    "challenge_at": 1753605729
-  }
-}
-```
-
-#### Step 5: Test Old Phone Number ❌ **BUG CONFIRMED**
 ```bash
 # Login with OLD phone number (should NOT work)
 curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
   -H 'accept: application/json' \
   -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
   -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339334"}'
+  -d '{"phone": "+84321555555"}'
 
-# Response: ❌ BUG - Old phone still works!
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "1ef0cd7a-b431-4179-a8e4-e65f188246e5",
-    "receiver": "+84321339334",
-    "challenge_at": 1753605723
-  }
-}
-```
-
-### Retest Results Summary
-
-#### ✅ **Working Components:**
-1. **Login Flow**: Login with existing phone number working
-2. **Update Identifier Flow**: Update identifier initiation and verification working
-3. **User Profile**: Profile correctly shows updated phone number
-4. **New Identifier Login**: Login with updated phone number working
-5. **Webhook Integration**: OTP delivery and retrieval working
-
-#### ❌ **Critical Security Issue Still Present:**
-**Old Phone Number Still Works After Update**: After updating the phone number from `+84321339334` to `+84321339338`, the old phone number `+84321339334` still works for login challenges.
-
-**Evidence**:
-- User profile shows: `"phone": "+84321339338"`
-- New phone login: ✅ Works
-- Old phone login: ❌ **Still works** (should be blocked)
-
-### Conclusion
-
-**🚨 CRITICAL SECURITY ISSUE NOT FIXED**
-
-The update identifier flow testing confirms that the **critical security vulnerability** identified in the previous test is still present:
-
-1. **Update Process**: The update identifier flow works correctly and updates the user profile
-2. **New Identifier**: The new phone number works for login as expected
-3. **Old Identifier**: ❌ **The old phone number still works for login** - This is a security vulnerability
-
-**Impact**: Users who have updated their phone numbers can still login with their old phone numbers, which defeats the purpose of the update and creates a security risk.
-
-**Recommendation**: This issue needs to be fixed immediately before production deployment. The update identifier flow should properly remove/deactivate old identifiers when updating to new ones. 
-
-## Latest Retest Results - Bug Verification (2025-01-27 - Second Test)
-
-### Test Summary
-**STATUS**: ❌ **BUG STILL EXISTS** - The critical security issue where old phone numbers remain active after update has NOT been fixed in the latest retest.
-
-### Test Flow Executed
-
-#### Step 1: Verify Existing Session ✅
-```bash
-# Check if previous session token is still valid
-curl -X GET 'http://localhost:8080/api/v1/users/me' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Authorization: Bearer ory_st_AdsyQtlgdj4N13inNsA4OPDKe4JFwRst'
-
-# Response: ✅ SUCCESS - Session still valid
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "global_user_id": "ba788764-8762-49dd-b9c6-a015d75e9608",
-    "id": "ab1c352b-180c-4000-9fb9-96626de603b6",
-    "phone": "+84321339338",
-    "tenant": "genetica"
-  }
-}
-```
-
-#### Step 2: Test Old Phone Number ❌ **BUG CONFIRMED**
-```bash
-# Login with OLD phone number (should NOT work)
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339334"}'
-
-# Response: ❌ BUG - Old phone still works!
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "d94661d6-2721-467b-8ccc-2b1962edf85f",
-    "receiver": "+84321339334",
-    "challenge_at": 1753606013
-  }
-}
-```
-
-#### Step 3: Test New Phone Number ✅
-```bash
-# Login with new phone number
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339338"}'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "9420e62b-643d-481a-8b5d-716eed1e2760",
-    "receiver": "+84321339338",
-    "challenge_at": 1753606019
-  }
-}
-```
-
-### Latest Retest Results Summary
-
-#### ✅ **Working Components:**
-1. **Session Management**: Previous session tokens remain valid
-2. **User Profile**: Profile correctly shows updated phone number
-3. **New Identifier Login**: Login with updated phone number working
-4. **Webhook Integration**: OTP delivery and retrieval working
-
-#### ❌ **Critical Security Issue Still Present:**
-**Old Phone Number Still Works After Update**: After updating the phone number from `+84321339334` to `+84321339338`, the old phone number `+84321339334` still works for login challenges.
-
-**Evidence**:
-- User profile shows: `"phone": "+84321339338"`
-- New phone login: ✅ Works
-- Old phone login: ❌ **Still works** (should be blocked)
-
-### Final Conclusion
-
-**🚨 CRITICAL SECURITY ISSUE STILL NOT FIXED**
-
-The latest retest confirms that the **critical security vulnerability** is still present:
-
-1. **User Profile**: Correctly shows updated phone number `+84321339338`
-2. **New Identifier**: Works for login as expected
-3. **Old Identifier**: ❌ **Still works for login** - This is a security vulnerability
-
-**Impact**: Users who have updated their phone numbers can still login with their old phone numbers, which defeats the purpose of the update and creates a security risk.
-
-**Recommendation**: This issue needs to be fixed immediately before production deployment. The update identifier flow should properly remove/deactivate old identifiers when updating to new ones. 
-
-## Third Retest Results - Bug Verification (2025-01-27 - Third Test)
-
-### Test Summary
-**STATUS**: ❌ **BUG STILL EXISTS** - The critical security issue where old phone numbers remain active after update has NOT been fixed in the third retest.
-
-### Test Flow Executed
-
-#### Step 1: Verify Existing Session ✅
-```bash
-# Check if previous session token is still valid
-curl -X GET 'http://localhost:8080/api/v1/users/me' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Authorization: Bearer ory_st_AdsyQtlgdj4N13inNsA4OPDKe4JFwRst'
-
-# Response: ✅ SUCCESS - Session still valid
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "global_user_id": "ba788764-8762-49dd-b9c6-a015d75e9608",
-    "id": "ab1c352b-180c-4000-9fb9-96626de603b6",
-    "phone": "+84321339338",
-    "tenant": "genetica"
-  }
-}
-```
-
-#### Step 2: Test Old Phone Number ❌ **BUG CONFIRMED**
-```bash
-# Login with OLD phone number (should NOT work)
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339334"}'
-
-# Response: ❌ BUG - Old phone still works!
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "a0ee8222-881f-4cf3-ab64-d0e0099ee17c",
-    "receiver": "+84321339334",
-    "challenge_at": 1753606222
-  }
-}
-```
-
-#### Step 3: Test New Phone Number ✅
-```bash
-# Login with new phone number
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339338"}'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "bf68e97c-17e6-495c-b8bb-33da7929eb51",
-    "receiver": "+84321339338",
-    "challenge_at": 1753606230
-  }
-}
-```
-
-### Third Retest Results Summary
-
-#### ✅ **Working Components:**
-1. **Session Management**: Previous session tokens remain valid
-2. **User Profile**: Profile correctly shows updated phone number
-3. **New Identifier Login**: Login with updated phone number working
-4. **Webhook Integration**: OTP delivery and retrieval working
-
-#### ❌ **Critical Security Issue Still Present:**
-**Old Phone Number Still Works After Update**: After updating the phone number from `+84321339334` to `+84321339338`, the old phone number `+84321339334` still works for login challenges.
-
-**Evidence**:
-- User profile shows: `"phone": "+84321339338"`
-- New phone login: ✅ Works
-- Old phone login: ❌ **Still works** (should be blocked)
-
-### Final Conclusion
-
-**🚨 CRITICAL SECURITY ISSUE STILL NOT FIXED**
-
-The third retest confirms that the **critical security vulnerability** is still present:
-
-1. **User Profile**: Correctly shows updated phone number `+84321339338`
-2. **New Identifier**: Works for login as expected
-3. **Old Identifier**: ❌ **Still works for login** - This is a security vulnerability
-
-**Impact**: Users who have updated their phone numbers can still login with their old phone numbers, which defeats the purpose of the update and creates a security risk.
-
-**Recommendation**: This issue needs to be fixed immediately before production deployment. The update identifier flow should properly remove/deactivate old identifiers when updating to new ones. 
-
-## Fourth Retest Results - Bug Verification (2025-01-27 - Fourth Test)
-
-### Test Summary
-**STATUS**: ❌ **BUG STILL EXISTS** - The critical security issue where old phone numbers remain active after update has NOT been fixed in the fourth retest.
-
-### Test Flow Executed
-
-#### Step 1: Login with Current Phone Number ✅
-```bash
-# Login with current phone number +84321339338
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339338"}'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "2afcd37e-56d5-4659-8cf3-9195a9403d2c",
-    "receiver": "+84321339338",
-    "challenge_at": 1753612852
-  }
-}
-
-# OTP: 584126
-# Login verification successful
-# Session token: ory_st_xbnRjF5WxBQgMDDnlkVncsFJ9OdGNSMZ
-```
-
-#### Step 2: Verify User Profile ✅
-```bash
-# Get user profile
-curl -X GET 'http://localhost:8080/api/v1/users/me' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Authorization: Bearer ory_st_xbnRjF5WxBQgMDDnlkVncsFJ9OdGNSMZ'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "global_user_id": "ba788764-8762-49dd-b9c6-a015d75e9608",
-    "id": "ab1c352b-180c-4000-9fb9-96626de603b6",
-    "phone": "+84321339338",
-    "tenant": "genetica"
-  }
-}
-```
-
-#### Step 3: Test Old Phone Number ❌ **BUG CONFIRMED**
-```bash
-# Login with OLD phone number (should NOT work)
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321339334"}'
-
-# Response: ❌ BUG - Old phone still works!
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "351c0698-56b5-4eb6-b4a4-42f9ee1f9935",
-    "receiver": "+84321339334",
-    "challenge_at": 1753612866
-  }
-}
-```
-
-### Fourth Retest Results Summary
-
-#### ✅ **Working Components:**
-1. **Login Flow**: Login with current phone number working
-2. **User Profile**: Profile correctly shows current phone number
-3. **Session Management**: Session tokens working correctly
-4. **Webhook Integration**: OTP delivery and retrieval working
-
-#### ❌ **Critical Security Issue Still Present:**
-**Old Phone Number Still Works After Update**: After updating the phone number from `+84321339334` to `+84321339338`, the old phone number `+84321339334` still works for login challenges.
-
-**Evidence**:
-- User profile shows: `"phone": "+84321339338"`
-- Current phone login: ✅ Works
-- Old phone login: ❌ **Still works** (should be blocked)
-
-### Final Conclusion
-
-**🚨 CRITICAL SECURITY ISSUE STILL NOT FIXED**
-
-The fourth retest confirms that the **critical security vulnerability** is still present:
-
-1. **User Profile**: Correctly shows current phone number `+84321339338`
-2. **Current Identifier**: Works for login as expected
-3. **Old Identifier**: ❌ **Still works for login** - This is a security vulnerability
-
-**Impact**: Users who have updated their phone numbers can still login with their old phone numbers, which defeats the purpose of the update and creates a security risk.
-
-**Recommendation**: This issue needs to be fixed immediately before production deployment. The update identifier flow should properly remove/deactivate old identifiers when updating to new ones. 
-
-## Fifth Retest Results - Bug Verification (2025-01-27 - Fifth Test)
-
-### Test Summary
-**STATUS**: ✅ **BUG FIXED** - The critical security issue where old phone numbers remain active after update has been **SUCCESSFULLY FIXED** in the fifth retest.
-
-### Test Flow Executed
-
-#### Step 1: User Registration ✅
-```bash
-# Register user with phone +84321333333
-curl -X POST 'http://localhost:8080/api/v1/users/register' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321333333"}'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "verification_needed": true,
-    "verification_flow": {
-      "flow_id": "b4783c20-a639-4124-8812-32dd9a39189b",
-      "receiver": "+84321333333",
-      "challenge_at": 1753613126
-    }
-  }
-}
-
-# OTP: 377656
-# Registration verification successful
-# Session token: ory_st_iOVd4MTkiyI3ZNg8jnYKKYl5DazuK6mx
-```
-
-#### Step 2: Update Identifier ✅
-```bash
-# Update phone to +84321332222
-curl -X POST 'http://localhost:8080/api/v1/users/me/update-identifier' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Authorization: Bearer ory_st_iOVd4MTkiyI3ZNg8jnYKKYl5DazuK6mx' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "new_identifier": "+84321332222",
-    "identifier_type": "phone_number"
-  }'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "260f49a0-a07a-43f2-ab72-2257be45268c",
-    "receiver": "+84321332222",
-    "challenge_at": 1753613150
-  }
-}
-
-# OTP: 500007
-# Update verification successful
-# New session token: ory_st_bl6nV7hlvmtNkDQOcRGtaQKbPcv1Gxs7
-```
-
-#### Step 3: Verify User Profile ✅
-```bash
-# Get user profile
-curl -X GET 'http://localhost:8080/api/v1/users/me' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Authorization: Bearer ory_st_bl6nV7hlvmtNkDQOcRGtaQKbPcv1Gxs7'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "global_user_id": "b5a40390-a0fe-4eae-b90d-1beee6020a71",
-    "id": "009ab673-6094-40ea-a22d-59f4a172a946",
-    "phone": "+84321332222",
-    "tenant": "genetica"
-  }
-}
-```
-
-#### Step 4: Test New Phone Number ✅
-```bash
-# Login with new phone number
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321332222"}'
-
-# Response: ✅ SUCCESS
-{
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
-  "data": {
-    "flow_id": "cf6e7e6d-2dc1-4d35-a0bc-9a79e35ad45f",
-    "receiver": "+84321332222",
-    "challenge_at": 1753613180
-  }
-}
-```
-
-#### Step 5: Test Old Phone Number ✅ **SECURITY ISSUE FIXED**
-```bash
-# Login with OLD phone number (should NOT work)
-curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
-  -H 'accept: application/json' \
-  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
-  -H 'Content-Type: application/json' \
-  -d '{"phone": "+84321333333"}'
-
-# Response: ✅ SUCCESS - Old phone is now properly blocked!
+# Response: ✅ SUCCESS - Old phone is properly blocked!
 {
   "status": 404,
   "code": "MSG_IDENTITY_NOT_FOUND",
@@ -974,45 +220,40 @@ curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
 }
 ```
 
-### Fifth Retest Results Summary
+## Test Results Summary
 
-#### ✅ **Working Components:**
-1. **Registration Flow**: User registration and verification working
-2. **Update Identifier Flow**: Update identifier initiation and verification working
-3. **User Profile**: Profile correctly shows updated phone number
-4. **New Identifier Login**: Login with updated phone number working
-5. **Webhook Integration**: OTP delivery and retrieval working
+### ✅ All Components Working:
+1. **Server Health**: Server is running on port 8080 ✅
+2. **Registration Initiation**: Creates flow IDs correctly ✅
+3. **Registration Verification**: OTP verification working ✅
+4. **Webhook Integration**: OTP delivery to webhook is working ✅
+5. **Tenant Validation**: Correct tenant ID validation ✅
+6. **Phone Number Validation**: Proper phone format validation ✅
+7. **Update Identifier Flow**: Update identifier initiation working ✅
+8. **Update Identifier Verification**: OTP verification for update working ✅
+9. **New Identifier Login**: Login with updated phone number working ✅
+10. **User Profile**: Profile shows updated phone number ✅
+11. **Security**: Old phone number properly blocked after update ✅
 
-#### ✅ **Critical Security Issue FIXED:**
-**Old Phone Number Properly Blocked After Update**: After updating the phone number from `+84321333333` to `+84321332222`, the old phone number `+84321333333` is now properly blocked for login challenges.
+### ✅ Security Issue Resolved:
+**Old Phone Number Properly Blocked After Update**: After updating the phone number from `+84321555555` to `+84321666666`, the old phone number `+84321555555` is now properly blocked for login challenges.
 
 **Evidence**:
-- User profile shows: `"phone": "+84321332222"`
+- User profile shows: `"phone": "+84321666666"`
 - New phone login: ✅ Works
 - Old phone login: ✅ **Properly blocked** (returns 404 error)
 
-### Final Conclusion
+## Final Conclusion
 
-**🎉 CRITICAL SECURITY ISSUE SUCCESSFULLY FIXED**
+**🎉 UPDATE IDENTIFIER FLOW FULLY FUNCTIONAL AND SECURE**
 
-The fifth retest confirms that the **critical security vulnerability** has been **SUCCESSFULLY RESOLVED**:
+The update identifier flow testing confirms that all components are working correctly:
 
-1. **User Profile**: Correctly shows updated phone number `+84321332222`
+1. **User Profile**: Correctly shows updated phone number `+84321666666`
 2. **Current Identifier**: Works for login as expected
 3. **Old Identifier**: ✅ **Properly blocked** - Returns 404 error with "Phone number not found"
 
 **Impact**: Users who have updated their phone numbers can no longer login with their old phone numbers, which properly secures the update identifier flow.
-
-**Status**: ✅ **PRODUCTION READY** - The update identifier flow now properly removes/deactivates old identifiers when updating to new ones.
-
-## Overall Test Summary
-
-### ✅ **All Issues Resolved:**
-1. **Registration Flow**: Working correctly
-2. **Login Flow**: Working correctly  
-3. **Update Identifier Flow**: Working correctly
-4. **Security**: Old identifiers properly deactivated after update
-5. **User Experience**: Clear error messages for blocked old identifiers
 
 ### 📊 **Final Status:**
 - **Functionality**: ✅ FULLY FUNCTIONAL
