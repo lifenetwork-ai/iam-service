@@ -153,7 +153,7 @@ func sendViaProvider(ctx context.Context, channel, receiver, message string) err
 	if err != nil {
 		return fmt.Errorf("failed to create mock HTTP request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(constants.HeaderKeyContentType, constants.HeaderContentTypeJson)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

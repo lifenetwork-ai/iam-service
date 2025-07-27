@@ -48,7 +48,10 @@ const (
 )
 
 // HTTP Headers
-const ContentTypeJson = "application/json"
+const (
+	HeaderContentTypeJson = "application/json" // Value for the header
+	HeaderKeyContentType  = "Content-Type"     // Header name
+)
 
 // Courier constants
 const (

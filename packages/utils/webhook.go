@@ -24,7 +24,7 @@ func SendWebhook(payload interface{}, webhookURL string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(constants.HeaderKeyContentType, constants.HeaderContentTypeJson)
 
 	resp, err := client.Do(req)
 	if err != nil {
