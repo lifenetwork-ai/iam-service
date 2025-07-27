@@ -29,7 +29,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		sessionID := "test-session-123"
 		challenge := &domain.ChallengeSession{
 			IdentifierType: "email",
-			Email:          "test@example.com",
+			Identifier:     "test@example.com",
 			OTP:            "123456",
 		}
 		ttl := 5 * time.Minute
@@ -43,7 +43,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		err = mockCache.RetrieveItem(sessionKey(sessionID), &retrieved)
 		require.NoError(t, err)
 		assert.Equal(t, challenge.IdentifierType, retrieved.IdentifierType)
-		assert.Equal(t, challenge.Email, retrieved.Email)
+		assert.Equal(t, challenge.Identifier, retrieved.Identifier)
 		assert.Equal(t, challenge.OTP, retrieved.OTP)
 
 		// Test GetChallenge
@@ -51,7 +51,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, retrievedChallenge)
 		assert.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
-		assert.Equal(t, challenge.Email, retrievedChallenge.Email)
+		assert.Equal(t, challenge.Identifier, retrievedChallenge.Identifier)
 		assert.Equal(t, challenge.OTP, retrievedChallenge.OTP)
 	})
 
@@ -67,7 +67,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		sessionID := "test-session-456"
 		challenge := &domain.ChallengeSession{
 			IdentifierType: constants.IdentifierPhone.String(),
-			Phone:          "+1234567890",
+			Identifier:     "+1234567890",
 			OTP:            "654321",
 		}
 		ttl := 5 * time.Minute
@@ -81,7 +81,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		err = mockCache.RetrieveItem(sessionKey(sessionID), &retrieved)
 		require.NoError(t, err)
 		assert.Equal(t, challenge.IdentifierType, retrieved.IdentifierType)
-		assert.Equal(t, challenge.Phone, retrieved.Phone)
+		assert.Equal(t, challenge.Identifier, retrieved.Identifier)
 		assert.Equal(t, challenge.OTP, retrieved.OTP)
 
 		// Test GetChallenge
@@ -89,7 +89,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, retrievedChallenge)
 		assert.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
-		assert.Equal(t, challenge.Phone, retrievedChallenge.Phone)
+		assert.Equal(t, challenge.Identifier, retrievedChallenge.Identifier)
 		assert.Equal(t, challenge.OTP, retrievedChallenge.OTP)
 	})
 

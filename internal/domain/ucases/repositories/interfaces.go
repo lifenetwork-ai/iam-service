@@ -60,4 +60,5 @@ type UserIdentityRepository interface {
 	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
 	GetByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (*domain.UserIdentity, error)
 	ExistsByGlobalUserIDAndType(ctx context.Context, globalUserID, identityType string) (bool, error)
+	Delete(tx *gorm.DB, identityID string) error
 }

@@ -85,6 +85,17 @@ func (u *userUseCase) ChallengeWithPhone(
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
 
+	// Check if the identifier exists in the database
+	_, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, constants.IdentifierPhone.String(), phone)
+	if err != nil {
+		return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Phone number").WithDetails([]interface{}{
+			map[string]string{
+				"field": "phone",
+				"error": "Phone number not registered in the system",
+			},
+		})
+	}
+
 	// Initialize verification flow with Kratos
 	flow, err := u.kratosService.InitializeLoginFlow(ctx, tenantID)
 	if err != nil {
@@ -100,7 +111,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	// Create challenge session
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
 		IdentifierType: constants.IdentifierPhone.String(),
-		Phone:          phone,
+		Identifier:     phone,
 		FlowID:         flow.Id,
 	}, constants.DefaultChallengeDuration)
 	if err != nil {
@@ -154,7 +165,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	// Create challenge session
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
 		IdentifierType: constants.IdentifierEmail.String(),
-		Email:          email,
+		Identifier:     email,
 		FlowID:         flow.Id,
 	}, constants.DefaultChallengeDuration)
 	if err != nil {
@@ -244,7 +255,7 @@ func (u *userUseCase) VerifyRegister(
 		}
 	} else if sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
 		// Handle change identifier challenge
-		if err := u.bindIAMToUpdateIdentifier(ctx, tenant, newTenantUserID, identifier, identifierType, sessionValue); err != nil {
+		if err := u.bindIAMToUpdateIdentifier(ctx, tenant, sessionValue.TenantUserID, newTenantUserID, identifier, identifierType, sessionValue); err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_UPDATE_IDENTIFIER_FAILED", "Failed to update identifier")
 		}
 	} else {
@@ -285,6 +296,7 @@ func (u *userUseCase) VerifyRegister(
 func (u *userUseCase) bindIAMToUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
+	oldTenantUserID string,
 	newTenantUserID string,
 	newIdentifier string,
 	newIdentifierType string,
@@ -301,6 +313,17 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 			Value:        newIdentifier,
 		}); err != nil {
 			return fmt.Errorf("create new identity: %w", err)
+		}
+
+		// Get the old identity
+		oldIdentity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, sessionValue.IdentifierType, sessionValue.Identifier)
+		if err != nil {
+			return fmt.Errorf("get old identity: %w", err)
+		}
+
+		// Remove the old identity
+		if err := u.userIdentityRepo.Delete(tx, oldIdentity.ID); err != nil {
+			return fmt.Errorf("delete old identity: %w", err)
 		}
 
 		// Find the existing mapping for this global user and tenant
@@ -328,6 +351,10 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 			}
 		}
 
+		if err != nil {
+			return fmt.Errorf("update identifier trait: %w", err)
+		}
+
 		// If we reach here, all operations succeeded and the transaction will be committed
 		return nil
 	})
@@ -337,6 +364,11 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 			logger.GetLogger().Errorf("Failed to clean up: %v", cleanUpErr)
 		}
 		return fmt.Errorf("failed to bind IAM to update identifier: %v", err)
+	} else {
+		err = u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldTenantUserID))
+		if err != nil {
+			return fmt.Errorf("failed to delete identifier: %v", err)
+		}
 	}
 
 	return nil
@@ -444,10 +476,7 @@ func (u *userUseCase) VerifyLogin(
 	}
 
 	// Submit login flow with code
-	identifier := sessionValue.Phone
-	if sessionValue.Email != "" {
-		identifier = sessionValue.Email
-	}
+	identifier := sessionValue.Identifier
 	loginResult, err := u.kratosService.SubmitLoginFlow(
 		ctx, tenantID, flow, constants.MethodTypeCode.String(), &identifier, nil, &code,
 	)
@@ -561,9 +590,9 @@ func (u *userUseCase) Register(
 		ChallengeType: constants.ChallengeTypeRegister,
 	}
 	if email != "" {
-		session.Email = email
+		session.Identifier = email
 	} else {
-		session.Phone = phone
+		session.Identifier = phone
 	}
 
 	fmt.Println("flow.Id", flow.Id)
@@ -805,12 +834,8 @@ func (u *userUseCase) AddNewIdentifier(
 		GlobalUserID:  globalUserID,
 		ChallengeType: constants.ChallengeTypeAddIdentifier,
 	}
-	if identifierType == constants.IdentifierEmail.String() {
-		session.Email = identifier
-	}
-	if identifierType == constants.IdentifierPhone.String() {
-		session.Phone = identifier
-	}
+	session.Identifier = identifier
+	session.IdentifierType = identifierType
 
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
@@ -829,6 +854,7 @@ func (u *userUseCase) UpdateIdentifier(
 	ctx context.Context,
 	globalUserID string,
 	tenantID uuid.UUID,
+	tenantUserID string,
 	identifier string,
 	identifierType string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
@@ -892,15 +918,12 @@ func (u *userUseCase) UpdateIdentifier(
 
 	// 7. Save challenge session
 	session := &domain.ChallengeSession{
-		GlobalUserID:  globalUserID,
-		ChallengeType: constants.ChallengeTypeChangeIdentifier,
+		GlobalUserID:   globalUserID,
+		TenantUserID:   tenantUserID,
+		IdentifierType: identifierType,
+		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
 	}
-	if identifierType == constants.IdentifierEmail.String() {
-		session.Email = identifier
-	}
-	if identifierType == constants.IdentifierPhone.String() {
-		session.Phone = identifier
-	}
+	session.Identifier = identifier
 
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")

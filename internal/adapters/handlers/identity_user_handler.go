@@ -461,7 +461,7 @@ func (h *userHandler) UpdateIdentifier(ctx *gin.Context) {
 		return
 	}
 
-	result, usecaseErr := h.ucase.UpdateIdentifier(ctx, user.GlobalUserID, tenant.ID, req.NewIdentifier, req.IdentifierType)
+	result, usecaseErr := h.ucase.UpdateIdentifier(ctx, user.GlobalUserID, tenant.ID, user.ID, req.NewIdentifier, req.IdentifierType)
 	if usecaseErr != nil {
 		handleDomainError(ctx, usecaseErr)
 		return
