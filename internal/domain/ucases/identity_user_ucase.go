@@ -242,7 +242,8 @@ func (u *userUseCase) VerifyRegister(
 		})
 	}
 
-	if sessionValue.ChallengeType == constants.ChallengeTypeAddIdentifier {
+	switch sessionValue.ChallengeType {
+	case constants.ChallengeTypeAddIdentifier:
 		// Handle add identifier challenge
 		if err := u.userIdentityRepo.FirstOrCreate(u.db, &domain.UserIdentity{
 			GlobalUserID: sessionValue.GlobalUserID,
@@ -251,12 +252,14 @@ func (u *userUseCase) VerifyRegister(
 		}); err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add new identifier")
 		}
-	} else if sessionValue.ChallengeType == constants.ChallengeTypeChangeIdentifier {
+
+	case constants.ChallengeTypeChangeIdentifier:
 		// Handle change identifier challenge
 		if err := u.bindIAMToUpdateIdentifier(ctx, tenant, sessionValue.TenantUserID, newTenantUserID, identifier, identifierType, sessionValue); err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_UPDATE_IDENTIFIER_FAILED", "Failed to update identifier")
 		}
-	} else {
+
+	default:
 		// Bind IAM to registration
 		if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, identifier, identifierType)
