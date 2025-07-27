@@ -73,8 +73,6 @@ func (c *Client) InitializeTenantClient(ctx context.Context, tenantID uuid.UUID)
 		publicAPI: kratos.NewAPIClient(publicConfig),
 		adminAPI:  kratos.NewAPIClient(adminConfig),
 	}
-	fmt.Println("client", client.publicAPI.GetConfig().Servers)
-	fmt.Println("client", client.adminAPI.GetConfig().Servers)
 	// Store in map
 	c.clientMap.Store(tenantID, client)
 	return nil

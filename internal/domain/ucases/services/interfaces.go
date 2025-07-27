@@ -42,9 +42,9 @@ type KratosService interface {
 	GetSettingsFlow(ctx context.Context, tenantID uuid.UUID, flowID, sessionToken string) (*kratos.SettingsFlow, error)
 
 	// Admin API
-	GetIdentity(ctx context.Context, tenantID uuid.UUID, identityID uuid.UUID) (*kratos.Identity, error)
-	UpdateIdentifierTraitAdmin(ctx context.Context, tenantID uuid.UUID, identityID uuid.UUID, traits map[string]interface{}) error
-	DeleteIdentifierAdmin(ctx context.Context, tenantID uuid.UUID, identityID uuid.UUID) error
+	GetIdentity(ctx context.Context, tenantID, identityID uuid.UUID) (*kratos.Identity, error)
+	UpdateIdentifierTraitAdmin(ctx context.Context, tenantID, identityID uuid.UUID, traits map[string]interface{}) error
+	DeleteIdentifierAdmin(ctx context.Context, tenantID, identityID uuid.UUID) error
 }
 
 type KetoService interface {

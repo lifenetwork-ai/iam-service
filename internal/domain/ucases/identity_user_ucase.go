@@ -112,7 +112,6 @@ func (u *userUseCase) ChallengeWithPhone(
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
 		IdentifierType: constants.IdentifierPhone.String(),
 		Identifier:     phone,
-		FlowID:         flow.Id,
 	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
@@ -166,7 +165,6 @@ func (u *userUseCase) ChallengeWithEmail(
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
 		IdentifierType: constants.IdentifierEmail.String(),
 		Identifier:     email,
-		FlowID:         flow.Id,
 	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
@@ -307,7 +305,8 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 		globalUserID := sessionValue.GlobalUserID
 
 		// Create identity for the new identifier with the existing GlobalUserID
-		if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
+		if err := u.userIdentityRepo.Update(tx, &domain.UserIdentity{
+			ID:           sessionValue.IdentityID,
 			GlobalUserID: globalUserID,
 			Type:         newIdentifierType,
 			Value:        newIdentifier,
@@ -315,25 +314,13 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 			return fmt.Errorf("create new identity: %w", err)
 		}
 
-		// Get the old identity
-		oldIdentity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, sessionValue.IdentifierType, sessionValue.Identifier)
-		if err != nil {
-			return fmt.Errorf("get old identity: %w", err)
-		}
-
-		// Remove the old identity
-		if err := u.userIdentityRepo.Delete(tx, oldIdentity.ID); err != nil {
-			return fmt.Errorf("delete old identity: %w", err)
-		}
-
 		// Find the existing mapping for this global user and tenant
-		// Note: This should use tx for consistency within the transaction
-		existingMapping, err := u.userIdentityRepo.ExistsByGlobalUserIDAndType(ctx, globalUserID, newIdentifierType)
+		identifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndTenantUserID(ctx, tenant.ID.String(), oldTenantUserID)
 		if err != nil {
 			return fmt.Errorf("get existing mapping: %w", err)
 		}
 
-		if !existingMapping {
+		if identifierMapping == nil {
 			if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
 				GlobalUserID: globalUserID,
 				TenantID:     tenant.ID.String(),
@@ -342,33 +329,31 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 				return fmt.Errorf("create mapping: %w", err)
 			}
 		} else {
+			// Update the mapping to the new tenant user id
 			if err := u.userIdentifierMappingRepo.Update(tx, &domain.UserIdentifierMapping{
-				TenantID:     tenant.ID.String(),
-				TenantUserID: newTenantUserID,
+				ID:           identifierMapping.ID,
 				GlobalUserID: globalUserID,
+				TenantUserID: newTenantUserID,
+				TenantID:     tenant.ID.String(),
 			}); err != nil {
 				return fmt.Errorf("update mapping: %w", err)
 			}
 		}
 
-		if err != nil {
-			return fmt.Errorf("update identifier trait: %w", err)
-		}
-
 		// If we reach here, all operations succeeded and the transaction will be committed
 		return nil
 	})
-
 	if err != nil {
 		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newTenantUserID); cleanUpErr != nil {
 			logger.GetLogger().Errorf("Failed to clean up: %v", cleanUpErr)
 		}
 		return fmt.Errorf("failed to bind IAM to update identifier: %v", err)
-	} else {
-		err = u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldTenantUserID))
-		if err != nil {
-			return fmt.Errorf("failed to delete identifier: %v", err)
-		}
+	}
+
+	// Delete the old identifier from Kratos
+	err = u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldTenantUserID))
+	if err != nil {
+		return fmt.Errorf("failed to delete identifier: %v", err)
 	}
 
 	return nil
@@ -594,8 +579,6 @@ func (u *userUseCase) Register(
 	} else {
 		session.Identifier = phone
 	}
-
-	fmt.Println("flow.Id", flow.Id)
 
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
@@ -880,11 +863,11 @@ func (u *userUseCase) UpdateIdentifier(
 	}
 
 	// 3. Check if user already has this identifier type
-	hasType, err := u.userIdentityRepo.ExistsByGlobalUserIDAndType(ctx, globalUserID, identifierType)
+	identity, err := u.userIdentityRepo.GetByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identity type")
 	}
-	if !hasType {
+	if identity == nil {
 		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS", fmt.Sprintf("User does not have an identifier of type %s", identifierType), nil)
 	}
 
@@ -921,9 +904,10 @@ func (u *userUseCase) UpdateIdentifier(
 		GlobalUserID:   globalUserID,
 		TenantUserID:   tenantUserID,
 		IdentifierType: identifierType,
+		Identifier:     identifier,
 		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
+		IdentityID:     identity.ID,
 	}
-	session.Identifier = identifier
 
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")

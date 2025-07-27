@@ -7,5 +7,7 @@ type ChallengeSession struct {
 	Identifier     string `json:"identifier"`
 	ChallengeType  string `json:"challenge_type"`
 	OTP            string `json:"otp"`
-	FlowID         string `json:"flow_id"`
+
+	// For update identifier challenge
+	IdentityID string `json:"identity_id"`
 }

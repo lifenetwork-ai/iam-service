@@ -30,6 +30,16 @@ func (r *userIdentifierMappingRepository) ExistsByTenantAndTenantUserID(
 	return count > 0, nil
 }
 
+func (r *userIdentifierMappingRepository) GetByTenantIDAndTenantUserID(ctx context.Context, tenantID, tenantUserID string) (*domain.UserIdentifierMapping, error) {
+	var mapping domain.UserIdentifierMapping
+	if err := r.db.WithContext(ctx).
+		Where("tenant_id = ? AND tenant_user_id = ?", tenantID, tenantUserID).
+		First(&mapping).Error; err != nil {
+		return nil, err
+	}
+	return &mapping, nil
+}
+
 func (r *userIdentifierMappingRepository) GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error) {
 	var mapping domain.UserIdentifierMapping
 	if err := r.db.WithContext(ctx).
