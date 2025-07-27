@@ -98,6 +98,12 @@ func RegisterRoutes(
 		userHandler.AddIdentifier,
 	)
 
+	userRouter.POST(
+		"/me/update-identifier",
+		authMiddleware.RequireAuth(),
+		userHandler.UpdateIdentifier,
+	)
+
 	// SECTION: Courier (OTP delivery) routes
 	courierHandler := handlers.NewCourierHandler(ucases.CourierUCase)
 	courierRouter := v1.Group("courier")

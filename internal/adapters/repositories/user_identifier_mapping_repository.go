@@ -55,3 +55,7 @@ func (r *userIdentifierMappingRepository) ExistsMapping(ctx context.Context, ten
 func (r *userIdentifierMappingRepository) Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
 	return tx.Create(mapping).Error
 }
+
+func (r *userIdentifierMappingRepository) Update(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
+	return tx.Model(&domain.UserIdentifierMapping{}).Where("global_user_id = ? AND tenant_id = ?", mapping.GlobalUserID, mapping.TenantID).Updates(mapping).Error
+}
