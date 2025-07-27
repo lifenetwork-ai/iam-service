@@ -57,10 +57,6 @@ const (
 	ChannelWhatsApp = "whatsapp"
 	ChannelZalo     = "zalo"
 
-	// Tenant names
-	TenantLifeAI   = "life_ai"
-	TenantGenetica = "genetica"
-
 	// Retry related constants
 	MaxOTPRetryCount   = 3
 	RetryDelayDuration = 30 * time.Second
