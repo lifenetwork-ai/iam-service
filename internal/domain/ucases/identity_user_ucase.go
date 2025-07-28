@@ -362,7 +362,7 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	return nil
 }
 
-// rollbackBindIAMToUpdateIdentifier rolls back the changes to Kratos when the update identifier flow fails
+// rollbackKratosUpdateIdentifier rolls back the changes to Kratos when the update identifier flow fails
 func (u *userUseCase) rollbackKratosUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
