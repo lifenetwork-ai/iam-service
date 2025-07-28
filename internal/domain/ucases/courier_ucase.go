@@ -2,6 +2,7 @@ package ucases
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -9,25 +10,65 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
+	cachingtypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	otpqueue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	services "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 type courierUseCase struct {
-	queue      otpqueue.OTPQueueRepository
-	defaultTTL time.Duration
+	channelCache cachingtypes.CacheRepository
+	queue        otpqueue.OTPQueueRepository
+	defaultTTL   time.Duration
+	smsProvider  services.SMSProvider
 }
 
 func NewCourierUseCase(
 	queue otpqueue.OTPQueueRepository,
+	smsProvider services.SMSProvider,
+	channelCache cachingtypes.CacheRepository,
 ) interfaces.CourierUseCase {
 	return &courierUseCase{
-		queue:      queue,
-		defaultTTL: constants.DefaultChallengeDuration,
+		queue:        queue,
+		defaultTTL:   constants.DefaultChallengeDuration,
+		smsProvider:  smsProvider,
+		channelCache: channelCache,
 	}
+}
+
+// ChooseChannel chooses the channel to send OTP to the receiver
+func (u *courierUseCase) ChooseChannel(ctx context.Context, tenantName, receiver, channel string) *domainerrors.DomainError {
+	key := &cachingtypes.Keyer{
+		Raw: fmt.Sprintf("channel:%s:%s", tenantName, receiver),
+	}
+
+	err := u.channelCache.SaveItem(key, channel, u.defaultTTL)
+	if err != nil {
+		return domainerrors.NewInternalError("MSG_CHOOSE_CHANNEL_FAILED", "Failed to choose channel to send OTP").WithCause(err)
+	}
+
+	return nil
+}
+
+func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver string) (types.ChooseChannelResponse, *domainerrors.DomainError) {
+	key := &cachingtypes.Keyer{
+		Raw: fmt.Sprintf("channel:%s:%s", tenantName, receiver),
+	}
+
+	var response string
+
+	err := u.channelCache.RetrieveItem(key, &response)
+	if err != nil {
+		return types.ChooseChannelResponse{}, domainerrors.NewInternalError("MSG_GET_CHANNEL_FAILED", "Failed to get channel from cache").WithCause(err)
+	}
+
+	return types.ChooseChannelResponse{
+		Channel: response,
+	}, nil
 }
 
 func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) *domainerrors.DomainError {
@@ -69,7 +110,18 @@ func (u *courierUseCase) GetAvailableChannels(ctx context.Context, tenantName, r
 	return channels
 }
 
-func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, channel string) *domainerrors.DomainError {
+func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver string) *domainerrors.DomainError {
+	channel, usecaseErr := u.GetChannel(ctx, tenantName, receiver)
+	if usecaseErr != nil {
+		return usecaseErr
+	}
+
+	if channel.Channel == "" {
+		return domainerrors.NewInternalError("MSG_CHANNEL_NOT_FOUND", "Channel not found").WithDetails([]any{
+			map[string]string{"channel": channel.Channel},
+		})
+	}
+
 	// Get OTP from queue
 	item, err := u.queue.Get(ctx, tenantName, receiver)
 	if err != nil {
@@ -77,12 +129,12 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 	}
 
 	// Send OTP via the corresponding provider
-	if err := sendViaProvider(ctx, channel, receiver, item.Message); err != nil {
+	if err := u.smsProvider.SendOTP(ctx, tenantName, receiver, channel.Channel, item.Message); err != nil {
 		delay := utils.ComputeBackoffDuration(1)
 		retryTask := otpqueue.RetryTask{
 			Receiver:   receiver,
 			Message:    item.Message,
-			Channel:    channel,
+			Channel:    channel.Channel,
 			TenantName: tenantName,
 			RetryCount: 1,
 			ReadyAt:    time.Now().Add(delay),
@@ -126,7 +178,7 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 			}
 
 			// Try sending
-			err := sendViaProvider(ctx, currentTask.Channel, currentTask.Receiver, currentTask.Message)
+			err := u.smsProvider.SendOTP(ctx, currentTask.TenantName, currentTask.Receiver, currentTask.Channel, currentTask.Message)
 			if err != nil {
 				if currentTask.RetryCount < constants.MaxOTPRetryCount {
 					currentTask.RetryCount++

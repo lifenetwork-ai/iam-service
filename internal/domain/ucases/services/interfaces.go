@@ -52,3 +52,7 @@ type KetoService interface {
 	// BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPermissionRequestDTO) (bool, *domainerrors.DomainError)
 	CreateRelationTuple(ctx context.Context, request types.CreateRelationTupleRequest) *domainerrors.DomainError
 }
+
+type SMSProvider interface {
+	SendOTP(ctx context.Context, tenantName, receiver, channel, message string) error
+}

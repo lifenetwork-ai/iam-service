@@ -58,19 +58,11 @@ func (h *courierHandler) ReceiveCourierMessageHandler(ctx *gin.Context) {
 // @Tags courier
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Success 200 {object} response.SuccessResponse{data=[]string} "List of available channels"
 // @Failure 400 {object} response.ErrorResponse "Invalid receiver"
 // @Failure 401 {object} response.ErrorResponse "Unauthorized"
 // @Router /api/v1/courier/available-channels [get]
 func (h *courierHandler) GetAvailableChannelsHandler(ctx *gin.Context) {
-	// Get authenticated user from context
-	user, err := middleware.GetUserFromContext(ctx)
-	if err != nil {
-		httpresponse.Error(ctx, http.StatusUnauthorized, "MSG_UNAUTHORIZED", "Unauthorized", err)
-		return
-	}
-
 	// Get tenant from context
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
@@ -78,13 +70,46 @@ func (h *courierHandler) GetAvailableChannelsHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Only support phone number
-	receiver := user.Phone
-	if receiver == "" {
-		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_RECEIVER", "Receiver phone number is required", nil)
+	var req dto.CourierGetAvailableChannelsRequestDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid request payload", err)
 		return
 	}
 
-	channels := h.ucase.GetAvailableChannels(ctx, tenant.Name, receiver)
+	channels := h.ucase.GetAvailableChannels(ctx, tenant.Name, req.Receiver)
 	httpresponse.Success(ctx, http.StatusOK, channels)
+}
+
+// ChooseChannelHandler chooses a channel for a receiver
+// @Summary Choose a channel for a receiver
+// @Description Chooses a channel for a receiver (SMS, WhatsApp, Zalo)
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Tags courier
+// @Accept json
+// @Produce json
+func (h *courierHandler) ChooseChannelHandler(ctx *gin.Context) {
+	var req dto.CourierChooseChannelRequestDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid request payload", err)
+		return
+	}
+
+	if req.Channel == "" || req.Receiver == "" {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_FIELDS", "Channel and Receiver are required", nil)
+		return
+	}
+
+	tenant, err := middleware.GetTenantFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
+		return
+	}
+
+	usecaseErr := h.ucase.ChooseChannel(ctx, tenant.Name, req.Receiver, req.Channel)
+	if usecaseErr != nil {
+		handleDomainError(ctx, usecaseErr)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, "Channel chosen successfully")
 }

@@ -376,14 +376,6 @@ const docTemplate = `{
                         "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "default": "Bearer \u003ctoken\u003e",
-                        "description": "Bearer Token (Bearer ory...)",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
                     }
                 ],
                 "responses": {

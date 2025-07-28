@@ -68,6 +68,6 @@ func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
 		AdminUCase:      ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
 		TenantUCase:     ucases.NewTenantUseCase(repos.TenantRepo),
 		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo), repos.UserIdentityRepo),
-		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background())),
+		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background()), instances.SMSProviderInstance(), repos.CacheRepo),
 	}
 }

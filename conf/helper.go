@@ -16,6 +16,10 @@ func GetAppName() string {
 	return configuration.AppName
 }
 
+func GetSmsConfiguration() *SmsConfiguration {
+	return &configuration.Sms
+}
+
 func IsDebugMode() bool {
 	return configuration.Env == "DEV"
 }
