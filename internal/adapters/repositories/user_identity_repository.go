@@ -121,3 +121,7 @@ func (r *userIdentityRepository) ExistsByGlobalUserIDAndType(ctx context.Context
 	}
 	return count > 0, nil
 }
+
+func (r *userIdentityRepository) Delete(tx *gorm.DB, identityID string) error {
+	return tx.Delete(&domain.UserIdentity{ID: identityID}).Error
+}

@@ -261,17 +261,30 @@ func (k *kratosServiceImpl) GetVerificationFlow(ctx context.Context, tenantID uu
 }
 
 // SubmitVerificationFlow submits a verification flow
-func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flowID string, code *string) (*kratos.VerificationFlow, error) {
+func (k *kratosServiceImpl) SubmitVerificationFlow(ctx context.Context, tenantID uuid.UUID, flowID string, identifier *string, identifierType constants.IdentifierType, code *string) (*kratos.VerificationFlow, error) {
 	publicAPI, err := k.client.PublicAPI(tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get public API client: %w", err)
 	}
 
-	body := kratos.UpdateVerificationFlowBody{
-		UpdateVerificationFlowWithCodeMethod: &kratos.UpdateVerificationFlowWithCodeMethod{
+	var body kratos.UpdateVerificationFlowBody
+	switch identifierType {
+	case constants.IdentifierEmail:
+		body.UpdateVerificationFlowWithCodeMethod = &kratos.UpdateVerificationFlowWithCodeMethod{
 			Method: constants.MethodTypeCode.String(),
 			Code:   code,
-		},
+			Email:  identifier,
+		}
+	case constants.IdentifierPhone:
+		body.UpdateVerificationFlowWithCodeMethod = &kratos.UpdateVerificationFlowWithCodeMethod{
+			Method: constants.MethodTypeCode.String(),
+			Code:   code,
+			AdditionalProperties: map[string]interface{}{
+				"phone": *identifier,
+			},
+		}
+	default:
+		return nil, fmt.Errorf("unsupported identifier type: %s", identifierType)
 	}
 
 	result, resp, err := publicAPI.FrontendAPI.UpdateVerificationFlow(ctx).
@@ -465,6 +478,52 @@ func (k *kratosServiceImpl) SubmitSettingsFlow(
 	}
 
 	return result, nil
+}
+
+// UpdateIdentifierTrait updates the identifier trait (email or phone number) in the identity
+func (k *kratosServiceImpl) UpdateIdentifierTraitAdmin(ctx context.Context, tenantID, identityID uuid.UUID, traits map[string]interface{}) error {
+	adminAPI, err := k.client.AdminAPI(tenantID)
+	if err != nil {
+		return fmt.Errorf("get admin API failed: %w", err)
+	}
+
+	_, _, err = adminAPI.IdentityAPI.UpdateIdentity(ctx, identityID.String()).
+		UpdateIdentityBody(kratos.UpdateIdentityBody{
+			Traits: traits,
+		}).
+		Execute()
+	if err != nil {
+		return fmt.Errorf("update identity failed: %w", err)
+	}
+
+	return nil
+}
+
+func (k *kratosServiceImpl) GetIdentity(ctx context.Context, tenantID, identityID uuid.UUID) (*kratos.Identity, error) {
+	adminAPI, err := k.client.AdminAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("get admin API failed: %w", err)
+	}
+
+	identity, _, err := adminAPI.IdentityAPI.GetIdentity(ctx, identityID.String()).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("get identity failed: %w", err)
+	}
+	return identity, nil
+}
+
+func (k *kratosServiceImpl) DeleteIdentifierAdmin(ctx context.Context, tenantID, identityID uuid.UUID) error {
+	adminAPI, err := k.client.AdminAPI(tenantID)
+	if err != nil {
+		return fmt.Errorf("get admin API failed: %w", err)
+	}
+
+	_, err = adminAPI.IdentityAPI.DeleteIdentity(ctx, identityID.String()).Execute()
+	if err != nil {
+		return fmt.Errorf("delete identity failed: %w", err)
+	}
+
+	return nil
 }
 
 // parseKratosErrorResponse parses error response from Kratos and returns appropriate error

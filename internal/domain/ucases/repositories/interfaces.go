@@ -49,6 +49,8 @@ type UserIdentifierMappingRepository interface {
 	ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error)
 	Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
 	GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error)
+	GetByTenantIDAndTenantUserID(ctx context.Context, tenantID, tenantUserID string) (*domain.UserIdentifierMapping, error)
+	Update(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
 }
 
 type UserIdentityRepository interface {
@@ -59,4 +61,5 @@ type UserIdentityRepository interface {
 	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
 	GetByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (*domain.UserIdentity, error)
 	ExistsByGlobalUserIDAndType(ctx context.Context, globalUserID, identityType string) (bool, error)
+	Delete(tx *gorm.DB, identityID string) error
 }

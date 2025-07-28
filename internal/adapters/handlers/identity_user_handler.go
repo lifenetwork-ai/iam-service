@@ -426,3 +426,46 @@ func (h *userHandler) AddIdentifier(ctx *gin.Context) {
 
 	httpresponse.Success(ctx, http.StatusOK, result)
 }
+
+// UpdateIdentifier to update a user's identifier (email or phone)
+// @Summary Update user identifier
+// @Description Update a user's identifier (email or phone)
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)"
+// @Param body body dto.IdentityUserUpdateIdentifierDTO true "Identifier info"
+// @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent for verification"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 409 {object} response.ErrorResponse "Identifier or type already exists"
+// @Failure 429 {object} response.ErrorResponse "Rate limit exceeded"
+// @Failure 500 {object} response.ErrorResponse "Internal server error"
+// @Router /api/v1/users/me/update-identifier [post]
+func (h *userHandler) UpdateIdentifier(ctx *gin.Context) {
+	tenant, err := middleware.GetTenantFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
+		return
+	}
+
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "MSG_UNAUTHORIZED", "Unauthorized", nil)
+		return
+	}
+
+	var req dto.IdentityUserUpdateIdentifierDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
+		return
+	}
+
+	result, usecaseErr := h.ucase.UpdateIdentifier(ctx, user.GlobalUserID, tenant.ID, user.ID, req.NewIdentifier, req.IdentifierType)
+	if usecaseErr != nil {
+		handleDomainError(ctx, usecaseErr)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, result)
+}

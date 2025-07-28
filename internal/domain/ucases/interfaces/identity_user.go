@@ -21,13 +21,6 @@ type IdentityUserUseCase interface {
 		email string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
 
-	ChallengeVerify(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		sessionID string,
-		code string,
-	) (*types.IdentityUserAuthResponse, *errors.DomainError)
-
 	Register(
 		ctx context.Context,
 		tenantID uuid.UUID,
@@ -77,6 +70,15 @@ type IdentityUserUseCase interface {
 		ctx context.Context,
 		tenantID uuid.UUID,
 		globalUserID string,
+		identifier string,
+		identifierType string,
+	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
+
+	UpdateIdentifier(
+		ctx context.Context,
+		globalUserID string,
+		tenantID uuid.UUID,
+		tenantUserID string,
 		identifier string,
 		identifierType string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)

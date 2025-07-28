@@ -160,6 +160,19 @@ definitions:
       phone:
         type: string
     type: object
+  dto.IdentityUserUpdateIdentifierDTO:
+    properties:
+      identifier_type:
+        enum:
+        - email
+        - phone_number
+        type: string
+      new_identifier:
+        type: string
+    required:
+    - identifier_type
+    - new_identifier
+    type: object
   dto.SelfCheckPermissionRequestDTO:
     properties:
       namespace:
@@ -1037,6 +1050,59 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Add new identifier (email or phone)
+      tags:
+      - users
+  /api/v1/users/me/update-identifier:
+    post:
+      consumes:
+      - application/json
+      description: Update a user's identifier (email or phone)
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Identifier info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserUpdateIdentifierDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent for verification
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.IdentityUserChallengeResponse'
+              type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Identifier or type already exists
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update user identifier
       tags:
       - users
   /api/v1/users/register:
