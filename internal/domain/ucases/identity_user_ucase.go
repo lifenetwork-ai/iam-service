@@ -845,7 +845,7 @@ func (u *userUseCase) UpdateIdentifier(
 	identifierType string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	if identifier == "" {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_REQUEST", "Email and phone are required", nil)
+		return nil, domainerrors.NewValidationError("MSG_INVALID_REQUEST", "Identifier is required", nil)
 	}
 
 	if identifierType == constants.IdentifierEmail.String() && !utils.IsEmail(identifier) {
