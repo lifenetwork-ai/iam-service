@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/lifenetwork-ai/iam-service/constants"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -119,7 +120,19 @@ func extractTenantNameFromBody(body string) string {
 		return ""
 	}
 
-	return matches[1]
+	return normalizeTenant(matches[1])
+}
+
+// normalizeTenant standardizes tenant display names.
+func normalizeTenant(t string) string {
+	switch strings.ToLower(t) {
+	case "life_ai", "lifeai", "life ai":
+		return constants.TenantLifeAI
+	case "genetica":
+		return constants.TenantGenetica
+	default:
+		return t
+	}
 }
 
 // TODO: refactor this later
