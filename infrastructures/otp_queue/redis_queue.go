@@ -97,9 +97,10 @@ func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, 
 	}
 
 	logger.GetLogger().Infof(
-		"[EnqueueRetry] Saving retry task for %s | Retry #%d | ReadyAt = %s",
+		"[EnqueueRetry] Saving retry task for %s | Retry #%d | Delay = %s | ReadyAt = %s",
 		task.Receiver,
 		task.RetryCount,
+		delay,
 		task.ReadyAt.Format(time.RFC3339),
 	)
 
