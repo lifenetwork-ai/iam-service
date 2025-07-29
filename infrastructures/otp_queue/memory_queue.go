@@ -68,9 +68,8 @@ func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask,
 			if prevTask, ok := existing.(types.RetryTask); ok {
 				task.RetryCount = prevTask.RetryCount + 1
 			}
-		} else {
-			task.RetryCount = 1
 		}
+		// If not found or not castable, keep RetryCount as 1
 	} else {
 		task.RetryCount++ // Increment retry count
 	}
@@ -80,9 +79,9 @@ func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask,
 	}
 
 	// Save task
+	logger.GetLogger().Infof("[EnqueueRetry] Saving retry task for %s | Retry #%d | Delay = %s | ReadyAt = %s",
+		task.Receiver, task.RetryCount, delay, task.ReadyAt.Format(time.RFC3339))
 	q.cache.Set(key, task, retryTaskTTL)
-	logger.GetLogger().Infof("[EnqueueRetry] Saving retry task for %s | Retry #%d | ReadyAt = %s",
-		task.Receiver, task.RetryCount, task.ReadyAt.Format(time.RFC3339))
 	return nil
 }
 
