@@ -13,7 +13,6 @@ import (
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
-	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 type courierUseCase struct {
@@ -84,16 +83,23 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 		return domainerrors.NewInternalError("MSG_GET_OTP_FAILED", "Failed to get OTP from queue").WithCause(err)
 	}
 
-	// Send OTP via the corresponding provider
+	// Always delete the OTP from queue — success or not
+	defer func() {
+		if delErr := u.queue.Delete(ctx, tenantName, receiver); delErr != nil {
+			logger.GetLogger().Warnf("Failed to delete OTP from queue after attempt: %v", delErr)
+		}
+	}()
+
+	// Attempt to send OTP
 	if err := sendViaProvider(ctx, channel, receiver, item.Message); err != nil {
-		delay := utils.ComputeBackoffDuration(1)
+		// Prepare retry task
 		retryTask := otpqueue.RetryTask{
 			Receiver:   receiver,
 			Message:    item.Message,
 			Channel:    channel,
 			TenantName: tenantName,
 			RetryCount: 1,
-			ReadyAt:    time.Now().Add(delay),
+			// ReadyAt will be computed inside EnqueueRetry
 		}
 		if err := u.queue.EnqueueRetry(ctx, retryTask); err != nil {
 			return domainerrors.NewInternalError("MSG_RETRY_ENQUEUE_FAILED", "Failed to enqueue retry task").WithCause(err)
@@ -101,12 +107,7 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 		return domainerrors.NewInternalError("MSG_DELIVER_FAILED", "Failed to deliver OTP. Will retry later").WithCause(err)
 	}
 
-	// Send success => delete OTP from queue
-	if err := u.queue.Delete(ctx, tenantName, receiver); err != nil {
-		return domainerrors.NewInternalError("MSG_DELETE_OTP_FAILED", "Failed to delete OTP after successful delivery").WithCause(err)
-	}
-
-	return nil
+	return nil // delivery success
 }
 
 func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (int, *domainerrors.DomainError) {
