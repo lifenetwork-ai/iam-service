@@ -85,7 +85,11 @@ func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, 
 		task.RetryCount = 1
 	}
 
-	task.ReadyAt = time.Now().Add(delay)
+	// Only set ReadyAt if not set
+	if task.ReadyAt.IsZero() {
+		task.ReadyAt = time.Now().Add(delay)
+	}
+
 	data, err := json.Marshal(task)
 	if err != nil {
 		return fmt.Errorf("failed to marshal retry task: %w", err)

@@ -71,8 +71,10 @@ func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask,
 		task.RetryCount = 1
 	}
 
-	// Set ReadyAt timestamp
-	task.ReadyAt = time.Now().Add(delay)
+	// If ReadyAt not set, assign it
+	if task.ReadyAt.IsZero() {
+		task.ReadyAt = time.Now().Add(delay)
+	}
 
 	// Save with long-enough TTL to allow GetDueRetryTasks to fetch it later
 	q.cache.Set(key, task, retryTaskTTL)
