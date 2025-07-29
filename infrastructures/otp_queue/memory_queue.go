@@ -63,7 +63,7 @@ func (q *memoryOTPQueue) Delete(ctx context.Context, tenantName, receiver string
 func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, delay time.Duration) error {
 	key := retryOTPKey(task.TenantName, task.Receiver)
 
-	if task.RetryCount == 0 {
+	if task.RetryCount == 1 {
 		if existing, found := q.cache.Get(key); found {
 			if prevTask, ok := existing.(types.RetryTask); ok {
 				task.RetryCount = prevTask.RetryCount + 1
@@ -71,6 +71,8 @@ func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask,
 		} else {
 			task.RetryCount = 1
 		}
+	} else {
+		task.RetryCount++ // Increment retry count
 	}
 
 	if task.ReadyAt.IsZero() {
