@@ -119,7 +119,6 @@ func extractTenantNameFromBody(body string) string {
 		return ""
 	}
 
-	// Normalize: to lowercase and replace spaces with dashes
 	return matches[1]
 }
 
