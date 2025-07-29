@@ -139,7 +139,11 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 				if currentTask.RetryCount < constants.MaxOTPRetryCount {
 					currentTask.RetryCount++
 					backoffDelay := utils.ComputeBackoffDuration(currentTask.RetryCount)
-					currentTask.ReadyAt = time.Now().Add(backoffDelay)
+					lastTime := currentTask.ReadyAt
+					if lastTime.Before(time.Now()) {
+						lastTime = time.Now()
+					}
+					currentTask.ReadyAt = lastTime.Add(backoffDelay)
 					_ = u.queue.EnqueueRetry(ctx, currentTask, backoffDelay)
 				}
 				_ = u.queue.DeleteRetryTask(ctx, currentTask)
