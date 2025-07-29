@@ -40,6 +40,14 @@ func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) 
 		)
 	}
 
+	if tenantName != constants.TenantLifeAI && tenantName != constants.TenantGenetica {
+		return domainerrors.NewValidationError(
+			"MSG_INVALID_TENANT",
+			"Invalid tenant name",
+			[]any{"Tenant name must be life_ai or genetica"},
+		)
+	}
+
 	item := otpqueue.OTPQueueItem{
 		ID:         uuid.New().String(),
 		Receiver:   receiver,
