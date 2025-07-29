@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -78,6 +79,8 @@ func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask,
 
 	// Save with long-enough TTL to allow GetDueRetryTasks to fetch it later
 	q.cache.Set(key, task, retryTaskTTL)
+	logger.GetLogger().Infof("[EnqueueRetry] Saving retry task for %s | Retry #%d | ReadyAt = %s",
+		task.Receiver, task.RetryCount, task.ReadyAt.Format(time.RFC3339))
 	return nil
 }
 
