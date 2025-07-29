@@ -125,6 +125,44 @@ func (s *RedisOTPQueueTestSuite) Test_EnqueueRetryTask() {
 	require.Empty(s.T(), tasks)
 }
 
+func (s *RedisOTPQueueTestSuite) Test_RetryTask_PersistsUpdatedRetryCountAndReadyAt() {
+	task := types.RetryTask{
+		TenantName: "retryTenant",
+		Receiver:   "persist@example.com",
+		Channel:    "email",
+		Message:    "Test Redis OTP",
+		RetryCount: 1,
+		ReadyAt:    time.Now().Add(300 * time.Millisecond),
+	}
+
+	// Step 1: Enqueue with RetryCount = 1
+	err := s.queue.EnqueueRetry(s.ctx, task, 300*time.Millisecond)
+	require.NoError(s.T(), err)
+
+	time.Sleep(350 * time.Millisecond)
+
+	// Step 2: Fetch due tasks → should be RetryCount = 1
+	tasks, err := s.queue.GetDueRetryTasks(s.ctx, time.Now())
+	require.NoError(s.T(), err)
+	require.Len(s.T(), tasks, 1)
+	require.Equal(s.T(), 1, tasks[0].RetryCount)
+
+	// Step 3: Retry again → RetryCount++
+	tasks[0].RetryCount++
+	newDelay := 1 * time.Second
+	tasks[0].ReadyAt = time.Now().Add(newDelay)
+	err = s.queue.EnqueueRetry(s.ctx, tasks[0], newDelay)
+	require.NoError(s.T(), err)
+
+	// Step 4: Wait until due again
+	time.Sleep(newDelay + 100*time.Millisecond)
+
+	tasks, err = s.queue.GetDueRetryTasks(s.ctx, time.Now())
+	require.NoError(s.T(), err)
+	require.Len(s.T(), tasks, 1)
+	require.Equal(s.T(), 2, tasks[0].RetryCount)
+}
+
 func (s *RedisOTPQueueTestSuite) Test_ListReceivers() {
 	items := []types.OTPQueueItem{
 		{ID: "1", TenantName: "tenantZ", Receiver: "a@example.com", Message: "otpA", CreatedAt: time.Now()},

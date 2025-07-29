@@ -130,6 +130,49 @@ func TestMemoryOTPQueue_RetryTask(t *testing.T) {
 	}
 }
 
+func TestMemoryOTPQueue_RetryTask_PersistsUpdatedRetryCount(t *testing.T) {
+	q := newTestQueue()
+	ctx := context.Background()
+
+	task := types.RetryTask{
+		TenantName: "test_tenant",
+		Receiver:   "persist@example.com",
+		Channel:    "email",
+		Message:    "Test OTP",
+		RetryCount: 1,
+		ReadyAt:    time.Now().Add(200 * time.Millisecond),
+	}
+
+	// Step 1: Enqueue initial retry
+	err := q.EnqueueRetry(ctx, task, 200*time.Millisecond)
+	require.NoError(t, err)
+
+	// Wait until ready
+	time.Sleep(250 * time.Millisecond)
+
+	// Step 2: Get task and confirm RetryCount = 1
+	tasks, err := q.GetDueRetryTasks(ctx, time.Now())
+	require.NoError(t, err)
+	require.Len(t, tasks, 1)
+	require.Equal(t, 1, tasks[0].RetryCount)
+
+	// Step 3: Increase RetryCount and re-enqueue
+	tasks[0].RetryCount++
+	newDelay := 1 * time.Second
+	tasks[0].ReadyAt = time.Now().Add(newDelay)
+	err = q.EnqueueRetry(ctx, tasks[0], newDelay)
+	require.NoError(t, err)
+
+	// Wait again until ready
+	time.Sleep(newDelay + 250*time.Millisecond)
+
+	// Step 4: Get task again and confirm RetryCount = 2
+	tasks, err = q.GetDueRetryTasks(ctx, time.Now())
+	require.NoError(t, err)
+	require.Len(t, tasks, 1)
+	require.Equal(t, 2, tasks[0].RetryCount)
+}
+
 // Test listing receivers with pending OTPs for a given tenant
 func TestMemoryOTPQueue_ListReceivers(t *testing.T) {
 	tests := []struct {

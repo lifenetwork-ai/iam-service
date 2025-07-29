@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
+	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -94,6 +95,13 @@ func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, 
 	if err != nil {
 		return fmt.Errorf("failed to marshal retry task: %w", err)
 	}
+
+	logger.GetLogger().Infof(
+		"[EnqueueRetry] Saving retry task for %s | Retry #%d | ReadyAt = %s",
+		task.Receiver,
+		task.RetryCount,
+		task.ReadyAt.Format(time.RFC3339),
+	)
 
 	score := float64(task.ReadyAt.Unix())
 	pipe := r.client.TxPipeline()
