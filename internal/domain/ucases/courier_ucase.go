@@ -120,33 +120,28 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 	sem := make(chan struct{}, constants.MaxConcurrency)
 
 	for _, task := range tasks {
-		currentTask := task // capture task is necessary for goroutine safety
+		currentTask := task
 
 		g.Go(func() error {
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			// Check OTP still valid before retrying
-			_, getErr := u.queue.Get(ctx, currentTask.TenantName, currentTask.Receiver)
-			if getErr != nil {
-				// OTP expired → skip and clean up retry task
-				_ = u.queue.DeleteRetryTask(ctx, currentTask)
-				return nil
-			}
-
-			// Try sending
-			err := sendViaProvider(ctx, currentTask.Channel, currentTask.Receiver, currentTask.Message)
-			if err != nil {
+			// Send OTP using retry task content directly
+			logger.GetLogger().Infof("Retrying OTP to %s | Retry #%d", currentTask.Receiver, currentTask.RetryCount)
+			if err := sendViaProvider(ctx, currentTask.Channel, currentTask.Receiver, currentTask.Message); err != nil {
 				if currentTask.RetryCount < constants.MaxOTPRetryCount {
 					_ = u.queue.EnqueueRetry(ctx, currentTask)
 				}
-				_ = u.queue.DeleteRetryTask(ctx, currentTask)
-				return nil
+			} else {
+				// Successfully delivered, delete the retry task
+				if err := u.queue.DeleteRetryTask(ctx, currentTask); err != nil {
+					logger.GetLogger().Warnf("Failed to delete retry task after success: %v", err)
+				}
 			}
 
-			// Success: cleanup OTP and retry task
-			_ = u.queue.DeleteRetryTask(ctx, currentTask)
+			// Clean up original OTP if exists (optional)
 			_ = u.queue.Delete(ctx, currentTask.TenantName, currentTask.Receiver)
+
 			return nil
 		})
 	}
