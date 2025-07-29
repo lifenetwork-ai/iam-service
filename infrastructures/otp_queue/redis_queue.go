@@ -9,6 +9,7 @@ import (
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -68,29 +69,33 @@ func (r *redisOTPQueue) Delete(ctx context.Context, tenantName, receiver string)
 }
 
 // EnqueueRetry adds a retry task to the queue
-func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, delay time.Duration) error {
+func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask) error {
 	taskKey := makeTaskKey(task)
 
-	// Get existing task from hash
+	// Try to get existing task to increase RetryCount
 	raw, err := r.client.HGet(ctx, retryTaskMapKey, taskKey).Result()
 	if err != nil && err != redis.Nil {
 		return fmt.Errorf("failed to get existing retry task: %w", err)
 	}
+
 	if err == nil {
 		var existing types.RetryTask
 		if err := json.Unmarshal([]byte(raw), &existing); err == nil {
 			task.RetryCount = existing.RetryCount + 1
 		}
 	}
+
 	if task.RetryCount == 0 {
 		task.RetryCount = 1
 	}
 
-	// Only set ReadyAt if not set
-	if task.ReadyAt.IsZero() {
-		task.ReadyAt = time.Now().Add(delay)
-	}
+	// Compute backoff delay based on RetryCount
+	delay := utils.ComputeBackoffDuration(task.RetryCount)
 
+	// Set ReadyAt to current time + backoff delay
+	task.ReadyAt = time.Now().Add(delay)
+
+	// Marshal task
 	data, err := json.Marshal(task)
 	if err != nil {
 		return fmt.Errorf("failed to marshal retry task: %w", err)
@@ -104,6 +109,7 @@ func (r *redisOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, 
 		task.ReadyAt.Format(time.RFC3339),
 	)
 
+	// Store in sorted set (by ReadyAt timestamp) and hash map
 	score := float64(task.ReadyAt.Unix())
 	pipe := r.client.TxPipeline()
 	pipe.ZAdd(ctx, retryZSetKey, redis.Z{

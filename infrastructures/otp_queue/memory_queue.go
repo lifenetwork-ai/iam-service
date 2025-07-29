@@ -8,6 +8,7 @@ import (
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -59,29 +60,38 @@ func (q *memoryOTPQueue) Delete(ctx context.Context, tenantName, receiver string
 	return nil
 }
 
-// Retry Tasks
-func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask, delay time.Duration) error {
+// EnqueueRetry with backoff duration calculation
+func (q *memoryOTPQueue) EnqueueRetry(ctx context.Context, task types.RetryTask) error {
 	key := retryOTPKey(task.TenantName, task.Receiver)
 
+	// Initialize or increment RetryCount
 	if task.RetryCount == 1 {
 		if existing, found := q.cache.Get(key); found {
 			if prevTask, ok := existing.(types.RetryTask); ok {
 				task.RetryCount = prevTask.RetryCount + 1
 			}
 		}
-		// If not found or not castable, keep RetryCount as 1
 	} else {
-		task.RetryCount++ // Increment retry count
+		task.RetryCount++
 	}
 
-	if task.ReadyAt.IsZero() {
-		task.ReadyAt = time.Now().Add(delay)
-	}
+	// Calculate backoff delay using provided function
+	delay := utils.ComputeBackoffDuration(task.RetryCount)
+
+	// Set ReadyAt based on backoff delay
+	task.ReadyAt = time.Now().Add(delay)
 
 	// Save task
-	logger.GetLogger().Infof("[EnqueueRetry] Saving retry task for %s | Retry #%d | Delay = %s | ReadyAt = %s",
-		task.Receiver, task.RetryCount, delay, task.ReadyAt.Format(time.RFC3339))
 	q.cache.Set(key, task, retryTaskTTL)
+
+	logger.GetLogger().Infof(
+		"[EnqueueRetry] Saving retry task for %s | Retry #%d | Delay = %s | ReadyAt = %s",
+		task.Receiver,
+		task.RetryCount,
+		delay,
+		task.ReadyAt.Format(time.RFC3339),
+	)
+
 	return nil
 }
 

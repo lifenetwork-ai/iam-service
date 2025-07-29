@@ -8,6 +8,7 @@ import (
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/require"
 )
@@ -70,9 +71,8 @@ func TestMemoryOTPQueue_PendingOTP(t *testing.T) {
 // Test enqueueing retry tasks and getting them when due
 func TestMemoryOTPQueue_RetryTask(t *testing.T) {
 	tests := []struct {
-		name      string
-		task      types.RetryTask
-		retryWait time.Duration
+		name string
+		task types.RetryTask
 	}{
 		{
 			name: "basic retry task with increasing count",
@@ -83,7 +83,6 @@ func TestMemoryOTPQueue_RetryTask(t *testing.T) {
 				Message:    "Your OTP is 654321",
 				RetryCount: 1,
 			},
-			retryWait: 1 * time.Second,
 		},
 	}
 
@@ -93,16 +92,16 @@ func TestMemoryOTPQueue_RetryTask(t *testing.T) {
 			ctx := context.Background()
 
 			// Enqueue 1st retry
-			err := q.EnqueueRetry(ctx, tt.task, tt.retryWait)
+			err := q.EnqueueRetry(ctx, tt.task)
 			require.NoError(t, err)
 
 			// Ensure it's not ready yet
-			tasks, err := q.GetDueRetryTasks(ctx, time.Now().Add(-1*time.Second))
+			tasks, err := q.GetDueRetryTasks(ctx, time.Now())
 			require.NoError(t, err)
 			require.Len(t, tasks, 0)
 
-			// Wait until due (add buffer to ensure it's ready)
-			time.Sleep(tt.retryWait + 10*time.Millisecond)
+			// Wait until due
+			time.Sleep(utils.ComputeBackoffDuration(1) + 20*time.Millisecond)
 
 			tasks, err = q.GetDueRetryTasks(ctx, time.Now())
 			require.NoError(t, err)
@@ -110,10 +109,10 @@ func TestMemoryOTPQueue_RetryTask(t *testing.T) {
 			require.Equal(t, 1, tasks[0].RetryCount)
 
 			// Enqueue again -> retry count increases
-			err = q.EnqueueRetry(ctx, tt.task, tt.retryWait)
+			err = q.EnqueueRetry(ctx, tt.task)
 			require.NoError(t, err)
 
-			time.Sleep(tt.retryWait + 10*time.Millisecond)
+			time.Sleep(utils.ComputeBackoffDuration(2) + 20*time.Millisecond)
 
 			tasks, err = q.GetDueRetryTasks(ctx, time.Now())
 			require.NoError(t, err)
@@ -141,15 +140,13 @@ func TestMemoryOTPQueue_RetryTask_PersistsUpdatedRetryCount(t *testing.T) {
 		Channel:    "email",
 		Message:    "Test OTP",
 		RetryCount: 1,
-		ReadyAt:    time.Now().Add(200 * time.Millisecond),
 	}
 
 	// Step 1: Enqueue initial retry
-	err := q.EnqueueRetry(ctx, task, 200*time.Millisecond)
+	err := q.EnqueueRetry(ctx, task)
 	require.NoError(t, err)
 
-	// Wait until ready
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(utils.ComputeBackoffDuration(1) + 20*time.Millisecond)
 
 	// Step 2: Get task and confirm RetryCount = 1
 	tasks, err := q.GetDueRetryTasks(ctx, time.Now())
@@ -158,13 +155,10 @@ func TestMemoryOTPQueue_RetryTask_PersistsUpdatedRetryCount(t *testing.T) {
 	require.Equal(t, 1, tasks[0].RetryCount)
 
 	// Step 3: Re-enqueue
-	newDelay := 1 * time.Second
-	tasks[0].ReadyAt = time.Now().Add(newDelay)
-	err = q.EnqueueRetry(ctx, tasks[0], newDelay)
+	err = q.EnqueueRetry(ctx, tasks[0])
 	require.NoError(t, err)
 
-	// Wait again until ready
-	time.Sleep(newDelay + 250*time.Millisecond)
+	time.Sleep(utils.ComputeBackoffDuration(2) + 20*time.Millisecond)
 
 	// Step 4: Get task again and confirm RetryCount = 2
 	tasks, err = q.GetDueRetryTasks(ctx, time.Now())
@@ -258,25 +252,24 @@ func TestMemoryOTPQueue_Performance_RetryTasks(t *testing.T) {
 	ctx := context.Background()
 	q := newTestQueue()
 
-	// Enqueue retry tasks with slight delay
+	// Enqueue retry tasks
 	start := time.Now()
-	for i := range totalTasks {
+	for i := 0; i < totalTasks; i++ {
 		task := types.RetryTask{
 			TenantName: tenant,
 			Receiver:   fmt.Sprintf("user%d@example.com", i),
 			Channel:    "sms",
 			Message:    "retry-otp",
 			RetryCount: 1,
-			ReadyAt:    time.Now().Add(500 * time.Millisecond), // due soon
 		}
-		err := q.EnqueueRetry(ctx, task, 500*time.Millisecond)
+		err := q.EnqueueRetry(ctx, task)
 		require.NoError(t, err)
 	}
 	enqueueDur := time.Since(start)
 	t.Logf("[PERF] Enqueued %d retry tasks in %v (avg: %v/task)", totalTasks, enqueueDur, enqueueDur/time.Duration(totalTasks))
 
 	// Wait for tasks to be due
-	time.Sleep(600 * time.Millisecond)
+	time.Sleep(utils.ComputeBackoffDuration(1) + 100*time.Millisecond)
 
 	// Fetch due retry tasks
 	start = time.Now()

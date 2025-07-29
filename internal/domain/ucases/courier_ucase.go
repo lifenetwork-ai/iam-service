@@ -95,7 +95,7 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 			RetryCount: 1,
 			ReadyAt:    time.Now().Add(delay),
 		}
-		if err := u.queue.EnqueueRetry(ctx, retryTask, delay); err != nil {
+		if err := u.queue.EnqueueRetry(ctx, retryTask); err != nil {
 			return domainerrors.NewInternalError("MSG_RETRY_ENQUEUE_FAILED", "Failed to enqueue retry task").WithCause(err)
 		}
 		return domainerrors.NewInternalError("MSG_DELIVER_FAILED", "Failed to deliver OTP. Will retry later").WithCause(err)
@@ -137,13 +137,7 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 			err := sendViaProvider(ctx, currentTask.Channel, currentTask.Receiver, currentTask.Message)
 			if err != nil {
 				if currentTask.RetryCount < constants.MaxOTPRetryCount {
-					backoffDelay := utils.ComputeBackoffDuration(currentTask.RetryCount + 1)
-					lastTime := currentTask.ReadyAt
-					if lastTime.Before(time.Now()) {
-						lastTime = time.Now()
-					}
-					currentTask.ReadyAt = lastTime.Add(backoffDelay)
-					_ = u.queue.EnqueueRetry(ctx, currentTask, backoffDelay)
+					_ = u.queue.EnqueueRetry(ctx, currentTask)
 				}
 				_ = u.queue.DeleteRetryTask(ctx, currentTask)
 				return nil
