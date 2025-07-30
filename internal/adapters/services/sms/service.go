@@ -23,17 +23,18 @@ func NewSMSProvider(config *conf.SmsConfiguration) *smsProvider {
 	}
 }
 
-func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, message string) error {
+func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string) error {
 	logger.GetLogger().Infof("Sending OTP to %s", receiver)
+	otpMessage := GetOTPMessage(tenantName, otp)
 	switch channel {
 	case constants.ChannelSMS:
-		return s.sendSMS(ctx, tenantName, receiver, message)
+		return s.sendSMS(ctx, tenantName, receiver, otpMessage)
 	case constants.ChannelWhatsApp:
-		return s.sendToWhatsapp(ctx, tenantName, receiver, message)
+		return s.sendToWhatsapp(ctx, tenantName, receiver, otpMessage)
 	case constants.ChannelZalo:
-		return s.sendToZalo(ctx, tenantName, receiver, message)
+		return s.sendToZalo(ctx, tenantName, receiver, otpMessage)
 	default:
-		return s.sendToWebhook(ctx, tenantName, receiver, message)
+		return s.sendToWebhook(ctx, tenantName, receiver, otpMessage)
 	}
 }
 

@@ -2,15 +2,8 @@ package sms
 
 import "text/template"
 
-// "Dear Valued Customer,
-
-// To authenticate, please use the following One Time Password (OTP) from LIFE AI:
-
-// 234653
-
-// Your OTP will be valid for 2 minutes. Do not share this OTP with anyone. LIFE AI takes your account security very seriously."
 var (
-	Template = template.Must(template.New("sms").Parse(`
+	OTPTemplate = template.Must(template.New("otp").Parse(`
 		Dear Valued Customer,
 
 To authenticate, please use the following One Time Password (OTP) from {{ .TenantName }}:
