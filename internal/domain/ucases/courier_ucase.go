@@ -135,7 +135,7 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 					return nil // skip deletion
 				}
 
-				// Exceeded max → log + delete
+				// Exceeded max -> log + delete
 				logger.GetLogger().Warnf("Exceeded max retry count for %s | Retry #%d. Discarding.", currentTask.Receiver, currentTask.RetryCount)
 			} else {
 				// Delivered successfully
