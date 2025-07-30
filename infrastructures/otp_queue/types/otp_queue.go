@@ -27,7 +27,7 @@ type OTPQueueRepository interface {
 	Get(ctx context.Context, tenantName, receiver string) (*OTPQueueItem, error)
 	Delete(ctx context.Context, tenantName, receiver string) error
 
-	EnqueueRetry(ctx context.Context, task RetryTask, delay time.Duration) error
+	EnqueueRetry(ctx context.Context, task RetryTask) error
 	GetDueRetryTasks(ctx context.Context, now time.Time) ([]RetryTask, error)
 	DeleteRetryTask(ctx context.Context, task RetryTask) error
 

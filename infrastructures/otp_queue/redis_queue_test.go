@@ -8,6 +8,7 @@ import (
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -95,34 +96,66 @@ func (s *RedisOTPQueueTestSuite) Test_EnqueueRetryTask() {
 		Message:    "retry OTP",
 	}
 
-	err := s.queue.EnqueueRetry(s.ctx, task, 1*time.Second)
+	// Enqueue retry 1st
+	err := s.queue.EnqueueRetry(s.ctx, task)
 	require.NoError(s.T(), err)
 
-	time.Sleep(1100 * time.Millisecond)
+	time.Sleep(utils.ComputeBackoffDuration(1) + 100*time.Millisecond)
 
 	tasks, err := s.queue.GetDueRetryTasks(s.ctx, time.Now())
 	require.NoError(s.T(), err)
 	require.Len(s.T(), tasks, 1)
 	require.Equal(s.T(), 1, tasks[0].RetryCount)
 
-	// Enqueue again → should increment retry count
-	err = s.queue.EnqueueRetry(s.ctx, task, 1*time.Second)
+	// Enqueue 2nd → RetryCount = 2
+	err = s.queue.EnqueueRetry(s.ctx, task)
 	require.NoError(s.T(), err)
 
-	time.Sleep(1100 * time.Millisecond)
+	time.Sleep(utils.ComputeBackoffDuration(2) + 100*time.Millisecond)
 
 	tasks, err = s.queue.GetDueRetryTasks(s.ctx, time.Now())
 	require.NoError(s.T(), err)
 	require.Len(s.T(), tasks, 1)
 	require.Equal(s.T(), 2, tasks[0].RetryCount)
 
-	// Delete it
+	// Delete retry task
 	err = s.queue.DeleteRetryTask(s.ctx, task)
 	require.NoError(s.T(), err)
 
 	tasks, err = s.queue.GetDueRetryTasks(s.ctx, time.Now())
 	require.NoError(s.T(), err)
 	require.Empty(s.T(), tasks)
+}
+
+func (s *RedisOTPQueueTestSuite) Test_RetryTask_PersistsUpdatedRetryCountAndReadyAt() {
+	task := types.RetryTask{
+		TenantName: "retryTenant",
+		Receiver:   "persist@example.com",
+		Channel:    "email",
+		Message:    "Test Redis OTP",
+		RetryCount: 1,
+	}
+
+	err := s.queue.EnqueueRetry(s.ctx, task)
+	require.NoError(s.T(), err)
+
+	time.Sleep(utils.ComputeBackoffDuration(1) + 100*time.Millisecond)
+
+	tasks, err := s.queue.GetDueRetryTasks(s.ctx, time.Now())
+	require.NoError(s.T(), err)
+	require.Len(s.T(), tasks, 1)
+	require.Equal(s.T(), 1, tasks[0].RetryCount)
+
+	// Retry 2nd time
+	err = s.queue.EnqueueRetry(s.ctx, task)
+	require.NoError(s.T(), err)
+
+	time.Sleep(utils.ComputeBackoffDuration(2) + 100*time.Millisecond)
+
+	tasks, err = s.queue.GetDueRetryTasks(s.ctx, time.Now())
+	require.NoError(s.T(), err)
+	require.Len(s.T(), tasks, 1)
+	require.Equal(s.T(), 2, tasks[0].RetryCount)
 }
 
 func (s *RedisOTPQueueTestSuite) Test_ListReceivers() {
@@ -182,31 +215,29 @@ func (s *RedisOTPQueueTestSuite) Test_Performance_RetryTasks() {
 	const tenant = "retryPerfTenant"
 	ctx := s.ctx
 
-	// Enqueue many retry tasks
+	// Enqueue retry tasks
 	start := time.Now()
-	for i := range totalTasks {
+	for i := 0; i < totalTasks; i++ {
 		task := types.RetryTask{
 			TenantName: tenant,
 			Receiver:   fmt.Sprintf("user%d@example.com", i),
 			Channel:    "sms",
 			Message:    "retry-otp",
 			RetryCount: 1,
-			ReadyAt:    time.Now().Add(500 * time.Millisecond), // due soon
 		}
-		err := s.queue.EnqueueRetry(ctx, task, 500*time.Millisecond)
+		err := s.queue.EnqueueRetry(ctx, task)
 		require.NoError(s.T(), err)
 	}
 	enqueueDur := time.Since(start)
 	s.T().Logf("[PERF] Enqueued %d retry tasks in %v (avg: %v/task)", totalTasks, enqueueDur, enqueueDur/time.Duration(totalTasks))
 
-	// Wait for tasks to become due
-	time.Sleep(600 * time.Millisecond)
+	time.Sleep(utils.ComputeBackoffDuration(1) + 200*time.Millisecond)
 
-	// Fetch due retry tasks
 	start = time.Now()
 	tasks, err := s.queue.GetDueRetryTasks(ctx, time.Now())
 	require.NoError(s.T(), err)
 	require.Len(s.T(), tasks, totalTasks)
+
 	fetchDur := time.Since(start)
 	s.T().Logf("[PERF] Retrieved %d retry tasks in %v (avg: %v/task)", totalTasks, fetchDur, fetchDur/time.Duration(totalTasks))
 }

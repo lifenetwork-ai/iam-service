@@ -63,7 +63,7 @@ const (
 	// Retry related constants
 	MaxOTPRetryCount   = 3
 	RetryDelayDuration = 30 * time.Second
-	BaseRetryDuration  = 10 * time.Second // Base duration for exponential backoff
+	BaseRetryDuration  = 3 * time.Second // Base duration for exponential backoff
 
 	// OTP worker interval
 	OTPDeliveryWorkerInterval = 10 * time.Second

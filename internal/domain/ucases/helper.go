@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/lifenetwork-ai/iam-service/constants"
@@ -108,17 +109,30 @@ func extractStringFromTraits(traits map[string]interface{}, key, defaultValue st
 	}
 }
 
-// extractTenantNameFromBody extracts the tenant name from the message body
+// extractTenantNameFromBody extracts the tenant name from the first [] in the message body.
+// E.g. [LIFE AI]
 func extractTenantNameFromBody(body string) string {
-	// Eg: [genetica] Your login code is: 123456...
-	if len(body) < 3 || body[0] != '[' {
+	// Regex to find [TENANT]
+	re := regexp.MustCompile(`\[(.*?)\]`)
+	matches := re.FindStringSubmatch(body)
+
+	if len(matches) < 2 {
 		return ""
 	}
-	end := strings.Index(body, "]")
-	if end <= 1 {
-		return ""
+
+	return normalizeTenant(matches[1])
+}
+
+// normalizeTenant standardizes tenant display names.
+func normalizeTenant(t string) string {
+	switch strings.ToLower(t) {
+	case "life_ai", "lifeai", "life ai":
+		return constants.TenantLifeAI
+	case "genetica":
+		return constants.TenantGenetica
+	default:
+		return t
 	}
-	return strings.ToLower(body[1:end]) // normalize tenant name
 }
 
 // TODO: refactor this later
