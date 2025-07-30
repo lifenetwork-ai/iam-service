@@ -499,6 +499,7 @@ func (u *userUseCase) VerifyLogin(
 func (u *userUseCase) Register(
 	ctx context.Context,
 	tenantID uuid.UUID,
+	lang string,
 	email string,
 	phone string,
 ) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
@@ -553,6 +554,7 @@ func (u *userUseCase) Register(
 	// Prepare traits
 	traits := map[string]interface{}{
 		"tenant": tenant.Name,
+		"lang":   lang,
 	}
 	if email != "" {
 		traits[constants.IdentifierEmail.String()] = email

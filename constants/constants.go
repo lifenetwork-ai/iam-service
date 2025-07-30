@@ -69,3 +69,9 @@ const (
 	OTPDeliveryWorkerInterval = 10 * time.Second
 	OTPRetryWorkerInterval    = 30 * time.Second
 )
+
+const (
+	DefaultLanguage    = "en" // Default language for user registration
+	EnglishLanguage    = "en"
+	VietnameseLanguage = "vi"
+)

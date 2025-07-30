@@ -304,7 +304,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param register body dto.IdentityUserRegisterDTO true "Only email or phone must be provided, if both are provided then error will be returned"
+// @Param register body dto.IdentityUserRegisterDTO true "Only `email` or `phone` must be provided, if both are provided then error will be returned. `lang` is optional and defaults to `en`, supported values are `en` and `vi`."
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserAuthResponse} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 409 {object} response.ErrorResponse "Email or phone number already exists"
@@ -337,6 +337,10 @@ func (h *userHandler) Register(ctx *gin.Context) {
 		return
 	}
 
+	if reqPayload.Lang == "" {
+		reqPayload.Lang = constants.DefaultLanguage
+	}
+
 	if errResponse := validateRegisterPayload(reqPayload); errResponse != nil {
 		httpresponse.Error(
 			ctx,
@@ -348,7 +352,7 @@ func (h *userHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	auth, usecaseErr := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload.Email, reqPayload.Phone)
+	auth, usecaseErr := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload.Lang, reqPayload.Email, reqPayload.Phone)
 	if usecaseErr != nil {
 		handleDomainError(ctx, usecaseErr)
 		return
@@ -371,6 +375,14 @@ func validateRegisterPayload(reqPayload dto.IdentityUserRegisterDTO) *dto.ErrorD
 			Status:  http.StatusBadRequest,
 			Code:    "MSG_ONLY_EMAIL_OR_PHONE_MUST_BE_PROVIDED",
 			Message: "Only email or phone must be provided",
+		}
+	}
+
+	if reqPayload.Lang != constants.EnglishLanguage && reqPayload.Lang != constants.VietnameseLanguage {
+		return &dto.ErrorDTOResponse{
+			Status:  http.StatusBadRequest,
+			Code:    "MSG_NOT_SUPPORTED_LANGUAGE",
+			Message: "Language must be either 'en' or 'vi'",
 		}
 	}
 
