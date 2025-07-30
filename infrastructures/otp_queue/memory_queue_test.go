@@ -81,7 +81,6 @@ func TestMemoryOTPQueue_RetryTask(t *testing.T) {
 				Receiver:   "user@example.com",
 				Channel:    "email",
 				Message:    "Your OTP is 654321",
-				RetryCount: 1,
 			},
 		},
 	}
@@ -117,7 +116,7 @@ func TestMemoryOTPQueue_RetryTask(t *testing.T) {
 			tasks, err = q.GetDueRetryTasks(ctx, time.Now())
 			require.NoError(t, err)
 			require.Len(t, tasks, 1)
-			require.Equal(t, 2, tasks[0].RetryCount)
+			require.Equal(t, 1, tasks[0].RetryCount)
 
 			// Delete retry task
 			err = q.DeleteRetryTask(ctx, tt.task)
@@ -139,7 +138,6 @@ func TestMemoryOTPQueue_RetryTask_PersistsUpdatedRetryCount(t *testing.T) {
 		Receiver:   "persist@example.com",
 		Channel:    "email",
 		Message:    "Test OTP",
-		RetryCount: 1,
 	}
 
 	// Step 1: Enqueue initial retry
@@ -160,7 +158,7 @@ func TestMemoryOTPQueue_RetryTask_PersistsUpdatedRetryCount(t *testing.T) {
 
 	time.Sleep(utils.ComputeBackoffDuration(2) + 20*time.Millisecond)
 
-	// Step 4: Get task again and confirm RetryCount = 2
+	// Step 4: Get task again and confirm RetryCount = 1
 	tasks, err = q.GetDueRetryTasks(ctx, time.Now())
 	require.NoError(t, err)
 	require.Len(t, tasks, 1)

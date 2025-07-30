@@ -133,7 +133,6 @@ func (s *RedisOTPQueueTestSuite) Test_RetryTask_PersistsUpdatedRetryCountAndRead
 		Receiver:   "persist@example.com",
 		Channel:    "email",
 		Message:    "Test Redis OTP",
-		RetryCount: 1,
 	}
 
 	err := s.queue.EnqueueRetry(s.ctx, task)
@@ -223,7 +222,6 @@ func (s *RedisOTPQueueTestSuite) Test_Performance_RetryTasks() {
 			Receiver:   fmt.Sprintf("user%d@example.com", i),
 			Channel:    "sms",
 			Message:    "retry-otp",
-			RetryCount: 1,
 		}
 		err := s.queue.EnqueueRetry(ctx, task)
 		require.NoError(s.T(), err)

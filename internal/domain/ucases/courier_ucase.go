@@ -98,7 +98,6 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver, c
 			Message:    item.Message,
 			Channel:    channel,
 			TenantName: tenantName,
-			RetryCount: 1,
 			// ReadyAt will be computed inside EnqueueRetry
 		}
 		if err := u.queue.EnqueueRetry(ctx, retryTask); err != nil {
