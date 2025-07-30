@@ -258,7 +258,6 @@ func TestMemoryOTPQueue_Performance_RetryTasks(t *testing.T) {
 			Receiver:   fmt.Sprintf("user%d@example.com", i),
 			Channel:    "sms",
 			Message:    "retry-otp",
-			RetryCount: 1,
 		}
 		err := q.EnqueueRetry(ctx, task)
 		require.NoError(t, err)
