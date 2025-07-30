@@ -1488,11 +1488,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "lang": {
-                    "type": "string",
-                    "enum": [
-                        "en",
-                        "vi"
-                    ]
+                    "type": "string"
                 },
                 "phone": {
                     "type": "string"

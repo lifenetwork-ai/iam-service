@@ -17,7 +17,7 @@ type IdentityChallengeVerifyDTO struct {
 }
 
 type IdentityUserRegisterDTO struct {
-	Lang  string `json:"lang" binding:"oneof=en vi" description:"The language for the user registration"`
+	Lang  string `json:"lang" description:"The language for the user registration"`
 	Email string `json:"email" validate:"omitempty,email"`
 	Phone string `json:"phone" validate:"omitempty"`
 }
