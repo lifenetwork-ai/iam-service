@@ -135,6 +135,15 @@ func normalizeTenant(t string) string {
 	}
 }
 
+// extractOTPFromBody extracts the OTP from the body
+// TODO: make this more robust to handle different OTP formats
+func extractOTPFromBody(body string) string {
+	// Regex to find OTP
+	re := regexp.MustCompile(`\d{6}`)
+	matches := re.FindStringSubmatch(body)
+	return matches[0]
+}
+
 // TODO: refactor this later
 // mockWebhookURL is the URL to send mock messages to
 var mockWebhookURL = os.Getenv("MOCK_WEBHOOK_URL")

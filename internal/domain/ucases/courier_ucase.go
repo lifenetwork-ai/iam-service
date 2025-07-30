@@ -80,6 +80,15 @@ func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) 
 		)
 	}
 
+	otp := extractOTPFromBody(body)
+	if otp == "" {
+		return domainerrors.NewValidationError(
+			"MSG_INVALID_OTP",
+			"Cannot extract OTP from body",
+			[]any{"OTP must be 6 digits"},
+		)
+	}
+
 	if tenantName != constants.TenantLifeAI && tenantName != constants.TenantGenetica {
 		return domainerrors.NewValidationError(
 			"MSG_INVALID_TENANT",
@@ -91,7 +100,7 @@ func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) 
 	item := otpqueue.OTPQueueItem{
 		ID:         uuid.New().String(),
 		Receiver:   receiver,
-		Message:    body,
+		Message:    otp,
 		TenantName: tenantName,
 		CreatedAt:  time.Now(),
 	}
