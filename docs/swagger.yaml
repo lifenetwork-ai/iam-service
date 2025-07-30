@@ -157,6 +157,8 @@ definitions:
     properties:
       email:
         type: string
+      lang:
+        type: string
       phone:
         type: string
     type: object
@@ -1116,8 +1118,9 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: Only email or phone must be provided, if both are provided then
-          error will be returned
+      - description: Only `email` or `phone` must be provided, if both are provided
+          then error will be returned. `lang` is optional and defaults to `en`, supported
+          values are `en` and `vi`.
         in: body
         name: register
         required: true
