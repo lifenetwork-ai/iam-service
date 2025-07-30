@@ -34,7 +34,7 @@ func NewTwilioClient(accountSID, authToken string) *TwilioClient {
 }
 
 // SendSMS sends an SMS message via Twilio
-func (c *TwilioClient) SendSMS(from, to, message string) (*SMSResponse, error) {
+func (c *TwilioClient) SendSMS(_, from, to, message string) (*SMSResponse, error) {
 	// Prepare the API endpoint
 	apiURL := fmt.Sprintf("%s/Accounts/%s/Messages.json", c.BaseURL, c.AccountSID)
 

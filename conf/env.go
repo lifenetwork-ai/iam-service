@@ -49,8 +49,14 @@ type TwilioConfiguration struct {
 	TwilioFrom       string `mapstructure:"TWILIO_FROM"`
 }
 
+type WhatsappConfiguration struct {
+	WhatsappPhoneID     string `mapstructure:"WHATSAPP_PHONE_ID"`
+	WhatsappAccessToken string `mapstructure:"WHATSAPP_ACCESS_TOKEN"`
+}
+
 type SmsConfiguration struct {
-	Twilio TwilioConfiguration `mapstructure:",squash"`
+	Twilio   TwilioConfiguration   `mapstructure:",squash"`
+	Whatsapp WhatsappConfiguration `mapstructure:",squash"`
 }
 
 var configuration Configuration
@@ -80,6 +86,8 @@ var defaultConfigurations = map[string]any{
 	"TWILIO_ACCOUNT_SID":             "",
 	"TWILIO_AUTH_TOKEN":              "",
 	"TWILIO_FROM":                    "",
+	"WHATSAPP_PHONE_ID":              "",
+	"WHATSAPP_ACCESS_TOKEN":          "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations

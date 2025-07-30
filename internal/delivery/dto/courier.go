@@ -6,7 +6,7 @@ type CourierWebhookRequestDTO struct {
 }
 
 type CourierGetAvailableChannelsRequestDTO struct {
-	Receiver string `json:"receiver" binding:"required"`
+	Receiver string `form:"receiver" binding:"required"`
 }
 
 type CourierChooseChannelRequestDTO struct {

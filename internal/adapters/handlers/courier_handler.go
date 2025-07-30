@@ -55,6 +55,7 @@ func (h *courierHandler) ReceiveCourierMessageHandler(ctx *gin.Context) {
 // @Summary Get available delivery channels
 // @Description Returns available delivery channels (SMS, WhatsApp, Zalo) based on receiver and tenant
 // @Param X-Tenant-Id header string true "Tenant ID"
+// @Param receiver query string true "Receiver identifier"
 // @Tags courier
 // @Accept json
 // @Produce json
@@ -71,7 +72,7 @@ func (h *courierHandler) GetAvailableChannelsHandler(ctx *gin.Context) {
 	}
 
 	var req dto.CourierGetAvailableChannelsRequestDTO
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	if err := ctx.ShouldBindQuery(&req); err != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid request payload", err)
 		return
 	}
@@ -87,6 +88,11 @@ func (h *courierHandler) GetAvailableChannelsHandler(ctx *gin.Context) {
 // @Tags courier
 // @Accept json
 // @Produce json
+// @Param payload body dto.CourierChooseChannelRequestDTO true "Channel and receiver"
+// @Success 200 {object} response.SuccessResponse "Channel chosen successfully"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 500 {object} response.ErrorResponse "Internal server error"
+// @Router /api/v1/courier/choose-channel [post]
 func (h *courierHandler) ChooseChannelHandler(ctx *gin.Context) {
 	var req dto.CourierChooseChannelRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {

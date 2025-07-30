@@ -11,13 +11,15 @@ import (
 type smsProvider struct {
 	config *conf.SmsConfiguration
 
-	twillioClient *TwilioClient
+	twillioClient  *TwilioClient
+	whatsappClient *WhatsAppClient
 }
 
 func NewSMSProvider(config *conf.SmsConfiguration) *smsProvider {
 	return &smsProvider{
-		config:        config,
-		twillioClient: NewTwilioClient(config.Twilio.TwilioAccountSID, config.Twilio.TwilioAuthToken),
+		config:         config,
+		twillioClient:  NewTwilioClient(config.Twilio.TwilioAccountSID, config.Twilio.TwilioAuthToken),
+		whatsappClient: NewWhatsAppClient(config.Whatsapp.WhatsappAccessToken, config.Whatsapp.WhatsappPhoneID),
 	}
 }
 
@@ -42,7 +44,8 @@ func (s *smsProvider) sendToWebhook(_ context.Context, tenantName, receiver, mes
 
 func (s *smsProvider) sendSMS(_ context.Context, tenantName, receiver, message string) error {
 	logger.GetLogger().Infof("Sending SMS to %s", receiver)
-	resp, err := s.twillioClient.SendSMS(s.config.Twilio.TwilioFrom, receiver, message)
+	// TODO: Twilio phone number should be dynamic and not set in the config
+	resp, err := s.twillioClient.SendSMS(tenantName, s.config.Twilio.TwilioFrom, receiver, message)
 	if err != nil {
 		return err
 	}
@@ -51,7 +54,12 @@ func (s *smsProvider) sendSMS(_ context.Context, tenantName, receiver, message s
 }
 
 func (s *smsProvider) sendToWhatsapp(_ context.Context, tenantName, receiver, message string) error {
-	logger.GetLogger().Infof("Sending WhatsApp to %s", receiver)
+	logger.GetLogger().Infof("Sending via WhatsApp to %s", receiver)
+	resp, err := s.whatsappClient.SendMessage(tenantName, receiver, message)
+	if err != nil {
+		return err
+	}
+	logger.GetLogger().Infof("WhatsApp sent successfully: %+v", resp)
 	return nil
 }
 

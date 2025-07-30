@@ -45,6 +45,16 @@ definitions:
         description: Optional explanation for why permission was denied
         type: string
     type: object
+  dto.CourierChooseChannelRequestDTO:
+    properties:
+      channel:
+        type: string
+      receiver:
+        type: string
+    required:
+    - channel
+    - receiver
+    type: object
   dto.CourierWebhookRequestDTO:
     properties:
       Body:
@@ -579,6 +589,11 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
+      - description: Receiver identifier
+        in: query
+        name: receiver
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -602,6 +617,41 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Get available delivery channels
+      tags:
+      - courier
+  /api/v1/courier/choose-channel:
+    post:
+      consumes:
+      - application/json
+      description: Chooses a channel for a receiver (SMS, WhatsApp, Zalo)
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Channel and receiver
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CourierChooseChannelRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Channel chosen successfully
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Choose a channel for a receiver
       tags:
       - courier
   /api/v1/courier/messages:
