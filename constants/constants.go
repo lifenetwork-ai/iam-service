@@ -61,7 +61,7 @@ const (
 	ChannelZalo     = "zalo"
 
 	// Retry related constants
-	MaxOTPRetryCount   = 3
+	MaxOTPRetryCount   = 5
 	RetryDelayDuration = 30 * time.Second
 	BaseRetryDuration  = 3 * time.Second // Base duration for exponential backoff
 

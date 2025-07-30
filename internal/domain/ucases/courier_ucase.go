@@ -130,13 +130,21 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 			logger.GetLogger().Infof("Retrying OTP to %s | Retry #%d", currentTask.Receiver, currentTask.RetryCount)
 			if err := sendViaProvider(ctx, currentTask.Channel, currentTask.Receiver, currentTask.Message); err != nil {
 				if currentTask.RetryCount < constants.MaxOTPRetryCount {
+					// Retry again - do NOT delete
 					_ = u.queue.EnqueueRetry(ctx, currentTask)
+					return nil // skip deletion
 				}
+
+				// Exceeded max → log + delete
+				logger.GetLogger().Warnf("Exceeded max retry count for %s | Retry #%d. Discarding.", currentTask.Receiver, currentTask.RetryCount)
 			} else {
-				// Successfully delivered, delete the retry task
-				if err := u.queue.DeleteRetryTask(ctx, currentTask); err != nil {
-					logger.GetLogger().Warnf("Failed to delete retry task after success: %v", err)
-				}
+				// Delivered successfully
+				logger.GetLogger().Infof("OTP delivered successfully to %s", currentTask.Receiver)
+			}
+
+			// Only delete if success OR exceeded retry
+			if err := u.queue.DeleteRetryTask(ctx, currentTask); err != nil {
+				logger.GetLogger().Warnf("Failed to delete retry task: %v", err)
 			}
 
 			// Clean up original OTP if exists (optional)
