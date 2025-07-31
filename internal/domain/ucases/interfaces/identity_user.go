@@ -24,6 +24,7 @@ type IdentityUserUseCase interface {
 	Register(
 		ctx context.Context,
 		tenantID uuid.UUID,
+		lang string,
 		email string,
 		phone string,
 	) (*types.IdentityUserAuthResponse, *errors.DomainError)
