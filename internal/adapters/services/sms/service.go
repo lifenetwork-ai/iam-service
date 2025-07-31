@@ -1,7 +1,12 @@
 package sms
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
@@ -39,8 +44,47 @@ func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel
 	}
 }
 
-func (s *smsProvider) sendToWebhook(_ context.Context, tenantName, receiver, message string) error {
-	logger.GetLogger().Infof("Call to webhook url: %s to send OTP to %s", tenantName, receiver)
+func (s *smsProvider) sendToWebhook(ctx context.Context, tenantName, receiver, message string) error {
+	url := os.Getenv("MOCK_WEBHOOK_URL")
+	if url == "" {
+		return errors.New("MOCK_WEBHOOK_URL is not set")
+	}
+
+	type webhookPayload struct {
+		Tenant  string `json:"tenant"`
+		To      string `json:"to"`
+		Message string `json:"message"`
+	}
+
+	payload := webhookPayload{
+		Tenant:  tenantName,
+		To:      receiver,
+		Message: message,
+	}
+
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return err
+	}
+	req.Header.Set(constants.HeaderKeyContentType, constants.HeaderContentTypeJson)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return errors.New("webhook returned non-2xx status: " + resp.Status)
+	}
+
+	logger.GetLogger().Infof("Webhook sent successfully to %s", receiver)
 	return nil
 }
 
