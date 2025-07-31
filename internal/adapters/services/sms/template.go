@@ -9,5 +9,5 @@ To authenticate, please use the following One Time Password (OTP) from {{ .Tenan
 
 *{{ .OTP }}*
 
-Your OTP will be valid for *2 minutes*. Do not share this OTP with anyone. {{ .TenantName }} takes your account security very seriously.
+Your OTP will be valid for *{{ .TTL }}* {{ if eq .TTL 1 }}minute{{ else }}minutes{{ end }}. Do not share this OTP with anyone. {{ .TenantName }} takes your account security very seriously.
 	`))
