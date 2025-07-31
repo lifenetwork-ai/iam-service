@@ -2,6 +2,7 @@ package sms
 
 import (
 	"context"
+	"time"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
@@ -23,9 +24,9 @@ func NewSMSProvider(config *conf.SmsConfiguration) *smsProvider {
 	}
 }
 
-func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string) error {
+func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration) error {
 	logger.GetLogger().Infof("Sending OTP to %s", receiver)
-	otpMessage := GetOTPMessage(tenantName, otp)
+	otpMessage := GetOTPMessage(tenantName, otp, ttl)
 	switch channel {
 	case constants.ChannelSMS:
 		return s.sendSMS(ctx, tenantName, receiver, otpMessage)

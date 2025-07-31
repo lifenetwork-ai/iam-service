@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
@@ -54,5 +55,5 @@ type KetoService interface {
 }
 
 type SMSProvider interface {
-	SendOTP(ctx context.Context, tenantName, receiver, channel, message string) error
+	SendOTP(ctx context.Context, tenantName, receiver, channel, message string, ttl time.Duration) error
 }
