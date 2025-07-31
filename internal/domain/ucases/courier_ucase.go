@@ -186,6 +186,9 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
+			// Send OTP using retry task content directly
+			logger.GetLogger().Debugf("Retrying OTP to %s | Retry #%d", currentTask.Receiver, currentTask.RetryCount)
+
 			// Check OTP still valid before retrying
 			_, getErr := u.queue.Get(ctx, currentTask.TenantName, currentTask.Receiver)
 			if getErr != nil {
