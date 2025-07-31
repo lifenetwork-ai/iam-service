@@ -19,8 +19,8 @@ type smsProvider struct {
 func NewSMSProvider(config *conf.SmsConfiguration) *smsProvider {
 	return &smsProvider{
 		config:         config,
-		twillioClient:  NewTwilioClient(config.Twilio.TwilioAccountSID, config.Twilio.TwilioAuthToken),
-		whatsappClient: NewWhatsAppClient(config.Whatsapp.WhatsappAccessToken, config.Whatsapp.WhatsappPhoneID),
+		twillioClient:  NewTwilioClient(config.Twilio.TwilioAccountSID, config.Twilio.TwilioAuthToken, config.Twilio.TwilioBaseURL),
+		whatsappClient: NewWhatsAppClient(config.Whatsapp.WhatsappAccessToken, config.Whatsapp.WhatsappPhoneID, config.Whatsapp.WhatsappBaseURL),
 	}
 }
 

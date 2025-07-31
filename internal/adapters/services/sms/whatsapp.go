@@ -29,11 +29,11 @@ type MessageResponse struct {
 	}
 }
 
-func NewWhatsAppClient(authToken, phoneID string) *WhatsAppClient {
+func NewWhatsAppClient(authToken, phoneID, baseURL string) *WhatsAppClient {
 	return &WhatsAppClient{
 		AuthToken: authToken,
 		PhoneID:   phoneID,
-		BaseURL:   "https://graph.facebook.com/v22.0", // TODO: get from config
+		BaseURL:   baseURL,
 	}
 }
 

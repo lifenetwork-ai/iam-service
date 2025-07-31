@@ -25,11 +25,11 @@ type SMSResponse struct {
 }
 
 // NewTwilioClient creates a new Twilio client
-func NewTwilioClient(accountSID, authToken string) *TwilioClient {
+func NewTwilioClient(accountSID, authToken string, baseURL string) *TwilioClient {
 	return &TwilioClient{
 		AccountSID: accountSID,
 		AuthToken:  authToken,
-		BaseURL:    "https://api.twilio.com/2010-04-01",
+		BaseURL:    baseURL,
 	}
 }
 
