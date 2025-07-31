@@ -1,12 +1,9 @@
 package ucases
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 	"regexp"
 	"strings"
 
@@ -142,51 +139,4 @@ func extractOTPFromBody(body string) string {
 	re := regexp.MustCompile(`\d{6}`)
 	matches := re.FindStringSubmatch(body)
 	return matches[0]
-}
-
-// TODO: refactor this later
-// mockWebhookURL is the URL to send mock messages to
-var mockWebhookURL = os.Getenv("MOCK_WEBHOOK_URL")
-
-type otpMessage struct {
-	Body string `json:"Body"`
-	To   string `json:"To"`
-}
-
-// sendViaProvider simulates sending OTP via the specified channel.
-func sendViaProvider(ctx context.Context, channel, receiver, message string) error {
-	// Check if mock webhook URL is configured
-	if mockWebhookURL == "" {
-		logger.GetLogger().Warnf("MOCK_WEBHOOK_URL environment variable is not set, skipping mock message delivery to %s", receiver)
-		return fmt.Errorf("mock webhook URL not configured")
-	}
-
-	logger.GetLogger().Infof("Sending mock message to %s via %s: %s", receiver, channel, message)
-	payload := otpMessage{
-		Body: message,
-		To:   receiver,
-	}
-
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("failed to marshal mock payload: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", mockWebhookURL, bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("failed to create mock HTTP request: %w", err)
-	}
-	req.Header.Set(constants.HeaderKeyContentType, constants.HeaderContentTypeJson)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send mock HTTP request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("mock webhook returned status: %s", resp.Status)
-	}
-
-	return nil
 }

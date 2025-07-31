@@ -189,16 +189,8 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 			// Send OTP using retry task content directly
 			logger.GetLogger().Debugf("Retrying OTP to %s | Retry #%d", currentTask.Receiver, currentTask.RetryCount)
 
-			// Check OTP still valid before retrying
-			_, getErr := u.queue.Get(ctx, currentTask.TenantName, currentTask.Receiver)
-			if getErr != nil {
-				// OTP expired → skip and clean up retry task
-				_ = u.queue.DeleteRetryTask(ctx, currentTask)
-				return nil
-			}
-
 			// Try sending
-			err := sendViaProvider(ctx, currentTask.Channel, currentTask.Receiver, currentTask.Message)
+			err := u.smsProvider.SendOTP(ctx, currentTask.TenantName, currentTask.Receiver, currentTask.Channel, currentTask.Message)
 			if err != nil {
 				if currentTask.RetryCount < constants.MaxOTPRetryCount {
 					// Retry again - do NOT delete
