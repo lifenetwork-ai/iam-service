@@ -1199,7 +1199,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Only ` + "`" + `email` + "`" + ` or ` + "`" + `phone` + "`" + ` must be provided, if both are provided then error will be returned. ` + "`" + `lang` + "`" + ` is optional and defaults to ` + "`" + `en` + "`" + `, supported values are ` + "`" + `en` + "`" + ` and ` + "`" + `vi` + "`" + `.",
+                        "description": "Only ` + "`" + `email` + "`" + ` or ` + "`" + `phone` + "`" + ` must be provided, if both are provided then error will be returned. ` + "`" + `lang` + "`" + ` is required, supported values are ` + "`" + `en` + "`" + ` and ` + "`" + `vi` + "`" + `.",
                         "name": "register",
                         "in": "body",
                         "required": true,
@@ -1483,12 +1483,19 @@ const docTemplate = `{
         },
         "dto.IdentityUserRegisterDTO": {
             "type": "object",
+            "required": [
+                "lang"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
                 "lang": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "en",
+                        "vi"
+                    ]
                 },
                 "phone": {
                     "type": "string"

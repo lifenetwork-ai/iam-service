@@ -304,7 +304,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param register body dto.IdentityUserRegisterDTO true "Only `email` or `phone` must be provided, if both are provided then error will be returned. `lang` is optional and defaults to `en`, supported values are `en` and `vi`."
+// @Param register body dto.IdentityUserRegisterDTO true "Only `email` or `phone` must be provided, if both are provided then error will be returned. `lang` is required, supported values are `en` and `vi`."
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserAuthResponse} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 409 {object} response.ErrorResponse "Email or phone number already exists"
@@ -335,10 +335,6 @@ func (h *userHandler) Register(ctx *gin.Context) {
 			err,
 		)
 		return
-	}
-
-	if reqPayload.Lang == "" {
-		reqPayload.Lang = constants.DefaultLanguage
 	}
 
 	if errResponse := validateRegisterPayload(reqPayload); errResponse != nil {

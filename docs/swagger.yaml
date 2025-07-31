@@ -158,9 +158,14 @@ definitions:
       email:
         type: string
       lang:
+        enum:
+        - en
+        - vi
         type: string
       phone:
         type: string
+    required:
+    - lang
     type: object
   dto.IdentityUserUpdateIdentifierDTO:
     properties:
@@ -1119,8 +1124,8 @@ paths:
         required: true
         type: string
       - description: Only `email` or `phone` must be provided, if both are provided
-          then error will be returned. `lang` is optional and defaults to `en`, supported
-          values are `en` and `vi`.
+          then error will be returned. `lang` is required, supported values are `en`
+          and `vi`.
         in: body
         name: register
         required: true
