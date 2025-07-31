@@ -138,5 +138,9 @@ func extractOTPFromBody(body string) string {
 	// Regex to find OTP
 	re := regexp.MustCompile(`\d{6}`)
 	matches := re.FindStringSubmatch(body)
+	if len(matches) == 0 {
+		return ""
+	}
+
 	return matches[0]
 }
