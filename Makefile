@@ -29,7 +29,7 @@ stop:
 	@echo "Stopped human-network-iam-service"
 
 lint:
-	golangci-lint run --fix
+	docker run --rm -v $(PWD):/app -w /app golangci/golangci-lint:v1.64.8 golangci-lint run --fix
 
 swagger:
 	swag init -g ./cmd/main.go -d ./ -o ./docs

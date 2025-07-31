@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lifenetwork-ai/iam-service/constants"
 	otp_queue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	"github.com/lifenetwork-ai/iam-service/internal/workers/types"
@@ -91,7 +90,7 @@ func (w *otpDeliveryWorker) processPendingOTPs(ctx context.Context) {
 		}
 
 		for _, receiver := range receivers {
-			err := w.curierUseCase.DeliverOTP(ctx, tenant, receiver, constants.ChannelSMS)
+			err := w.curierUseCase.DeliverOTP(ctx, tenant, receiver)
 			if err != nil {
 				logger.GetLogger().Warnf("Failed to deliver OTP to %s: %v", receiver, err)
 			}

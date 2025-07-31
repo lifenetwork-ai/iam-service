@@ -113,7 +113,12 @@ func RegisterRoutes(
 	courierRouter.GET(
 		"/available-channels",
 		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
-		authMiddleware.RequireAuth(),
 		courierHandler.GetAvailableChannelsHandler,
+	)
+
+	courierRouter.POST(
+		"/choose-channel",
+		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
+		courierHandler.ChooseChannelHandler,
 	)
 }

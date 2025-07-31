@@ -40,6 +40,25 @@ type Configuration struct {
 	CacheType    string                   `mapstructure:"CACHE_TYPE"`
 	KratosConfig KratosConfiguration      `mapstructure:",squash"`
 	Keto         KetoConfiguration        `mapstructure:",squash"`
+	Sms          SmsConfiguration         `mapstructure:",squash"`
+}
+
+type TwilioConfiguration struct {
+	TwilioAccountSID string `mapstructure:"TWILIO_ACCOUNT_SID"`
+	TwilioAuthToken  string `mapstructure:"TWILIO_AUTH_TOKEN"`
+	TwilioFrom       string `mapstructure:"TWILIO_FROM"`
+	TwilioBaseURL    string `mapstructure:"TWILIO_BASE_URL"`
+}
+
+type WhatsappConfiguration struct {
+	WhatsappPhoneID     string `mapstructure:"WHATSAPP_PHONE_ID"`
+	WhatsappAccessToken string `mapstructure:"WHATSAPP_ACCESS_TOKEN"`
+	WhatsappBaseURL     string `mapstructure:"WHATSAPP_BASE_URL"`
+}
+
+type SmsConfiguration struct {
+	Twilio   TwilioConfiguration   `mapstructure:",squash"`
+	Whatsapp WhatsappConfiguration `mapstructure:",squash"`
 }
 
 var configuration Configuration
@@ -66,6 +85,13 @@ var defaultConfigurations = map[string]any{
 	"KETO_DEFAULT_READ_URL":          "",
 	"KETO_DEFAULT_WRITE_URL":         "",
 	"MOCK_WEBHOOK_URL":               "",
+	"TWILIO_ACCOUNT_SID":             "",
+	"TWILIO_AUTH_TOKEN":              "",
+	"TWILIO_FROM":                    "",
+	"WHATSAPP_PHONE_ID":              "",
+	"WHATSAPP_ACCESS_TOKEN":          "",
+	"TWILIO_BASE_URL":                "https://api.twilio.com/2010-04-01",
+	"WHATSAPP_BASE_URL":              "https://graph.facebook.com/v22.0",
 }
 
 // loadDefaultConfigs sets default values for critical configurations

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
@@ -51,4 +52,8 @@ type KetoService interface {
 	CheckPermission(ctx context.Context, request types.CheckPermissionRequest) (bool, *domainerrors.DomainError)
 	// BatchCheckPermission(ctx context.Context, dto dto.BatchCheckPermissionRequestDTO) (bool, *domainerrors.DomainError)
 	CreateRelationTuple(ctx context.Context, request types.CreateRelationTupleRequest) *domainerrors.DomainError
+}
+
+type SMSProvider interface {
+	SendOTP(ctx context.Context, tenantName, receiver, channel, message string, ttl time.Duration) error
 }

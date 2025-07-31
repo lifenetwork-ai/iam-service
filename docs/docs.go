@@ -379,10 +379,9 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "default": "Bearer \u003ctoken\u003e",
-                        "description": "Bearer Token (Bearer ory...)",
-                        "name": "Authorization",
-                        "in": "header",
+                        "description": "Receiver identifier",
+                        "name": "receiver",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -416,6 +415,59 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/courier/choose-channel": {
+            "post": {
+                "description": "Chooses a channel for a receiver (SMS, WhatsApp, Zalo)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "courier"
+                ],
+                "summary": "Choose a channel for a receiver",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Channel and receiver",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CourierChooseChannelRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Channel chosen successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -1319,6 +1371,21 @@ const docTemplate = `{
                 },
                 "reason": {
                     "description": "Optional explanation for why permission was denied",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CourierChooseChannelRequestDTO": {
+            "type": "object",
+            "required": [
+                "channel",
+                "receiver"
+            ],
+            "properties": {
+                "channel": {
+                    "type": "string"
+                },
+                "receiver": {
                     "type": "string"
                 }
             }
