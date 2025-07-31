@@ -2,7 +2,6 @@ package caching
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"time"
 
@@ -32,12 +31,12 @@ func (c *goCacheClient) Set(ctx context.Context, key string, value interface{}, 
 func (c *goCacheClient) Get(ctx context.Context, key string, dest interface{}) error {
 	cachedValue, found := c.cache.Get(key)
 	if !found {
-		return fmt.Errorf("item not found in cache")
+		return types.ErrCacheMiss
 	}
 
 	destVal := reflect.ValueOf(dest)
 	if destVal.Kind() != reflect.Ptr || destVal.IsNil() {
-		return fmt.Errorf("destination must be a non-nil pointer")
+		return types.ErrInvalidDestination
 	}
 
 	cachedVal := reflect.ValueOf(cachedValue)
@@ -71,7 +70,7 @@ func (c *goCacheClient) Get(ctx context.Context, key string, dest interface{}) e
 		}
 	}
 
-	return fmt.Errorf("cached value type (%v) does not match destination type (%v)", cachedVal.Type(), destType)
+	return types.ErrTypeMismatch
 }
 
 // Del deletes an item from the cache

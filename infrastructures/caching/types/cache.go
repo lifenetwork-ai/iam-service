@@ -2,8 +2,15 @@ package types
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+)
+
+var (
+	ErrCacheMiss          = errors.New("cache: item not found")
+	ErrInvalidDestination = errors.New("cache: destination must be a non-nil pointer")
+	ErrTypeMismatch       = errors.New("cache: type mismatch between cached value and destination")
 )
 
 type Keyer struct {

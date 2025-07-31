@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 	"github.com/stretchr/testify/require"
 )
@@ -60,7 +61,7 @@ func TestGoCacheClient_Get(t *testing.T) {
 		dest := ""
 		getErr := client.Get(ctx, key, &dest)
 		require.Error(t, getErr)
-		require.Equal(t, "item not found in cache", getErr.Error())
+		require.Equal(t, types.ErrCacheMiss.Error(), getErr.Error())
 	})
 
 	t.Run("GoCacheClient_Get_InvalidDestination", func(t *testing.T) {
@@ -76,7 +77,7 @@ func TestGoCacheClient_Get(t *testing.T) {
 		dest := 0
 		getErr := client.Get(ctx, key, &dest)
 		require.Error(t, getErr)
-		require.Equal(t, "cached value type (string) does not match destination type (int)", getErr.Error())
+		require.Equal(t, types.ErrTypeMismatch.Error(), getErr.Error())
 	})
 
 	t.Run("GoCacheClient_Get_NilDestination", func(t *testing.T) {
@@ -92,7 +93,7 @@ func TestGoCacheClient_Get(t *testing.T) {
 		var dest *string
 		getErr := client.Get(ctx, key, dest)
 		require.Error(t, getErr)
-		require.Equal(t, "destination must be a non-nil pointer", getErr.Error())
+		require.Equal(t, types.ErrInvalidDestination.Error(), getErr.Error())
 	})
 }
 
@@ -112,7 +113,7 @@ func TestGoCacheClient_Del(t *testing.T) {
 
 		dest := ""
 		getErr := client.Get(ctx, key, &dest)
-		require.Equal(t, "item not found in cache", getErr.Error())
+		require.Equal(t, types.ErrCacheMiss.Error(), getErr.Error())
 		require.Equal(t, "", dest)
 	})
 }
@@ -153,7 +154,7 @@ func TestGoCacheClient_Expiration(t *testing.T) {
 	dest := ""
 	getErr := client.Get(ctx, key, &dest)
 	require.Error(t, getErr)
-	require.Equal(t, "item not found in cache", getErr.Error())
+	require.Equal(t, types.ErrCacheMiss.Error(), getErr.Error())
 }
 
 func TestGoCacheClient_Overwrite(t *testing.T) {
@@ -309,7 +310,7 @@ func TestGoCacheClient_TypeConversion_EdgeCases(t *testing.T) {
 		var userPtr *TestUser
 		err = client.Get(ctx, key, &userPtr)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "does not match destination type")
+		require.Contains(t, err.Error(), types.ErrTypeMismatch.Error())
 	})
 
 	t.Run("DifferentStructTypes_ShouldFail", func(t *testing.T) {
@@ -331,7 +332,7 @@ func TestGoCacheClient_TypeConversion_EdgeCases(t *testing.T) {
 		var different DifferentStruct
 		err = client.Get(ctx, key, &different)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "does not match destination type")
+		require.Contains(t, err.Error(), types.ErrTypeMismatch.Error())
 	})
 }
 

@@ -2,6 +2,7 @@ package ucases
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -71,6 +72,12 @@ func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver st
 
 	err := u.channelCache.RetrieveItem(key, &response)
 	if err != nil {
+		// fallback to mock channel if cache miss
+		if errors.Is(err, cachingtypes.ErrCacheMiss) {
+			return types.ChooseChannelResponse{
+				Channel: "mock",
+			}, nil
+		}
 		return types.ChooseChannelResponse{}, domainerrors.NewInternalError("MSG_GET_CHANNEL_FAILED", "Failed to get channel from cache").WithCause(err)
 	}
 
