@@ -196,7 +196,7 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 			defer func() { <-sem }()
 
 			// Send OTP using retry task content directly
-			logger.GetLogger().Debugf("Retrying OTP to %s | Retry #%d", currentTask.Receiver, currentTask.RetryCount)
+			logger.GetLogger().Infof("Retrying OTP to %s | Retry #%d", currentTask.Receiver, currentTask.RetryCount)
 
 			// Try sending
 			err := u.smsProvider.SendOTP(ctx, currentTask.TenantName, currentTask.Receiver, currentTask.Channel, currentTask.Message, u.defaultTTL)
