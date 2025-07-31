@@ -8,6 +8,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 type courierHandler struct {
@@ -74,6 +75,11 @@ func (h *courierHandler) GetAvailableChannelsHandler(ctx *gin.Context) {
 	var req dto.CourierGetAvailableChannelsRequestDTO
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid request payload", err)
+		return
+	}
+
+	if !utils.IsPhoneNumber(req.Receiver) {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_NOT_SUPPORTED", "Only phone number is supported for getting available channels", nil)
 		return
 	}
 

@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -43,6 +44,14 @@ func NewCourierUseCase(
 func (u *courierUseCase) ChooseChannel(ctx context.Context, tenantName, receiver, channel string) *domainerrors.DomainError {
 	key := &cachingtypes.Keyer{
 		Raw: fmt.Sprintf("channel:%s:%s", tenantName, receiver),
+	}
+
+	// Get supported channels from tenant
+	supportedChannels := u.GetAvailableChannels(ctx, tenantName, receiver)
+	if !slices.Contains(supportedChannels, channel) {
+		return domainerrors.NewValidationError("MSG_CHANNEL_NOT_SUPPORTED", "Channel not supported", []any{
+			map[string]string{"channel": channel, "supported_channels": strings.Join(supportedChannels, ", ")},
+		})
 	}
 
 	err := u.channelCache.SaveItem(key, channel, u.defaultTTL)
