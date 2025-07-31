@@ -25,7 +25,7 @@ type SMSResponse struct {
 }
 
 // NewTwilioClient creates a new Twilio client
-func NewTwilioClient(accountSID, authToken string, baseURL string) *TwilioClient {
+func NewTwilioClient(accountSID, authToken, baseURL string) *TwilioClient {
 	return &TwilioClient{
 		AccountSID: accountSID,
 		AuthToken:  authToken,
@@ -70,7 +70,6 @@ func (c *TwilioClient) SendSMS(_, from, to, message string) (*SMSResponse, error
 
 	// Check for HTTP errors
 	if resp.StatusCode != http.StatusCreated {
-		fmt.Println(resp)
 		return &smsResp, fmt.Errorf("twilio API error: %s - %s", smsResp.ErrorCode, smsResp.ErrorMessage)
 	}
 

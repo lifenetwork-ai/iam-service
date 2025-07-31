@@ -81,7 +81,6 @@ func (c *WhatsAppClient) SendMessage(tenantName, to, message string) (*MessageRe
 		return nil, fmt.Errorf("HTTP error %d: %s, body: %s", resp.StatusCode, resp.Status, string(body))
 	}
 
-	fmt.Printf("Response: %+v\n", resp)
 	var messageResp MessageResponse
 	if err := json.NewDecoder(resp.Body).Decode(&messageResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
