@@ -71,6 +71,7 @@ sequenceDiagram
 
     ```json
     {
+      "lang": "string",   // Language must be provided, supported "en" and "vi"
       "email": "string",  // Either email or phone must be provided
       "phone": "string"   // Cannot provide both
     }
