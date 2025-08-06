@@ -68,6 +68,9 @@ const (
 	// OTP worker interval
 	OTPDeliveryWorkerInterval = 10 * time.Second
 	OTPRetryWorkerInterval    = 30 * time.Second
+
+	// Zalo refresh token worker interval
+	ZaloRefreshTokenWorkerInterval = 4 * time.Hour
 )
 
 const (

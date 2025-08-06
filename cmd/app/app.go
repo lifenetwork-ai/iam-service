@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
@@ -67,6 +68,10 @@ func RunApp(config *conf.Configuration) {
 		ucases.CourierUCase,
 		instances.OTPQueueRepositoryInstance(ctx),
 	).Start(ctx, constants.OTPRetryWorkerInterval)
+
+	go workers.NewZaloRefreshTokenWorker(
+		instances.SMSServiceInstance(repos.ZaloTokenRepo),
+	).Start(ctx, 12*time.Hour)
 
 	// Handle shutdown signals
 	waitForShutdownSignal(cancel)

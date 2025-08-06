@@ -57,3 +57,7 @@ type KetoService interface {
 type SMSProvider interface {
 	SendOTP(ctx context.Context, tenantName, receiver, channel, message string, ttl time.Duration) error
 }
+
+type SmsTokenRefresher interface {
+	RefreshZaloToken(ctx context.Context) error
+}

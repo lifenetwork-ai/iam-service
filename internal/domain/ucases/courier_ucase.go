@@ -14,6 +14,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 	cachingtypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	otpqueue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
+	smscommon "github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	services "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
@@ -96,7 +97,7 @@ func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) 
 		)
 	}
 
-	otp := extractOTPFromBody(body)
+	otp := smscommon.ExtractOTPFromMessage(body)
 	if otp == "" {
 		return domainerrors.NewValidationError(
 			"MSG_INVALID_OTP",

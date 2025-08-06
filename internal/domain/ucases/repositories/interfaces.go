@@ -63,3 +63,8 @@ type UserIdentityRepository interface {
 	ExistsByGlobalUserIDAndType(ctx context.Context, globalUserID, identityType string) (bool, error)
 	Delete(tx *gorm.DB, identityID string) error
 }
+
+type ZaloTokenRepository interface {
+	Get(ctx context.Context) (*domain.ZaloToken, error)
+	Save(ctx context.Context, token *domain.ZaloToken) error
+}

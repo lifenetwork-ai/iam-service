@@ -23,6 +23,7 @@ type Repos struct {
 	UserIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository
 	TenantRepo                domainrepo.TenantRepository
 	AdminAccountRepo          domainrepo.AdminAccountRepository
+	ZaloTokenRepo             domainrepo.ZaloTokenRepository
 	CacheRepo                 types.CacheRepository
 }
 
@@ -39,6 +40,7 @@ func InitializeRepos(db *gorm.DB, cacheRepo types.CacheRepository) *Repos {
 			repositories.NewTenantRepository(db), cacheRepo,
 		),
 		AdminAccountRepo: repositories.NewAdminAccountRepository(db),
+		ZaloTokenRepo:    repositories.NewZaloTokenRepositoryCache(repositories.NewZaloTokenRepository(db), cacheRepo),
 	}
 }
 
@@ -68,6 +70,6 @@ func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
 		AdminUCase:      ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
 		TenantUCase:     ucases.NewTenantUseCase(repos.TenantRepo),
 		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo), repos.UserIdentityRepo),
-		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background()), instances.SMSProviderInstance(), repos.CacheRepo),
+		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background()), instances.SMSServiceInstance(repos.ZaloTokenRepo), repos.CacheRepo),
 	}
 }

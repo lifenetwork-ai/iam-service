@@ -131,16 +131,3 @@ func normalizeTenant(t string) string {
 		return t
 	}
 }
-
-// extractOTPFromBody extracts the OTP from the body
-// TODO: make this more robust to handle different OTP formats
-func extractOTPFromBody(body string) string {
-	// Regex to find OTP
-	re := regexp.MustCompile(`\d{6}`)
-	matches := re.FindStringSubmatch(body)
-	if len(matches) == 0 {
-		return ""
-	}
-
-	return matches[0]
-}

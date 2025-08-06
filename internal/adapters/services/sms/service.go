@@ -1,115 +1,146 @@
 package sms
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
-	"net/http"
-	"os"
+	"fmt"
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/provider"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
-type smsProvider struct {
-	config *conf.SmsConfiguration
-
-	twillioClient  *TwilioClient
-	whatsappClient *WhatsAppClient
+// SMSProvider defines the interface that all SMS providers must implement
+type SMSProvider interface {
+	SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error
+	RefreshToken(ctx context.Context) error
+	GetChannelType() string
+	HealthCheck(ctx context.Context) error
 }
 
-func NewSMSProvider(config *conf.SmsConfiguration) *smsProvider {
-	return &smsProvider{
-		config:         config,
-		twillioClient:  NewTwilioClient(config.Twilio.TwilioAccountSID, config.Twilio.TwilioAuthToken, config.Twilio.TwilioBaseURL),
-		whatsappClient: NewWhatsAppClient(config.Whatsapp.WhatsappAccessToken, config.Whatsapp.WhatsappPhoneID, config.Whatsapp.WhatsappBaseURL),
-	}
+// SMSProviderFactory manages and creates SMS providers
+type SMSProviderFactory struct {
+	providers map[string]SMSProvider
 }
 
-func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration) error {
-	logger.GetLogger().Infof("Sending OTP to %s", receiver)
-	otpMessage := GetOTPMessage(tenantName, otp, ttl)
-	switch channel {
-	case constants.ChannelSMS:
-		return s.sendSMS(ctx, tenantName, receiver, otpMessage)
-	case constants.ChannelWhatsApp:
-		return s.sendToWhatsapp(ctx, tenantName, receiver, otpMessage)
-	case constants.ChannelZalo:
-		return s.sendToZalo(ctx, tenantName, receiver, otpMessage)
-	default:
-		return s.sendToWebhook(ctx, tenantName, receiver, otpMessage)
+// NewSMSProviderFactory creates a new factory with all configured providers
+func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloTokenRepository) (*SMSProviderFactory, error) {
+	factory := &SMSProviderFactory{
+		providers: make(map[string]SMSProvider),
 	}
+
+	// Initialize Twilio provider
+	if config.Twilio.TwilioAccountSID != "" {
+		factory.providers[constants.ChannelSMS] = provider.NewTwilioProvider(config.Twilio)
+	}
+
+	// Initialize WhatsApp provider
+	if config.Whatsapp.WhatsappAccessToken != "" {
+		factory.providers[constants.ChannelWhatsApp] = provider.NewWhatsAppProvider(config.Whatsapp)
+	}
+
+	// Initialize Zalo provider
+	if config.Zalo.ZaloAppID != "" {
+		zaloProvider, err := provider.NewZaloProvider(context.Background(), config.Zalo, zaloTokenRepo)
+		if err != nil {
+			logger.GetLogger().Errorf("Failed to create Zalo provider: %v", err)
+			// Don't return error, just log and continue without Zalo
+		} else {
+			factory.providers[constants.ChannelZalo] = zaloProvider
+		}
+	}
+
+	// Always add webhook as fallback
+	factory.providers["webhook"] = provider.NewWebhookProvider()
+
+	return factory, nil
 }
 
-func (s *smsProvider) sendToWebhook(ctx context.Context, tenantName, receiver, message string) error {
-	url := os.Getenv("MOCK_WEBHOOK_URL")
-	if url == "" {
-		return errors.New("MOCK_WEBHOOK_URL is not set")
+// GetProvider returns the appropriate provider for the given channel
+func (f *SMSProviderFactory) GetProvider(channel string) SMSProvider {
+	if provider, exists := f.providers[channel]; exists {
+		return provider
+	}
+	// Return webhook as default fallback
+	return f.providers["webhook"]
+}
+
+// GetSupportedChannels returns all available channels
+func (f *SMSProviderFactory) GetSupportedChannels() []string {
+	channels := make([]string, 0, len(f.providers))
+	for channel := range f.providers {
+		channels = append(channels, channel)
+	}
+	return channels
+}
+
+// RefreshAllTokens refreshes tokens for all providers that support it
+func (f *SMSProviderFactory) RefreshAllTokens(ctx context.Context) error {
+	var errors []error
+	for channel, provider := range f.providers {
+		if err := provider.RefreshToken(ctx); err != nil {
+			logger.GetLogger().Errorf("Failed to refresh token for %s: %v", channel, err)
+			errors = append(errors, fmt.Errorf("channel %s: %w", channel, err))
+		}
 	}
 
-	type webhookPayload struct {
-		Tenant  string `json:"tenant"`
-		To      string `json:"to"`
-		Message string `json:"message"`
+	if len(errors) > 0 {
+		return fmt.Errorf("failed to refresh tokens: %v", errors)
 	}
-
-	payload := webhookPayload{
-		Tenant:  tenantName,
-		To:      receiver,
-		Message: message,
-	}
-
-	bodyBytes, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return err
-	}
-	req.Header.Set(constants.HeaderKeyContentType, constants.HeaderContentTypeJson)
-
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		return errors.New("webhook returned non-2xx status: " + resp.Status)
-	}
-
-	logger.GetLogger().Infof("Webhook sent successfully to %s", receiver)
 	return nil
 }
 
-func (s *smsProvider) sendSMS(_ context.Context, tenantName, receiver, message string) error {
-	logger.GetLogger().Infof("Sending SMS to %s", receiver)
-	// TODO: Twilio phone number should be dynamic and not set in the config
-	resp, err := s.twillioClient.SendSMS(tenantName, s.config.Twilio.TwilioFrom, receiver, message)
-	if err != nil {
-		return err
+// HealthCheckAll performs health checks on all providers
+func (f *SMSProviderFactory) HealthCheckAll(ctx context.Context) map[string]error {
+	results := make(map[string]error)
+	for channel, provider := range f.providers {
+		results[channel] = provider.HealthCheck(ctx)
 	}
-	logger.GetLogger().Infof("SMS sent successfully: %+v", resp)
-	return nil
+	return results
 }
 
-func (s *smsProvider) sendToWhatsapp(_ context.Context, tenantName, receiver, message string) error {
-	logger.GetLogger().Infof("Sending via WhatsApp to %s", receiver)
-	resp, err := s.whatsappClient.SendMessage(tenantName, receiver, message)
-	if err != nil {
-		return err
-	}
-	logger.GetLogger().Infof("WhatsApp sent successfully: %+v", resp)
-	return nil
+// SMSService is the main service that orchestrates SMS sending
+type SMSService struct {
+	factory *SMSProviderFactory
 }
 
-func (s *smsProvider) sendToZalo(_ context.Context, tenantName, receiver, message string) error {
-	logger.GetLogger().Infof("Sending Zalo to %s", receiver)
-	return nil
+// NewSMSService creates a new SMS service with the factory
+func NewSMSService(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloTokenRepository) (*SMSService, error) {
+	factory, err := NewSMSProviderFactory(config, zaloTokenRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SMS provider factory: %w", err)
+	}
+
+	return &SMSService{
+		factory: factory,
+	}, nil
+}
+
+// SendOTP sends an OTP through the specified channel
+func (s *SMSService) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration) error {
+	logger.GetLogger().Infof("Sending OTP to %s via channel %s", receiver, channel)
+
+	provider := s.factory.GetProvider(channel)
+	return provider.SendOTP(ctx, tenantName, receiver, otp, ttl)
+}
+
+// GetSupportedChannels returns all supported channels
+func (s *SMSService) GetSupportedChannels() []string {
+	return s.factory.GetSupportedChannels()
+}
+
+// RefreshTokens refreshes tokens for all providers
+func (s *SMSService) RefreshTokens(ctx context.Context) error {
+	return s.factory.RefreshAllTokens(ctx)
+}
+
+// HealthCheck performs health checks on all providers
+func (s *SMSService) HealthCheck(ctx context.Context) map[string]error {
+	return s.factory.HealthCheckAll(ctx)
+}
+
+func (s *SMSService) GetProvider(channel string) SMSProvider {
+	return s.factory.GetProvider(channel)
 }

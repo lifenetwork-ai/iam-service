@@ -1,0 +1,31 @@
+package repositories
+
+import (
+	"context"
+	"time"
+
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
+	"gorm.io/gorm"
+)
+
+type zaloTokenRepository struct {
+	db *gorm.DB
+}
+
+func NewZaloTokenRepository(db *gorm.DB) domainrepo.ZaloTokenRepository {
+	return &zaloTokenRepository{db: db}
+}
+
+func (r *zaloTokenRepository) Get(ctx context.Context) (*domain.ZaloToken, error) {
+	var token domain.ZaloToken
+	if err := r.db.WithContext(ctx).First(&token).Error; err != nil {
+		return nil, err
+	}
+	return &token, nil
+}
+
+func (r *zaloTokenRepository) Save(ctx context.Context, token *domain.ZaloToken) error {
+	token.UpdatedAt = time.Now()
+	return r.db.WithContext(ctx).Save(token).Error
+}

@@ -1,6 +1,7 @@
-package sms
+package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -74,4 +75,8 @@ func (c *TwilioClient) SendSMS(_, from, to, message string) (*SMSResponse, error
 	}
 
 	return &smsResp, nil
+}
+
+func (c *TwilioClient) RefreshAccessToken(ctx context.Context) error {
+	return nil
 }

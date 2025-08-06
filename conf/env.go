@@ -56,9 +56,19 @@ type WhatsappConfiguration struct {
 	WhatsappBaseURL     string `mapstructure:"WHATSAPP_BASE_URL"`
 }
 
+type ZaloConfiguration struct {
+	ZaloBaseURL      string `mapstructure:"ZALO_BASE_URL"`
+	ZaloSecretKey    string `mapstructure:"ZALO_SECRET_KEY"`
+	ZaloAppID        string `mapstructure:"ZALO_APP_ID"`
+	ZaloTemplateID   int    `mapstructure:"ZALO_TEMPLATE_ID"`
+	ZaloAccessToken  string `mapstructure:"ZALO_ACCESS_TOKEN"`
+	ZaloRefreshToken string `mapstructure:"ZALO_REFRESH_TOKEN"`
+}
+
 type SmsConfiguration struct {
 	Twilio   TwilioConfiguration   `mapstructure:",squash"`
 	Whatsapp WhatsappConfiguration `mapstructure:",squash"`
+	Zalo     ZaloConfiguration     `mapstructure:",squash"`
 }
 
 var configuration Configuration
@@ -92,6 +102,12 @@ var defaultConfigurations = map[string]any{
 	"WHATSAPP_ACCESS_TOKEN":          "",
 	"TWILIO_BASE_URL":                "https://api.twilio.com/2010-04-01",
 	"WHATSAPP_BASE_URL":              "https://graph.facebook.com/v22.0",
+	"ZALO_ACCESS_TOKEN":              "",
+	"ZALO_BASE_URL":                  "https://business.openapi.zalo.me",
+	"ZALO_TEMPLATE_ID":               "473988",
+	"ZALO_REFRESH_TOKEN":             "",
+	"ZALO_SECRET_KEY":                "",
+	"ZALO_APP_ID":                    "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations
