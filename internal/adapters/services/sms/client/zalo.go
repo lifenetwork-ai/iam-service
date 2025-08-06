@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
@@ -67,23 +65,11 @@ type ZaloTokenRefreshResponse struct {
 	ExpiresIn    string `json:"expires_in"`
 }
 
-func NewZaloClient(ctx context.Context, baseURL, secretKey, appID, accessToken, refreshToken string, tokenRepo domainrepo.ZaloTokenRepository) (*ZaloClient, error) {
-	if tokenRepo == nil {
-		return nil, fmt.Errorf("tokenRepo is nil")
-	}
-	token, err := tokenRepo.Get(ctx)
-	if err != nil && err != gorm.ErrRecordNotFound {
-		return nil, fmt.Errorf("failed to get Zalo tokens from DB: %w", err)
-	}
-	if token == nil && (accessToken == "" || refreshToken == "") {
-		return nil, fmt.Errorf("no Zalo tokens found in DB")
-	}
-
+func NewZaloClient(ctx context.Context, baseURL, secretKey, appID, accessToken, refreshToken string) (*ZaloClient, error) {
 	return &ZaloClient{
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		tokenRepo:    tokenRepo,
 		baseURL:      baseURL,
 		secretKey:    secretKey,
 		appID:        appID,
@@ -94,14 +80,6 @@ func NewZaloClient(ctx context.Context, baseURL, secretKey, appID, accessToken, 
 
 // SendTemplateMessage sends a template message via Zalo API
 func (c *ZaloClient) SendTemplateMessage(ctx context.Context, phone string, templateID int, templateData map[string]interface{}) (*ZaloTemplateResponse, error) {
-	return c.sendTemplateMessageInternal(ctx, phone, templateID, templateData, 1)
-}
-
-func (c *ZaloClient) sendTemplateMessageInternal(ctx context.Context, phone string, templateID int, templateData map[string]interface{}, retryCount int) (*ZaloTemplateResponse, error) {
-	if retryCount > 3 {
-		return nil, fmt.Errorf("failed to send template message after 3 retries")
-	}
-
 	// Prepare the request payload
 	payload := ZaloTemplateRequest{
 		Phone:        phone,
@@ -138,21 +116,6 @@ func (c *ZaloClient) sendTemplateMessageInternal(ctx context.Context, phone stri
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	// Check for API errors
-	// {
-	// 	"error": -124,
-	// 	"message": "Access token invalid"
-	// }
-	// If access token is invalid, refresh it and try again
-	if zaloResp.Error == -124 {
-		refreshTokenResp, err := c.RefreshAccessToken(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to refresh access token: %w", err)
-		}
-		c.accessToken = refreshTokenResp.AccessToken
-		c.refreshToken = refreshTokenResp.RefreshToken
-		return c.sendTemplateMessageInternal(ctx, phone, templateID, templateData, retryCount+1)
-	}
 	if zaloResp.Error != 0 {
 		return &zaloResp, fmt.Errorf("zalo API error: %d - %s", zaloResp.Error, zaloResp.Message)
 	}

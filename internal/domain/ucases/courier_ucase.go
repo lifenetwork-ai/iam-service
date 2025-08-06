@@ -170,6 +170,7 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver st
 
 	// Attempt to send OTP
 	if err := u.smsProvider.SendOTP(ctx, tenantName, receiver, channel.Channel, item.Message, u.defaultTTL); err != nil {
+		logger.GetLogger().Errorf("Failed to deliver OTP to %s via %s: %v", receiver, channel.Channel, err)
 		// Prepare retry task
 		retryTask := otpqueue.RetryTask{
 			Receiver:   receiver,
