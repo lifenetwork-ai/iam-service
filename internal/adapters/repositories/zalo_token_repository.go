@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
+	"gorm.io/gorm"
+
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
-	"gorm.io/gorm"
 )
 
 type zaloTokenRepository struct {

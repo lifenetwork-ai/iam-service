@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
-	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	"gorm.io/gorm"
+
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type ZaloClient struct {
@@ -162,7 +163,6 @@ func (c *ZaloClient) sendTemplateMessageInternal(ctx context.Context, phone stri
 	}
 
 	return &zaloResp, nil
-
 }
 
 // SendOTP sends an OTP message using a template

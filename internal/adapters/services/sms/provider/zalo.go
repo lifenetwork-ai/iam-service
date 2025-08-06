@@ -58,7 +58,7 @@ func (z *ZaloProvider) RefreshToken(ctx context.Context) error {
 	logger.GetLogger().Infof("Refreshing Zalo token")
 	var resp *client.ZaloTokenRefreshResponse
 	// Use the client's refresh token functionality
-	backoff.Retry(func() error {
+	err := backoff.Retry(func() error {
 		var err error
 		resp, err = z.client.RefreshAccessToken(ctx)
 		if err != nil {
@@ -66,6 +66,9 @@ func (z *ZaloProvider) RefreshToken(ctx context.Context) error {
 		}
 		return nil
 	}, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3))
+	if err != nil {
+		return fmt.Errorf("failed to refresh Zalo token: %w", err)
+	}
 
 	// Update the client's tokens
 	if err := z.client.UpdateTokens(ctx, resp); err != nil {
