@@ -9,13 +9,10 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 )
 
 type ZaloClient struct {
 	client       *http.Client
-	tokenRepo    domainrepo.ZaloTokenRepository
 	baseURL      string
 	secretKey    string
 	appID        string

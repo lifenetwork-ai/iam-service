@@ -149,9 +149,11 @@ func (z *ZaloProvider) SendOTP(ctx context.Context, tenantName, receiver, otp st
 
 			// Return a retryable error to trigger backoff retry
 			return fmt.Errorf("access token was invalid and refreshed, retrying")
-		} else if resp.Error != 0 {
+		}
+
+		if resp.Error != 0 {
 			// Handle other API errors as permanent errors (no retry)
-			return backoff.Permanent(fmt.Errorf("Zalo API error: code %d, message: %s", resp.Error, resp.Message))
+			return backoff.Permanent(fmt.Errorf("zalo api error: code %d, message: %s", resp.Error, resp.Message))
 		}
 
 		return nil
