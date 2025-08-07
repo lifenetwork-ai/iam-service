@@ -749,6 +749,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/sms/zalo": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Get Zalo token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Zalo"
+                ],
+                "summary": "Get Zalo token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ZaloTokenResponseDTO"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Set Zalo token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Zalo"
+                ],
+                "summary": "Set Zalo token",
+                "parameters": [
+                    {
+                        "description": "Zalo token",
+                        "name": "token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateZaloTokenRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ZaloTokenResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/challenge-verify": {
             "post": {
                 "description": "Verify either a login challenge or registration flow\nVerify a one-time code sent to user for either login or registration challenge.",
@@ -1301,71 +1366,6 @@ const docTemplate = `{
                         "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/zalo/token": {
-            "get": {
-                "security": [
-                    {
-                        "BasicAuth": []
-                    }
-                ],
-                "description": "Get Zalo token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Zalo"
-                ],
-                "summary": "Get Zalo token",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ZaloTokenResponseDTO"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BasicAuth": []
-                    }
-                ],
-                "description": "Set Zalo token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Zalo"
-                ],
-                "summary": "Set Zalo token",
-                "parameters": [
-                    {
-                        "description": "Zalo token",
-                        "name": "token",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.CreateZaloTokenRequestDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ZaloTokenResponseDTO"
                         }
                     }
                 }

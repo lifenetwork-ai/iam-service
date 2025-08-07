@@ -860,6 +860,46 @@ paths:
       summary: User-facing permission check
       tags:
       - permissions
+  /api/v1/sms/zalo:
+    get:
+      consumes:
+      - application/json
+      description: Get Zalo token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ZaloTokenResponseDTO'
+      security:
+      - BasicAuth: []
+      summary: Get Zalo token
+      tags:
+      - Zalo
+    post:
+      consumes:
+      - application/json
+      description: Set Zalo token
+      parameters:
+      - description: Zalo token
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateZaloTokenRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ZaloTokenResponseDTO'
+      security:
+      - BasicAuth: []
+      summary: Set Zalo token
+      tags:
+      - Zalo
   /api/v1/users/challenge-verify:
     post:
       consumes:
@@ -1223,46 +1263,6 @@ paths:
       summary: Register a new user
       tags:
       - users
-  /zalo/token:
-    get:
-      consumes:
-      - application/json
-      description: Get Zalo token
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.ZaloTokenResponseDTO'
-      security:
-      - BasicAuth: []
-      summary: Get Zalo token
-      tags:
-      - Zalo
-    post:
-      consumes:
-      - application/json
-      description: Set Zalo token
-      parameters:
-      - description: Zalo token
-        in: body
-        name: token
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateZaloTokenRequestDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.ZaloTokenResponseDTO'
-      security:
-      - BasicAuth: []
-      summary: Set Zalo token
-      tags:
-      - Zalo
 securityDefinitions:
   BasicAuth:
     type: basic

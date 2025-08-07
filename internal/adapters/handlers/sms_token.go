@@ -25,7 +25,7 @@ func NewSmsTokenHandler(ucase interfaces.SmsTokenUseCase) *smsTokenHandler {
 // @Accept json
 // @Produce json
 // @Success 200 {object} dto.ZaloTokenResponseDTO
-// @Router /zalo/token [get]
+// @Router /api/v1/sms/zalo [get]
 func (h *smsTokenHandler) GetZaloToken(ctx *gin.Context) {
 	token, err := h.ucase.GetZaloToken(ctx)
 	if err != nil {
@@ -47,7 +47,7 @@ func (h *smsTokenHandler) GetZaloToken(ctx *gin.Context) {
 // @Produce json
 // @Param token body dto.CreateZaloTokenRequestDTO true "Zalo token"
 // @Success 200 {object} dto.ZaloTokenResponseDTO
-// @Router /zalo/token [post]
+// @Router /api/v1/sms/zalo [post]
 func (h *smsTokenHandler) SetZaloToken(ctx *gin.Context) {
 	var req dto.CreateZaloTokenRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
