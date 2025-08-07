@@ -70,9 +70,15 @@ func (w *zaloRefreshTokenWorker) safeProcess(ctx context.Context) {
 }
 
 func (w *zaloRefreshTokenWorker) processZaloToken(ctx context.Context) {
-	err := w.smsService.GetProvider(constants.ChannelZalo).RefreshToken(ctx)
+	provider, err := w.smsService.GetProvider(constants.ChannelZalo)
 	if err != nil {
-		logger.GetLogger().Errorf("[%s] refresh zalo token failed: %v", w.Name(), err)
+		logger.GetLogger().Errorf("[%s] failed to get zalo provider: %v", w.Name(), err)
+		return
+	}
+
+	err = provider.RefreshToken(ctx)
+	if err != nil {
+		logger.GetLogger().Errorf("[%s] failed to refresh zalo token: %v", w.Name(), err)
 		return
 	}
 

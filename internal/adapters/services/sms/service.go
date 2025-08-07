@@ -59,12 +59,12 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 }
 
 // GetProvider returns the appropriate provider for the given channel
-func (f *SMSProviderFactory) GetProvider(channel string) SMSProvider {
+func (f *SMSProviderFactory) GetProvider(channel string) (SMSProvider, error) {
 	if provider, exists := f.providers[channel]; exists {
-		return provider
+		return provider, nil
 	}
-	// Return webhook as default fallback
-	return f.providers["webhook"]
+
+	return nil, fmt.Errorf("provider for channel %s not found", channel)
 }
 
 // GetSupportedChannels returns all available channels
@@ -122,7 +122,10 @@ func NewSMSService(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloT
 func (s *SMSService) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration) error {
 	logger.GetLogger().Infof("Sending OTP to %s via channel %s", receiver, channel)
 
-	provider := s.factory.GetProvider(channel)
+	provider, err := s.factory.GetProvider(channel)
+	if err != nil {
+		return fmt.Errorf("failed to get provider for channel %s: %w", channel, err)
+	}
 	return provider.SendOTP(ctx, tenantName, receiver, otp, ttl)
 }
 
@@ -141,6 +144,6 @@ func (s *SMSService) HealthCheck(ctx context.Context) map[string]error {
 	return s.factory.HealthCheckAll(ctx)
 }
 
-func (s *SMSService) GetProvider(channel string) SMSProvider {
+func (s *SMSService) GetProvider(channel string) (SMSProvider, error) {
 	return s.factory.GetProvider(channel)
 }
