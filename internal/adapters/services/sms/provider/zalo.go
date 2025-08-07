@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/cenkalti/backoff/v4"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
@@ -13,7 +15,6 @@ import (
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
-	"gorm.io/gorm"
 )
 
 // ZaloProvider handles messages through Zalo
@@ -24,7 +25,6 @@ type ZaloProvider struct {
 }
 
 func NewZaloProvider(ctx context.Context, config conf.ZaloConfiguration, tokenRepo domainrepo.ZaloTokenRepository) (*ZaloProvider, error) {
-
 	if tokenRepo == nil {
 		return nil, fmt.Errorf("tokenRepo is nil")
 	}
