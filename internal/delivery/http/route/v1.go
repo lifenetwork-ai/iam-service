@@ -121,4 +121,12 @@ func RegisterRoutes(
 		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
 		courierHandler.ChooseChannelHandler,
 	)
+
+	// SECTION: SMS token routes
+	smsTokenHandler := handlers.NewSmsTokenHandler(ucases.SmsTokenUCase)
+	smsTokenRouter := v1.Group("sms")
+	{
+		smsTokenRouter.GET("/zalo", smsTokenHandler.GetZaloToken)
+		smsTokenRouter.POST("/zalo", smsTokenHandler.SetZaloToken)
+	}
 }

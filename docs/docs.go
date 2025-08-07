@@ -1305,6 +1305,71 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/zalo/token": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Get Zalo token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Zalo"
+                ],
+                "summary": "Get Zalo token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ZaloTokenResponseDTO"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Set Zalo token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Zalo"
+                ],
+                "summary": "Set Zalo token",
+                "parameters": [
+                    {
+                        "description": "Zalo token",
+                        "name": "token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateZaloTokenRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ZaloTokenResponseDTO"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1466,6 +1531,21 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "public_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateZaloTokenRequestDTO": {
+            "type": "object",
+            "required": [
+                "access_token",
+                "refresh_token"
+            ],
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
                     "type": "string"
                 }
             }
@@ -1682,6 +1762,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "public_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ZaloTokenResponseDTO": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
                     "type": "string"
                 }
             }

@@ -51,6 +51,7 @@ type UseCases struct {
 	TenantUCase       interfaces.TenantUseCase
 	PermissionUCase   interfaces.PermissionUseCase
 	CourierUCase      interfaces.CourierUseCase
+	SmsTokenUCase     interfaces.SmsTokenUseCase
 }
 
 // Initialize use cases
@@ -71,5 +72,6 @@ func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
 		TenantUCase:     ucases.NewTenantUseCase(repos.TenantRepo),
 		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo), repos.UserIdentityRepo),
 		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background()), instances.SMSServiceInstance(repos.ZaloTokenRepo), repos.CacheRepo),
+		SmsTokenUCase:   ucases.NewSmsTokenUseCase(repos.ZaloTokenRepo),
 	}
 }
