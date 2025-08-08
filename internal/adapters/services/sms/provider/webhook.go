@@ -18,7 +18,7 @@ import (
 // WebhookProvider handles messages through webhook (fallback)
 type WebhookProvider struct{}
 
-func NewWebhookProvider() *WebhookProvider {
+func NewWebhookProvider() SMSProvider {
 	return &WebhookProvider{}
 }
 

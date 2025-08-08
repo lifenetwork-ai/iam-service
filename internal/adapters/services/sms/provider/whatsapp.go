@@ -18,7 +18,7 @@ type WhatsAppProvider struct {
 	config conf.WhatsappConfiguration
 }
 
-func NewWhatsAppProvider(config conf.WhatsappConfiguration) *WhatsAppProvider {
+func NewWhatsAppProvider(config conf.WhatsappConfiguration) SMSProvider {
 	return &WhatsAppProvider{
 		client: client.NewWhatsAppClient(config.WhatsappAccessToken, config.WhatsappPhoneID, config.WhatsappBaseURL),
 		config: config,

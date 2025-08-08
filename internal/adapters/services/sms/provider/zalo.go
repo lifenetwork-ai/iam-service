@@ -34,8 +34,32 @@ type ZaloProvider struct {
 	zaloTokenCryptoService *common.ZaloTokenCrypto
 }
 
-// Core public methods
+// Constructor and initialization
+func NewZaloProvider(ctx context.Context, config conf.ZaloConfiguration, tokenRepo domainrepo.ZaloTokenRepository) (SMSProvider, error) {
+	if tokenRepo == nil {
+		return nil, fmt.Errorf("tokenRepo is nil")
+	}
 
+	zaloTokenCryptoService := common.NewZaloTokenCrypto()
+
+	provider := &ZaloProvider{
+		config:                 config,
+		tokenRepo:              tokenRepo,
+		zaloTokenCryptoService: zaloTokenCryptoService,
+	}
+
+	if err := provider.initializeToken(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := provider.createClient(ctx); err != nil {
+		return nil, err
+	}
+
+	return provider, nil
+}
+
+// Core public methods
 func (z *ZaloProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error {
 	logger.GetLogger().Infof("Sending OTP to %s via Zalo for tenant %s", receiver, tenantName)
 
@@ -172,33 +196,7 @@ func (z *ZaloProvider) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
-// Constructor and initialization
-func NewZaloProvider(ctx context.Context, config conf.ZaloConfiguration, tokenRepo domainrepo.ZaloTokenRepository) (*ZaloProvider, error) {
-	if tokenRepo == nil {
-		return nil, fmt.Errorf("tokenRepo is nil")
-	}
-
-	zaloTokenCryptoService := common.NewZaloTokenCrypto()
-
-	provider := &ZaloProvider{
-		config:                 config,
-		tokenRepo:              tokenRepo,
-		zaloTokenCryptoService: zaloTokenCryptoService,
-	}
-
-	if err := provider.initializeToken(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := provider.createClient(ctx); err != nil {
-		return nil, err
-	}
-
-	return provider, nil
-}
-
 // Private helper methods
-
 func (z *ZaloProvider) refreshAndSaveToken(ctx context.Context) error {
 	resp, err := z.client.RefreshAccessToken(ctx)
 	if err != nil {

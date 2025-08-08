@@ -18,7 +18,7 @@ type TwilioProvider struct {
 	config conf.TwilioConfiguration
 }
 
-func NewTwilioProvider(config conf.TwilioConfiguration) *TwilioProvider {
+func NewTwilioProvider(config conf.TwilioConfiguration) SMSProvider {
 	return &TwilioProvider{
 		client: client.NewTwilioClient(config.TwilioAccountSID, config.TwilioAuthToken, config.TwilioBaseURL),
 		config: config,

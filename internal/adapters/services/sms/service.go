@@ -12,23 +12,15 @@ import (
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
-// SMSProvider defines the interface that all SMS providers must implement
-type SMSProvider interface {
-	SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error
-	RefreshToken(ctx context.Context) error
-	GetChannelType() string
-	HealthCheck(ctx context.Context) error
-}
-
 // SMSProviderFactory manages and creates SMS providers
 type SMSProviderFactory struct {
-	providers map[string]SMSProvider
+	providers map[string]provider.SMSProvider
 }
 
 // NewSMSProviderFactory creates a new factory with all configured providers
 func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloTokenRepository) (*SMSProviderFactory, error) {
 	factory := &SMSProviderFactory{
-		providers: make(map[string]SMSProvider),
+		providers: make(map[string]provider.SMSProvider),
 	}
 
 	// Initialize Twilio provider
@@ -59,7 +51,7 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 }
 
 // GetProvider returns the appropriate provider for the given channel
-func (f *SMSProviderFactory) GetProvider(channel string) (SMSProvider, error) {
+func (f *SMSProviderFactory) GetProvider(channel string) (provider.SMSProvider, error) {
 	if provider, exists := f.providers[channel]; exists {
 		return provider, nil
 	}
@@ -144,6 +136,6 @@ func (s *SMSService) HealthCheck(ctx context.Context) map[string]error {
 	return s.factory.HealthCheckAll(ctx)
 }
 
-func (s *SMSService) GetProvider(channel string) (SMSProvider, error) {
+func (s *SMSService) GetProvider(channel string) (provider.SMSProvider, error) {
 	return s.factory.GetProvider(channel)
 }
