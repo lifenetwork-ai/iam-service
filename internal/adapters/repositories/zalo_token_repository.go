@@ -2,9 +2,11 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
@@ -20,7 +22,13 @@ func NewZaloTokenRepository(db *gorm.DB) domainrepo.ZaloTokenRepository {
 
 func (r *zaloTokenRepository) Get(ctx context.Context) (*domain.ZaloToken, error) {
 	var token domain.ZaloToken
-	if err := r.db.WithContext(ctx).First(&token).Error; err != nil {
+	if err := r.db.WithContext(ctx).Order(clause.OrderByColumn{
+		Column: clause.Column{Name: "updated_at"},
+		Desc:   true,
+	}).First(&token).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &token, nil
