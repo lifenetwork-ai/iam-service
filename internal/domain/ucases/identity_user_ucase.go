@@ -293,7 +293,7 @@ func (u *userUseCase) VerifyRegister(
 
 // bindIAMToUpdateIdentifier handles updating to a different identifier
 // keeping the same GlobalUserID but mapping to the new TenantUserID
-// All operations are wrapped in a transaction to ensure atomicity
+// All write operations are wrapped in a transaction to ensure atomicity
 func (u *userUseCase) bindIAMToUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
@@ -303,8 +303,18 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	newIdentifierType string,
 	sessionValue *domain.ChallengeSession,
 ) error {
-	err := u.db.Transaction(func(tx *gorm.DB) error {
-		// Use the existing GlobalUserID from the session
+	// Pre-fetch the current mapping before starting the transaction
+	identifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndTenantUserID(
+		ctx,
+		tenant.ID.String(),
+		oldTenantUserID,
+	)
+	if err != nil {
+		return fmt.Errorf("get existing mapping: %w", err)
+	}
+
+	// Begin transaction
+	txErr := u.db.Transaction(func(tx *gorm.DB) error {
 		globalUserID := sessionValue.GlobalUserID
 
 		// Create identity for the new identifier with the existing GlobalUserID
@@ -317,12 +327,6 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 			return fmt.Errorf("create new identity: %w", err)
 		}
 
-		// Find the existing mapping for this global user and tenant
-		identifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndTenantUserID(ctx, tenant.ID.String(), oldTenantUserID)
-		if err != nil {
-			return fmt.Errorf("get existing mapping: %w", err)
-		}
-
 		if identifierMapping == nil {
 			if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
 				GlobalUserID: globalUserID,
@@ -332,7 +336,6 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 				return fmt.Errorf("create mapping: %w", err)
 			}
 		} else {
-			// Update the mapping to the new tenant user id
 			if err := u.userIdentifierMappingRepo.Update(tx, &domain.UserIdentifierMapping{
 				ID:           identifierMapping.ID,
 				GlobalUserID: globalUserID,
@@ -346,17 +349,17 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 		// If we reach here, all operations succeeded and the transaction will be committed
 		return nil
 	})
-	if err != nil {
+
+	if txErr != nil {
 		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newTenantUserID); cleanUpErr != nil {
 			logger.GetLogger().Errorf("Failed to clean up: %v", cleanUpErr)
 		}
-		return fmt.Errorf("failed to bind IAM to update identifier: %v", err)
+		return fmt.Errorf("failed to bind IAM to update identifier: %v", txErr)
 	}
 
 	// Delete the old identifier from Kratos
-	err = u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldTenantUserID))
-	if err != nil {
-		return fmt.Errorf("failed to delete identifier: %v", err)
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldTenantUserID)); err != nil {
+		return fmt.Errorf("failed to delete old identifier: %w", err)
 	}
 
 	return nil
