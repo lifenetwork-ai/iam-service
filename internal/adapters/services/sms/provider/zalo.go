@@ -12,6 +12,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/client"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
@@ -19,15 +20,18 @@ import (
 
 // ZaloProvider handles messages through Zalo
 type ZaloProvider struct {
-	client    *client.ZaloClient
-	config    conf.ZaloConfiguration
-	tokenRepo domainrepo.ZaloTokenRepository
+	client                 *client.ZaloClient
+	config                 conf.ZaloConfiguration
+	tokenRepo              domainrepo.ZaloTokenRepository
+	zaloTokenCryptoService *common.ZaloTokenCrypto
 }
 
 func NewZaloProvider(ctx context.Context, config conf.ZaloConfiguration, tokenRepo domainrepo.ZaloTokenRepository) (*ZaloProvider, error) {
 	if tokenRepo == nil {
 		return nil, fmt.Errorf("tokenRepo is nil")
 	}
+
+	zaloTokenCryptoService := common.NewZaloTokenCrypto()
 
 	// Try to get token from DB
 	token, err := tokenRepo.Get(ctx)
@@ -82,12 +86,18 @@ func NewZaloProvider(ctx context.Context, config conf.ZaloConfiguration, tokenRe
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert expiresIn to int: %w", err)
 		}
-		if err := tokenRepo.Save(ctx, &domain.ZaloToken{
+
+		// Encrypt the tokens that will be saved to DB
+		encryptedToken, err := zaloTokenCryptoService.Encrypt(ctx, &domain.ZaloToken{
 			AccessToken:  resp.AccessToken,
 			RefreshToken: resp.RefreshToken,
 			ExpiresAt:    time.Now().Add(time.Duration(expiresIn) * time.Second),
 			UpdatedAt:    time.Now(),
-		}); err != nil {
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt tokens: %w", err)
+		}
+		if err := tokenRepo.Save(ctx, encryptedToken); err != nil {
 			return nil, fmt.Errorf("failed to save refreshed tokens to DB: %w", err)
 		}
 	}
@@ -143,7 +153,14 @@ func (z *ZaloProvider) SendOTP(ctx context.Context, tenantName, receiver, otp st
 				ExpiresAt:    time.Now().Add(time.Duration(expiresIn) * time.Second),
 				UpdatedAt:    time.Now(),
 			}
-			if err := z.tokenRepo.Save(ctx, dbToken); err != nil {
+
+			// Encrypt the tokens that will be saved to DB
+			encryptedToken, err := z.zaloTokenCryptoService.Encrypt(ctx, dbToken)
+			if err != nil {
+				return fmt.Errorf("failed to encrypt tokens: %w", err)
+			}
+
+			if err := z.tokenRepo.Save(ctx, encryptedToken); err != nil {
 				return fmt.Errorf("failed to save refreshed tokens to DB: %w", err)
 			}
 

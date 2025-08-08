@@ -30,17 +30,18 @@ type RootAccountConfiguration struct {
 }
 
 type Configuration struct {
-	Database     DatabaseConfiguration    `mapstructure:",squash"`
-	Redis        RedisConfiguration       `mapstructure:",squash"`
-	RootAccount  RootAccountConfiguration `mapstructure:",squash"`
-	AppName      string                   `mapstructure:"APP_NAME"`
-	AppPort      uint32                   `mapstructure:"APP_PORT"`
-	Env          string                   `mapstructure:"ENV"`
-	LogLevel     string                   `mapstructure:"LOG_LEVEL"`
-	CacheType    string                   `mapstructure:"CACHE_TYPE"`
-	KratosConfig KratosConfiguration      `mapstructure:",squash"`
-	Keto         KetoConfiguration        `mapstructure:",squash"`
-	Sms          SmsConfiguration         `mapstructure:",squash"`
+	Database        DatabaseConfiguration    `mapstructure:",squash"`
+	Redis           RedisConfiguration       `mapstructure:",squash"`
+	RootAccount     RootAccountConfiguration `mapstructure:",squash"`
+	AppName         string                   `mapstructure:"APP_NAME"`
+	AppPort         uint32                   `mapstructure:"APP_PORT"`
+	Env             string                   `mapstructure:"ENV"`
+	LogLevel        string                   `mapstructure:"LOG_LEVEL"`
+	CacheType       string                   `mapstructure:"CACHE_TYPE"`
+	DbEncryptionKey string                   `mapstructure:"DB_ENCRYPTION_KEY"`
+	KratosConfig    KratosConfiguration      `mapstructure:",squash"`
+	Keto            KetoConfiguration        `mapstructure:",squash"`
+	Sms             SmsConfiguration         `mapstructure:",squash"`
 }
 
 type TwilioConfiguration struct {
@@ -90,6 +91,7 @@ var defaultConfigurations = map[string]any{
 	"DB_MAX_IDLE_CONNS":              "5",
 	"DB_MAX_OPEN_CONNS":              "15",
 	"DB_CONN_MAX_LIFETIME_IN_MINUTE": "60",
+	"DB_ENCRYPTION_KEY":              "",
 	"IAM_ROOT_USERNAME":              "",
 	"IAM_ROOT_PASSWORD":              "",
 	"KETO_DEFAULT_READ_URL":          "",

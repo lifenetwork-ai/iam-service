@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
@@ -10,35 +11,43 @@ import (
 )
 
 type smsTokenUseCase struct {
-	zaloRepository domainrepo.ZaloTokenRepository
+	zaloRepository  domainrepo.ZaloTokenRepository
+	zaloTokenCrypto *common.ZaloTokenCrypto
 }
 
 func NewSmsTokenUseCase(zaloRepository domainrepo.ZaloTokenRepository) interfaces.SmsTokenUseCase {
 	return &smsTokenUseCase{
-		zaloRepository: zaloRepository,
+		zaloRepository:  zaloRepository,
+		zaloTokenCrypto: common.NewZaloTokenCrypto(),
 	}
 }
 
 // GetToken gets the token from the repository
-// Should only be called by admin or authorized user
 func (u *smsTokenUseCase) GetZaloToken(ctx context.Context) (*domain.ZaloToken, *domainerrors.DomainError) {
 	token, err := u.zaloRepository.Get(ctx)
 	if err != nil {
 		return nil, domainerrors.NewInternalError("MSG_GET_TOKEN_FAILED", "Failed to get token")
 	}
 
-	return token, nil
+	decryptedToken, err := u.zaloTokenCrypto.Decrypt(ctx, token)
+	if err != nil {
+		return nil, domainerrors.NewInternalError("MSG_DECRYPT_TOKEN_FAILED", "Failed to decrypt token")
+	}
+
+	return decryptedToken, nil
 }
 
 // SetToken sets the token in the repository
-// Should only be called by admin or authorized user
 func (u *smsTokenUseCase) SetZaloToken(ctx context.Context, accessToken, refreshToken string) *domainerrors.DomainError {
-	token := &domain.ZaloToken{
+	encryptedToken, err := u.zaloTokenCrypto.Encrypt(ctx, &domain.ZaloToken{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+	})
+	if err != nil {
+		return domainerrors.NewInternalError("MSG_ENCRYPT_TOKEN_FAILED", "Failed to encrypt token")
 	}
 
-	err := u.zaloRepository.Save(ctx, token)
+	err = u.zaloRepository.Save(ctx, encryptedToken)
 	if err != nil {
 		return domainerrors.NewInternalError("MSG_SET_TOKEN_FAILED", "Failed to set token")
 	}
