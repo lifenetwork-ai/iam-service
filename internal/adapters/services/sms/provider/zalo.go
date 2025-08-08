@@ -173,7 +173,6 @@ func (z *ZaloProvider) HealthCheck(ctx context.Context) error {
 }
 
 // Constructor and initialization
-
 func NewZaloProvider(ctx context.Context, config conf.ZaloConfiguration, tokenRepo domainrepo.ZaloTokenRepository) (*ZaloProvider, error) {
 	if tokenRepo == nil {
 		return nil, fmt.Errorf("tokenRepo is nil")
