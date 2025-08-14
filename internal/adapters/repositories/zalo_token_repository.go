@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -26,9 +25,6 @@ func (r *zaloTokenRepository) Get(ctx context.Context) (*domain.ZaloToken, error
 		Column: clause.Column{Name: "updated_at"},
 		Desc:   true,
 	}).First(&token).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
 		return nil, err
 	}
 	return &token, nil
