@@ -1,6 +1,7 @@
 package instances
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
@@ -29,7 +30,7 @@ func SMSServiceInstance(zaloTokenRepo domainrepo.ZaloTokenRepository) *sms.SMSSe
 
 	if smsServiceErr != nil {
 		logger.GetLogger().Errorf("SMS service initialization failed: %v", smsServiceErr)
-		return nil
+		panic(fmt.Sprintf("SMS service initialization failed: %v", smsServiceErr))
 	}
 
 	return smsService
