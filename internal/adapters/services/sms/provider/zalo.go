@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	DefaultTokenDuration = time.Hour
+	AssumedTokenLifetime = time.Hour
 	MaxRetryTime         = 30 * time.Second
 	MaxRetries           = 3
 	TokenInvalidError    = -124
@@ -112,7 +112,7 @@ func (z *ZaloProvider) createInitialToken(ctx context.Context) (*domain.ZaloToke
 		AccessToken:  z.config.ZaloAccessToken,
 		RefreshToken: z.config.ZaloRefreshToken,
 		UpdatedAt:    time.Now(),
-		ExpiresAt:    time.Now().Add(DefaultTokenDuration),
+		ExpiresAt:    time.Now().Add(AssumedTokenLifetime),
 	}
 
 	if err := z.tokenRepo.Save(ctx, token); err != nil {
