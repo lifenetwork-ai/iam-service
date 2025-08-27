@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+const (
+	TokenInvalidError = -124
+)
+
 type ZaloClient struct {
 	client       *http.Client
 	baseURL      string
@@ -170,5 +174,61 @@ func (c *ZaloClient) RefreshAccessToken(ctx context.Context) (*ZaloTokenRefreshR
 func (c *ZaloClient) UpdateTokens(ctx context.Context, tokenResp *ZaloTokenRefreshResponse) error {
 	c.accessToken = tokenResp.AccessToken
 	c.refreshToken = tokenResp.RefreshToken
+	return nil
+}
+
+func (c *ZaloClient) HealthCheck(ctx context.Context) error {
+	// Use a minimal template request to test API connectivity and authentication
+	// This is more reliable than a generic health endpoint as it tests the actual API
+	payload := ZaloTemplateRequest{
+		Phone:      "0000000000", // Dummy phone number for health check
+		TemplateID: 1,            // Minimal template ID
+		TemplateData: map[string]interface{}{
+			"test": "health_check",
+		},
+	}
+
+	// Marshal the payload to JSON
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal health check payload: %w", err)
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/message/template", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create health check request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("access_token", c.accessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send request
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send health check request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	var zaloResp ZaloTemplateResponse
+	if err := json.NewDecoder(resp.Body).Decode(&zaloResp); err != nil {
+		return fmt.Errorf("failed to decode health check response: %w", err)
+	}
+
+	// Check for authentication errors (token invalid)
+	if zaloResp.Error == TokenInvalidError {
+		return fmt.Errorf("Zalo health check failed: access token is invalid")
+	}
+
+	// Check for HTTP errors
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("Zalo health check failed: HTTP %s", resp.Status)
+	}
+
+	// If we get here, the API is reachable and the token is valid
+	// The actual message sending might fail due to invalid template/phone, but that's expected
+	// and doesn't indicate a health problem
 	return nil
 }

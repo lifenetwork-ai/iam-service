@@ -34,10 +34,14 @@ type ZaloProvider struct {
 	zaloTokenCryptoService *common.ZaloTokenCrypto
 }
 
-// Constructor and initialization
 func NewZaloProvider(ctx context.Context, config conf.ZaloConfiguration, tokenRepo domainrepo.ZaloTokenRepository) (SMSProvider, error) {
+	// Validate inputs
 	if tokenRepo == nil {
-		return nil, fmt.Errorf("tokenRepo is nil")
+		return nil, fmt.Errorf("tokenRepo is required")
+	}
+
+	if err := validateZaloConfig(config); err != nil {
+		return nil, fmt.Errorf("invalid Zalo configuration: %w", err)
 	}
 
 	zaloTokenCryptoService := common.NewZaloTokenCrypto()
@@ -49,14 +53,28 @@ func NewZaloProvider(ctx context.Context, config conf.ZaloConfiguration, tokenRe
 	}
 
 	if err := provider.initializeToken(ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize Zalo token: %w", err)
 	}
 
 	if err := provider.createClient(ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create Zalo client: %w", err)
 	}
 
 	return provider, nil
+}
+
+func validateZaloConfig(config conf.ZaloConfiguration) error {
+	if config.ZaloBaseURL == "" {
+		return fmt.Errorf("ZaloBaseURL is required")
+	}
+	if config.ZaloSecretKey == "" {
+		return fmt.Errorf("ZaloSecretKey is required")
+	}
+	if config.ZaloAppID == "" {
+		return fmt.Errorf("ZaloAppID is required")
+	}
+	// Add template ID validation if required
+	return nil
 }
 
 // Core public methods
@@ -78,14 +96,14 @@ func (z *ZaloProvider) SendOTP(ctx context.Context, tenantName, receiver, otp st
 // Private helper methods
 
 func (z *ZaloProvider) initializeToken(ctx context.Context) error {
-	token, err := z.getOrCreateToken(ctx)
+	_, err := z.getOrCreateToken(ctx)
 	if err != nil {
 		return err
 	}
 
-	if z.isTokenExpired(token) {
-		return z.refreshAndSaveToken(ctx)
-	}
+	// if z.isTokenExpired(token) {
+	// 	return z.refreshAndSaveToken(ctx)
+	// }
 
 	return nil
 }
@@ -147,6 +165,10 @@ func (z *ZaloProvider) isTokenExpired(token *domain.ZaloToken) bool {
 	return token.ExpiresAt.Before(time.Now())
 }
 
+func (z *ZaloProvider) healthCheck(ctx context.Context) error {
+	return z.client.HealthCheck(ctx)
+}
+
 func (z *ZaloProvider) attemptSendOTP(ctx context.Context, receiver, otp string) error {
 	resp, err := z.client.SendOTP(ctx, receiver, otp, z.config.ZaloTemplateID)
 	if err != nil {
@@ -192,8 +214,8 @@ func (z *ZaloProvider) GetChannelType() string {
 }
 
 func (z *ZaloProvider) HealthCheck(ctx context.Context) error {
-	// Implement Zalo health check if available
-	return nil
+	// Use the client's health check which tests API connectivity and authentication
+	return z.client.HealthCheck(ctx)
 }
 
 // Private helper methods
