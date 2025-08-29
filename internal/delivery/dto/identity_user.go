@@ -18,8 +18,8 @@ type IdentityChallengeVerifyDTO struct {
 
 type IdentityUserRegisterDTO struct {
 	Lang  string `json:"lang" binding:"required,oneof=en vi" description:"The language for the user registration"`
-	Email string `json:"email" validate:"omitempty,email"`
-	Phone string `json:"phone" validate:"omitempty"`
+	Email string `json:"email" binding:"omitempty,email"`
+	Phone string `json:"phone" binding:"omitempty"`
 }
 
 // IdentityUserLoginDTO represents the request for a user login.
