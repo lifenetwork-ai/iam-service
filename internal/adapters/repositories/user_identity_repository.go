@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
@@ -58,6 +59,31 @@ func (r *userIdentityRepository) FindGlobalUserIDByIdentity(
 	}
 
 	return identity.GlobalUserID, nil
+}
+
+func (r *userIdentityRepository) InsertOnceByUserAndType(
+	ctx context.Context,
+	globalUserID string,
+	idType, value string,
+) (bool, error) {
+	rec := &domain.UserIdentity{
+		GlobalUserID: globalUserID,
+		Type:         idType,
+		Value:        value,
+	}
+
+	res := r.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "global_user_id"}, {Name: "type"}}, // 1 user per 1 type
+			DoNothing: true,
+		}).
+		Create(rec)
+
+	if res.Error != nil {
+		return false, res.Error
+	}
+
+	return res.RowsAffected == 1, nil
 }
 
 func (r *userIdentityRepository) FirstOrCreate(tx *gorm.DB, identity *domain.UserIdentity) error {

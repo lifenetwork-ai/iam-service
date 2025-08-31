@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -130,6 +131,8 @@ func (u *userUseCase) ChallengeWithEmail(
 	tenantID uuid.UUID,
 	email string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
+	// Normalize and validate email
+	email = strings.ToLower(email)
 	if !utils.IsEmail(email) {
 		return nil, domainerrors.NewValidationError(
 			"MSG_INVALID_EMAIL",
@@ -216,20 +219,12 @@ func (u *userUseCase) VerifyRegister(
 		return nil, domainerrors.NewInternalError("MSG_INVALID_TRAITS", "Failed to parse identity traits")
 	}
 
-	email := extractStringFromTraits(traits, constants.IdentifierEmail.String(), "")
-	phone := extractStringFromTraits(traits, constants.IdentifierPhone.String(), "")
 	tenantName := extractStringFromTraits(traits, "tenant", "")
 	newTenantUserID := registrationResult.Session.Identity.Id
 
-	// Determine identifier and type
-	identifier := email
-	if phone != "" {
-		identifier = phone
-	}
-	identifierType, err := utils.GetIdentifierType(identifier)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIER_TYPE_FAILED", "Failed to get identifier type")
-	}
+	// Get identifier and type from session value
+	identifier := sessionValue.Identifier
+	identifierType := sessionValue.IdentifierType
 
 	// Get tenant by name
 	tenant, err := u.tenantRepo.GetByName(tenantName)
@@ -245,17 +240,26 @@ func (u *userUseCase) VerifyRegister(
 	switch sessionValue.ChallengeType {
 	case constants.ChallengeTypeAddIdentifier:
 		// Handle add identifier challenge
-		if err := u.userIdentityRepo.FirstOrCreate(u.db, &domain.UserIdentity{
-			GlobalUserID: sessionValue.GlobalUserID,
-			Type:         identifierType,
-			Value:        identifier,
-		}); err != nil {
+		inserted, err := u.userIdentityRepo.InsertOnceByUserAndType(ctx, sessionValue.GlobalUserID, identifierType, identifier)
+		if err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add new identifier")
+		}
+		if !inserted {
+			return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS", "Identifier of this type already added", nil)
 		}
 
 	case constants.ChallengeTypeChangeIdentifier:
 		// Handle change identifier challenge
-		if err := u.bindIAMToUpdateIdentifier(ctx, tenant, sessionValue.TenantUserID, newTenantUserID, identifier, identifierType, sessionValue); err != nil {
+		if err := u.bindIAMToUpdateIdentifier(
+			ctx,
+			tenant,
+			sessionValue.GlobalUserID,
+			sessionValue.IdentityID,
+			sessionValue.TenantUserID,
+			newTenantUserID,
+			identifier,
+			identifierType,
+		); err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_UPDATE_IDENTIFIER_FAILED", "Failed to update identifier")
 		}
 
@@ -282,8 +286,8 @@ func (u *userUseCase) VerifyRegister(
 		User: types.IdentityUserResponse{
 			ID:       newTenantUserID,
 			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
-			Email:    email,
-			Phone:    phone,
+			Email:    extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
+			Phone:    extractStringFromTraits(traits, constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -297,11 +301,12 @@ func (u *userUseCase) VerifyRegister(
 func (u *userUseCase) bindIAMToUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
+	globalUserID string,
+	identityID string,
 	oldTenantUserID string,
 	newTenantUserID string,
 	newIdentifier string,
 	newIdentifierType string,
-	sessionValue *domain.ChallengeSession,
 ) error {
 	// Pre-fetch the current mapping before starting the transaction
 	identifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndTenantUserID(
@@ -315,11 +320,9 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 
 	// Begin transaction
 	txErr := u.db.Transaction(func(tx *gorm.DB) error {
-		globalUserID := sessionValue.GlobalUserID
-
 		// Create identity for the new identifier with the existing GlobalUserID
 		if err := u.userIdentityRepo.Update(tx, &domain.UserIdentity{
-			ID:           sessionValue.IdentityID,
+			ID:           identityID,
 			GlobalUserID: globalUserID,
 			Type:         newIdentifierType,
 			Value:        newIdentifier,
@@ -511,6 +514,12 @@ func (u *userUseCase) Register(
 		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number format", []any{"Phone number must be in international format (e.g., +1234567890)"})
 	}
 
+	// Normalize and validate email address if provided
+	email = strings.ToLower(email)
+	if email != "" && !utils.IsEmail(email) {
+		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL_ADDRESS", "Invalid email address format", []any{"Email address must be a valid format"})
+	}
+
 	// Check rate limit for registration attempts
 	var key string
 	if phone != "" {
@@ -560,10 +569,10 @@ func (u *userUseCase) Register(
 		"lang":   lang,
 	}
 	if email != "" {
-		traits[constants.IdentifierEmail.String()] = email
+		traits[constants.IdentifierEmail.String()] = identifierValue
 	}
 	if phone != "" {
-		traits[constants.IdentifierPhone.String()] = phone
+		traits[constants.IdentifierPhone.String()] = identifierValue
 	}
 
 	// Submit registration flow
@@ -572,20 +581,12 @@ func (u *userUseCase) Register(
 		logger.GetLogger().Errorf("Failed to submit registration flow: %v", err)
 		return nil, domainerrors.NewValidationError("MSG_REGISTRATION_FAILED", "Registration failed", []interface{}{err.Error()})
 	}
-	receiver := email
-	if receiver == "" {
-		receiver = phone
-	}
 
 	// Save challenge session
 	session := &domain.ChallengeSession{
-		GlobalUserID:  "",
-		ChallengeType: constants.ChallengeTypeRegister,
-	}
-	if email != "" {
-		session.Identifier = email
-	} else {
-		session.Identifier = phone
+		ChallengeType:  constants.ChallengeTypeRegister,
+		Identifier:     identifierValue,
+		IdentifierType: identifierType,
 	}
 
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
@@ -597,7 +598,7 @@ func (u *userUseCase) Register(
 		VerificationNeeded: true,
 		VerificationFlow: &types.IdentityUserChallengeResponse{
 			FlowID:      flow.Id,
-			Receiver:    receiver,
+			Receiver:    identifierValue,
 			ChallengeAt: time.Now().Unix(),
 		},
 	}, nil
@@ -766,9 +767,14 @@ func (u *userUseCase) AddNewIdentifier(
 	identifierType string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// 1. Validate input
-	if identifierType == constants.IdentifierEmail.String() && !utils.IsEmail(identifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
+	if identifierType == constants.IdentifierEmail.String() {
+		// Normalize and validate email
+		identifier = strings.ToLower(identifier)
+		if !utils.IsEmail(identifier) {
+			return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
+		}
 	}
+
 	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneNumber(identifier) {
 		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number", nil)
 	}
@@ -822,11 +828,11 @@ func (u *userUseCase) AddNewIdentifier(
 
 	// 7. Save challenge session
 	session := &domain.ChallengeSession{
-		GlobalUserID:  globalUserID,
-		ChallengeType: constants.ChallengeTypeAddIdentifier,
+		GlobalUserID:   globalUserID,
+		ChallengeType:  constants.ChallengeTypeAddIdentifier,
+		Identifier:     identifier,
+		IdentifierType: identifierType,
 	}
-	session.Identifier = identifier
-	session.IdentifierType = identifierType
 
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
