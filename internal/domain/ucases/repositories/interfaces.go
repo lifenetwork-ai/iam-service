@@ -57,10 +57,9 @@ type UserIdentityRepository interface {
 	GetByTypeAndValue(ctx context.Context, tx *gorm.DB, tenantID, identityType, value string) (*domain.UserIdentity, error)
 	FindGlobalUserIDByIdentity(ctx context.Context, tenantID, identityType, value string) (string, error)
 	InsertOnceByTenantUserAndType(ctx context.Context, tx *gorm.DB, tenantID, globalUserID, idType, value string) (bool, error)
-	FirstOrCreate(tx *gorm.DB, identity *domain.UserIdentity) error
 	Update(tx *gorm.DB, identity *domain.UserIdentity) error
 	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
 	GetByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (*domain.UserIdentity, error)
-	ExistsByGlobalUserIDAndType(ctx context.Context, globalUserID, identityType string) (bool, error)
+	ExistsByTenantGlobalUserIDAndType(ctx context.Context, tenantID, globalUserID, identityType string) (bool, error)
 	Delete(tx *gorm.DB, identityID string) error
 }

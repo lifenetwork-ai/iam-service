@@ -243,10 +243,7 @@ func (u *userUseCase) VerifyRegister(
 		inserted, err := u.userIdentityRepo.InsertOnceByTenantUserAndType(
 			ctx, nil, tenantID.String(), sessionValue.GlobalUserID, identifierType, identifier,
 		)
-		if err != nil {
-			return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add new identifier")
-		}
-		if !inserted {
+		if err != nil || !inserted {
 			return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS", "Identifier of this type already added", nil)
 		}
 
@@ -419,11 +416,14 @@ func (u *userUseCase) bindIAMToRegistration(
 	}
 
 	// Create identities
-	if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
-		GlobalUserID: globalUser.ID,
-		Type:         identifierType,
-		Value:        identifier,
-	}); err != nil {
+	_, err := u.userIdentityRepo.InsertOnceByTenantUserAndType(
+		ctx, tx,
+		tenant.ID.String(),
+		globalUserID,
+		identifierType,
+		identifier,
+	)
+	if err != nil {
 		return fmt.Errorf("create identity: %w", err)
 	}
 
@@ -791,7 +791,7 @@ func (u *userUseCase) AddNewIdentifier(
 	}
 
 	// 3. Check if user already has this identifier type
-	hasType, err := u.userIdentityRepo.ExistsByGlobalUserIDAndType(ctx, globalUserID, identifierType)
+	hasType, err := u.userIdentityRepo.ExistsByTenantGlobalUserIDAndType(ctx, tenantID.String(), globalUserID, identifierType)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identity type")
 	}
