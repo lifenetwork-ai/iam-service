@@ -240,7 +240,9 @@ func (u *userUseCase) VerifyRegister(
 	switch sessionValue.ChallengeType {
 	case constants.ChallengeTypeAddIdentifier:
 		// Handle add identifier challenge
-		inserted, err := u.userIdentityRepo.InsertOnceByUserAndType(ctx, sessionValue.GlobalUserID, identifierType, identifier)
+		inserted, err := u.userIdentityRepo.InsertOnceByTenantUserAndType(
+			ctx, nil, tenantID.String(), sessionValue.GlobalUserID, identifierType, identifier,
+		)
 		if err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add new identifier")
 		}

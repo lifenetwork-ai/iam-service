@@ -61,28 +61,32 @@ func (r *userIdentityRepository) FindGlobalUserIDByIdentity(
 	return out.GlobalUserID, nil
 }
 
-func (r *userIdentityRepository) InsertOnceByUserAndType(
+func (r *userIdentityRepository) InsertOnceByTenantUserAndType(
 	ctx context.Context,
+	tx *gorm.DB,
+	tenantID string,
 	globalUserID string,
 	idType, value string,
 ) (bool, error) {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
 	rec := &domain.UserIdentity{
+		TenantID:     tenantID,
 		GlobalUserID: globalUserID,
 		Type:         idType,
 		Value:        value,
 	}
-
-	res := r.db.WithContext(ctx).
+	res := db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "global_user_id"}, {Name: "type"}}, // 1 user per 1 type
+			Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "global_user_id"}, {Name: "type"}},
 			DoNothing: true,
 		}).
 		Create(rec)
-
 	if res.Error != nil {
 		return false, res.Error
 	}
-
 	return res.RowsAffected == 1, nil
 }
 
