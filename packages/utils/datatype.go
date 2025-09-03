@@ -16,10 +16,40 @@ func IsPhoneNumber(phone string) bool {
 	return phoneValidator.MatchString(phone)
 }
 
-func IsEmail(email string) bool {
-	// Check if the email is valid
-	_, err := mail.ParseAddress(email)
-	return err == nil
+func IsEmail(s string) bool {
+	localPartRe := regexp.MustCompile(`^[A-Za-z0-9.!#$%&'*+/=?^_{}|~-]+$`)
+	domainRe := regexp.MustCompile(`^(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$`)
+
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return false
+	}
+	addr, err := mail.ParseAddress(s)
+	if err != nil {
+		return false
+	}
+	e := strings.ToLower(addr.Address)
+	at := strings.LastIndexByte(e, '@')
+	if at <= 0 || at == len(e)-1 {
+		return false
+	}
+	local := e[:at]
+	domain := e[at+1:]
+
+	if !localPartRe.MatchString(local) ||
+		strings.HasPrefix(local, ".") ||
+		strings.HasSuffix(local, ".") ||
+		strings.Contains(local, "..") {
+		return false
+	}
+	// This line catches your case (no dot in domain)
+	if !domainRe.MatchString(domain) {
+		return false
+	}
+	if len(local) > 64 || len(e) > 254 {
+		return false
+	}
+	return true
 }
 
 func GetIdentifierType(identifier string) (string, error) {
