@@ -37,7 +37,7 @@ func (u *permissionUseCase) CheckPermission(ctx context.Context, request types.C
 		)
 	}
 
-	globalUserID, err := u.getGlobalUserID(ctx, &request)
+	globalUserID, err := u.getGlobalUserID(ctx, &request, request.TenantRelation.TenantID)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get global user id: %v", err)
 		return false, domainerrors.NewInternalError(
@@ -98,7 +98,7 @@ func (u *permissionUseCase) DelegateAccess(ctx context.Context, request types.De
 	}
 
 	// Validate that the target user exists
-	targetGlobalUserID, err := u.getGlobalUserIDByIdentifier(ctx, request.Identifier)
+	targetGlobalUserID, err := u.getGlobalUserIDByIdentifier(ctx, request.TenantID, request.Identifier)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get target user global id: %v", err)
 		return false, domainerrors.NewValidationError(
@@ -158,7 +158,7 @@ func (u *permissionUseCase) CreateRelationTuple(ctx context.Context, request typ
 		)
 	}
 
-	globalUserID, err := u.getGlobalUserID(ctx, &request)
+	globalUserID, err := u.getGlobalUserID(ctx, &request, request.TenantRelation.TenantID)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get global user id: %v", err)
 		return domainerrors.NewInternalError(
@@ -179,14 +179,14 @@ func (u *permissionUseCase) CreateRelationTuple(ctx context.Context, request typ
 	return nil
 }
 
-func (u *permissionUseCase) getGlobalUserID(ctx context.Context, req types.PermissionRequest) (string, error) {
+func (u *permissionUseCase) getGlobalUserID(ctx context.Context, req types.PermissionRequest, tenantID string) (string, error) {
 	identifierType, err := utils.GetIdentifierType(req.GetIdentifier())
 	if err != nil {
 		logger.GetLogger().Errorf("Invalid identifier: %v", err)
 		return "", err
 	}
 
-	userIdentity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, identifierType, req.GetIdentifier())
+	userIdentity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID, identifierType, req.GetIdentifier())
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get user identity: %v", err)
 		return "", err
@@ -194,14 +194,14 @@ func (u *permissionUseCase) getGlobalUserID(ctx context.Context, req types.Permi
 	return userIdentity.GlobalUserID, nil
 }
 
-func (u *permissionUseCase) getGlobalUserIDByIdentifier(ctx context.Context, identifier string) (string, error) {
+func (u *permissionUseCase) getGlobalUserIDByIdentifier(ctx context.Context, tenantID, identifier string) (string, error) {
 	identifierType, err := utils.GetIdentifierType(identifier)
 	if err != nil {
 		logger.GetLogger().Errorf("Invalid identifier: %v", err)
 		return "", err
 	}
 
-	userIdentity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, identifierType, identifier)
+	userIdentity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID, identifierType, identifier)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to get user identity: %v", err)
 		return "", err

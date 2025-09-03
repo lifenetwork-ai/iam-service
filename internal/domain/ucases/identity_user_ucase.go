@@ -87,7 +87,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Check if the identifier exists in the database
-	_, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, constants.IdentifierPhone.String(), phone)
+	_, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierPhone.String(), phone)
 	if err != nil {
 		return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Phone number").WithDetails([]interface{}{
 			map[string]string{
@@ -393,7 +393,7 @@ func (u *userUseCase) bindIAMToRegistration(
 	var globalUserID string
 
 	// Lookup existing identity
-	if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, identifierType, identifier); err == nil {
+	if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, tenant.ID.String(), identifierType, identifier); err == nil {
 		globalUserID = identity.GlobalUserID
 	}
 

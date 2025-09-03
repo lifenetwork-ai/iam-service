@@ -54,7 +54,7 @@ type UserIdentifierMappingRepository interface {
 }
 
 type UserIdentityRepository interface {
-	GetByTypeAndValue(ctx context.Context, tx *gorm.DB, identityType, value string) (*domain.UserIdentity, error)
+	GetByTypeAndValue(ctx context.Context, tx *gorm.DB, tenantID, identityType, value string) (*domain.UserIdentity, error)
 	FindGlobalUserIDByIdentity(ctx context.Context, tenantID, identityType, value string) (string, error)
 	InsertOnceByUserAndType(ctx context.Context, globalUserID, idType, value string) (bool, error)
 	FirstOrCreate(tx *gorm.DB, identity *domain.UserIdentity) error

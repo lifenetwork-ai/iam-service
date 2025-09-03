@@ -21,22 +21,22 @@ func NewUserIdentityRepository(db *gorm.DB) domainrepo.UserIdentityRepository {
 func (r *userIdentityRepository) GetByTypeAndValue(
 	ctx context.Context,
 	tx *gorm.DB,
+	tenantID string,
 	identityType string,
 	value string,
 ) (*domain.UserIdentity, error) {
 	var identity domain.UserIdentity
-
-	db := r.db.WithContext(ctx)
+	db := r.db
 	if tx != nil {
-		db = tx.WithContext(ctx)
+		db = tx
 	}
-
-	if err := db.
-		Where("type = ? AND value = ?", identityType, value).
-		First(&identity).Error; err != nil {
+	err := db.WithContext(ctx).
+		Where("tenant_id = ? AND type = ? AND value = ?",
+			tenantID, identityType, value).
+		First(&identity).Error
+	if err != nil {
 		return nil, err
 	}
-
 	return &identity, nil
 }
 
