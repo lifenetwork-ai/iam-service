@@ -39,3 +39,8 @@ type ErrorDTOResponse struct {
 func (e *ErrorDTOResponse) Error() string {
 	return fmt.Sprintf("code: %s, message: %s, details: %v", e.Code, e.Message, e.Details)
 }
+
+// CheckIdentifierResponse represents the response for checking if an identifier exists.
+type CheckIdentifierResponse struct {
+	Registered bool `json:"registered"`
+}
