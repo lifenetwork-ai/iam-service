@@ -1,4 +1,7 @@
 ALTER TABLE user_identities
+ADD COLUMN IF NOT EXISTS tenant_id UUID;
+
+ALTER TABLE user_identities
 ALTER COLUMN tenant_id SET NOT NULL;
 
 DROP INDEX IF EXISTS idx_user_identities_type_value;
