@@ -413,6 +413,7 @@ func (u *userUseCase) bindIAMToRegistration(
 		if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
 			return fmt.Errorf("create global user: %w", err)
 		}
+		globalUserID = globalUser.ID
 	}
 
 	// Create identities
