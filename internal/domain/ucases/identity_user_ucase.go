@@ -930,10 +930,47 @@ func (u *userUseCase) UpdateIdentifier(
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
 	}
 
-	// 9. Return response
+	// 8. Return response
 	return &types.IdentityUserChallengeResponse{
 		FlowID:      flow.Id,
 		Receiver:    identifier,
 		ChallengeAt: time.Now().Unix(),
 	}, nil
+}
+
+func (u *userUseCase) CheckIdentifier(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	identifier string,
+) (bool, string, *domainerrors.DomainError) {
+	identifier = strings.ToLower(identifier)
+	identifier = strings.TrimSpace(identifier)
+
+	// 1. Detect type
+	idType, err := utils.GetIdentifierType(identifier) // "email" | "phone_number"
+	if err != nil {
+		return false, "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
+	}
+
+	// 2. Validate
+	switch idType {
+	case constants.IdentifierEmail.String():
+		if !utils.IsEmail(identifier) {
+			return false, idType, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
+		}
+	case constants.IdentifierPhone.String():
+		if !utils.IsPhoneNumber(identifier) {
+			return false, idType, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number", nil)
+		}
+	default:
+		return false, "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
+	}
+
+	// 3. Repo check (tenant-scoped)
+	ok, repoErr := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
+	if repoErr != nil {
+		return false, idType, domainerrors.WrapInternal(repoErr, "MSG_LOOKUP_FAILED", "Failed to check identifier")
+	}
+
+	return ok, idType, nil
 }
