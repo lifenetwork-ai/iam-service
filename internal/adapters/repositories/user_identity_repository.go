@@ -46,19 +46,19 @@ func (r *userIdentityRepository) FindGlobalUserIDByIdentity(
 	identityType string,
 	value string,
 ) (string, error) {
-	var identity domain.UserIdentity
-
+	var out struct {
+		GlobalUserID string
+	}
 	err := r.db.WithContext(ctx).
 		Model(&domain.UserIdentity{}).
-		Select("user_identities.global_user_id").
-		Joins("JOIN user_identifier_mapping ON user_identifier_mapping.global_user_id = user_identities.global_user_id").
-		Where("user_identifier_mapping.tenant_id = ? AND user_identities.type = ? AND user_identities.value = ?", tenantID, identityType, value).
-		First(&identity).Error
+		Select("global_user_id").
+		Where("tenant_id = ? AND type = ? AND value = ?",
+			tenantID, identityType, value).
+		First(&out).Error
 	if err != nil {
 		return "", err
 	}
-
-	return identity.GlobalUserID, nil
+	return out.GlobalUserID, nil
 }
 
 func (r *userIdentityRepository) InsertOnceByUserAndType(
