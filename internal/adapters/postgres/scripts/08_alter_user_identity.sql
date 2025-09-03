@@ -1,3 +1,6 @@
+ALTER TABLE IF EXISTS user_identities
+DROP CONSTRAINT IF EXISTS user_identities_type_value_key;
+
 ALTER TABLE user_identities
 ADD COLUMN IF NOT EXISTS tenant_id UUID;
 
