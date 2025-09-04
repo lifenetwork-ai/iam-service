@@ -10,12 +10,6 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 )
 
-func IsPhoneNumber(phone string) bool {
-	// Check if the phone number is valid
-	phoneValidator := regexp.MustCompile(`^(\+?(\d{1,3}))?(\d{10,15})$`)
-	return phoneValidator.MatchString(phone)
-}
-
 func IsEmail(s string) bool {
 	localPartRe := regexp.MustCompile(`^[A-Za-z0-9.!#$%&'*+/=?^_{}|~-]+$`)
 	domainRe := regexp.MustCompile(`^(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$`)
@@ -56,7 +50,7 @@ func GetIdentifierType(identifier string) (string, error) {
 	if IsEmail(identifier) {
 		return constants.IdentifierEmail.String(), nil
 	}
-	if IsPhoneNumber(identifier) {
+	if IsPhoneE164(identifier) {
 		return constants.IdentifierPhone.String(), nil
 	}
 	return "", fmt.Errorf("invalid identifier format")

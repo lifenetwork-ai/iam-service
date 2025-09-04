@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
@@ -78,12 +79,13 @@ func (h *courierHandler) GetAvailableChannelsHandler(ctx *gin.Context) {
 		return
 	}
 
-	if !utils.IsPhoneNumber(req.Receiver) {
+	normalizePhone, _, nerr := utils.NormalizePhoneE164(req.Receiver, constants.DefaultRegion)
+	if nerr != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_NOT_SUPPORTED", "Only phone number is supported for getting available channels", nil)
 		return
 	}
 
-	channels := h.ucase.GetAvailableChannels(ctx, tenant.Name, req.Receiver)
+	channels := h.ucase.GetAvailableChannels(ctx, tenant.Name, normalizePhone)
 	httpresponse.Success(ctx, http.StatusOK, channels)
 }
 
