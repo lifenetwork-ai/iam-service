@@ -76,9 +76,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	if err != nil {
 		code := codeInvalidPhone
 		msg := msgInvalidPhone
-		return nil, domainerrors.NewValidationError(code, msg, []interface{}{
-			map[string]string{"field": "phone", "error": msg},
-		})
+		return nil, domainerrors.NewValidationError(code, msg, nil)
 	}
 
 	// Check rate limit for phone challenges
@@ -519,9 +517,7 @@ func (u *userUseCase) Register(
 		if err != nil {
 			code := codeInvalidPhone
 			msg := msgInvalidPhone
-			return nil, domainerrors.NewValidationError(code, msg, []interface{}{
-				map[string]string{"field": "phone", "error": msg},
-			})
+			return nil, domainerrors.NewValidationError(code, msg, nil)
 		}
 		phone = normalizedPhone
 	}
@@ -792,9 +788,7 @@ func (u *userUseCase) AddNewIdentifier(
 		if err != nil {
 			code := codeInvalidPhone
 			msg := msgInvalidPhone
-			return nil, domainerrors.NewValidationError(code, msg, []interface{}{
-				map[string]string{"field": "phone", "error": msg},
-			})
+			return nil, domainerrors.NewValidationError(code, msg, nil)
 		}
 		identifier = normalizedPhone
 	}
@@ -888,9 +882,7 @@ func (u *userUseCase) UpdateIdentifier(
 		if err != nil {
 			code := codeInvalidPhone
 			msg := msgInvalidPhone
-			return nil, domainerrors.NewValidationError(code, msg, []interface{}{
-				map[string]string{"field": "phone", "error": msg},
-			})
+			return nil, domainerrors.NewValidationError(code, msg, nil)
 		}
 		identifier = normalizedPhone
 	}
@@ -988,9 +980,7 @@ func (u *userUseCase) CheckIdentifier(
 		if err != nil {
 			code := codeInvalidPhone
 			msg := msgInvalidPhone
-			return false, idType, domainerrors.NewValidationError(code, msg, []interface{}{
-				map[string]string{"field": "phone", "error": msg},
-			})
+			return false, idType, domainerrors.NewValidationError(code, msg, nil)
 		}
 		identifier = normalizedPhone
 	default:
