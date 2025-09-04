@@ -17,6 +17,18 @@ definitions:
       username:
         type: string
     type: object
+  dto.CheckIdentifierDTO:
+    properties:
+      identifier:
+        type: string
+    required:
+    - identifier
+    type: object
+  dto.CheckIdentifierResponse:
+    properties:
+      registered:
+        type: boolean
+    type: object
   dto.CheckPermissionRequestDTO:
     properties:
       namespace:
@@ -404,6 +416,53 @@ paths:
       summary: Create a new admin account
       tags:
       - admin
+  /api/v1/admin/identifiers/check:
+    post:
+      consumes:
+      - application/json
+      description: Return true if the given identifier (email/phone) already exists
+        in this tenant.
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Identifier payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CheckIdentifierDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CheckIdentifierResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Check if an identifier is registered in this tenant
+      tags:
+      - identifiers
   /api/v1/admin/tenants:
     get:
       consumes:

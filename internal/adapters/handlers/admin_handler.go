@@ -6,18 +6,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
+	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type adminHandler struct {
-	ucase interfaces.AdminUseCase
+	adminUCase interfaces.AdminUseCase
+	userUCase  interfaces.IdentityUserUseCase
 }
 
-func NewAdminHandler(ucase interfaces.AdminUseCase) *adminHandler {
+func NewAdminHandler(adminUCase interfaces.AdminUseCase, userUCase interfaces.IdentityUserUseCase) *adminHandler {
 	return &adminHandler{
-		ucase: ucase,
+		adminUCase: adminUCase,
+		userUCase:  userUCase,
 	}
 }
 
@@ -49,7 +52,7 @@ func (h *adminHandler) CreateAdminAccount(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.CreateAdminAccount(ctx, reqPayload.Username, reqPayload.Password, reqPayload.Role)
+	response, errResponse := h.adminUCase.CreateAdminAccount(ctx, reqPayload.Username, reqPayload.Password, reqPayload.Role)
 	if errResponse != nil {
 		handleDomainError(ctx, errResponse)
 		return
@@ -77,7 +80,7 @@ func (h *adminHandler) ListTenants(ctx *gin.Context) {
 	size, _ := strconv.Atoi(ctx.DefaultQuery("size", "10"))
 	keyword := ctx.Query("keyword")
 
-	response, errResponse := h.ucase.ListTenants(ctx, page, size, keyword)
+	response, errResponse := h.adminUCase.ListTenants(ctx, page, size, keyword)
 	if errResponse != nil {
 		handleDomainError(ctx, errResponse)
 		return
@@ -114,7 +117,7 @@ func (h *adminHandler) GetTenant(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.GetTenantByID(ctx, id)
+	response, errResponse := h.adminUCase.GetTenantByID(ctx, id)
 	if errResponse != nil {
 		handleDomainError(ctx, errResponse)
 		return
@@ -149,7 +152,7 @@ func (h *adminHandler) CreateTenant(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.CreateTenant(ctx, payload.Name, payload.PublicURL, payload.AdminURL)
+	response, errResponse := h.adminUCase.CreateTenant(ctx, payload.Name, payload.PublicURL, payload.AdminURL)
 	if errResponse != nil {
 		handleDomainError(ctx, errResponse)
 		return
@@ -198,7 +201,7 @@ func (h *adminHandler) UpdateTenant(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.UpdateTenant(ctx, id, payload.Name, payload.PublicURL, payload.AdminURL)
+	response, errResponse := h.adminUCase.UpdateTenant(ctx, id, payload.Name, payload.PublicURL, payload.AdminURL)
 	if errResponse != nil {
 		handleDomainError(ctx, errResponse)
 		return
@@ -232,11 +235,46 @@ func (h *adminHandler) DeleteTenant(ctx *gin.Context) {
 		return
 	}
 
-	response, errResponse := h.ucase.DeleteTenant(ctx, id)
+	response, errResponse := h.adminUCase.DeleteTenant(ctx, id)
 	if errResponse != nil {
 		handleDomainError(ctx, errResponse)
 		return
 	}
 
 	httpresponse.Success(ctx, http.StatusOK, response)
+}
+
+// @Summary Check if an identifier is registered in this tenant
+// @Security BasicAuth
+// @Description Return true if the given identifier (email/phone) already exists in this tenant.
+// @Tags identifiers
+// @Accept json
+// @Produce json
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Param body body dto.CheckIdentifierDTO true "Identifier payload"
+// @Success 200 {object} response.SuccessResponse{data=dto.CheckIdentifierResponse}
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /api/v1/admin/identifiers/check [post]
+func (h *adminHandler) CheckIdentifier(ctx *gin.Context) {
+	tenant, err := middleware.GetTenantFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
+		return
+	}
+
+	var req dto.CheckIdentifierDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
+		return
+	}
+
+	registered, _, derr := h.userUCase.CheckIdentifier(ctx, tenant.ID, req.Identifier)
+	if derr != nil {
+		handleDomainError(ctx, derr)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, dto.CheckIdentifierResponse{Registered: registered})
 }

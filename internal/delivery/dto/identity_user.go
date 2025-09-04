@@ -38,3 +38,8 @@ type IdentityUserUpdateIdentifierDTO struct {
 	NewIdentifier  string `json:"new_identifier" binding:"required"`
 	IdentifierType string `json:"identifier_type" binding:"required,oneof=email phone_number" description:"The type of the identifier, can be email or phone_number"`
 }
+
+// CheckIdentifierDTO represents the request for checking if an identifier exists.
+type CheckIdentifierDTO struct {
+	Identifier string `json:"identifier" binding:"required"`
+}
