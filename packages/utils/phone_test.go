@@ -19,6 +19,13 @@ func TestNormalizePhoneE164_require(t *testing.T) {
 	tests := []tc{
 		// --- Vietnam ---
 		{
+			name:          "VN redundant 0 -> E164",
+			in:            "+840344381024",
+			defaultRegion: "VN",
+			wantE164:      "+84344381024",
+			wantRegion:    "VN",
+		},
+		{
 			name:          "VN national mobile -> E164",
 			in:            "0344381024",
 			defaultRegion: "VN",
