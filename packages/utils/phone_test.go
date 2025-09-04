@@ -98,7 +98,7 @@ func TestNormalizePhoneE164_require(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture
+		// capture
 		t.Run(tt.name, func(t *testing.T) {
 			gotE164, gotRegion, err := NormalizePhoneE164(tt.in, tt.defaultRegion)
 
@@ -131,7 +131,6 @@ func TestIsPhoneE164_require(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.in, func(t *testing.T) {
 			require.Equal(t, c.want, IsPhoneE164(c.in))
 		})

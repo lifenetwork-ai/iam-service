@@ -22,6 +22,11 @@ import (
 	client "github.com/ory/kratos-client-go"
 )
 
+var (
+	codeInvalidPhone = "MSG_INVALID_PHONE_NUMBER"
+	msgInvalidPhone  = "Invalid phone number"
+)
+
 type userUseCase struct {
 	db                        *gorm.DB
 	rateLimiter               ratelimiters.RateLimiter
@@ -67,17 +72,13 @@ func (u *userUseCase) ChallengeWithPhone(
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
 
-	if !utils.IsPhoneE164(phone) {
-		return nil, domainerrors.NewValidationError(
-			"MSG_INVALID_PHONE_NUMBER",
-			"Invalid phone number",
-			[]interface{}{
-				map[string]string{
-					"field": "phone",
-					"error": "Invalid phone number",
-				},
-			},
-		)
+	phone, _, err = utils.NormalizePhoneE164(phone, constants.DefaultRegion)
+	if err != nil {
+		code := codeInvalidPhone
+		msg := msgInvalidPhone
+		return nil, domainerrors.NewValidationError(code, msg, []interface{}{
+			map[string]string{"field": "phone", "error": msg},
+		})
 	}
 
 	// Check rate limit for phone challenges
@@ -512,9 +513,17 @@ func (u *userUseCase) Register(
 	email string,
 	phone string,
 ) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
-	// Validate phone number if provided
-	if phone != "" && !utils.IsPhoneE164(phone) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number format", []any{"Phone number must be in international format (e.g., +1234567890)"})
+	// Normalize and validate phone number if provided
+	if phone != "" {
+		normalizedPhone, _, err := utils.NormalizePhoneE164(phone, constants.DefaultRegion)
+		if err != nil {
+			code := codeInvalidPhone
+			msg := msgInvalidPhone
+			return nil, domainerrors.NewValidationError(code, msg, []interface{}{
+				map[string]string{"field": "phone", "error": msg},
+			})
+		}
+		phone = normalizedPhone
 	}
 
 	// Normalize and validate email address if provided
@@ -778,8 +787,16 @@ func (u *userUseCase) AddNewIdentifier(
 		}
 	}
 
-	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneE164(identifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number", nil)
+	if identifierType == constants.IdentifierPhone.String() {
+		normalizedPhone, _, err := utils.NormalizePhoneE164(identifier, constants.DefaultRegion)
+		if err != nil {
+			code := codeInvalidPhone
+			msg := msgInvalidPhone
+			return nil, domainerrors.NewValidationError(code, msg, []interface{}{
+				map[string]string{"field": "phone", "error": msg},
+			})
+		}
+		identifier = normalizedPhone
 	}
 
 	// 2. Check if identifier already exists globally
@@ -866,8 +883,16 @@ func (u *userUseCase) UpdateIdentifier(
 		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
 	}
 
-	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneE164(identifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE", "Invalid phone number", nil)
+	if identifierType == constants.IdentifierPhone.String() {
+		normalizedPhone, _, err := utils.NormalizePhoneE164(identifier, constants.DefaultRegion)
+		if err != nil {
+			code := codeInvalidPhone
+			msg := msgInvalidPhone
+			return nil, domainerrors.NewValidationError(code, msg, []interface{}{
+				map[string]string{"field": "phone", "error": msg},
+			})
+		}
+		identifier = normalizedPhone
 	}
 
 	// 2. Check if identifier already exists globally
@@ -959,9 +984,15 @@ func (u *userUseCase) CheckIdentifier(
 			return false, idType, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
 		}
 	case constants.IdentifierPhone.String():
-		if !utils.IsPhoneE164(identifier) {
-			return false, idType, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number", nil)
+		normalizedPhone, _, err := utils.NormalizePhoneE164(identifier, constants.DefaultRegion)
+		if err != nil {
+			code := codeInvalidPhone
+			msg := msgInvalidPhone
+			return false, idType, domainerrors.NewValidationError(code, msg, []interface{}{
+				map[string]string{"field": "phone", "error": msg},
+			})
 		}
+		identifier = normalizedPhone
 	default:
 		return false, "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
 	}
