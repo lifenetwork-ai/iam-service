@@ -75,3 +75,7 @@ const (
 	EnglishLanguage    = "en"
 	VietnameseLanguage = "vi"
 )
+
+const (
+	DefaultRegion = "VN"
+)
