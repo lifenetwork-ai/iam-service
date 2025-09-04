@@ -63,6 +63,7 @@ func (u *adminUseCase) CreateAdminAccount(ctx context.Context, username, passwor
 	// Create new admin account
 	account := domain.AdminAccount{
 		Username:     username,
+		Name:         "",
 		PasswordHash: string(hashedPassword),
 		Role:         role,
 		Status:       "active",
