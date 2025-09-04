@@ -67,7 +67,7 @@ func (u *userUseCase) ChallengeWithPhone(
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
 
-	if !utils.IsPhoneNumber(phone) {
+	if !utils.IsPhoneE164(phone) {
 		return nil, domainerrors.NewValidationError(
 			"MSG_INVALID_PHONE_NUMBER",
 			"Invalid phone number",
@@ -513,7 +513,7 @@ func (u *userUseCase) Register(
 	phone string,
 ) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
 	// Validate phone number if provided
-	if phone != "" && !utils.IsPhoneNumber(phone) {
+	if phone != "" && !utils.IsPhoneE164(phone) {
 		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number format", []any{"Phone number must be in international format (e.g., +1234567890)"})
 	}
 
@@ -778,7 +778,7 @@ func (u *userUseCase) AddNewIdentifier(
 		}
 	}
 
-	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneNumber(identifier) {
+	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneE164(identifier) {
 		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number", nil)
 	}
 
@@ -866,7 +866,7 @@ func (u *userUseCase) UpdateIdentifier(
 		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
 	}
 
-	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneNumber(identifier) {
+	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneE164(identifier) {
 		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE", "Invalid phone number", nil)
 	}
 
@@ -959,7 +959,7 @@ func (u *userUseCase) CheckIdentifier(
 			return false, idType, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
 		}
 	case constants.IdentifierPhone.String():
-		if !utils.IsPhoneNumber(identifier) {
+		if !utils.IsPhoneE164(identifier) {
 			return false, idType, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number", nil)
 		}
 	default:

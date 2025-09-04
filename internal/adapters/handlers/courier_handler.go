@@ -78,7 +78,7 @@ func (h *courierHandler) GetAvailableChannelsHandler(ctx *gin.Context) {
 		return
 	}
 
-	if !utils.IsPhoneNumber(req.Receiver) {
+	if !utils.IsPhoneE164(req.Receiver) {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_NOT_SUPPORTED", "Only phone number is supported for getting available channels", nil)
 		return
 	}
