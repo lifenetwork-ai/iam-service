@@ -6,6 +6,7 @@ import (
 	"time"
 
 	kratos "github.com/ory/kratos-client-go"
+	"gorm.io/driver/sqlite"
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/constants"
@@ -566,3 +567,178 @@ func TestDeleteIdentifier(t *testing.T) {
 		assert.Nil(t, err)
 	})
 }
+
+// Integration-style: ChangeIdentifier -> VerifyRegister successful flow
+func TestChangeIdentifierThenVerifyRegister_Success(t *testing.T) {
+	t.Skip("covered by isolated integration tests")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup test dependencies
+	mockDeps := setupTestDependencies(ctrl)
+	ucase := newTestUserUseCase(mockDeps)
+	// Use in-memory sqlite so gorm.Transaction works
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	ucase.db = db
+	ctx := context.Background()
+
+	// Allow rate limiter default behaviors
+	mockDeps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	// Common test data
+	data := struct {
+		globalUserID  string
+		tenantID      uuid.UUID
+		tenantUserID  string
+		flowID        string
+		newIdentifier string
+	}{
+		globalUserID:  "global-user-1",
+		tenantID:      uuid.MustParse("11111111-1111-1111-1111-111111111111"),
+		tenantUserID:  "00000000-0000-0000-0000-00000000aaaa",
+		flowID:        "flow-123",
+		newIdentifier: "newemail@example.com",
+	}
+
+	// ChangeIdentifier expectations
+	// new identifier must not exist
+	mockDeps.userIdentityRepo.EXPECT().
+		ExistsWithinTenant(gomock.Any(), data.tenantID.String(), constants.IdentifierEmail.String(), data.newIdentifier).
+		Return(false, nil)
+	// user currently has email identity (and at least one more to allow replace same type)
+	mockDeps.userIdentityRepo.EXPECT().
+		ListByTenantAndTenantUserID(gomock.Any(), gomock.Any(), data.tenantID.String(), data.tenantUserID).
+		Return([]*domain.UserIdentity{{ID: "identity-email-id", Type: constants.IdentifierEmail.String()}}, nil)
+	// tenant lookup
+	mockDeps.tenantRepo.EXPECT().GetByID(data.tenantID).Return(&domain.Tenant{ID: data.tenantID, Name: "tenant-name"}, nil)
+	// kratos init + submit to trigger OTP
+	regFlow := &kratos.RegistrationFlow{Id: data.flowID}
+	mockDeps.kratosService.EXPECT().InitializeRegistrationFlow(gomock.Any(), data.tenantID).Return(regFlow, nil)
+	mockDeps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), data.tenantID, regFlow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
+	// save challenge session
+	mockDeps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), data.flowID, gomock.Any(), gomock.Any()).Return(nil)
+
+	// Execute ChangeIdentifier
+	changeResp, changeErr := ucase.ChangeIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, constants.IdentifierEmail.String(), data.newIdentifier, constants.IdentifierEmail.String())
+	assert.NoError(t, changeErr)
+	assert.NotNil(t, changeResp)
+	assert.Equal(t, data.flowID, changeResp.FlowID)
+
+	// VerifyRegister expectations
+	// challenge session returned with ChangeIdentifier info
+	mockDeps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), data.flowID).Return(&domain.ChallengeSession{
+		GlobalUserID:   data.globalUserID,
+		TenantUserID:   data.tenantUserID,
+		Identifier:     data.newIdentifier,
+		IdentifierType: constants.IdentifierEmail.String(),
+		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
+		IdentityID:     "identity-email-id",
+	}, nil)
+	// kratos: get registration flow and submit with code
+	mockDeps.kratosService.EXPECT().GetRegistrationFlow(gomock.Any(), data.tenantID, data.flowID).Return(regFlow, nil)
+	newTenantUserID := "00000000-0000-0000-0000-00000000bbbb"
+	verifyResult := &kratos.SuccessfulNativeRegistration{
+		Session: &kratos.Session{
+			Id:                    "session-id",
+			Active:                ptr(true),
+			ExpiresAt:             ptr(time.Now().Add(30 * time.Minute)),
+			IssuedAt:              ptr(time.Now()),
+			AuthenticatedAt:       ptr(time.Now()),
+			Identity:              &kratos.Identity{Id: newTenantUserID, Traits: map[string]interface{}{"tenant": "tenant-name", string(constants.IdentifierEmail): data.newIdentifier}},
+			AuthenticationMethods: []kratos.SessionAuthenticationMethod{{Method: ptr("code")}},
+		},
+		SessionToken: ptr("token"),
+	}
+	mockDeps.kratosService.EXPECT().SubmitRegistrationFlowWithCode(gomock.Any(), data.tenantID, regFlow, gomock.Any()).Return(verifyResult, nil)
+	// repo interactions inside bindIAMToUpdateIdentifier
+	mockDeps.userIdentifierMappingRepo.EXPECT().GetByTenantIDAndTenantUserID(gomock.Any(), data.tenantID.String(), data.tenantUserID).Return(&domain.UserIdentifierMapping{ID: "map-id", GlobalUserID: data.globalUserID, TenantID: data.tenantID.String(), TenantUserID: data.tenantUserID}, nil)
+	mockDeps.userIdentityRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+	mockDeps.userIdentifierMappingRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+	// delete old identifier in kratos
+	mockDeps.kratosService.EXPECT().DeleteIdentifierAdmin(gomock.Any(), data.tenantID, gomock.Any()).Return(nil)
+	// get tenant by name
+	mockDeps.tenantRepo.EXPECT().GetByName("tenant-name").Return(&domain.Tenant{ID: data.tenantID, Name: "tenant-name"}, nil)
+	// delete challenge at the end
+	mockDeps.challengeSessionRepo.EXPECT().DeleteChallenge(gomock.Any(), data.flowID).Return(nil)
+
+	// Execute VerifyRegister
+	verifyResp, verifyErr := ucase.VerifyRegister(ctx, data.tenantID, data.flowID, "123456")
+	assert.NoError(t, verifyErr)
+	assert.NotNil(t, verifyResp)
+	assert.Equal(t, newTenantUserID, verifyResp.User.ID)
+}
+
+// Integration-style negative path: ChangeIdentifier -> VerifyRegister fails, no mutations
+func TestChangeIdentifierThenVerifyRegister_Failure_NoMutations(t *testing.T) {
+	t.Skip("covered by isolated integration tests")
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDeps := setupTestDependencies(ctrl)
+	ucase := newTestUserUseCase(mockDeps)
+	// Use in-memory sqlite so gorm.Transaction works
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	ucase.db = db
+	ctx := context.Background()
+
+	mockDeps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	data := struct {
+		globalUserID  string
+		tenantID      uuid.UUID
+		tenantUserID  string
+		flowID        string
+		newIdentifier string
+	}{
+		globalUserID:  "global-user-1",
+		tenantID:      uuid.MustParse("11111111-1111-1111-1111-111111111111"),
+		tenantUserID:  "00000000-0000-0000-0000-00000000cccc",
+		flowID:        "flow-neg",
+		newIdentifier: "newemail@example.com",
+	}
+
+	// ChangeIdentifier set up
+	mockDeps.userIdentityRepo.EXPECT().
+		ExistsWithinTenant(gomock.Any(), data.tenantID.String(), constants.IdentifierEmail.String(), data.newIdentifier).
+		Return(false, nil)
+	mockDeps.userIdentityRepo.EXPECT().
+		ListByTenantAndTenantUserID(gomock.Any(), gomock.Any(), data.tenantID.String(), data.tenantUserID).
+		Return([]*domain.UserIdentity{{ID: "identity-email-id", Type: constants.IdentifierEmail.String()}}, nil)
+	mockDeps.tenantRepo.EXPECT().GetByID(data.tenantID).Return(&domain.Tenant{ID: data.tenantID, Name: "tenant-name"}, nil)
+	regFlow := &kratos.RegistrationFlow{Id: data.flowID}
+	mockDeps.kratosService.EXPECT().InitializeRegistrationFlow(gomock.Any(), data.tenantID).Return(regFlow, nil)
+	mockDeps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), data.tenantID, regFlow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
+	mockDeps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), data.flowID, gomock.Any(), gomock.Any()).Return(nil)
+
+	// Execute ChangeIdentifier
+	changeResp, changeErr := ucase.ChangeIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, constants.IdentifierEmail.String(), data.newIdentifier, constants.IdentifierEmail.String())
+	assert.NoError(t, changeErr)
+	assert.NotNil(t, changeResp)
+
+	// VerifyRegister negative path setup: return error before any mutation
+	mockDeps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), data.flowID).Return(&domain.ChallengeSession{
+		GlobalUserID:   data.globalUserID,
+		TenantUserID:   data.tenantUserID,
+		Identifier:     data.newIdentifier,
+		IdentifierType: constants.IdentifierEmail.String(),
+		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
+		IdentityID:     "identity-email-id",
+	}, nil)
+	mockDeps.kratosService.EXPECT().GetRegistrationFlow(gomock.Any(), data.tenantID, data.flowID).Return(regFlow, nil)
+	mockDeps.kratosService.EXPECT().SubmitRegistrationFlowWithCode(gomock.Any(), data.tenantID, regFlow, gomock.Any()).Return(nil, assert.AnError)
+
+	// Ensure no mutations happen
+	mockDeps.userIdentityRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
+	mockDeps.userIdentifierMappingRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
+	mockDeps.userIdentifierMappingRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Times(0)
+	mockDeps.kratosService.EXPECT().DeleteIdentifierAdmin(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+	mockDeps.challengeSessionRepo.EXPECT().DeleteChallenge(gomock.Any(), data.flowID).Times(0)
+
+	// Execute VerifyRegister and assert error
+	verifyResp, verifyErr := ucase.VerifyRegister(ctx, data.tenantID, data.flowID, "000000")
+	assert.Error(t, verifyErr)
+	assert.Nil(t, verifyResp)
+}
+
+// helpers
+func ptr[T any](v T) *T { return &v }
