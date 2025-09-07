@@ -435,7 +435,7 @@ func (h *userHandler) AddIdentifier(ctx *gin.Context) {
 	httpresponse.Success(ctx, http.StatusOK, result)
 }
 
-// UpdateIdentifier to update a user's identifier (email or phone)
+// ChangeIdentifier to update a user's identifier (email or phone)
 // @Summary Update user identifier
 // @Description Update a user's identifier (email or phone)
 // @Tags users
@@ -443,14 +443,14 @@ func (h *userHandler) AddIdentifier(ctx *gin.Context) {
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
 // @Param Authorization header string true "Bearer Token (Bearer ory...)"
-// @Param body body dto.IdentityUserUpdateIdentifierDTO true "Identifier info"
+// @Param body body dto.IdentityUserChangeIdentifierDTO true "Identifier info"
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent for verification"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 409 {object} response.ErrorResponse "Identifier or type already exists"
 // @Failure 429 {object} response.ErrorResponse "Rate limit exceeded"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me/update-identifier [post]
-func (h *userHandler) UpdateIdentifier(ctx *gin.Context) {
+func (h *userHandler) ChangeIdentifier(ctx *gin.Context) {
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
@@ -463,13 +463,13 @@ func (h *userHandler) UpdateIdentifier(ctx *gin.Context) {
 		return
 	}
 
-	var req dto.IdentityUserUpdateIdentifierDTO
+	var req dto.IdentityUserChangeIdentifierDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
 		return
 	}
 
-	result, usecaseErr := h.ucase.UpdateIdentifier(ctx, user.GlobalUserID, tenant.ID, user.ID, req.NewIdentifier, req.IdentifierType)
+	result, usecaseErr := h.ucase.ChangeIdentifier(ctx, user.GlobalUserID, tenant.ID, user.ID, req.OldIdentifier, req.NewIdentifier, req.NewIdentifierType)
 	if usecaseErr != nil {
 		handleDomainError(ctx, usecaseErr)
 		return

@@ -860,101 +860,6 @@ func (u *userUseCase) AddNewIdentifier(
 	}, nil
 }
 
-// UpdateIdentifier updates a user's identifier (email or phone)
-func (u *userUseCase) UpdateIdentifier(
-	ctx context.Context,
-	globalUserID string,
-	tenantID uuid.UUID,
-	tenantUserID string,
-	identifier string,
-	identifierType string,
-) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
-	if identifier == "" {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_REQUEST", "Identifier is required", nil)
-	}
-
-	if identifierType == constants.IdentifierEmail.String() && !utils.IsEmail(identifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
-	}
-
-	if identifierType == constants.IdentifierPhone.String() {
-		normalizedPhone, _, err := utils.NormalizePhoneE164(identifier, constants.DefaultRegion)
-		if err != nil {
-			code := codeInvalidPhone
-			msg := msgInvalidPhone
-			return nil, domainerrors.NewValidationError(code, msg, nil)
-		}
-		identifier = normalizedPhone
-	}
-
-	// 2. Check if identifier already exists globally
-	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), identifierType, identifier)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
-	}
-	if exists {
-		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_ALREADY_EXISTS", "Identifier has already been registered", nil)
-	}
-
-	// 3. Check if user already has this identifier type
-	identity, err := u.userIdentityRepo.GetByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identity type")
-	}
-	if identity == nil {
-		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS", fmt.Sprintf("User does not have an identifier of type %s", identifierType), nil)
-	}
-
-	// 4. Rate limit
-	key := fmt.Sprintf("challenge:update:%s:%s", identifierType, identifier)
-	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
-	}
-
-	// 5. Initialize a registration flow
-	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_INIT_REG_FLOW_FAILED", "Failed to initialize registration flow")
-	}
-
-	tenant, err := u.tenantRepo.GetByID(tenantID)
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to initialize registration flow: %v", err)
-		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
-	}
-
-	// 6. Submit minimal traits to trigger OTP (email or phone)
-	traits := map[string]interface{}{
-		"tenant": tenant.Name,
-	}
-	traits[identifierType] = identifier
-
-	if _, err := u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_REGISTRATION_FAILED", "Registration failed").WithCause(err)
-	}
-
-	// 7. Save challenge session
-	session := &domain.ChallengeSession{
-		GlobalUserID:   globalUserID,
-		TenantUserID:   tenantUserID,
-		IdentifierType: identifierType,
-		Identifier:     identifier,
-		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
-		IdentityID:     identity.ID,
-	}
-
-	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
-	}
-
-	// 8. Return response
-	return &types.IdentityUserChallengeResponse{
-		FlowID:      flow.Id,
-		Receiver:    identifier,
-		ChallengeAt: time.Now().Unix(),
-	}, nil
-}
-
 func (u *userUseCase) CheckIdentifier(
 	ctx context.Context,
 	tenantID uuid.UUID,
@@ -966,7 +871,7 @@ func (u *userUseCase) CheckIdentifier(
 	// 1. Detect type
 	idType, err := utils.GetIdentifierType(identifier) // "email" | "phone_number"
 	if err != nil {
-		return false, "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
+		return false, "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", map[string]interface{}{"identifier": identifier}).WithCause(err)
 	}
 
 	// 2. Validate
@@ -1011,16 +916,19 @@ func (u *userUseCase) DeleteIdentifier(
 	}
 
 	// 2. Get all user identities
-	identities, err := u.userIdentityRepo.GetByGlobalUserID(ctx, nil, tenantID.String(), globalUserID)
+	identities, err := u.userIdentityRepo.ListByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
 	if err != nil {
 		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to get user identifiers")
 	}
 
 	// 3. Find the specific identifier to delete
 	var identifierToDelete *domain.UserIdentity
+	if len(identities) == 0 {
+		return domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS", fmt.Sprintf("User does not have an identifier of type %s", identifierType), nil)
+	}
 	for _, id := range identities {
 		if id.Type == identifierType {
-			identifierToDelete = &id
+			identifierToDelete = id
 			break
 		}
 	}
@@ -1056,8 +964,10 @@ func (u *userUseCase) DeleteIdentifier(
 	return nil
 }
 
-// ChangeIdentifier changes a user's identifier from one type to another
-// (e.g., from email to phone or vice versa)
+// ChangeIdentifier changes a user's identifier from one type to another.
+// Rules:
+// - If user has exactly one identifier type (email OR phone): allow switching to the other type.
+// - If user has more than one identifier type: only allow replacing the same type (email→email or phone→phone).
 func (u *userUseCase) ChangeIdentifier(
 	ctx context.Context,
 	globalUserID string,
@@ -1077,17 +987,13 @@ func (u *userUseCase) ChangeIdentifier(
 	if newIdentifier == "" {
 		return nil, domainerrors.NewValidationError("MSG_INVALID_REQUEST", "Identifier is required", nil)
 	}
-
 	if newIdentifierType == constants.IdentifierEmail.String() && !utils.IsEmail(newIdentifier) {
 		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
 	}
-
 	if newIdentifierType == constants.IdentifierPhone.String() {
 		normalizedPhone, _, err := utils.NormalizePhoneE164(newIdentifier, constants.DefaultRegion)
 		if err != nil {
-			code := codeInvalidPhone
-			msg := msgInvalidPhone
-			return nil, domainerrors.NewValidationError(code, msg, nil)
+			return nil, domainerrors.NewValidationError(codeInvalidPhone, msgInvalidPhone, nil)
 		}
 		newIdentifier = normalizedPhone
 	}
@@ -1101,13 +1007,35 @@ func (u *userUseCase) ChangeIdentifier(
 		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_ALREADY_EXISTS", "Identifier has already been registered", nil)
 	}
 
-	// 4. Check if user has the old identifier type
-	identity, err := u.userIdentityRepo.GetByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
+	// 4. Check user's current identifiers
+	identities, err := u.userIdentityRepo.ListByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
 	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identity type")
+		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identities")
 	}
-	if identity == nil || identity.Type != oldIdentifierType {
-		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS", fmt.Sprintf("User does not have an identifier of type %s", oldIdentifierType), nil)
+	if len(identities) == 0 {
+		return nil, domainerrors.NewConflictError("MSG_NO_IDENTIFIER_EXISTS", "User has no identifier", nil)
+	}
+
+	// Rule enforcement
+	if len(identities) > 1 {
+		// When multiple identifiers exist, only allow replacement of same type
+		if oldIdentifierType != newIdentifierType {
+			return nil, domainerrors.NewConflictError("MSG_MULTIPLE_IDENTIFIERS_EXISTS",
+				"User already has multiple identifiers, cross-type change not allowed", nil)
+		}
+	}
+
+	// Ensure the user has the old identifier type
+	var identity *domain.UserIdentity
+	for _, id := range identities {
+		if id.Type == oldIdentifierType {
+			identity = id
+			break
+		}
+	}
+	if identity == nil {
+		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS",
+			fmt.Sprintf("User does not have an identifier of type %s", oldIdentifierType), nil)
 	}
 
 	// 5. Rate limit
@@ -1128,7 +1056,7 @@ func (u *userUseCase) ChangeIdentifier(
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
 
-	// 7. Submit minimal traits to trigger OTP (email or phone)
+	// 7. Submit minimal traits to trigger OTP
 	traits := map[string]interface{}{
 		"tenant": tenant.Name,
 	}
@@ -1147,7 +1075,6 @@ func (u *userUseCase) ChangeIdentifier(
 		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
 		IdentityID:     identity.ID,
 	}
-
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
 	}

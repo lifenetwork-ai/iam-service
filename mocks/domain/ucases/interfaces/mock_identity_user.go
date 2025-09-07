@@ -207,21 +207,6 @@ func (mr *MockIdentityUserUseCaseMockRecorder) Register(ctx, tenantID, lang, ema
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockIdentityUserUseCase)(nil).Register), ctx, tenantID, lang, email, phone)
 }
 
-// UpdateIdentifier mocks base method.
-func (m *MockIdentityUserUseCase) UpdateIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, tenantUserID, identifier, identifierType string) (*types.IdentityUserChallengeResponse, *errors.DomainError) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateIdentifier", ctx, globalUserID, tenantID, tenantUserID, identifier, identifierType)
-	ret0, _ := ret[0].(*types.IdentityUserChallengeResponse)
-	ret1, _ := ret[1].(*errors.DomainError)
-	return ret0, ret1
-}
-
-// UpdateIdentifier indicates an expected call of UpdateIdentifier.
-func (mr *MockIdentityUserUseCaseMockRecorder) UpdateIdentifier(ctx, globalUserID, tenantID, tenantUserID, identifier, identifierType any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).UpdateIdentifier), ctx, globalUserID, tenantID, tenantUserID, identifier, identifierType)
-}
-
 // VerifyLogin mocks base method.
 func (m *MockIdentityUserUseCase) VerifyLogin(ctx context.Context, tenantID uuid.UUID, flowID, code string) (*types.IdentityUserAuthResponse, *errors.DomainError) {
 	m.ctrl.T.Helper()
