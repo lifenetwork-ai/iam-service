@@ -2,12 +2,28 @@
 
 ## Test Environment
 - Base URL: http://localhost:8080
-- Test Tenant: c7928076-2cfc-49c3-b7ea-d7519ad52929 (Genetica)
+- Test Tenant: ea815eb6-bb85-49ad-bf1a-1a71862f4c7a (Genetica)
 - Test User Email: testuser@example.com
 - Test User Phone: +84321555555
 - New Email for Update: updated@example.com
 - New Phone for Update: +84321666666
 - Webhook URL: https://webhook.site/50c8ecda-46f3-439f-ab7b-9ae576ecde23
+
+## Update Identifier Test Matrix
+
+| #  | Scenario                                 | Initial Identifier | Update To         | Expected Result                                      | Edge Case? |
+|----|------------------------------------------|--------------------|-------------------|------------------------------------------------------|------------|
+| 1  | Phone → Email                            | Phone              | Email             | Can update, old phone blocked, new email works       |            |
+| 2  | Email → Phone                            | Email              | Phone             | Can update, old email blocked, new phone works       |            |
+| 3  | Phone → New Phone                        | Phone              | New Phone         | Can update, old phone blocked, new phone works       |            |
+| 4  | Email → New Email                        | Email              | New Email         | Can update, old email blocked, new email works       |            |
+| 5  | Update to already-used identifier        | Phone/Email        | Existing Email/Phone | Update fails, error returned (identifier in use)  | Yes        |
+| 6  | Update with invalid identifier format    | Phone/Email        | Invalid Email/Phone | Update fails, error returned (invalid format)     | Yes        |
+| 7  | Update with missing identifier type      | Phone/Email        | (missing type)    | Update fails, error returned (missing type)          | Yes        |
+| 8  | Update with missing new identifier       | Phone/Email        | (missing value)   | Update fails, error returned (missing value)         | Yes        |
+| 9  | Update with invalid session token        | Phone/Email        | Any               | Update fails, error returned (unauthorized)          | Yes        |
+| 10 | Update, then try login with old identifier | Phone/Email      | Email/Phone       | Old identifier blocked, cannot login                 |            |
+| 11 | Update, then try login with new identifier | Phone/Email      | Email/Phone       | New identifier works for login                       |            |
 
 ## Test Plan: Full Happy Case Flow
 
@@ -261,3 +277,239 @@ The update identifier flow testing confirms that all components are working corr
 - **User Experience**: ✅ EXCELLENT - Clear error messages
 
 **Recommendation**: The update identifier flow is now **production ready** and can be safely deployed. 
+
+# Extended Update Identifier E2E Test Flows
+
+## Scenario 1: Phone → Email
+
+### Step 1: Register User with Phone
+```bash
+curl -X POST 'http://localhost:8080/api/v1/users/register' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "phone": "+84321555556"
+  }'
+```
+_Expected: 200 OK, verification_needed: true, flow_id returned_
+
+### Step 2: Get OTP from Webhook
+```bash
+curl 'https://webhook.site/token/963e0036-282b-4c84-9fa4-d57186f4b142/requests?page=1&sorting=newest' \
+  -H 'Accept: application/json, text/plain, */*'
+```
+_Expected: OTP code for +84321555556_
+
+### Step 3: Verify Registration
+```bash
+curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: c7928076-2cfc-49c3-b7ea-d7519ad52929" \
+  -d '{
+    "flow_id": "<flow_id_from_step_1>",
+    "code": "<otp_from_step_2>",
+    "type": "register"
+  }'
+```
+_Expected: 200 OK, session_token returned_
+
+### Step 4: Initiate Update Identifier (to Email)
+```bash
+curl -X POST 'http://localhost:8080/api/v1/users/me/update-identifier' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Authorization: Bearer <session_token_from_step_3>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "new_identifier": "testuser1@example.com",
+    "identifier_type": "email"
+  }'
+```
+_Expected: 200 OK, flow_id for email verification returned_
+
+### Step 5: Get OTP for Email from Webhook
+```bash
+curl 'https://webhook.site/token/963e0036-282b-4c84-9fa4-d57186f4b142/requests?page=1&sorting=newest' \
+  -H 'Accept: application/json, text/plain, */*'
+```
+_Expected: OTP code for testuser1@example.com_
+
+### Step 6: Verify Update Identifier
+```bash
+curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: c7928076-2cfc-49c3-b7ea-d7519ad52929" \
+  -d '{
+    "flow_id": "<flow_id_from_step_4>",
+    "code": "<otp_from_step_5>",
+    "type": "register"
+  }'
+```
+_Expected: 200 OK, new session_token returned_
+
+### Step 7: Login with New Email
+```bash
+curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-email' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Content-Type: application/json' \
+  -d '{"email": "testuser1@example.com"}'
+```
+_Expected: 200 OK, flow_id for login returned_
+
+### Step 8: Login with Old Phone (Should Fail)
+```bash
+curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Content-Type: application/json' \
+  -d '{"phone": "+84321555556"}'
+```
+_Expected: 404 Not Found, "Phone number not found"_
+
+### Step 9: Get User Profile
+```bash
+curl -X GET 'http://localhost:8080/api/v1/users/me' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Authorization: Bearer <session_token_from_step_6>'
+```
+_Expected: Profile shows updated email, no phone_
+
+---
+
+## Scenario 2: Email → Phone
+
+### Step 1: Register User with Email
+```bash
+curl -X POST 'http://localhost:8080/api/v1/users/register' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "testuser2@example.com"
+  }'
+```
+_Expected: 200 OK, verification_needed: true, flow_id returned_
+
+### Step 2: Get OTP from Webhook
+```bash
+curl 'https://webhook.site/token/963e0036-282b-4c84-9fa4-d57186f4b142/requests?page=1&sorting=newest' \
+  -H 'Accept: application/json, text/plain, */*'
+```
+_Expected: OTP code for testuser2@example.com_
+
+### Step 3: Verify Registration
+```bash
+curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: c7928076-2cfc-49c3-b7ea-d7519ad52929" \
+  -d '{
+    "flow_id": "<flow_id_from_step_1>",
+    "code": "<otp_from_step_2>",
+    "type": "register"
+  }'
+```
+_Expected: 200 OK, session_token returned_
+
+### Step 4: Initiate Update Identifier (to Phone)
+```bash
+curl -X POST 'http://localhost:8080/api/v1/users/me/update-identifier' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Authorization: Bearer <session_token_from_step_3>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "new_identifier": "+84321555557",
+    "identifier_type": "phone_number"
+  }'
+```
+_Expected: 200 OK, flow_id for phone verification returned_
+
+### Step 5: Get OTP for Phone from Webhook
+```bash
+curl 'https://webhook.site/token/963e0036-282b-4c84-9fa4-d57186f4b142/requests?page=1&sorting=newest' \
+  -H 'Accept: application/json, text/plain, */*'
+```
+_Expected: OTP code for +84321555557_
+
+### Step 6: Verify Update Identifier
+```bash
+curl -X POST "http://localhost:8080/api/v1/users/challenge-verify" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: c7928076-2cfc-49c3-b7ea-d7519ad52929" \
+  -d '{
+    "flow_id": "<flow_id_from_step_4>",
+    "code": "<otp_from_step_5>",
+    "type": "register"
+  }'
+```
+_Expected: 200 OK, new session_token returned_
+
+### Step 7: Login with New Phone
+```bash
+curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-phone' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Content-Type: application/json' \
+  -d '{"phone": "+84321555557"}'
+```
+_Expected: 200 OK, flow_id for login returned_
+
+### Step 8: Login with Old Email (Should Fail)
+```bash
+curl -X POST 'http://localhost:8080/api/v1/users/challenge-with-email' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Content-Type: application/json' \
+  -d '{"email": "testuser2@example.com"}'
+```
+_Expected: 404 Not Found, "Email not found"_
+
+### Step 9: Get User Profile
+```bash
+curl -X GET 'http://localhost:8080/api/v1/users/me' \
+  -H 'accept: application/json' \
+  -H 'X-Tenant-Id: c7928076-2cfc-49c3-b7ea-d7519ad52929' \
+  -H 'Authorization: Bearer <session_token_from_step_6>'
+```
+_Expected: Profile shows updated phone, no email_
+
+---
+
+## Scenario 3: Phone → New Phone
+
+_Repeat the same structure as above, but use a new phone number for update._
+
+---
+
+## Scenario 4: Email → New Email
+
+_Repeat the same structure as above, but use a new email for update._
+
+---
+
+## Edge Cases
+
+### 1. Update to Already-Used Identifier
+- Try to update to an email/phone that is already registered to another user.
+- _Expected: 400/409 error, identifier already in use._
+
+### 2. Update with Invalid Identifier Format
+- Try to update to an invalid email/phone format.
+- _Expected: 400 error, invalid format._
+
+### 3. Update with Missing Identifier Type
+- Omit the `identifier_type` field.
+- _Expected: 400 error, missing type._
+
+### 4. Update with Missing New Identifier
+- Omit the `new_identifier` field.
+- _Expected: 400 error, missing value._
+
+### 5. Update with Invalid Session Token
+- Use an invalid/expired session token.
+- _Expected: 401 error, unauthorized._
+
+--- 

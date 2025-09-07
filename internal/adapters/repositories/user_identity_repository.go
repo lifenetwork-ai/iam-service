@@ -146,6 +146,27 @@ func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 	return count > 0, err
 }
 
+func (r *userIdentityRepository) GetByGlobalUserID(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenantID, globalUserID string,
+) ([]domain.UserIdentity, error) {
+	var identities []domain.UserIdentity
+
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+
+	err := db.WithContext(ctx).
+		Where("tenant_id = ? AND global_user_id = ?", tenantID, globalUserID).
+		Find(&identities).Error
+	if err != nil {
+		return nil, err
+	}
+	return identities, nil
+}
+
 func (r *userIdentityRepository) Delete(tx *gorm.DB, identityID string) error {
 	return tx.Delete(&domain.UserIdentity{ID: identityID}).Error
 }

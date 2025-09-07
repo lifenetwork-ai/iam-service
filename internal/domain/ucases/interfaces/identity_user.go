@@ -84,6 +84,24 @@ type IdentityUserUseCase interface {
 		identifierType string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
 
+	DeleteIdentifier(
+		ctx context.Context,
+		globalUserID string,
+		tenantID uuid.UUID,
+		tenantUserID string,
+		identifierType string,
+	) *errors.DomainError
+
+	ChangeIdentifier(
+		ctx context.Context,
+		globalUserID string,
+		tenantID uuid.UUID,
+		tenantUserID string,
+		oldIdentifierType string,
+		newIdentifier string,
+		newIdentifierType string,
+	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
+
 	CheckIdentifier(
 		ctx context.Context,
 		tenantID uuid.UUID,
