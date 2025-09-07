@@ -40,6 +40,11 @@ type IdentityUserChangeIdentifierDTO struct {
 	NewIdentifierType string `json:"new_identifier_type" binding:"required,oneof=email phone_number" description:"The type of the identifier, can be email or phone_number"`
 }
 
+// IdentityUserDeleteIdentifierDTO represents the request for deleting an identifier.
+type IdentityUserDeleteIdentifierDTO struct {
+	IdentifierType string `json:"identifier_type" binding:"required,oneof=email phone_number" description:"The type of the identifier, can be email or phone_number"`
+}
+
 // CheckIdentifierDTO represents the request for checking if an identifier exists.
 type CheckIdentifierDTO struct {
 	Identifier string `json:"identifier" binding:"required"`

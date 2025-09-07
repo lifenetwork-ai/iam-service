@@ -477,3 +477,46 @@ func (h *userHandler) ChangeIdentifier(ctx *gin.Context) {
 
 	httpresponse.Success(ctx, http.StatusOK, result)
 }
+
+// DeleteIdentifier to delete a user's identifier (email or phone)
+// @Summary Delete user identifier
+// @Description Delete a user's identifier (email or phone)
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)"
+// @Param body body dto.IdentityUserDeleteIdentifierDTO true "Identifier info"
+// @Success 200 {object} response.SuccessResponse{data=map[string]string} "Identifier deleted successfully"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 409 {object} response.ErrorResponse "Identifier or type already exists"
+// @Failure 429 {object} response.ErrorResponse "Rate limit exceeded"
+// @Failure 500 {object} response.ErrorResponse "Internal server error"
+// @Router /api/v1/users/me/delete-identifier [delete]
+func (h *userHandler) DeleteIdentifier(ctx *gin.Context) {
+	tenant, err := middleware.GetTenantFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
+		return
+	}
+
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "MSG_UNAUTHORIZED", "Unauthorized", nil)
+		return
+	}
+
+	var req dto.IdentityUserDeleteIdentifierDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
+		return
+	}
+
+	usecaseErr := h.ucase.DeleteIdentifier(ctx, user.GlobalUserID, tenant.ID, user.ID, req.IdentifierType)
+	if usecaseErr != nil {
+		handleDomainError(ctx, usecaseErr)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, map[string]string{"message": "Identifier deleted successfully"})
+}
