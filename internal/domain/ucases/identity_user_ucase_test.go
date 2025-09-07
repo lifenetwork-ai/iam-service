@@ -742,3 +742,154 @@ func TestChangeIdentifierThenVerifyRegister_Failure_NoMutations(t *testing.T) {
 
 // helpers
 func ptr[T any](v T) *T { return &v }
+
+// =========================
+// Additional tests to raise coverage ≥ 75%
+// =========================
+
+func TestNewIdentityUserUseCase_Constructor(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	deps := setupTestDependencies(ctrl)
+	uc := NewIdentityUserUseCase(
+		&gorm.DB{},
+		deps.rateLimiter,
+		deps.challengeSessionRepo,
+		deps.tenantRepo,
+		deps.globalUserRepo,
+		deps.userIdentityRepo,
+		deps.userIdentifierMappingRepo,
+		deps.kratosService,
+	)
+	assert.NotNil(t, uc)
+	// Ensure underlying type is our implementation
+	_, ok := uc.(*userUseCase)
+	assert.True(t, ok)
+}
+
+func Test_bindIAMToRegistration_ExistingMappingEarlyReturn(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	deps := setupTestDependencies(ctrl)
+	uc := newTestUserUseCase(deps)
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	uc.db = db
+	ctx := context.Background()
+
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	tenant := &domain.Tenant{ID: tenantID, Name: "tenant-name"}
+	newTenantUserID := "tenant-user-abc"
+	identifier := "user@example.com"
+	identifierType := constants.IdentifierEmail.String()
+
+	// Existing identity found -> set globalUserID
+	deps.userIdentityRepo.EXPECT().GetByTypeAndValue(gomock.Any(), gomock.Any(), tenantID.String(), identifierType, identifier).Return(&domain.UserIdentity{GlobalUserID: "gid-1"}, nil)
+	// Mapping already exists -> early return
+	deps.userIdentifierMappingRepo.EXPECT().ExistsByTenantAndTenantUserID(gomock.Any(), gomock.Any(), tenantID.String(), newTenantUserID).Return(true, nil)
+
+	// Should not attempt to create identity or mapping
+	deps.globalUserRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Times(0)
+	deps.userIdentifierMappingRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Times(0)
+
+	// Call with tx (pass db; mocks match gomock.Any())
+	err := uc.bindIAMToRegistration(ctx, db, tenant, newTenantUserID, identifier, identifierType)
+	assert.Nil(t, err)
+}
+
+func Test_bindIAMToRegistration_CreateFlow_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	deps := setupTestDependencies(ctrl)
+	uc := newTestUserUseCase(deps)
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	uc.db = db
+	ctx := context.Background()
+
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	tenant := &domain.Tenant{ID: tenantID, Name: "tenant-name"}
+	newTenantUserID := "tenant-user-new"
+	identifier := "add@example.com"
+	identifierType := constants.IdentifierEmail.String()
+
+	// Identity lookup returns error -> treat as not found
+	deps.userIdentityRepo.EXPECT().GetByTypeAndValue(gomock.Any(), gomock.Any(), tenantID.String(), identifierType, identifier).Return(nil, assert.AnError)
+	// Create new global user
+	deps.globalUserRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+	// Insert identity
+	deps.userIdentityRepo.EXPECT().InsertOnceByTenantUserAndType(gomock.Any(), gomock.Any(), tenantID.String(), gomock.Any(), identifierType, identifier).Return(true, nil)
+	// Create mapping
+	deps.userIdentifierMappingRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+
+	err := uc.bindIAMToRegistration(ctx, db, tenant, newTenantUserID, identifier, identifierType)
+	assert.Nil(t, err)
+}
+
+func Test_rollbackKratosUpdateIdentifier_Error(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	deps := setupTestDependencies(ctrl)
+	uc := newTestUserUseCase(deps)
+	ctx := context.Background()
+
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	tenant := &domain.Tenant{ID: tenantID, Name: "tenant-name"}
+	newTenantUserID := "00000000-0000-0000-0000-000000001234"
+
+	deps.kratosService.EXPECT().DeleteIdentifierAdmin(gomock.Any(), tenantID, uuid.MustParse(newTenantUserID)).Return(assert.AnError)
+
+	err := uc.rollbackKratosUpdateIdentifier(ctx, tenant, newTenantUserID)
+	assert.Error(t, err)
+}
+
+func TestAddNewIdentifier_Phone_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	deps := setupTestDependencies(ctrl)
+	uc := newTestUserUseCase(deps)
+	ctx := context.Background()
+
+	// Rate limiter attempts are recorded inside CheckRateLimitDomain
+	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	globalUserID := "g-1"
+	phone := "+862025550123"
+
+	// Not exists globally and user doesn't have this type
+	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierPhone.String(), phone).Return(false, nil)
+	deps.userIdentityRepo.EXPECT().ExistsByTenantGlobalUserIDAndType(gomock.Any(), tenantID.String(), globalUserID, constants.IdentifierPhone.String()).Return(false, nil)
+	// Kratos
+	flow := &kratos.RegistrationFlow{Id: "flow-add-phone"}
+	deps.kratosService.EXPECT().InitializeRegistrationFlow(gomock.Any(), tenantID).Return(flow, nil)
+	deps.tenantRepo.EXPECT().GetByID(tenantID).Return(&domain.Tenant{ID: tenantID, Name: "tenant-name"}, nil)
+	deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
+	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
+
+	resp, derr := uc.AddNewIdentifier(ctx, tenantID, globalUserID, phone, constants.IdentifierPhone.String())
+	assert.Nil(t, derr)
+	assert.NotNil(t, resp)
+	assert.Equal(t, flow.Id, resp.FlowID)
+}
+
+func TestLogin_SubmitError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	deps := setupTestDependencies(ctrl)
+	uc := newTestUserUseCase(deps)
+	ctx := context.Background()
+
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	flow := &kratos.LoginFlow{Id: "flow-login"}
+	deps.kratosService.EXPECT().InitializeLoginFlow(gomock.Any(), tenantID).Return(flow, nil)
+	deps.kratosService.EXPECT().SubmitLoginFlow(gomock.Any(), tenantID, flow, gomock.Eq("password"), gomock.Any(), gomock.Any(), gomock.Nil()).Return(nil, assert.AnError)
+
+	resp, derr := uc.Login(ctx, tenantID, "user", "pass")
+	assert.NotNil(t, derr)
+	assert.Nil(t, resp)
+}
