@@ -1404,6 +1404,14 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "Identifier to verify",
                         "name": "body",
                         "in": "body",

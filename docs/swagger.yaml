@@ -1284,6 +1284,12 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: Identifier to verify
         in: body
         name: body

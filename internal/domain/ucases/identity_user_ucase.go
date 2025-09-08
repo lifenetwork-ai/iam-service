@@ -1034,7 +1034,7 @@ func (u *userUseCase) ChallengeVerification(
 	}
 
 	// 2. Rate limit
-	key := fmt.Sprintf("challenge:verify:%s:%s:%s", idType, identifier, tenantID.String())
+	key := fmt.Sprintf("challenge:verification:%s:%s:%s", idType, identifier, tenantID.String())
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
@@ -1045,7 +1045,17 @@ func (u *userUseCase) ChallengeVerification(
 		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to initialize verification flow")
 	}
 
-	// 4. Save challenge session
+	// 4. Submit verification without code -> trigger send OTP
+	var codePtr *string // nil
+	idPtr := &identifier
+	_, err = u.kratosService.SubmitVerificationFlow(
+		ctx, tenantID, flowID, idPtr, constants.IdentifierType(idType), codePtr,
+	)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_SEND_VERIFICATION_FAILED", "Failed to send verification code")
+	}
+
+	// 5. Save challenge session
 	session := &domain.ChallengeSession{
 		ChallengeType:  constants.ChallengeTypeVerifyIdentifier,
 		Identifier:     identifier,
@@ -1055,7 +1065,7 @@ func (u *userUseCase) ChallengeVerification(
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
 	}
 
-	// 5. Response
+	// 6. Response
 	return &types.IdentityUserChallengeResponse{
 		FlowID:      flowID,
 		Receiver:    identifier,

@@ -485,6 +485,7 @@ func (h *userHandler) UpdateIdentifier(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Param body body dto.IdentityVerificationChallengeDTO true "Identifier to verify"
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
