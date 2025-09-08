@@ -10,7 +10,6 @@ import (
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
-	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
@@ -144,17 +143,17 @@ func (h *userHandler) ChallengeWithEmail(ctx *gin.Context) {
 	httpresponse.Success(ctx, http.StatusOK, challenge)
 }
 
-// Verify the challenge or registration
-// @Summary Verify the challenge or registration
-// @Description Verify either a login challenge or registration flow
+// Verify the challenge, registration or verification
+// @Summary Verify the challenge, registration or verification
+// @Description Verify either a login challenge, registration or verification flow
 // @Param X-Tenant-Id header string true "Tenant ID"
-// Verify a login or registration challenge
-// @Summary Verify login or registration challenge
-// @Description Verify a one-time code sent to user for either login or registration challenge.
+// Verify a login, registration or verification challenge
+// @Summary Verify login, registration or verification challenge
+// @Description Verify a one-time code sent to user for either login, registration or verification challenge.
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param challenge body dto.IdentityChallengeVerifyDTO true "Verification payload. `type` must be one of: `register`, `login`"
+// @Param challenge body dto.IdentityChallengeVerifyDTO true "Verification payload. `type` must be one of: `register`, `login`, `verify`."
 // @Success 200 {object} response.SuccessResponse "Verification successful"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload or code"
 // @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"
@@ -187,7 +186,7 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 		return
 	}
 
-	var auth *types.IdentityUserAuthResponse
+	var auth any
 	var usecaseErr *domainerrors.DomainError
 
 	switch reqPayload.Type {
@@ -195,6 +194,8 @@ func (h *userHandler) ChallengeVerify(ctx *gin.Context) {
 		auth, usecaseErr = h.ucase.VerifyRegister(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
 	case constants.FlowTypeLogin.String():
 		auth, usecaseErr = h.ucase.VerifyLogin(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
+	case constants.FlowTypeVerify.String():
+		auth, usecaseErr = h.ucase.VerifyIdentifier(ctx.Request.Context(), tenant.ID, reqPayload.FlowID, reqPayload.Code)
 	default:
 		httpresponse.Error(
 			ctx,

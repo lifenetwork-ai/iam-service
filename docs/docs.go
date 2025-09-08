@@ -827,7 +827,7 @@ const docTemplate = `{
         },
         "/api/v1/users/challenge-verify": {
             "post": {
-                "description": "Verify either a login challenge or registration flow\nVerify a one-time code sent to user for either login or registration challenge.",
+                "description": "Verify either a login challenge, registration or verification flow\nVerify a one-time code sent to user for either login, registration or verification challenge.",
                 "consumes": [
                     "application/json"
                 ],
@@ -837,7 +837,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Verify login or registration challenge",
+                "summary": "Verify login, registration or verification challenge",
                 "parameters": [
                     {
                         "type": "string",
@@ -847,7 +847,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Verification payload. ` + "`" + `type` + "`" + ` must be one of: ` + "`" + `register` + "`" + `, ` + "`" + `login` + "`" + `",
+                        "description": "Verification payload. ` + "`" + `type` + "`" + ` must be one of: ` + "`" + `register` + "`" + `, ` + "`" + `login` + "`" + `, ` + "`" + `verify` + "`" + `.",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
@@ -1695,7 +1695,8 @@ const docTemplate = `{
                     "type": "string",
                     "enum": [
                         "register",
-                        "login"
+                        "login",
+                        "verify"
                     ]
                 }
             }

@@ -151,6 +151,7 @@ definitions:
         enum:
         - register
         - login
+        - verify
         type: string
     required:
     - code
@@ -914,15 +915,16 @@ paths:
       consumes:
       - application/json
       description: |-
-        Verify either a login challenge or registration flow
-        Verify a one-time code sent to user for either login or registration challenge.
+        Verify either a login challenge, registration or verification flow
+        Verify a one-time code sent to user for either login, registration or verification challenge.
       parameters:
       - description: Tenant ID
         in: header
         name: X-Tenant-Id
         required: true
         type: string
-      - description: 'Verification payload. `type` must be one of: `register`, `login`'
+      - description: 'Verification payload. `type` must be one of: `register`, `login`,
+          `verify`.'
         in: body
         name: challenge
         required: true
@@ -947,7 +949,7 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Verify login or registration challenge
+      summary: Verify login, registration or verification challenge
       tags:
       - users
   /api/v1/users/challenge-with-email:
