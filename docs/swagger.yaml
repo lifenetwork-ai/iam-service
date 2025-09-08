@@ -151,6 +151,7 @@ definitions:
         enum:
         - register
         - login
+        - verify
         type: string
     required:
     - code
@@ -201,6 +202,13 @@ definitions:
     required:
     - identifier_type
     - new_identifier
+    type: object
+  dto.IdentityVerificationChallengeDTO:
+    properties:
+      identifier:
+        type: string
+    required:
+    - identifier
     type: object
   dto.SelfCheckPermissionRequestDTO:
     properties:
@@ -907,15 +915,16 @@ paths:
       consumes:
       - application/json
       description: |-
-        Verify either a login challenge or registration flow
-        Verify a one-time code sent to user for either login or registration challenge.
+        Verify either a login challenge, registration or verification flow
+        Verify a one-time code sent to user for either login, registration or verification challenge.
       parameters:
       - description: Tenant ID
         in: header
         name: X-Tenant-Id
         required: true
         type: string
-      - description: 'Verification payload. `type` must be one of: `register`, `login`'
+      - description: 'Verification payload. `type` must be one of: `register`, `login`,
+          `verify`.'
         in: body
         name: challenge
         required: true
@@ -940,7 +949,7 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Verify login or registration challenge
+      summary: Verify login, registration or verification challenge
       tags:
       - users
   /api/v1/users/challenge-with-email:
@@ -1263,6 +1272,61 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Register a new user
+      tags:
+      - users
+  /api/v1/users/verification/challenge:
+    post:
+      consumes:
+      - application/json
+      description: Trigger verification flow to send OTP to an identifier (email or
+        phone).
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Identifier to verify
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityVerificationChallengeDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.IdentityUserChallengeResponse'
+              type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Identifier not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Send verification code
       tags:
       - users
 securityDefinitions:

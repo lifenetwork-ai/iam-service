@@ -995,3 +995,129 @@ func (u *userUseCase) CheckIdentifier(
 
 	return ok, idType, nil
 }
+
+func (u *userUseCase) ChallengeVerification(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	identifier string,
+) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
+	// 1. Detect & normalize
+	identifier = strings.TrimSpace(strings.ToLower(identifier))
+	idType, err := utils.GetIdentifierType(identifier) // "email" | "phone_number"
+	if err != nil {
+		return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
+	}
+	switch idType {
+	case constants.IdentifierEmail.String():
+		if !utils.IsEmail(identifier) {
+			return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
+		}
+	case constants.IdentifierPhone.String():
+		identifier, _, err = utils.NormalizePhoneE164(identifier, constants.DefaultRegion)
+		if err != nil {
+			return nil, domainerrors.NewValidationError(codeInvalidPhone, msgInvalidPhone, nil)
+		}
+	default:
+		return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
+	}
+
+	// Make sure identifier exists in the system
+	ok, repoErr := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
+	if repoErr != nil {
+		return nil, domainerrors.WrapInternal(repoErr, "MSG_LOOKUP_FAILED", "Failed to check identifier")
+	}
+	if !ok {
+		// Only allow verifying existing identifiers
+		return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Identifier not found in tenant").WithDetails([]interface{}{
+			map[string]string{"field": idType, "error": "Identifier not registered in the system"},
+		})
+	}
+
+	// 2. Rate limit
+	key := fmt.Sprintf("challenge:verification:%s:%s:%s", idType, identifier, tenantID.String())
+	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+	}
+
+	// 3. Init verification flow
+	flowID, err := u.kratosService.InitializeVerificationFlow(ctx, tenantID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to initialize verification flow")
+	}
+
+	// 4. Submit verification without code -> trigger send OTP
+	var codePtr *string // nil
+	idPtr := &identifier
+	_, err = u.kratosService.SubmitVerificationFlow(
+		ctx, tenantID, flowID, idPtr, constants.IdentifierType(idType), codePtr,
+	)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_SEND_VERIFICATION_FAILED", "Failed to send verification code")
+	}
+
+	// 5. Save challenge session
+	session := &domain.ChallengeSession{
+		ChallengeType:  constants.ChallengeTypeVerifyIdentifier,
+		Identifier:     identifier,
+		IdentifierType: idType,
+	}
+	if err := u.challengeSessionRepo.SaveChallenge(ctx, flowID, session, constants.DefaultChallengeDuration); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
+	}
+
+	// 6. Response
+	return &types.IdentityUserChallengeResponse{
+		FlowID:      flowID,
+		Receiver:    identifier,
+		ChallengeAt: time.Now().Unix(),
+	}, nil
+}
+
+func (u *userUseCase) VerifyIdentifier(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	flowID string,
+	code string,
+) (*types.IdentityVerificationResponse, *domainerrors.DomainError) {
+	// 1. Rate limit
+	key := "verify:identifier:" + flowID
+	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+	}
+
+	// 2. Load session
+	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, flowID)
+	if err != nil || sessionValue == nil {
+		return nil, domainerrors.NewNotFoundError("MSG_CHALLENGE_SESSION_NOT_FOUND", "Challenge session")
+	}
+
+	// 3. Submit verification with code
+	id := sessionValue.Identifier
+	result, err := u.kratosService.SubmitVerificationFlow(
+		ctx, tenantID, flowID, &id, constants.IdentifierType(sessionValue.IdentifierType), &code,
+	)
+	if err != nil {
+		return nil, domainerrors.NewValidationError("MSG_VERIFICATION_FAILED", "Verification failed", []interface{}{err.Error()})
+	}
+
+	// 4. Check state/result
+	verified := false
+	if result != nil {
+		fmt.Println("Result state:", result.State)
+		if s, ok := result.State.(string); ok && strings.EqualFold(s, "passed_challenge") {
+			verified = true
+		}
+	}
+
+	// 5. Cleanup session
+	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
+
+	// 6. Response
+	return &types.IdentityVerificationResponse{
+		FlowID:         flowID,
+		Identifier:     sessionValue.Identifier,
+		IdentifierType: sessionValue.IdentifierType,
+		Verified:       verified,
+		VerifiedAt:     time.Now().Unix(),
+	}, nil
+}
