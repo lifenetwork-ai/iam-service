@@ -477,3 +477,40 @@ func (h *userHandler) UpdateIdentifier(ctx *gin.Context) {
 
 	httpresponse.Success(ctx, http.StatusOK, result)
 }
+
+// ChallengeVerification sends an OTP to verify an identifier (email or phone).
+// @Summary Send verification code
+// @Description Trigger verification flow to send OTP to an identifier (email or phone).
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param body body dto.IdentityVerificationChallengeDTO true "Identifier to verify"
+// @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 404 {object} response.ErrorResponse "Identifier not found"
+// @Failure 429 {object} response.ErrorResponse "Rate limit exceeded"
+// @Failure 500 {object} response.ErrorResponse "Internal server error"
+// @Router /api/v1/users/verification/challenge [post]
+func (h *userHandler) ChallengeVerification(ctx *gin.Context) {
+	tenant, err := middleware.GetTenantFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
+		return
+	}
+
+	var req dto.IdentityVerificationChallengeDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logger.GetLogger().Errorf("Invalid payload: %v", err)
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
+		return
+	}
+
+	result, usecaseErr := h.ucase.ChallengeVerification(ctx.Request.Context(), tenant.ID, req.Identifier)
+	if usecaseErr != nil {
+		handleDomainError(ctx, usecaseErr)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, result)
+}

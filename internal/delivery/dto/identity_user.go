@@ -43,3 +43,8 @@ type IdentityUserUpdateIdentifierDTO struct {
 type CheckIdentifierDTO struct {
 	Identifier string `json:"identifier" binding:"required"`
 }
+
+// IdentityVerificationChallengeDTO represents the request for initiating a verification challenge.
+type IdentityVerificationChallengeDTO struct {
+	Identifier string `json:"identifier" binding:"required" description:"Email or phone number to verify"`
+}
