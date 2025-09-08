@@ -90,9 +90,16 @@ type IdentityUserUseCase interface {
 		identifier string,
 	) (bool, string, *errors.DomainError)
 
-	VerifyIdentifier(
+	ChallengeVerification(
 		ctx context.Context,
 		tenantID uuid.UUID,
 		identifier string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
+
+	VerifyIdentifier(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		flowID string,
+		code string,
+	) (*types.IdentityVerificationResponse, *errors.DomainError)
 }

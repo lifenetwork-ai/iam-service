@@ -996,7 +996,7 @@ func (u *userUseCase) CheckIdentifier(
 	return ok, idType, nil
 }
 
-func (u *userUseCase) VerifyIdentifier(
+func (u *userUseCase) ChallengeVerification(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	identifier string,
@@ -1060,5 +1060,54 @@ func (u *userUseCase) VerifyIdentifier(
 		FlowID:      flowID,
 		Receiver:    identifier,
 		ChallengeAt: time.Now().Unix(),
+	}, nil
+}
+
+func (u *userUseCase) VerifyIdentifier(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	flowID string,
+	code string,
+) (*types.IdentityVerificationResponse, *domainerrors.DomainError) {
+	// 1. Rate limit
+	key := "verify:identifier:" + flowID
+	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+	}
+
+	// 2. Load session
+	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, flowID)
+	if err != nil || sessionValue == nil {
+		return nil, domainerrors.NewNotFoundError("MSG_CHALLENGE_SESSION_NOT_FOUND", "Challenge session")
+	}
+
+	// 3. Submit verification with code
+	id := sessionValue.Identifier
+	result, err := u.kratosService.SubmitVerificationFlow(
+		ctx, tenantID, flowID, &id, constants.IdentifierType(sessionValue.IdentifierType), &code,
+	)
+	if err != nil {
+		return nil, domainerrors.NewValidationError("MSG_VERIFICATION_FAILED", "Verification failed", []interface{}{err.Error()})
+	}
+
+	// 4. Check state/result
+	verified := false
+	if result != nil {
+		fmt.Println("Result state:", result.State)
+		if s, ok := result.State.(string); ok && strings.EqualFold(s, "passed_challenge") {
+			verified = true
+		}
+	}
+
+	// 5. Cleanup session
+	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
+
+	// 6. Response
+	return &types.IdentityVerificationResponse{
+		FlowID:         flowID,
+		Identifier:     sessionValue.Identifier,
+		IdentifierType: sessionValue.IdentifierType,
+		Verified:       verified,
+		VerifiedAt:     time.Now().Unix(),
 	}, nil
 }
