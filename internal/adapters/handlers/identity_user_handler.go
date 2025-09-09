@@ -234,9 +234,7 @@ func (h *userHandler) Me(ctx *gin.Context) {
 			http.StatusUnauthorized,
 			"MSG_UNAUTHORIZED",
 			"Unauthorized",
-			[]interface{}{
-				map[string]string{"field": "user", "error": "User not found"},
-			},
+			nil,
 		)
 		return
 	}
@@ -408,15 +406,15 @@ func (h *userHandler) AddIdentifier(ctx *gin.Context) {
 		return
 	}
 
-	user, err := middleware.GetUserFromContext(ctx)
-	if err != nil {
-		httpresponse.Error(ctx, http.StatusUnauthorized, "MSG_UNAUTHORIZED", "Unauthorized", nil)
-		return
-	}
-
 	var req dto.IdentityUserAddIdentifierDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
+		return
+	}
+
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "MSG_UNAUTHORIZED", "Unauthorized", nil)
 		return
 	}
 
@@ -540,6 +538,7 @@ func (h *userHandler) DeleteIdentifier(ctx *gin.Context) {
 // @Param body body dto.IdentityVerificationChallengeDTO true "Identifier to verify"
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 403 {object} response.ErrorResponse "Identifier does not belong to the authenticated user"
 // @Failure 404 {object} response.ErrorResponse "Identifier not found"
 // @Failure 429 {object} response.ErrorResponse "Rate limit exceeded"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
@@ -555,6 +554,37 @@ func (h *userHandler) ChallengeVerification(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		logger.GetLogger().Errorf("Invalid payload: %v", err)
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
+		return
+	}
+
+	// Validate identifier type
+	identifierType, err := utils.GetIdentifierType(req.Identifier)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", err)
+		return
+	}
+
+	// Get user from context
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "MSG_UNAUTHORIZED", "Unauthorized", nil)
+		return
+	}
+
+	userIdentifier := ""
+	if identifierType == constants.IdentifierEmail.String() {
+		userIdentifier = user.Email
+	} else if identifierType == constants.IdentifierPhone.String() {
+		userIdentifier = user.Phone
+	}
+
+	// Ensure the identifier belongs to the authenticated user
+	if userIdentifier == "" || userIdentifier != req.Identifier {
+		httpresponse.Error(ctx, http.StatusForbidden,
+			"MSG_IDENTIFIER_MISMATCH",
+			"Identifier does not belong to the authenticated user",
+			nil,
+		)
 		return
 	}
 

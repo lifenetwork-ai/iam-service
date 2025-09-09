@@ -1205,6 +1205,11 @@ func (u *userUseCase) VerifyIdentifier(
 		}
 	}
 
+	if !verified {
+		// Do NOT delete the session here; allow user to retry
+		return nil, domainerrors.NewValidationError("MSG_VERIFICATION_FAILED", "Invalid or expired verification code", nil)
+	}
+
 	// 5. Cleanup session
 	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
 

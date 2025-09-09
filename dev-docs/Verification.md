@@ -107,9 +107,9 @@ sequenceDiagram
     API->>API: Rate limit per flow_id
     API->>API: Load challenge session
     API->>Kratos: Submit flow with code
-    Kratos-->>API: Verification Result
-    API->>API: Check state == passed_challenge
-    API->>API: Delete session
+    Kratos-->>API: Verification result
+    API->>API: If state == passed_challenge → mark verified
+    API->>API: Delete session only if success
     API-->>Client: 200 OK {verified: true}
 ```
 
@@ -139,16 +139,17 @@ sequenceDiagram
 
 ## Error Cases
 
-| HTTP | Code                        | Message                        |
-|------|-----------------------------|--------------------------------|
-| 400  | MSG_INVALID_IDENTIFIER_TYPE | Invalid identifier type        |
-| 400  | MSG_INVALID_EMAIL           | Invalid email                  |
-| 400  | MSG_INVALID_PHONE           | Invalid phone number           |
-| 404  | MSG_IDENTITY_NOT_FOUND      | Identifier not found           |
-| 429  | MSG_RATE_LIMIT_EXCEEDED     | Rate limit exceeded            |
-| 500  | MSG_SEND_VERIFICATION_FAILED| Failed to send verification    |
-| 500  | MSG_VERIFICATION_FAILED     | Verification failed            |
-| 500  | MSG_SAVING_SESSION_FAILED   | Could not store challenge state|
+| HTTP | Code                        | Message                                             |
+|------|-----------------------------|-----------------------------------------------------|
+| 400  | MSG_INVALID_IDENTIFIER_TYPE | Invalid identifier type                             |
+| 400  | MSG_INVALID_EMAIL           | Invalid email                                       |
+| 400  | MSG_INVALID_PHONE           | Invalid phone number                                |
+| 400  | MSG_VERIFICATION_FAILED     | Verification failed                                 |
+| 403  | MSG_IDENTIFIER_MISMATCH     | Identifier does not belong to the authenticated user|
+| 404  | MSG_IDENTITY_NOT_FOUND      | Identifier not found                                |
+| 429  | MSG_RATE_LIMIT_EXCEEDED     | Rate limit exceeded                                 |
+| 500  | MSG_SEND_VERIFICATION_FAILED| Failed to send verification                         |
+| 500  | MSG_SAVING_SESSION_FAILED   | Could not store challenge state                     |
 
 ---
 
@@ -157,4 +158,5 @@ sequenceDiagram
 - Kratos verification flows are used — no OTP logic is implemented locally.
 - Identifiers must already exist for `type=verify` to be valid.
 - Rate limiting is enforced both for challenge and verification.
+- If the code is invalid or expired, the session is not deleted - the user can retry until the flow expires.
 - Challenge session is cleaned up after successful verification.
