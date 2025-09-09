@@ -8,33 +8,24 @@
 sequenceDiagram
     participant Client
     participant API
-    participant IAM
-    participant DB
-    participant Kratos
+    participant Identity
 
-    Note over Client,Kratos: Delete Identifier Flow
-    Client->>API: DELETE /api/v1/users/me/delete-identifier
-    Note right of Client: Header: Authorization: Bearer {session_token}
-    Note right of Client: Body: { "identifier_type": "email" }
-
-    API->>IAM: ucase.DeleteIdentifier(...)
-    IAM->>IAM: Validate identifier type
-    IAM->>DB: List all user identifiers
-    IAM->>IAM: Check identifier count > 1
-    IAM->>IAM: Find identifier to delete
-    IAM->>DB: Delete identifier from database
-    IAM->>Kratos: Delete identifier from Kratos (best effort)
-    IAM-->>API: Success or error
-    API-->>Client: 200 OK or error
+    Note over Client,Identity: Delete Identifier
+    Client->>API: DELETE /api/v1/users/me/delete-identifier {identifier_type}
+    API->>Identity: Delete Identifier
+    Identity->>Identity: Validate, ensure >1 identifier
+    Identity-->>API: Success
+    API-->>Client: 200 OK
+    Note over Client,API: If a new identifier was recently added/updated, user must verify it via challenge-verify
 ```
 
 ---
 
-This section describes how an authenticated user can delete an identifier (email or phone) from their account. Deletion is only allowed if the user has more than one identifier.
+This document describes how an authenticated user deletes an identifier (email or phone). Deletion is only allowed if the user has more than one identifier.
 
 ---
 
-## API Endpoint
+## API Endpoints
 
 ### `DELETE /api/v1/users/me/delete-identifier`
 
@@ -49,7 +40,7 @@ Allows an authenticated user to delete an identifier (email or phone) from their
 
 ```json
 {
-  "identifier_type": "email|phone" // The type of identifier to delete
+  "identifier_type": "email|phone_number" // The type of identifier to delete
 }
 ```
 
@@ -57,9 +48,6 @@ Allows an authenticated user to delete an identifier (email or phone) from their
 
 ```json
 {
-  "status": 200,
-  "code": "MSG_SUCCESS",
-  "message": "Success",
   "data": {
     "message": "Identifier deleted successfully"
   }
@@ -67,17 +55,6 @@ Allows an authenticated user to delete an identifier (email or phone) from their
 ```
 
 ---
-
-## Flow Logic
-
-| Step | Description |
-|------|-------------|
-| 1 | Validate identifier type (must be email or phone) |
-| 2 | Ensure user has more than one identifier (cannot delete only identifier) |
-| 3 | Ensure user has the identifier type to delete |
-| 4 | Delete identifier from database |
-| 5 | Delete identifier from Kratos (best effort) |
-| 6 | Return success |
 
 ---
 
@@ -87,9 +64,9 @@ All responses follow the standard error format:
 
 ```json
 {
-  "status": 400,
-  "code": "MSG_INVALID_IDENTIFIER_TYPE",
-  "message": "Invalid identifier type"
+  "status": number,
+  "code": "string",
+  "message": "string"
 }
 ```
 
@@ -100,7 +77,7 @@ All responses follow the standard error format:
 | `MSG_INVALID_TENANT` | Invalid or missing tenant ID |
 | `MSG_UNAUTHORIZED` | Missing or invalid session token |
 | `MSG_INVALID_PAYLOAD` | Invalid request body |
-| `MSG_INVALID_IDENTIFIER_TYPE` | Identifier must be email or phone |
+| `MSG_INVALID_IDENTIFIER_TYPE` | Identifier must be email or phone_number |
 | `MSG_IDENTIFIER_TYPE_NOT_EXISTS` | User does not have an identifier of this type |
 | `MSG_CANNOT_DELETE_ONLY_IDENTIFIER` | Cannot delete the only identifier |
 | `MSG_GET_IDENTIFIERS_FAILED` | Failed to get user identifiers |
