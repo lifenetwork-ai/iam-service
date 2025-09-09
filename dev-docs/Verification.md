@@ -103,13 +103,13 @@ sequenceDiagram
     participant API
     participant Kratos
 
-    Client->>API: POST /challenge-verify
+    Client->>API: POST /verification/verify
     API->>API: Rate limit per flow_id
     API->>API: Load challenge session
     API->>Kratos: Submit flow with code
-    Kratos-->>API: Verification Result
-    API->>API: Check state == passed_challenge
-    API->>API: Delete session
+    Kratos-->>API: Verification result
+    API->>API: If state == passed_challenge → mark verified
+    API->>API: Delete session only if success
     API-->>Client: 200 OK {verified: true}
 ```
 
@@ -157,4 +157,5 @@ sequenceDiagram
 - Kratos verification flows are used — no OTP logic is implemented locally.
 - Identifiers must already exist for `type=verify` to be valid.
 - Rate limiting is enforced both for challenge and verification.
+- If the code is invalid or expired, the session is not deleted - the user can retry until the flow expires.
 - Challenge session is cleaned up after successful verification.
