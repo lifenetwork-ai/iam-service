@@ -20,6 +20,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	newEmail      = "newemail@example.com"
+	existingEmail = "existing@example.com"
+)
+
 // TestChangeIdentifier tests the ChangeIdentifier use case method
 func TestChangeIdentifier(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -49,7 +54,6 @@ func TestChangeIdentifier(t *testing.T) {
 	t.Run("when updating email identifier", func(t *testing.T) {
 		t.Run("should succeed with valid new email", func(t *testing.T) {
 			// Given
-			newEmail := "newemail@example.com"
 			setupSuccessfulUpdateFlow(ctx, mockDeps, testData, newEmail, constants.IdentifierEmail.String())
 
 			// When
@@ -120,7 +124,7 @@ func TestChangeIdentifier(t *testing.T) {
 
 	// Error-path tests for ChangeIdentifier
 	t.Run("error paths", func(t *testing.T) {
-		baseNew := "newemail@example.com"
+		baseNew := newEmail
 
 		t.Run("exists lookup error", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -271,7 +275,6 @@ func TestChangeIdentifier(t *testing.T) {
 			uc := newTestUserUseCase(md)
 			md.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-			newEmail := "newemail@example.com"
 			// New email does not exist globally
 			md.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), testData.tenantID.String(), constants.IdentifierEmail.String(), newEmail).Return(false, nil)
 			// User currently has only phone
@@ -490,14 +493,6 @@ func assertIdentifierExists(t *testing.T, result interface{}, err error) {
 	}
 }
 
-func assertInvalidEmail(t *testing.T, result interface{}, err error) {
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	if err != nil {
-		assert.Contains(t, err.Error(), "Invalid email")
-	}
-}
-
 func assertInvalidRequest(t *testing.T, result interface{}, err error) {
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -582,10 +577,10 @@ func TestDeleteIdentifier(t *testing.T) {
 					flowID:       "test-flow-id",
 				}
 				// Re-configure the ExistsWithinTenant for this specific ChangeIdentifier scenario only
-				setupSuccessfulUpdateFlow(ctx, mockDeps, testDataWithFlow, "newemail@example.com", constants.IdentifierEmail.String())
+				setupSuccessfulUpdateFlow(ctx, mockDeps, testDataWithFlow, newEmail, constants.IdentifierEmail.String())
 				result, err := ucase.ChangeIdentifier(ctx, testData.globalUserID, testData.tenantID,
-					testData.tenantUserID, "newemail@example.com")
-				assertSuccessfulUpdate(t, result, err, testDataWithFlow.flowID, "newemail@example.com")
+					testData.tenantUserID, newEmail)
+				assertSuccessfulUpdate(t, result, err, testDataWithFlow.flowID, newEmail)
 			})
 
 			t.Run("should fail when replacing with different type", func(t *testing.T) {
@@ -674,7 +669,7 @@ func TestChangeIdentifierThenVerifyRegister_Success(t *testing.T) {
 		tenantID:      uuid.MustParse("11111111-1111-1111-1111-111111111111"),
 		tenantUserID:  "00000000-0000-0000-0000-00000000aaaa",
 		flowID:        "flow-123",
-		newIdentifier: "newemail@example.com",
+		newIdentifier: newEmail,
 	}
 
 	// ChangeIdentifier expectations
@@ -856,7 +851,7 @@ func TestChangeIdentifierThenVerifyRegister_Failure_NoMutations(t *testing.T) {
 		tenantID:      uuid.MustParse("11111111-1111-1111-1111-111111111111"),
 		tenantUserID:  "00000000-0000-0000-0000-00000000cccc",
 		flowID:        "flow-neg",
-		newIdentifier: "newemail@example.com",
+		newIdentifier: newEmail,
 	}
 
 	// ChangeIdentifier set up
