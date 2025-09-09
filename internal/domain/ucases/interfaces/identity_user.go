@@ -88,7 +88,6 @@ type IdentityUserUseCase interface {
 		globalUserID string,
 		tenantID uuid.UUID,
 		tenantUserID string,
-		oldIdentifierType string,
 		newIdentifier string,
 		newIdentifierType string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)

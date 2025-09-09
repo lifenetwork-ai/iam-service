@@ -469,7 +469,14 @@ func (h *userHandler) ChangeIdentifier(ctx *gin.Context) {
 		return
 	}
 
-	result, usecaseErr := h.ucase.ChangeIdentifier(ctx, user.GlobalUserID, tenant.ID, user.ID, req.OldIdentifier, req.NewIdentifier, req.NewIdentifierType)
+	// Validate identifier type
+	identifierType, err := utils.GetIdentifierType(req.NewIdentifier)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", err)
+		return
+	}
+
+	result, usecaseErr := h.ucase.ChangeIdentifier(ctx, user.GlobalUserID, tenant.ID, user.ID, req.NewIdentifier, identifierType)
 	if usecaseErr != nil {
 		handleDomainError(ctx, usecaseErr)
 		return

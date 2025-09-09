@@ -322,6 +322,7 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 		if err := u.userIdentityRepo.Update(tx, &domain.UserIdentity{
 			ID:           identityID,
 			GlobalUserID: globalUserID,
+			TenantID:     tenant.ID.String(),
 			Type:         newIdentifierType,
 			Value:        newIdentifier,
 		}); err != nil {
@@ -973,13 +974,11 @@ func (u *userUseCase) ChangeIdentifier(
 	globalUserID string,
 	tenantID uuid.UUID,
 	tenantUserID string,
-	oldIdentifierType string,
 	newIdentifier string,
 	newIdentifierType string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// 1. Validate identifier types
-	if (oldIdentifierType != constants.IdentifierEmail.String() && oldIdentifierType != constants.IdentifierPhone.String()) ||
-		(newIdentifierType != constants.IdentifierEmail.String() && newIdentifierType != constants.IdentifierPhone.String()) {
+	if newIdentifierType != constants.IdentifierEmail.String() && newIdentifierType != constants.IdentifierPhone.String() {
 		return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
 	}
 
@@ -1019,23 +1018,30 @@ func (u *userUseCase) ChangeIdentifier(
 	// Rule enforcement
 	if len(identities) > 1 {
 		// When multiple identifiers exist, only allow replacement of same type
-		if oldIdentifierType != newIdentifierType {
+		var hasType bool
+		for _, id := range identities {
+			if id.Type == newIdentifierType {
+				hasType = true
+				break
+			}
+		}
+		if !hasType {
 			return nil, domainerrors.NewConflictError("MSG_MULTIPLE_IDENTIFIERS_EXISTS",
 				"User already has multiple identifiers, cross-type change not allowed", nil)
 		}
 	}
 
-	// Ensure the user has the old identifier type
+	// Ensure the user has the identifier type to be changed
 	var identity *domain.UserIdentity
 	for _, id := range identities {
-		if id.Type == oldIdentifierType {
+		if id.Type == newIdentifierType {
 			identity = id
 			break
 		}
 	}
 	if identity == nil {
 		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS",
-			fmt.Sprintf("User does not have an identifier of type %s", oldIdentifierType), nil)
+			fmt.Sprintf("User does not have an identifier of type %s", newIdentifierType), nil)
 	}
 
 	// 5. Rate limit

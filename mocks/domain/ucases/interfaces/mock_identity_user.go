@@ -89,18 +89,18 @@ func (mr *MockIdentityUserUseCaseMockRecorder) ChallengeWithPhone(ctx, tenantID,
 }
 
 // ChangeIdentifier mocks base method.
-func (m *MockIdentityUserUseCase) ChangeIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, tenantUserID, oldIdentifierType, newIdentifier, newIdentifierType string) (*types.IdentityUserChallengeResponse, *errors.DomainError) {
+func (m *MockIdentityUserUseCase) ChangeIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, tenantUserID, newIdentifier, newIdentifierType string) (*types.IdentityUserChallengeResponse, *errors.DomainError) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ChangeIdentifier", ctx, globalUserID, tenantID, tenantUserID, oldIdentifierType, newIdentifier, newIdentifierType)
+	ret := m.ctrl.Call(m, "ChangeIdentifier", ctx, globalUserID, tenantID, tenantUserID, newIdentifier, newIdentifierType)
 	ret0, _ := ret[0].(*types.IdentityUserChallengeResponse)
 	ret1, _ := ret[1].(*errors.DomainError)
 	return ret0, ret1
 }
 
 // ChangeIdentifier indicates an expected call of ChangeIdentifier.
-func (mr *MockIdentityUserUseCaseMockRecorder) ChangeIdentifier(ctx, globalUserID, tenantID, tenantUserID, oldIdentifierType, newIdentifier, newIdentifierType any) *gomock.Call {
+func (mr *MockIdentityUserUseCaseMockRecorder) ChangeIdentifier(ctx, globalUserID, tenantID, tenantUserID, newIdentifier, newIdentifierType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).ChangeIdentifier), ctx, globalUserID, tenantID, tenantUserID, oldIdentifierType, newIdentifier, newIdentifierType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).ChangeIdentifier), ctx, globalUserID, tenantID, tenantUserID, newIdentifier, newIdentifierType)
 }
 
 // CheckIdentifier mocks base method.

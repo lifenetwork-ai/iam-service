@@ -91,7 +91,7 @@ func (r *userIdentityRepository) InsertOnceByTenantUserAndType(
 }
 
 func (r *userIdentityRepository) Update(tx *gorm.DB, identity *domain.UserIdentity) error {
-	return tx.Save(identity).Error
+	return tx.Updates(identity).Error
 }
 
 // ExistsWithinTenant checks if an identity exists within a tenant

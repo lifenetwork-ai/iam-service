@@ -175,6 +175,23 @@ definitions:
     required:
     - new_identifier
     type: object
+  dto.IdentityUserChangeIdentifierDTO:
+    properties:
+      new_identifier:
+        type: string
+    required:
+    - new_identifier
+    type: object
+  dto.IdentityUserDeleteIdentifierDTO:
+    properties:
+      identifier_type:
+        enum:
+        - email
+        - phone_number
+        type: string
+    required:
+    - identifier_type
+    type: object
   dto.IdentityUserRegisterDTO:
     properties:
       email:
@@ -188,19 +205,6 @@ definitions:
         type: string
     required:
     - lang
-    type: object
-  dto.IdentityUserUpdateIdentifierDTO:
-    properties:
-      identifier_type:
-        enum:
-        - email
-        - phone_number
-        type: string
-      new_identifier:
-        type: string
-    required:
-    - identifier_type
-    - new_identifier
     type: object
   dto.SelfCheckPermissionRequestDTO:
     properties:
@@ -1162,6 +1166,61 @@ paths:
       summary: Add new identifier (email or phone)
       tags:
       - users
+  /api/v1/users/me/delete-identifier:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user's identifier (email or phone)
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Identifier info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserDeleteIdentifierDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Identifier deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Identifier or type already exists
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete user identifier
+      tags:
+      - users
   /api/v1/users/me/update-identifier:
     post:
       consumes:
@@ -1183,7 +1242,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.IdentityUserUpdateIdentifierDTO'
+          $ref: '#/definitions/dto.IdentityUserChangeIdentifierDTO'
       produces:
       - application/json
       responses:

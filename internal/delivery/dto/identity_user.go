@@ -35,9 +35,7 @@ type IdentityUserAddIdentifierDTO struct {
 
 // IdentityUserChangeIdentifierDTO represents the request for changing an identifier.
 type IdentityUserChangeIdentifierDTO struct {
-	OldIdentifier     string `json:"old_identifier" binding:"required"`
-	NewIdentifier     string `json:"new_identifier" binding:"required"`
-	NewIdentifierType string `json:"new_identifier_type" binding:"required,oneof=email phone_number" description:"The type of the identifier, can be email or phone_number"`
+	NewIdentifier string `json:"new_identifier" binding:"required"`
 }
 
 // IdentityUserDeleteIdentifierDTO represents the request for deleting an identifier.
