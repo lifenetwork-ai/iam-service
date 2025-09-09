@@ -20,9 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	newEmail = "newemail@example.com"
-)
+var newEmail = "newemail@example.com"
 
 // TestChangeIdentifier tests the ChangeIdentifier use case method
 func TestChangeIdentifier(t *testing.T) {
