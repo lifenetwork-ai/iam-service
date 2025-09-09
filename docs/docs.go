@@ -2099,6 +2099,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "lang": {
+                    "type": "string"
+                },
                 "last_name": {
                     "type": "string"
                 },

@@ -6,18 +6,19 @@ import "time"
 type IdentityUserResponse struct {
 	GlobalUserID string `json:"global_user_id"`
 	ID           string `json:"id"`
-	Seed         string `json:"seed"`
-	UserName     string `json:"user_name"`
-	Email        string `json:"email"`
-	Phone        string `json:"phone"`
-	Status       bool   `json:"status"`
-	Name         string `json:"name"`
-	FirstName    string `json:"first_name"`
-	LastName     string `json:"last_name"`
-	FullName     string `json:"full_name"`
+	Seed         string `json:"seed,omitempty"`
+	UserName     string `json:"user_name,omitempty"`
+	Email        string `json:"email,omitempty"`
+	Phone        string `json:"phone,omitempty"`
+	Status       bool   `json:"status,omitempty"`
+	Name         string `json:"name,omitempty"`
+	FirstName    string `json:"first_name,omitempty"`
+	LastName     string `json:"last_name,omitempty"`
+	FullName     string `json:"full_name,omitempty"`
 	Tenant       string `json:"tenant"`
-	CreatedAt    int64  `json:"created_at"`
-	UpdatedAt    int64  `json:"updated_at"`
+	Lang         string `json:"lang"`
+	CreatedAt    int64  `json:"created_at,omitempty"`
+	UpdatedAt    int64  `json:"updated_at,omitempty"`
 }
 
 // IdentityUserChallengeDTO represents a challenge for identity verification.

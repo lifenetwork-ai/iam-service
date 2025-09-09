@@ -72,6 +72,7 @@ func extractUserFromTraits(traits interface{}, fallbackEmail, fallbackPhone stri
 		Email:    extractStringFromTraits(traitsMap, constants.IdentifierEmail.String(), fallbackEmail),
 		Phone:    extractStringFromTraits(traitsMap, constants.IdentifierPhone.String(), fallbackPhone),
 		Tenant:   extractStringFromTraits(traitsMap, constants.IdentifierTenant.String(), ""),
+		Lang:     extractStringFromTraits(traitsMap, constants.IdentifierLang.String(), ""),
 	}, nil
 }
 

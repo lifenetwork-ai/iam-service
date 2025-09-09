@@ -12,6 +12,7 @@ const (
 	IdentifierPhone    IdentifierType = "phone_number"
 	IdentifierUsername IdentifierType = "username"
 	IdentifierTenant   IdentifierType = "tenant"
+	IdentifierLang     IdentifierType = "lang"
 )
 
 // MethodType represents the types of login/registration/setting methods
