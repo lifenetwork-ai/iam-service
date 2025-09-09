@@ -123,6 +123,12 @@ func RegisterRoutes(
 		userHandler.DeleteIdentifier,
 	)
 
+	userRouter.POST(
+		"/verification/challenge",
+		authMiddleware.RequireAuth(),
+		userHandler.ChallengeVerification,
+	)
+
 	// SECTION: Courier (OTP delivery) routes
 	courierHandler := handlers.NewCourierHandler(ucases.CourierUCase)
 	courierRouter := v1.Group("courier")

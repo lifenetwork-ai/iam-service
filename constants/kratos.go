@@ -37,7 +37,7 @@ func (t FlowType) String() string {
 const (
 	FlowTypeLogin    FlowType = "login"
 	FlowTypeRegister FlowType = "register"
-	FlowTypeSetting  FlowType = "setting"
+	FlowTypeVerify   FlowType = "verify"
 )
 
 // TraitType represents the types of traits in the identity service
@@ -50,4 +50,8 @@ func (t TraitType) String() string {
 const (
 	TraitTypeEmail TraitType = "email"
 	TraitTypePhone TraitType = "phone_number"
+)
+
+const (
+	ChallengePassed = "passed_challenge"
 )

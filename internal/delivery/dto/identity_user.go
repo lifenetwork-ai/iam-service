@@ -13,7 +13,7 @@ type IdentityChallengeWithEmailDTO struct {
 type IdentityChallengeVerifyDTO struct {
 	FlowID string `json:"flow_id" binding:"required" description:"The flow ID of the challenge"`
 	Code   string `json:"code" binding:"required" description:"The code of the challenge"`
-	Type   string `json:"type" binding:"required,oneof=register login" description:"The type of the challenge, can be register or login"`
+	Type   string `json:"type" binding:"required,oneof=register login verify" description:"The type of the challenge, can be register, login or verify"`
 }
 
 type IdentityUserRegisterDTO struct {
@@ -46,4 +46,9 @@ type IdentityUserDeleteIdentifierDTO struct {
 // CheckIdentifierDTO represents the request for checking if an identifier exists.
 type CheckIdentifierDTO struct {
 	Identifier string `json:"identifier" binding:"required"`
+}
+
+// IdentityVerificationChallengeDTO represents the request for initiating a verification challenge.
+type IdentityVerificationChallengeDTO struct {
+	Identifier string `json:"identifier" binding:"required" description:"Email or phone number to verify"`
 }

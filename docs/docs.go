@@ -827,7 +827,7 @@ const docTemplate = `{
         },
         "/api/v1/users/challenge-verify": {
             "post": {
-                "description": "Verify either a login challenge or registration flow\nVerify a one-time code sent to user for either login or registration challenge.",
+                "description": "Verify either a login challenge, registration or verification flow\nVerify a one-time code sent to user for either login, registration or verification challenge.",
                 "consumes": [
                     "application/json"
                 ],
@@ -837,7 +837,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Verify login or registration challenge",
+                "summary": "Verify login, registration or verification challenge",
                 "parameters": [
                     {
                         "type": "string",
@@ -847,7 +847,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Verification payload. ` + "`" + `type` + "`" + ` must be one of: ` + "`" + `register` + "`" + `, ` + "`" + `login` + "`" + `",
+                        "description": "Verification payload. ` + "`" + `type` + "`" + ` must be one of: ` + "`" + `register` + "`" + `, ` + "`" + `login` + "`" + `, ` + "`" + `verify` + "`" + `.",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
@@ -1468,6 +1468,91 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/users/verification/challenge": {
+            "post": {
+                "description": "Trigger verification flow to send OTP to an identifier (email or phone).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Send verification code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifier to verify",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityVerificationChallengeDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.IdentityUserChallengeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Identifier not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1697,7 +1782,8 @@ const docTemplate = `{
                     "type": "string",
                     "enum": [
                         "register",
-                        "login"
+                        "login",
+                        "verify"
                     ]
                 }
             }

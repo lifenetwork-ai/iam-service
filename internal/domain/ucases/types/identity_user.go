@@ -47,3 +47,12 @@ type IdentityUserAuthResponse struct {
 	VerificationNeeded bool                           `json:"verification_needed,omitempty"`
 	VerificationFlow   *IdentityUserChallengeResponse `json:"verification_flow,omitempty"`
 }
+
+// IdentityVerificationResponse represents the response for identity verification status
+type IdentityVerificationResponse struct {
+	FlowID         string `json:"flow_id"`
+	Identifier     string `json:"identifier"`
+	IdentifierType string `json:"identifier_type"`
+	Verified       bool   `json:"verified"`
+	VerifiedAt     int64  `json:"verified_at,omitempty"`
+}
