@@ -98,7 +98,7 @@ func TestIntegration_ChangeIdentifierThenVerifyRegister_Success(t *testing.T) {
 	deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), data.tenantID, regFlow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), data.flowID, gomock.Any(), gomock.Any()).Return(nil)
 
-	changeResp, changeErr := ucase.ChangeIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, data.newIdentifier, constants.IdentifierEmail.String())
+	changeResp, changeErr := ucase.ChangeIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, data.newIdentifier)
 	assert.Nil(t, changeErr)
 	assert.NotNil(t, changeResp)
 
@@ -173,7 +173,7 @@ func TestIntegration_ChangeIdentifierThenVerifyRegister_Failure_NoMutations(t *t
 	deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), data.tenantID, regFlow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), data.flowID, gomock.Any(), gomock.Any()).Return(nil)
 
-	changeResp, changeErr := ucase.ChangeIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, data.newIdentifier, constants.IdentifierEmail.String())
+	changeResp, changeErr := ucase.ChangeIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, data.newIdentifier)
 	assert.Nil(t, changeErr)
 	assert.NotNil(t, changeResp)
 
@@ -228,7 +228,7 @@ func TestIntegration_BindUpdateIdentifier_UpdateMappingFails_CleanupCalled(t *te
 	deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, regFlow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), regFlow.Id, gomock.Any(), gomock.Any()).Return(nil)
 
-	_, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, oldTenantUserID, "new@example.com", constants.IdentifierEmail.String())
+	_, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, oldTenantUserID, "new@example.com")
 	assert.Nil(t, derr)
 
 	// verify with mapping update fail to trigger rollbackKratosUpdateIdentifier
@@ -720,26 +720,22 @@ func TestIntegration_ChangeIdentifier_ValidationFailures(t *testing.T) {
 	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 
 	// invalid types
-	resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "bad", constants.IdentifierEmail.String())
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
-
-	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "new@example.com", "bad")
+	resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "bad")
 	assert.NotNil(t, derr)
 	assert.Nil(t, resp)
 
 	// empty identifier
-	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "", constants.IdentifierEmail.String())
+	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "")
 	assert.NotNil(t, derr)
 	assert.Nil(t, resp)
 
 	// invalid email
-	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "not-an-email", constants.IdentifierEmail.String())
+	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "not-an-email")
 	assert.NotNil(t, derr)
 	assert.Nil(t, resp)
 
 	// invalid phone
-	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "12345", constants.IdentifierPhone.String())
+	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "12345")
 	assert.NotNil(t, derr)
 	assert.Nil(t, resp)
 }
@@ -761,7 +757,7 @@ func TestIntegration_ChangeIdentifier_ConflictFailures(t *testing.T) {
 		deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
 		deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "dup@example.com").Return(true, nil)
-		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "dup@example.com", constants.IdentifierEmail.String())
+		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "dup@example.com")
 		assert.NotNil(t, derr)
 		assert.Nil(t, resp)
 	})
@@ -777,7 +773,7 @@ func TestIntegration_ChangeIdentifier_ConflictFailures(t *testing.T) {
 		deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "new@example.com").Return(false, nil)
 		deps.userIdentityRepo.EXPECT().ListByTenantAndTenantUserID(gomock.Any(), gomock.Any(), tenantID.String(), tenantUserID).Return([]*domain.UserIdentity{}, nil)
-		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "new@example.com", constants.IdentifierEmail.String())
+		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "new@example.com")
 		assert.NotNil(t, derr)
 		assert.Nil(t, resp)
 	})
@@ -799,12 +795,12 @@ func TestIntegration_ChangeIdentifier_ConflictFailures(t *testing.T) {
 		deps.tenantRepo.EXPECT().GetByID(tenantID).Return(&domain.Tenant{ID: tenantID, Name: "tenant-name"}, nil)
 		deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
 		deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
-		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "another@example.com", constants.IdentifierEmail.String())
+		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "another@example.com")
 		assert.Nil(t, derr)
 		assert.NotNil(t, resp)
 	})
 
-	t.Run("old identifier type not found", func(t *testing.T) {
+	t.Run("single identifier different type allows switch", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		ucase, deps := buildIsolatedUseCase(ctrl)
@@ -815,9 +811,37 @@ func TestIntegration_ChangeIdentifier_ConflictFailures(t *testing.T) {
 		deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "brandnew@example.com").Return(false, nil)
 		deps.userIdentityRepo.EXPECT().ListByTenantAndTenantUserID(gomock.Any(), gomock.Any(), tenantID.String(), tenantUserID).Return([]*domain.UserIdentity{{ID: "id-phone", Type: constants.IdentifierPhone.String()}}, nil)
-		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "brandnew@example.com", constants.IdentifierEmail.String())
-		assert.NotNil(t, derr)
-		assert.Nil(t, resp)
+		flow := &kratos.RegistrationFlow{Id: "flow-single-switch"}
+		deps.kratosService.EXPECT().InitializeRegistrationFlow(gomock.Any(), tenantID).Return(flow, nil)
+		deps.tenantRepo.EXPECT().GetByID(tenantID).Return(&domain.Tenant{ID: tenantID, Name: "tenant-name"}, nil)
+		deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
+		deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
+		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "brandnew@example.com")
+		assert.Nil(t, derr)
+		assert.NotNil(t, resp)
+	})
+
+	// Add the opposite direction: only email exists -> switch to phone
+	t.Run("single identifier different type allows switch (email->phone)", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		ucase, deps := buildIsolatedUseCase(ctrl)
+		db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+		ucase.db = db
+		ctx := context.Background()
+		deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
+		deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		newPhone := "+862025550123"
+		deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierPhone.String(), newPhone).Return(false, nil)
+		deps.userIdentityRepo.EXPECT().ListByTenantAndTenantUserID(gomock.Any(), gomock.Any(), tenantID.String(), tenantUserID).Return([]*domain.UserIdentity{{ID: "id-email", Type: constants.IdentifierEmail.String()}}, nil)
+		flow := &kratos.RegistrationFlow{Id: "flow-single-switch2"}
+		deps.kratosService.EXPECT().InitializeRegistrationFlow(gomock.Any(), tenantID).Return(flow, nil)
+		deps.tenantRepo.EXPECT().GetByID(tenantID).Return(&domain.Tenant{ID: tenantID, Name: "tenant-name"}, nil)
+		deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
+		deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
+		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, newPhone)
+		assert.Nil(t, derr)
+		assert.NotNil(t, resp)
 	})
 }
 

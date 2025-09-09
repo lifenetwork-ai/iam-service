@@ -21,7 +21,7 @@ sequenceDiagram
 
 ---
 
-This document describes how an authenticated user deletes an identifier (email or phone). Deletion is only allowed if the user has more than one identifier.
+This document describes how an authenticated user deletes an identifier (email or phone). Deletion is only allowed if the user has more than one identifier. If a user recently updated or added a new identifier, they must complete verification via `challenge-verify` first; deletion does not bypass verification.
 
 ---
 
@@ -29,7 +29,7 @@ This document describes how an authenticated user deletes an identifier (email o
 
 ### `DELETE /api/v1/users/me/delete-identifier`
 
-Allows an authenticated user to delete an identifier (email or phone) from their account. Cannot delete the only identifier.
+Allows an authenticated user to delete an identifier (email or phone) from their account. Cannot delete the only identifier (must retain at least one of email or phone).
 
 #### Headers
 
@@ -40,7 +40,7 @@ Allows an authenticated user to delete an identifier (email or phone) from their
 
 ```json
 {
-  "identifier_type": "email|phone_number" // The type of identifier to delete
+  "identifier_type": "email|phone_number" // The identifier type to delete
 }
 ```
 
@@ -77,7 +77,7 @@ All responses follow the standard error format:
 | `MSG_INVALID_TENANT` | Invalid or missing tenant ID |
 | `MSG_UNAUTHORIZED` | Missing or invalid session token |
 | `MSG_INVALID_PAYLOAD` | Invalid request body |
-| `MSG_INVALID_IDENTIFIER_TYPE` | Identifier must be email or phone_number |
+| `MSG_INVALID_IDENTIFIER_TYPE` | Identifier must be `email` or `phone_number` |
 | `MSG_IDENTIFIER_TYPE_NOT_EXISTS` | User does not have an identifier of this type |
 | `MSG_CANNOT_DELETE_ONLY_IDENTIFIER` | Cannot delete the only identifier |
 | `MSG_GET_IDENTIFIERS_FAILED` | Failed to get user identifiers |

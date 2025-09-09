@@ -89,7 +89,6 @@ type IdentityUserUseCase interface {
 		tenantID uuid.UUID,
 		tenantUserID string,
 		newIdentifier string,
-		newIdentifierType string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
 
 	CheckIdentifier(

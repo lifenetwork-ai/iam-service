@@ -968,31 +968,34 @@ func (u *userUseCase) DeleteIdentifier(
 // ChangeIdentifier changes a user's identifier from one type to another.
 // Rules:
 // - If user has exactly one identifier type (email OR phone): allow switching to the other type.
-// - If user has more than one identifier type: only allow replacing the same type (email→email or phone→phone).
+// - If user has more than one identifier type: will replace the same type (email→email or phone→phone).
 func (u *userUseCase) ChangeIdentifier(
 	ctx context.Context,
 	globalUserID string,
 	tenantID uuid.UUID,
 	tenantUserID string,
 	newIdentifier string,
-	newIdentifierType string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
-	// 1. Validate identifier types
-	if newIdentifierType != constants.IdentifierEmail.String() && newIdentifierType != constants.IdentifierPhone.String() {
+	// 1. Validate identifier type
+	newIdentifierType, err := utils.GetIdentifierType(newIdentifier)
+	if err != nil {
 		return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
+	}
+	if newIdentifierType != constants.IdentifierEmail.String() && newIdentifierType != constants.IdentifierPhone.String() {
+		return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil).WithCause(err)
 	}
 
 	// 2. Validate new identifier value
 	if newIdentifier == "" {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_REQUEST", "Identifier is required", nil)
+		return nil, domainerrors.NewValidationError("MSG_INVALID_REQUEST", "Identifier is required", nil).WithCause(err)
 	}
 	if newIdentifierType == constants.IdentifierEmail.String() && !utils.IsEmail(newIdentifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
+		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil).WithCause(err)
 	}
 	if newIdentifierType == constants.IdentifierPhone.String() {
 		normalizedPhone, _, err := utils.NormalizePhoneE164(newIdentifier, constants.DefaultRegion)
 		if err != nil {
-			return nil, domainerrors.NewValidationError(codeInvalidPhone, msgInvalidPhone, nil)
+			return nil, domainerrors.NewValidationError(codeInvalidPhone, msgInvalidPhone, nil).WithCause(err)
 		}
 		newIdentifier = normalizedPhone
 	}
@@ -1015,33 +1018,23 @@ func (u *userUseCase) ChangeIdentifier(
 		return nil, domainerrors.NewConflictError("MSG_NO_IDENTIFIER_EXISTS", "User has no identifier", nil)
 	}
 
-	// Rule enforcement
-	if len(identities) > 1 {
-		// When multiple identifiers exist, only allow replacement of same type
-		var hasType bool
+	// Find the identifier to be changed
+	// If user has only one identifier, use it
+	// If user has multiple identifiers, use the one with the same type
+	var identity *domain.UserIdentity
+	if len(identities) == 1 {
+		identity = identities[0]
+	} else {
 		for _, id := range identities {
 			if id.Type == newIdentifierType {
-				hasType = true
+				identity = id
 				break
 			}
 		}
-		if !hasType {
-			return nil, domainerrors.NewConflictError("MSG_MULTIPLE_IDENTIFIERS_EXISTS",
-				"User already has multiple identifiers, cross-type change not allowed", nil)
-		}
 	}
-
-	// Ensure the user has the identifier type to be changed
-	var identity *domain.UserIdentity
-	for _, id := range identities {
-		if id.Type == newIdentifierType {
-			identity = id
-			break
-		}
-	}
+	// Should not happen
 	if identity == nil {
-		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS",
-			fmt.Sprintf("User does not have an identifier of type %s", newIdentifierType), nil)
+		return nil, domainerrors.NewInternalError("MSG_INTERNAL_ERROR", "Cannot find identifier to be changed")
 	}
 
 	// 5. Rate limit
