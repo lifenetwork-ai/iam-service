@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/constants"
@@ -556,6 +557,8 @@ func (h *userHandler) ChallengeVerification(ctx *gin.Context) {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
 		return
 	}
+	// Normalize identifier for consistent processing
+	req.Identifier = strings.TrimSpace(strings.ToLower(req.Identifier))
 
 	// Validate identifier type
 	identifierType, err := utils.GetIdentifierType(req.Identifier)
@@ -576,6 +579,13 @@ func (h *userHandler) ChallengeVerification(ctx *gin.Context) {
 		userIdentifier = user.Email
 	} else if identifierType == constants.IdentifierPhone.String() {
 		userIdentifier = user.Phone
+		// Normalize phone to E.164 format for comparison
+		normalizePhone, _, err := utils.NormalizePhoneE164(req.Identifier, constants.DefaultRegion)
+		if err != nil {
+			httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PHONE_NUMBER", "Invalid phone number", nil)
+			return
+		}
+		req.Identifier = normalizePhone
 	}
 
 	// Ensure the identifier belongs to the authenticated user
