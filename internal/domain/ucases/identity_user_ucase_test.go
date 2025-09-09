@@ -21,8 +21,7 @@ import (
 )
 
 var (
-	newEmail      = "newemail@example.com"
-	existingEmail = "existing@example.com"
+	newEmail = "newemail@example.com"
 )
 
 // TestChangeIdentifier tests the ChangeIdentifier use case method
