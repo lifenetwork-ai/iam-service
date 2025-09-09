@@ -58,6 +58,21 @@ func (mr *MockIdentityUserUseCaseMockRecorder) AddNewIdentifier(ctx, tenantID, g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).AddNewIdentifier), ctx, tenantID, globalUserID, identifier, identifierType)
 }
 
+// ChallengeVerification mocks base method.
+func (m *MockIdentityUserUseCase) ChallengeVerification(ctx context.Context, tenantID uuid.UUID, identifier string) (*types.IdentityUserChallengeResponse, *errors.DomainError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ChallengeVerification", ctx, tenantID, identifier)
+	ret0, _ := ret[0].(*types.IdentityUserChallengeResponse)
+	ret1, _ := ret[1].(*errors.DomainError)
+	return ret0, ret1
+}
+
+// ChallengeVerification indicates an expected call of ChallengeVerification.
+func (mr *MockIdentityUserUseCaseMockRecorder) ChallengeVerification(ctx, tenantID, identifier any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChallengeVerification", reflect.TypeOf((*MockIdentityUserUseCase)(nil).ChallengeVerification), ctx, tenantID, identifier)
+}
+
 // ChallengeWithEmail mocks base method.
 func (m *MockIdentityUserUseCase) ChallengeWithEmail(ctx context.Context, tenantID uuid.UUID, email string) (*types.IdentityUserChallengeResponse, *errors.DomainError) {
 	m.ctrl.T.Helper()
@@ -89,18 +104,18 @@ func (mr *MockIdentityUserUseCaseMockRecorder) ChallengeWithPhone(ctx, tenantID,
 }
 
 // ChangeIdentifier mocks base method.
-func (m *MockIdentityUserUseCase) ChangeIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, tenantUserID, newIdentifier, newIdentifierType string) (*types.IdentityUserChallengeResponse, *errors.DomainError) {
+func (m *MockIdentityUserUseCase) ChangeIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, tenantUserID, newIdentifier string) (*types.IdentityUserChallengeResponse, *errors.DomainError) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ChangeIdentifier", ctx, globalUserID, tenantID, tenantUserID, newIdentifier, newIdentifierType)
+	ret := m.ctrl.Call(m, "ChangeIdentifier", ctx, globalUserID, tenantID, tenantUserID, newIdentifier)
 	ret0, _ := ret[0].(*types.IdentityUserChallengeResponse)
 	ret1, _ := ret[1].(*errors.DomainError)
 	return ret0, ret1
 }
 
 // ChangeIdentifier indicates an expected call of ChangeIdentifier.
-func (mr *MockIdentityUserUseCaseMockRecorder) ChangeIdentifier(ctx, globalUserID, tenantID, tenantUserID, newIdentifier, newIdentifierType any) *gomock.Call {
+func (mr *MockIdentityUserUseCaseMockRecorder) ChangeIdentifier(ctx, globalUserID, tenantID, tenantUserID, newIdentifier any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).ChangeIdentifier), ctx, globalUserID, tenantID, tenantUserID, newIdentifier, newIdentifierType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).ChangeIdentifier), ctx, globalUserID, tenantID, tenantUserID, newIdentifier)
 }
 
 // CheckIdentifier mocks base method.
@@ -205,6 +220,21 @@ func (m *MockIdentityUserUseCase) Register(ctx context.Context, tenantID uuid.UU
 func (mr *MockIdentityUserUseCaseMockRecorder) Register(ctx, tenantID, lang, email, phone any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockIdentityUserUseCase)(nil).Register), ctx, tenantID, lang, email, phone)
+}
+
+// VerifyIdentifier mocks base method.
+func (m *MockIdentityUserUseCase) VerifyIdentifier(ctx context.Context, tenantID uuid.UUID, flowID, code string) (*types.IdentityVerificationResponse, *errors.DomainError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyIdentifier", ctx, tenantID, flowID, code)
+	ret0, _ := ret[0].(*types.IdentityVerificationResponse)
+	ret1, _ := ret[1].(*errors.DomainError)
+	return ret0, ret1
+}
+
+// VerifyIdentifier indicates an expected call of VerifyIdentifier.
+func (mr *MockIdentityUserUseCaseMockRecorder) VerifyIdentifier(ctx, tenantID, flowID, code any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).VerifyIdentifier), ctx, tenantID, flowID, code)
 }
 
 // VerifyLogin mocks base method.
