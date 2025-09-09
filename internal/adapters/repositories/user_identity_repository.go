@@ -91,7 +91,7 @@ func (r *userIdentityRepository) InsertOnceByTenantUserAndType(
 }
 
 func (r *userIdentityRepository) Update(tx *gorm.DB, identity *domain.UserIdentity) error {
-	return tx.Save(identity).Error
+	return tx.Updates(identity).Error
 }
 
 // ExistsWithinTenant checks if an identity exists within a tenant
@@ -108,7 +108,8 @@ func (r *userIdentityRepository) ExistsWithinTenant(
 	return count > 0, err
 }
 
-// GetByTenantAndTenantUserID retrieves a single user identity by tenant ID and tenant user ID
+// GetByTenantAndTenantUserID retrieves the first user identity by tenant ID and tenant user ID
+// One tenant user can have multiple user identities, but we only return the first one
 func (r *userIdentityRepository) GetByTenantAndTenantUserID(
 	ctx context.Context,
 	tx *gorm.DB,
@@ -132,6 +133,30 @@ func (r *userIdentityRepository) GetByTenantAndTenantUserID(
 	return &identity, nil
 }
 
+// ListByTenantAndTenantUserID retrieves a list of user identities by tenant ID and tenant user ID
+func (r *userIdentityRepository) ListByTenantAndTenantUserID(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenantID, tenantUserID string,
+) ([]*domain.UserIdentity, error) {
+	var identities []*domain.UserIdentity
+
+	db := r.db.WithContext(ctx)
+	if tx != nil {
+		db = tx.WithContext(ctx)
+	}
+
+	err := db.
+		Model(&domain.UserIdentity{}).
+		Joins("JOIN user_identifier_mapping ON user_identifier_mapping.global_user_id = user_identities.global_user_id").
+		Where("user_identifier_mapping.tenant_id = ? AND user_identifier_mapping.tenant_user_id = ?", tenantID, tenantUserID).
+		Find(&identities).Error
+	if err != nil {
+		return nil, err
+	}
+	return identities, nil
+}
+
 // ExistsByTenantGlobalUserIDAndType checks if a user identity exists by tenant ID, global user ID, and type
 func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 	ctx context.Context,
@@ -144,6 +169,27 @@ func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 			tenantID, globalUserID, identityType).
 		Count(&count).Error
 	return count > 0, err
+}
+
+func (r *userIdentityRepository) GetByGlobalUserID(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenantID, globalUserID string,
+) ([]domain.UserIdentity, error) {
+	var identities []domain.UserIdentity
+
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+
+	err := db.WithContext(ctx).
+		Where("tenant_id = ? AND global_user_id = ?", tenantID, globalUserID).
+		Find(&identities).Error
+	if err != nil {
+		return nil, err
+	}
+	return identities, nil
 }
 
 func (r *userIdentityRepository) Delete(tx *gorm.DB, identityID string) error {

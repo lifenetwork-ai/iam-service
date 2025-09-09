@@ -28,14 +28,18 @@ type IdentityUserLoginDTO struct {
 	Password string `json:"password"`
 }
 
-// IdentityUserChangeIdentifierDTO represents the request for changing an identifier.
+// IdentityUserAddIdentifierDTO represents the request for adding a new identifier.
 type IdentityUserAddIdentifierDTO struct {
 	NewIdentifier string `json:"new_identifier" binding:"required"` // email address or phone number
 }
 
-// IdentityUserUpdateIdentifierDTO represents the request for updating an identifier.
-type IdentityUserUpdateIdentifierDTO struct {
-	NewIdentifier  string `json:"new_identifier" binding:"required"`
+// IdentityUserChangeIdentifierDTO represents the request for changing an identifier.
+type IdentityUserChangeIdentifierDTO struct {
+	NewIdentifier string `json:"new_identifier" binding:"required"`
+}
+
+// IdentityUserDeleteIdentifierDTO represents the request for deleting an identifier.
+type IdentityUserDeleteIdentifierDTO struct {
 	IdentifierType string `json:"identifier_type" binding:"required,oneof=email phone_number" description:"The type of the identifier, can be email or phone_number"`
 }
 

@@ -114,7 +114,13 @@ func RegisterRoutes(
 	userRouter.POST(
 		"/me/update-identifier",
 		authMiddleware.RequireAuth(),
-		userHandler.UpdateIdentifier,
+		userHandler.ChangeIdentifier,
+	)
+
+	userRouter.DELETE(
+		"/me/delete-identifier",
+		authMiddleware.RequireAuth(),
+		userHandler.DeleteIdentifier,
 	)
 
 	userRouter.POST(

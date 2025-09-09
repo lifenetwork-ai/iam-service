@@ -1221,6 +1221,93 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users/me/delete-identifier": {
+            "delete": {
+                "description": "Delete a user's identifier (email or phone)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete user identifier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifier info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserDeleteIdentifierDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Identifier deleted successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Identifier or type already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/me/update-identifier": {
             "post": {
                 "description": "Update a user's identifier (email or phone)",
@@ -1255,7 +1342,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserUpdateIdentifierDTO"
+                            "$ref": "#/definitions/dto.IdentityUserChangeIdentifierDTO"
                         }
                     }
                 ],
@@ -1729,6 +1816,32 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.IdentityUserChangeIdentifierDTO": {
+            "type": "object",
+            "required": [
+                "new_identifier"
+            ],
+            "properties": {
+                "new_identifier": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityUserDeleteIdentifierDTO": {
+            "type": "object",
+            "required": [
+                "identifier_type"
+            ],
+            "properties": {
+                "identifier_type": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "phone_number"
+                    ]
+                }
+            }
+        },
         "dto.IdentityUserRegisterDTO": {
             "type": "object",
             "required": [
@@ -1746,25 +1859,6 @@ const docTemplate = `{
                     ]
                 },
                 "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.IdentityUserUpdateIdentifierDTO": {
-            "type": "object",
-            "required": [
-                "identifier_type",
-                "new_identifier"
-            ],
-            "properties": {
-                "identifier_type": {
-                    "type": "string",
-                    "enum": [
-                        "email",
-                        "phone_number"
-                    ]
-                },
-                "new_identifier": {
                     "type": "string"
                 }
             }
