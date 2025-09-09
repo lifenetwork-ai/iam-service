@@ -108,8 +108,8 @@ func (r *userIdentityRepository) ExistsWithinTenant(
 	return count > 0, err
 }
 
-// GetByTenantAndTenantUserID retrieves a single user identity by tenant ID and tenant user ID
-// One tenant user can have multiple user identities
+// GetByTenantAndTenantUserID retrieves the first user identity by tenant ID and tenant user ID
+// One tenant user can have multiple user identities, but we only return the first one
 func (r *userIdentityRepository) GetByTenantAndTenantUserID(
 	ctx context.Context,
 	tx *gorm.DB,
