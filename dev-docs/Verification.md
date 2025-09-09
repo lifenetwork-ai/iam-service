@@ -103,7 +103,7 @@ sequenceDiagram
     participant API
     participant Kratos
 
-    Client->>API: POST /verification/verify
+    Client->>API: POST /challenge-verify
     API->>API: Rate limit per flow_id
     API->>API: Load challenge session
     API->>Kratos: Submit flow with code
