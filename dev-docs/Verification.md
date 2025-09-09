@@ -139,16 +139,17 @@ sequenceDiagram
 
 ## Error Cases
 
-| HTTP | Code                        | Message                        |
-|------|-----------------------------|--------------------------------|
-| 400  | MSG_INVALID_IDENTIFIER_TYPE | Invalid identifier type        |
-| 400  | MSG_INVALID_EMAIL           | Invalid email                  |
-| 400  | MSG_INVALID_PHONE           | Invalid phone number           |
-| 404  | MSG_IDENTITY_NOT_FOUND      | Identifier not found           |
-| 429  | MSG_RATE_LIMIT_EXCEEDED     | Rate limit exceeded            |
-| 500  | MSG_SEND_VERIFICATION_FAILED| Failed to send verification    |
-| 500  | MSG_VERIFICATION_FAILED     | Verification failed            |
-| 500  | MSG_SAVING_SESSION_FAILED   | Could not store challenge state|
+| HTTP | Code                        | Message                                             |
+|------|-----------------------------|-----------------------------------------------------|
+| 400  | MSG_INVALID_IDENTIFIER_TYPE | Invalid identifier type                             |
+| 400  | MSG_INVALID_EMAIL           | Invalid email                                       |
+| 400  | MSG_INVALID_PHONE           | Invalid phone number                                |
+| 403  | MSG_IDENTIFIER_MISMATCH     | Identifier does not belong to the authenticated user|
+| 404  | MSG_IDENTITY_NOT_FOUND      | Identifier not found                                |
+| 429  | MSG_RATE_LIMIT_EXCEEDED     | Rate limit exceeded                                 |
+| 500  | MSG_SEND_VERIFICATION_FAILED| Failed to send verification                         |
+| 500  | MSG_VERIFICATION_FAILED     | Verification failed                                 |
+| 500  | MSG_SAVING_SESSION_FAILED   | Could not store challenge state                     |
 
 ---
 
