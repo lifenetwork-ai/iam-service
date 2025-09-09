@@ -544,9 +544,9 @@ func parseKratosErrorResponse(resp *http.Response, defaultErr error) error {
 
 	// Handle different states if no explicit error messages
 	switch kratosResp.State {
-	case "sent_email":
+	case constants.StateSentEmail:
 		return nil
-	case "choose_method":
+	case constants.StateChooseMethod:
 		return errors.New("error occurred while submitting flow")
 	default:
 		return defaultErr

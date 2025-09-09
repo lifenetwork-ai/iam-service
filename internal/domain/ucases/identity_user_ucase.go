@@ -1200,7 +1200,7 @@ func (u *userUseCase) VerifyIdentifier(
 	// 4. Check state/result
 	verified := false
 	if result != nil {
-		if s, ok := result.State.(string); ok && strings.EqualFold(s, constants.ChallengePassed) {
+		if s, ok := result.State.(string); ok && strings.EqualFold(s, constants.StatePassedChallenge) {
 			verified = true
 		}
 	}

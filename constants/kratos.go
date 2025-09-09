@@ -52,6 +52,9 @@ const (
 	TraitTypePhone TraitType = "phone_number"
 )
 
+// State
 const (
-	ChallengePassed = "passed_challenge"
+	StatePassedChallenge = "passed_challenge"
+	StateSentEmail       = "sent_email"
+	StateChooseMethod    = "choose_method"
 )
