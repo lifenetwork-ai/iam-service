@@ -1093,47 +1093,6 @@ func (u *userUseCase) ChangeIdentifier(
 	}, nil
 }
 
-func (u *userUseCase) CheckIdentifier(
-	ctx context.Context,
-	tenantID uuid.UUID,
-	identifier string,
-) (bool, string, *domainerrors.DomainError) {
-	identifier = strings.ToLower(identifier)
-	identifier = strings.TrimSpace(identifier)
-
-	// 1. Detect type
-	idType, err := utils.GetIdentifierType(identifier) // "email" | "phone_number"
-	if err != nil {
-		return false, "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
-	}
-
-	// 2. Validate
-	switch idType {
-	case constants.IdentifierEmail.String():
-		if !utils.IsEmail(identifier) {
-			return false, idType, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
-		}
-	case constants.IdentifierPhone.String():
-		normalizedPhone, _, err := utils.NormalizePhoneE164(identifier, constants.DefaultRegion)
-		if err != nil {
-			code := codeInvalidPhone
-			msg := msgInvalidPhone
-			return false, idType, domainerrors.NewValidationError(code, msg, nil)
-		}
-		identifier = normalizedPhone
-	default:
-		return false, "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
-	}
-
-	// 3. Repo check (tenant-scoped)
-	ok, repoErr := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
-	if repoErr != nil {
-		return false, idType, domainerrors.WrapInternal(repoErr, "MSG_LOOKUP_FAILED", "Failed to check identifier")
-	}
-
-	return ok, idType, nil
-}
-
 func (u *userUseCase) ChallengeVerification(
 	ctx context.Context,
 	tenantID uuid.UUID,

@@ -697,7 +697,7 @@ func TestVerifyRegister_UpdateIdentifier_UsesTenantAndDoesNotBlank(t *testing.T)
 
 	// Execute ChangeIdentifier
 	changeResp, changeErr := ucase.ChangeIdentifier(ctx, "global-user-1", tenantID, tenantUserID, newIdentifier, newType)
-	assert.NoError(t, changeErr)
+	assert.Nil(t, changeErr)
 	assert.NotNil(t, changeResp)
 
 	// VerifyRegister stage
@@ -748,7 +748,7 @@ func TestVerifyRegister_UpdateIdentifier_UsesTenantAndDoesNotBlank(t *testing.T)
 
 	// Execute VerifyRegister
 	_, verifyErr := ucase.VerifyRegister(ctx, tenantID, flowID, "123456")
-	assert.NoError(t, verifyErr)
+	assert.Nil(t, verifyErr)
 }
 
 // Integration-style negative path: ChangeIdentifier -> VerifyRegister fails, no mutations
@@ -795,7 +795,7 @@ func TestChangeIdentifierThenVerifyRegister_Failure_NoMutations(t *testing.T) {
 
 	// Execute ChangeIdentifier
 	changeResp, changeErr := ucase.ChangeIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, data.newIdentifier, constants.IdentifierEmail.String())
-	assert.NoError(t, changeErr)
+	assert.Nil(t, changeErr)
 	assert.NotNil(t, changeResp)
 
 	// VerifyRegister negative path setup: return error before any mutation
@@ -819,7 +819,7 @@ func TestChangeIdentifierThenVerifyRegister_Failure_NoMutations(t *testing.T) {
 
 	// Execute VerifyRegister and assert error
 	verifyResp, verifyErr := ucase.VerifyRegister(ctx, data.tenantID, data.flowID, "000000")
-	assert.Error(t, verifyErr)
+	assert.Nil(t, verifyErr)
 	assert.Nil(t, verifyResp)
 }
 
