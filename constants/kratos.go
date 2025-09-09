@@ -51,3 +51,7 @@ const (
 	TraitTypeEmail TraitType = "email"
 	TraitTypePhone TraitType = "phone_number"
 )
+
+const (
+	ChallengePassed = "passed_challenge"
+)

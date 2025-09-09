@@ -1103,8 +1103,7 @@ func (u *userUseCase) VerifyIdentifier(
 	// 4. Check state/result
 	verified := false
 	if result != nil {
-		fmt.Println("Result state:", result.State)
-		if s, ok := result.State.(string); ok && strings.EqualFold(s, "passed_challenge") {
+		if s, ok := result.State.(string); ok && strings.EqualFold(s, constants.ChallengePassed) {
 			verified = true
 		}
 	}
