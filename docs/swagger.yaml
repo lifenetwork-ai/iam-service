@@ -207,6 +207,13 @@ definitions:
     required:
     - lang
     type: object
+  dto.IdentityVerificationChallengeDTO:
+    properties:
+      identifier:
+        type: string
+    required:
+    - identifier
+    type: object
   dto.SelfCheckPermissionRequestDTO:
     properties:
       namespace:

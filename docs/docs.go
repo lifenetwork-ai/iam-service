@@ -1863,6 +1863,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.IdentityVerificationChallengeDTO": {
+            "type": "object",
+            "required": [
+                "identifier"
+            ],
+            "properties": {
+                "identifier": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.SelfCheckPermissionRequestDTO": {
             "type": "object",
             "required": [
