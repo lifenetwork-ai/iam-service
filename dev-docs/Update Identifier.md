@@ -17,15 +17,16 @@ sequenceDiagram
     Note over Client,Kratos: Update Identifier (OTP-based) Flow
     Client->>API: POST /api/v1/users/me/update-identifier
     Note right of Client: Header: Authorization: Bearer {session_token}
-    Note right of Client: Body: { "new_identifier": "new@email.com", "identifier_type": "email" }
+    Note right of Client: Body: { "old_identifier": "old@email.com", "new_identifier": "new@email.com", "new_identifier_type": "email" }
 
-    API->>IAM: ucase.UpdateIdentifier(...)
-    IAM->>IAM: Validate identifier format and type
-    IAM->>DB: Check identifier not already registered (global + type)
+    API->>IAM: ucase.ChangeIdentifier(...)
+    IAM->>IAM: Validate identifier types and values
+    IAM->>DB: Check new identifier not already registered (tenant + type)
+    IAM->>DB: Check user has old identifier type
     IAM->>Kratos: Initialize registration flow (for OTP)
     IAM->>Kratos: Submit flow with minimal traits to trigger OTP
     Kratos-->>IAM: Flow ID
-    IAM->>DB: Save ChallengeSession{flowID, globalUserID, type, value}
+    IAM->>DB: Save ChallengeSession{flowID, globalUserID, tenantUserID, type, value, challengeType}
     IAM-->>API: ChallengeResponse{flow_id, receiver, challenge_at}
     API-->>Client: 200 OK
 ```
@@ -40,15 +41,16 @@ Allows an authenticated user to update their primary identifier (email or phone)
 
 #### Headers
 
-- `X-Tenant-Id`: `string` (required)  
+- `X-Tenant-Id`: `string` (required)
 - `Authorization`: `Bearer {session_token}` (required)
 
 #### Request Body
 
 ```json
 {
-  "new_identifier": "string",
-  "identifier_type": "email_address|phone_number"
+  "old_identifier": "string", // The current identifier value (email or phone)
+  "new_identifier": "string", // The new identifier value
+  "new_identifier_type": "email|phone" // The type of the new identifier
 }
 ```
 
@@ -73,13 +75,14 @@ Allows an authenticated user to update their primary identifier (email or phone)
 
 | Step | Description |
 |------|-------------|
-| 1 | Validate identifier format (email or phone) |
-| 2 | Ensure identifier is **not already registered** within tenant |
-| 3 | Ensure user has an existing identifier of the same type to update |
-| 4 | Initialize Kratos registration flow |
-| 5 | Submit minimal `traits` to Kratos (email or phone only) to trigger OTP |
-| 6 | Save challenge session to database |
-| 7 | Return flow info to client for verification |
+| 1 | Validate identifier types and values (email or phone) |
+| 2 | Ensure new identifier is **not already registered** within tenant |
+| 3 | Ensure user has an existing identifier of the type to update |
+| 4 | If user has more than one identifier, only allow replacing the same type (email→email, phone→phone) |
+| 5 | Initialize Kratos registration flow |
+| 6 | Submit minimal `traits` to Kratos (email or phone only) to trigger OTP |
+| 7 | Save challenge session to database |
+| 8 | Return flow info to client for verification |
 
 ---
 
@@ -112,7 +115,8 @@ All responses follow the standard error format:
 | `MSG_INVALID_EMAIL` | Email format is invalid |
 | `MSG_INVALID_PHONE_NUMBER` | Phone number is invalid |
 | `MSG_IDENTIFIER_ALREADY_EXISTS` | Identifier already exists in system |
-| `MSG_IDENTIFIER_TYPE_NOT_FOUND` | User does not have an identifier of this type to update |
+| `MSG_IDENTIFIER_TYPE_NOT_EXISTS` | User does not have an identifier of this type to update |
+| `MSG_MULTIPLE_IDENTIFIERS_EXISTS` | User has multiple identifiers, cross-type change not allowed |
 | `MSG_RATE_LIMIT_EXCEEDED` | Too many OTP attempts |
 | `MSG_INIT_REG_FLOW_FAILED` | Failed to initialize Kratos registration flow |
 | `MSG_REGISTRATION_FAILED` | Kratos failed to submit registration flow |
@@ -137,7 +141,6 @@ All responses follow the standard error format:
 ## Best Practices
 
 ### System Design
-
 - Enforce one identifier per type (e.g., only one email per user)
 - Keep identifier verification isolated from login/registration
 - Don't allow updating to identifier already bound to other users
@@ -145,14 +148,12 @@ All responses follow the standard error format:
 - Properly deactivate old identifier after successful update
 
 ### User Experience
-
 - Show clear OTP prompt after calling this API
 - Support "resend code" with rate limits
 - Display current identifier being updated
 - Provide clear confirmation after successful update
 
 ### Logging & Monitoring
-
 - Log challenge creation & resolution events
 - Track identifier updates per user for audit
 - Alert on excessive OTP attempts (possible abuse)
@@ -168,8 +169,9 @@ Authorization: Bearer ory_abc.def.ghi
 X-Tenant-Id: tenant-123
 
 {
+  "old_identifier": "oldemail@example.com",
   "new_identifier": "newemail@example.com",
-  "identifier_type": "email_address"
+  "new_identifier_type": "email"
 }
 ```
 
