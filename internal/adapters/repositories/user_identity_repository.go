@@ -18,6 +18,19 @@ func NewUserIdentityRepository(db *gorm.DB) domainrepo.UserIdentityRepository {
 	return &userIdentityRepository{db: db}
 }
 
+func (r *userIdentityRepository) GetByID(ctx context.Context, tx *gorm.DB, identityID string) (*domain.UserIdentity, error) {
+	var identity domain.UserIdentity
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+	err := db.WithContext(ctx).First(&identity).Error
+	if err != nil {
+		return nil, err
+	}
+	return &identity, nil
+}
+
 func (r *userIdentityRepository) GetByTypeAndValue(
 	ctx context.Context,
 	tx *gorm.DB,
@@ -131,30 +144,6 @@ func (r *userIdentityRepository) GetByTenantAndTenantUserID(
 		return nil, err
 	}
 	return &identity, nil
-}
-
-// ListByTenantAndTenantUserID retrieves a list of user identities by tenant ID and tenant user ID
-func (r *userIdentityRepository) ListByTenantAndTenantUserID(
-	ctx context.Context,
-	tx *gorm.DB,
-	tenantID, tenantUserID string,
-) ([]*domain.UserIdentity, error) {
-	var identities []*domain.UserIdentity
-
-	db := r.db.WithContext(ctx)
-	if tx != nil {
-		db = tx.WithContext(ctx)
-	}
-
-	err := db.
-		Model(&domain.UserIdentity{}).
-		Joins("JOIN user_identifier_mapping ON user_identifier_mapping.global_user_id = user_identities.global_user_id").
-		Where("user_identifier_mapping.tenant_id = ? AND user_identifier_mapping.tenant_user_id = ?", tenantID, tenantUserID).
-		Find(&identities).Error
-	if err != nil {
-		return nil, err
-	}
-	return identities, nil
 }
 
 // ExistsByTenantGlobalUserIDAndType checks if a user identity exists by tenant ID, global user ID, and type
