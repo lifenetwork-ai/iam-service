@@ -670,21 +670,6 @@ func (mr *MockUserIdentityRepositoryMockRecorder) InsertOnceByTenantUserAndType(
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertOnceByTenantUserAndType", reflect.TypeOf((*MockUserIdentityRepository)(nil).InsertOnceByTenantUserAndType), ctx, tx, tenantID, globalUserID, idType, value)
 }
 
-// ListByTenantAndTenantUserID mocks base method.
-func (m *MockUserIdentityRepository) ListByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) ([]*domain.UserIdentity, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListByTenantAndTenantUserID", ctx, tx, tenantID, tenantUserID)
-	ret0, _ := ret[0].([]*domain.UserIdentity)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListByTenantAndTenantUserID indicates an expected call of ListByTenantAndTenantUserID.
-func (mr *MockUserIdentityRepositoryMockRecorder) ListByTenantAndTenantUserID(ctx, tx, tenantID, tenantUserID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByTenantAndTenantUserID", reflect.TypeOf((*MockUserIdentityRepository)(nil).ListByTenantAndTenantUserID), ctx, tx, tenantID, tenantUserID)
-}
-
 // Update mocks base method.
 func (m *MockUserIdentityRepository) Update(tx *gorm.DB, identity *domain.UserIdentity) error {
 	m.ctrl.T.Helper()
