@@ -286,6 +286,8 @@ func (u *userUseCase) VerifyRegister(
 			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(traits, constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(traits, constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(traits, constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -497,6 +499,8 @@ func (u *userUseCase) VerifyLogin(
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -647,6 +651,8 @@ func (u *userUseCase) Login(
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -712,6 +718,8 @@ func (u *userUseCase) RefreshToken(
 			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -1214,4 +1222,41 @@ func (u *userUseCase) VerifyIdentifier(
 		Verified:       verified,
 		VerifiedAt:     time.Now().Unix(),
 	}, nil
+}
+
+// UpdateLang updates the user's preferred language (traits.lang) via Kratos Admin API.
+// It does NOT overwrite other traits.
+func (u *userUseCase) UpdateLang(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	tenantUserID string, // Kratos Identity ID
+	lang string,
+) *domainerrors.DomainError {
+	// 1. Normalize & validate lang
+	lang = utils.NormalizeLang(lang)
+	if lang == "" {
+		return domainerrors.NewValidationError("MSG_INVALID_LANG", "Invalid language", nil)
+	}
+	if !utils.IsLangSupported(lang) {
+		return domainerrors.NewValidationError("MSG_UNSUPPORTED_LANG", "Unsupported language", nil)
+	}
+
+	// 2. Ensure tenant exists
+	if _, err := u.tenantRepo.GetByID(tenantID); err != nil {
+		return domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
+	}
+
+	// 3. Parse identity ID
+	identityID, err := uuid.Parse(tenantUserID)
+	if err != nil {
+		return domainerrors.NewValidationError("MSG_INVALID_TENANT_USER_ID", "Invalid tenant user id", nil)
+	}
+
+	// 4. Call Kratos Admin to update traits.lang (read->merge->update inside service)
+	if err := u.kratosService.UpdateLangAdmin(ctx, tenantID, identityID, lang); err != nil {
+		return domainerrors.WrapInternal(err, "MSG_UPDATE_LANG_FAILED", "Failed to update language")
+	}
+
+	// 5. Success
+	return nil
 }

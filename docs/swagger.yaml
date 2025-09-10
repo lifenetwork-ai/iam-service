@@ -207,6 +207,13 @@ definitions:
     required:
     - lang
     type: object
+  dto.IdentityUserUpdateLangDTO:
+    properties:
+      lang:
+        type: string
+    required:
+    - lang
+    type: object
   dto.IdentityVerificationChallengeDTO:
     properties:
       identifier:
@@ -1283,6 +1290,58 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Update user identifier
+      tags:
+      - users
+  /api/v1/users/me/update-lang:
+    patch:
+      consumes:
+      - application/json
+      description: Update current user's preferred language (traits.lang).
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Language payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserUpdateLangDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Language updated
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update my language
       tags:
       - users
   /api/v1/users/register:

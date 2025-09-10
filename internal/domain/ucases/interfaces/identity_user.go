@@ -109,4 +109,11 @@ type IdentityUserUseCase interface {
 		flowID string,
 		code string,
 	) (*types.IdentityVerificationResponse, *errors.DomainError)
+
+	UpdateLang(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		tenantUserID string,
+		lang string,
+	) *errors.DomainError
 }

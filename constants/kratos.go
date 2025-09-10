@@ -41,18 +41,6 @@ const (
 	FlowTypeVerify   FlowType = "verify"
 )
 
-// TraitType represents the types of traits in the identity service
-type TraitType string
-
-func (t TraitType) String() string {
-	return string(t)
-}
-
-const (
-	TraitTypeEmail TraitType = "email"
-	TraitTypePhone TraitType = "phone_number"
-)
-
 // State
 const (
 	StatePassedChallenge = "passed_challenge"

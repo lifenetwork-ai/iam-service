@@ -8,8 +8,8 @@ type IdentityUserResponse struct {
 	ID           string `json:"id"`
 	Seed         string `json:"seed,omitempty"`
 	UserName     string `json:"user_name,omitempty"`
-	Email        string `json:"email,omitempty"`
-	Phone        string `json:"phone,omitempty"`
+	Email        string `json:"email"`
+	Phone        string `json:"phone"`
 	Status       bool   `json:"status,omitempty"`
 	Name         string `json:"name,omitempty"`
 	FirstName    string `json:"first_name,omitempty"`

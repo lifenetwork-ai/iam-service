@@ -327,6 +327,20 @@ func (mr *MockKratosServiceMockRecorder) UpdateIdentifierTraitAdmin(ctx, tenantI
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdentifierTraitAdmin", reflect.TypeOf((*MockKratosService)(nil).UpdateIdentifierTraitAdmin), ctx, tenantID, identityID, traits)
 }
 
+// UpdateLangAdmin mocks base method.
+func (m *MockKratosService) UpdateLangAdmin(ctx context.Context, tenantID, identityID uuid.UUID, newLang string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateLangAdmin", ctx, tenantID, identityID, newLang)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateLangAdmin indicates an expected call of UpdateLangAdmin.
+func (mr *MockKratosServiceMockRecorder) UpdateLangAdmin(ctx, tenantID, identityID, newLang any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLangAdmin", reflect.TypeOf((*MockKratosService)(nil).UpdateLangAdmin), ctx, tenantID, identityID, newLang)
+}
+
 // WhoAmI mocks base method.
 func (m *MockKratosService) WhoAmI(ctx context.Context, tenantID uuid.UUID, sessionToken string) (*client.Session, error) {
 	m.ctrl.T.Helper()

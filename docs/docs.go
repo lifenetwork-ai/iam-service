@@ -1392,6 +1392,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users/me/update-lang": {
+            "patch": {
+                "description": "Update current user's preferred language (traits.lang).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update my language",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Language payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserUpdateLangDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Language updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/register": {
             "post": {
                 "description": "Register a new user",
@@ -1865,6 +1947,17 @@ const docTemplate = `{
                     ]
                 },
                 "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityUserUpdateLangDTO": {
+            "type": "object",
+            "required": [
+                "lang"
+            ],
+            "properties": {
+                "lang": {
                     "type": "string"
                 }
             }
