@@ -96,16 +96,35 @@ func (r *SQLiteUserIdentifierMappingRepository) Create(tx *gorm.DB, m *domain.Us
 	return tx.Create(m).Error
 }
 func (r *SQLiteUserIdentifierMappingRepository) GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error) {
-	var m domain.UserIdentifierMapping
-	err := r.db.First(&m, "tenant_id = ?", tenantID).Error
-	if err != nil {
+	// get identity first
+	var i domain.UserIdentity
+
+	if err := r.db.First(&i, "tenant_id = ? AND type = ? AND value = ?", tenantID, identifierType, identifierValue).Error; err != nil {
 		return "", err
+	}
+
+	var m domain.UserIdentifierMapping
+	// Prefer the latest mapping for this global user within the tenant
+	if err := r.db.
+		Order("created_at DESC").
+		First(&m, "tenant_id = ? AND global_user_id = ?", tenantID, i.GlobalUserID).Error; err != nil {
+		return "", fmt.Errorf("identity with id: %s not found: %w", i.ID, err)
+	}
+	if m.ID == "" {
+		return "", fmt.Errorf("mapping with global user id: %s not found", i.GlobalUserID)
 	}
 	return m.TenantUserID, nil
 }
+func (r *SQLiteUserIdentifierMappingRepository) GetByGlobalUserIDAndTenantID(ctx context.Context, globalUserID, tenantID string) ([]*domain.UserIdentifierMapping, error) {
+	var m []*domain.UserIdentifierMapping
+	if err := r.db.Find(&m, "global_user_id = ? AND tenant_id = ?", globalUserID, tenantID).Error; err != nil {
+		return nil, err
+	}
+	return m, nil
+}
 func (r *SQLiteUserIdentifierMappingRepository) GetByTenantIDAndTenantUserID(ctx context.Context, tenantID, tenantUserID string) (*domain.UserIdentifierMapping, error) {
 	var m domain.UserIdentifierMapping
-	if err := r.db.First(&m, "tenant_id = ?", tenantID).Error; err != nil {
+	if err := r.db.First(&m, "tenant_id = ? AND tenant_user_id = ?", tenantID, tenantUserID).Error; err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -192,20 +211,7 @@ func (r *SQLiteUserIdentityRepository) GetByTenantAndTenantUserID(ctx context.Co
 	}
 	return &u, nil
 }
-func (r *SQLiteUserIdentityRepository) ListByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) ([]*domain.UserIdentity, error) {
-	if tx == nil {
-		tx = r.db
-	}
-	var m domain.UserIdentifierMapping
-	if err := tx.First(&m, "tenant_id = ? AND tenant_user_id = ?", tenantID, tenantUserID).Error; err != nil {
-		return nil, err
-	}
-	var out []*domain.UserIdentity
-	if err := tx.Where("tenant_id = ? AND global_user_id = ?", tenantID, m.GlobalUserID).Find(&out).Error; err != nil {
-		return nil, err
-	}
-	return out, nil
-}
+
 func (r *SQLiteUserIdentityRepository) ExistsByTenantGlobalUserIDAndType(ctx context.Context, tenantID, globalUserID, identityType string) (bool, error) {
 	var c int64
 	if err := r.db.Model(&domain.UserIdentity{}).Where("tenant_id = ? AND global_user_id = ? AND type = ?", tenantID, globalUserID, identityType).Count(&c).Error; err != nil {

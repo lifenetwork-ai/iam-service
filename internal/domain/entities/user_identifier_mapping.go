@@ -2,6 +2,9 @@ package domain
 
 import (
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // Represent a tenant-specific user identifier mapping to global user.
@@ -12,6 +15,19 @@ type UserIdentifierMapping struct {
 	TenantUserID string    `json:"tenant_user_id" gorm:"type:uuid;not null"`
 	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+}
+
+// BeforeCreate is a GORM hook that generates a UUID for the UserIdentifierMapping if it is not set.
+// Needed for SQLite tests.
+func (u *UserIdentifierMapping) BeforeCreate(tx *gorm.DB) (err error) {
+	if u.ID == "" {
+		uuid, err := uuid.NewRandom()
+		if err != nil {
+			return err
+		}
+		u.ID = uuid.String()
+	}
+	return
 }
 
 // TableName overrides the default table name for GORM.

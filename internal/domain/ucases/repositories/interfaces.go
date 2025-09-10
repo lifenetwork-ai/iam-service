@@ -50,6 +50,7 @@ type UserIdentifierMappingRepository interface {
 	Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
 	GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error)
 	GetByTenantIDAndTenantUserID(ctx context.Context, tenantID, tenantUserID string) (*domain.UserIdentifierMapping, error)
+	GetByGlobalUserIDAndTenantID(ctx context.Context, globalUserID, tenantID string) ([]*domain.UserIdentifierMapping, error)
 	Update(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
 }
 

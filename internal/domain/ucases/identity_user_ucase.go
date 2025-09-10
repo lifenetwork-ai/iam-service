@@ -194,6 +194,7 @@ func (u *userUseCase) VerifyRegister(
 	}
 
 	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, flowID)
+	fmt.Println("sessionValue", sessionValue)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHALLENGE_SESSION_NOT_FOUND", "Challenge session not found")
 	}
@@ -219,7 +220,7 @@ func (u *userUseCase) VerifyRegister(
 	}
 
 	tenantName := extractStringFromTraits(traits, "tenant", "")
-	newIdentityID := registrationResult.Session.Identity.Id
+	newTenantUserID := registrationResult.Session.Identity.Id
 
 	// Get identifier and type from session value
 	identifier := sessionValue.Identifier
@@ -252,8 +253,9 @@ func (u *userUseCase) VerifyRegister(
 			ctx,
 			tenant,
 			sessionValue.GlobalUserID,
-			sessionValue.IdentityID, // the identity id of the old identifier to be deleted
-			newIdentityID,
+			sessionValue.IdentityID,   // the identity id of the old identifier to be deleted
+			sessionValue.TenantUserID, // the tenant user id of the old identifier to be deleted
+			newTenantUserID,
 			identifier,
 			identifierType,
 		); err != nil {
@@ -263,7 +265,7 @@ func (u *userUseCase) VerifyRegister(
 	default:
 		// Bind IAM to registration
 		if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			return u.bindIAMToRegistration(ctx, tx, tenant, newIdentityID, identifier, identifierType)
+			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, identifier, identifierType)
 		}); err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_IAM_REGISTRATION_FAILED", "Failed to bind IAM to registration")
 		}
@@ -273,6 +275,8 @@ func (u *userUseCase) VerifyRegister(
 	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
 
 	// Return authentication response
+	// Lookup GlobalUserID for the identifier involved in this flow to populate response
+	userGlobalID, _ := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, tenant.ID.String(), identifierType, identifier)
 	return &types.IdentityUserAuthResponse{
 		SessionID:       registrationResult.Session.Id,
 		SessionToken:    *registrationResult.SessionToken,
@@ -281,10 +285,11 @@ func (u *userUseCase) VerifyRegister(
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
 		User: types.IdentityUserResponse{
-			ID:       newIdentityID,
-			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
-			Email:    extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
-			Phone:    extractStringFromTraits(traits, constants.IdentifierPhone.String(), ""),
+			ID:           newTenantUserID,
+			GlobalUserID: userGlobalID,
+			UserName:     extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
+			Email:        extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
+			Phone:        extractStringFromTraits(traits, constants.IdentifierPhone.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -299,8 +304,9 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
 	globalUserID string,
-	oldIdentityID string, // the tenant user id of the old identifier to be deleted
-	newIdentityID string,
+	oldIdentityID string, // the identity id of the old identifier to be deleted
+	oldTenantUserID string, // the tenant user id of the old identifier to be deleted
+	newTenantUserID string,
 	newIdentifier string,
 	newIdentifierType string,
 ) error {
@@ -308,7 +314,7 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	identifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndTenantUserID(
 		ctx,
 		tenant.ID.String(),
-		oldIdentityID,
+		oldTenantUserID,
 	)
 	if err != nil {
 		return fmt.Errorf("get existing mapping: %w", err)
@@ -317,7 +323,7 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	// Get the old identifier
 	oldIdentity, err := u.userIdentityRepo.GetByID(ctx, nil, oldIdentityID)
 	if err != nil {
-		return fmt.Errorf("Old identity with id: %s not found: %w", oldIdentityID, err)
+		return fmt.Errorf("old identity with id: %s not found: %w", oldIdentityID, err)
 	}
 
 	// Begin transaction
@@ -335,7 +341,7 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 
 		if err := u.userIdentifierMappingRepo.Update(tx, &domain.UserIdentifierMapping{
 			ID:           identifierMapping.ID,
-			TenantUserID: newIdentityID,
+			TenantUserID: newTenantUserID,
 		}); err != nil {
 			return fmt.Errorf("update mapping: %w", err)
 		}
@@ -345,14 +351,14 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	})
 
 	if txErr != nil {
-		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newIdentityID); cleanUpErr != nil {
+		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newTenantUserID); cleanUpErr != nil {
 			logger.GetLogger().Errorf("Failed to clean up: %v", cleanUpErr)
 		}
 		return fmt.Errorf("failed to bind IAM to update identifier: %v", txErr)
 	}
-
+	fmt.Println("oldTenantUserID", oldTenantUserID)
 	// Delete the old identifier from Kratos
-	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldIdentityID)); err != nil {
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldTenantUserID)); err != nil {
 		return fmt.Errorf("failed to delete old identifier: %w", err)
 	}
 
@@ -965,7 +971,7 @@ func (u *userUseCase) ChangeIdentifier(
 	ctx context.Context,
 	globalUserID string,
 	tenantID uuid.UUID,
-	tenantUserID string,
+	_ string,
 	newIdentifier string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// 1. Validate identifier type
@@ -1027,6 +1033,32 @@ func (u *userUseCase) ChangeIdentifier(
 	// Should not happen
 	if identity == nil {
 		return nil, domainerrors.NewInternalError("MSG_INTERNAL_ERROR", "Cannot find identifier to be changed")
+	}
+
+	mappings, err := u.userIdentifierMappingRepo.GetByGlobalUserIDAndTenantID(ctx, globalUserID, tenantID.String())
+	if err != nil {
+		return nil, domainerrors.NewInternalError("MSG_MAPPING_NOT_FOUND", "User mapping not found")
+	}
+
+	if len(mappings) == 0 {
+		return nil, domainerrors.NewInternalError("MSG_MAPPING_NOT_FOUND", "User mapping not found")
+	}
+
+	// check all mappings to get the correct tenant user id
+	tenantUserID := ""
+	for _, mapping := range mappings {
+		kratosIdentity, err := u.kratosService.GetIdentity(ctx, tenantID, uuid.MustParse(mapping.TenantUserID))
+		if err != nil {
+			return nil, domainerrors.NewInternalError("MSG_GET_IDENTITY_FAILED", "Failed to get identity")
+		}
+		fmt.Println("kratosIdentity", kratosIdentity.Traits)
+		if kratosIdentity.Traits.(map[string]interface{})[identity.Type] == identity.Value {
+			tenantUserID = mapping.TenantUserID
+			break
+		}
+		if tenantUserID != "" {
+			break
+		}
 	}
 
 	// 5. Rate limit
