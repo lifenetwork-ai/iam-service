@@ -52,3 +52,8 @@ type CheckIdentifierDTO struct {
 type IdentityVerificationChallengeDTO struct {
 	Identifier string `json:"identifier" binding:"required" description:"Email or phone number to verify"`
 }
+
+// IdentityUserUpdateLangDTO represents the request for updating user's language preference.
+type IdentityUserUpdateLangDTO struct {
+	Lang string `json:"lang" binding:"required"`
+}
