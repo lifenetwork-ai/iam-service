@@ -211,13 +211,14 @@ func TestIntegration_BindUpdateIdentifier_UpdateMappingFails_CleanupCalled(t *te
 	ucase.db = db
 	ctx := context.Background()
 
-	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
-	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-
 	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	tenant := &domain.Tenant{ID: tenantID, Name: "tenant-name"}
 	oldTenantUserID := "00000000-0000-0000-0000-00000000aaaa"
 	newTenantUserID := "00000000-0000-0000-0000-00000000eeef"
+
+	// rate limiter defaults
+	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
+	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	// prepare changeIdentifier flow
 	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "new@example.com").Return(false, nil)
@@ -705,6 +706,32 @@ func TestIntegration_CheckIdentifier_RepoError(t *testing.T) {
 	assert.Equal(t, constants.IdentifierEmail.String(), idType)
 }
 
+func TestIntegration_CheckIdentifier_InvalidInputs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ucase, _ := buildIsolatedUseCase(ctrl)
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+
+	// invalid email format -> type detection fails, idType is empty
+	ok, idType, derr := ucase.CheckIdentifier(context.Background(), tenantID, "not-an-email")
+	assert.False(t, ok)
+	assert.NotNil(t, derr)
+	assert.Equal(t, "", idType)
+
+	// invalid phone format -> type detection fails, idType is empty
+	ok, idType, derr = ucase.CheckIdentifier(context.Background(), tenantID, "12345")
+	assert.False(t, ok)
+	assert.NotNil(t, derr)
+	assert.Equal(t, "", idType)
+
+	// unknown type
+	ok, idType, derr = ucase.CheckIdentifier(context.Background(), tenantID, "badtype://value")
+	assert.False(t, ok)
+	assert.NotNil(t, derr)
+	assert.Equal(t, "", idType)
+}
+
 // =========================
 // ChangeIdentifier - validation failures
 // =========================
@@ -942,6 +969,68 @@ func TestIntegration_VerifyRegister_InvalidTraits(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
+// Ensure VerifyRegister with missing tenant in traits returns proper error and performs no writes
+func TestIntegration_VerifyRegister_MissingTenantTrait_NoMutation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ucase, deps := buildIsolatedUseCase(ctrl)
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	flow := &kratos.RegistrationFlow{Id: "flow-missing-tenant"}
+
+	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
+	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), flow.Id).Return(&domain.ChallengeSession{Identifier: "user@example.com", IdentifierType: constants.IdentifierEmail.String(), ChallengeType: constants.ChallengeTypeRegister}, nil)
+	deps.kratosService.EXPECT().GetRegistrationFlow(gomock.Any(), tenantID, flow.Id).Return(flow, nil)
+	// Traits map missing tenant
+	verifyResult := &kratos.SuccessfulNativeRegistration{Session: &kratos.Session{Identity: &kratos.Identity{Id: "tu-bad", Traits: map[string]interface{}{string(constants.IdentifierEmail): "user@example.com"}}}, SessionToken: ptr("tok")}
+	deps.kratosService.EXPECT().SubmitRegistrationFlowWithCode(gomock.Any(), tenantID, flow, gomock.Any()).Return(verifyResult, nil)
+	// Expect a GetByName attempt which should fail due to missing tenant
+	deps.tenantRepo.EXPECT().GetByName("").Return(nil, assert.AnError)
+
+	// No repo writes should occur
+	deps.userIdentityRepo.EXPECT().InsertOnceByTenantUserAndType(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+	deps.userIdentifierMappingRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Times(0)
+	deps.globalUserRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Times(0)
+
+	resp, derr := ucase.VerifyRegister(context.Background(), tenantID, flow.Id, "000000")
+	assert.NotNil(t, derr)
+	assert.Nil(t, resp)
+}
+
+// Ensure bindIAMToRegistration transaction error does not leave partial writes
+func TestIntegration_VerifyRegister_BindTransactionError_NoPartialWrites(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ucase, deps := buildIsolatedUseCase(ctrl)
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	ucase.db = db
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	flow := &kratos.RegistrationFlow{Id: "flow-bind-tx-error"}
+
+	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
+	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), flow.Id).Return(&domain.ChallengeSession{Identifier: "user@example.com", IdentifierType: constants.IdentifierEmail.String(), ChallengeType: constants.ChallengeTypeRegister}, nil)
+	deps.kratosService.EXPECT().GetRegistrationFlow(gomock.Any(), tenantID, flow.Id).Return(flow, nil)
+	verifyResult := &kratos.SuccessfulNativeRegistration{Session: &kratos.Session{Identity: &kratos.Identity{Id: "tu", Traits: map[string]interface{}{string(constants.IdentifierEmail): "user@example.com", "tenant": "tenant-name"}}}, SessionToken: ptr("tok")}
+	deps.kratosService.EXPECT().SubmitRegistrationFlowWithCode(gomock.Any(), tenantID, flow, gomock.Any()).Return(verifyResult, nil)
+	deps.tenantRepo.EXPECT().GetByName("tenant-name").Return(&domain.Tenant{ID: tenantID, Name: "tenant-name"}, nil)
+
+	// Force transaction error deep inside bindIAMToRegistration by failing mapping create
+	deps.userIdentityRepo.EXPECT().GetByTypeAndValue(gomock.Any(), gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "user@example.com").Return(nil, assert.AnError)
+	deps.globalUserRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+	deps.userIdentityRepo.EXPECT().InsertOnceByTenantUserAndType(gomock.Any(), gomock.Any(), tenantID.String(), gomock.Any(), constants.IdentifierEmail.String(), "user@example.com").Return(true, nil)
+	deps.userIdentifierMappingRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(assert.AnError)
+
+	// Ensure cleanup: challenge not deleted on failure
+	deps.challengeSessionRepo.EXPECT().DeleteChallenge(gomock.Any(), flow.Id).Times(0)
+
+	resp, derr := ucase.VerifyRegister(context.Background(), tenantID, flow.Id, "000000")
+	assert.NotNil(t, derr)
+	assert.Nil(t, resp)
+}
+
 func TestIntegration_Register_Negatives(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1127,4 +1216,81 @@ func TestIntegration_Profile_WhoAmI_Error(t *testing.T) {
 	user, derr := ucase.Profile(ctx, tenantID)
 	assert.NotNil(t, derr)
 	assert.Nil(t, user)
+}
+
+func TestIntegration_ChallengeVerification_Success_And_NotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ucase, deps := buildIsolatedUseCase(ctrl)
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+
+	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
+	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	// Success: email exists, verification flow initialized and submitted without code
+	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "exists@example.com").Return(true, nil)
+	deps.kratosService.EXPECT().InitializeVerificationFlow(gomock.Any(), tenantID).Return("flow-verify-1", nil)
+	deps.kratosService.EXPECT().SubmitVerificationFlow(gomock.Any(), tenantID, "flow-verify-1", gomock.Any(), gomock.Eq(constants.IdentifierType(constants.IdentifierEmail.String())), gomock.Nil()).Return(&kratos.VerificationFlow{State: constants.StatePassedChallenge}, nil)
+	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), "flow-verify-1", gomock.Any(), gomock.Any()).Return(nil)
+
+	resp, derr := ucase.ChallengeVerification(context.Background(), tenantID, "exists@example.com")
+	assert.Nil(t, derr)
+	assert.NotNil(t, resp)
+	assert.Equal(t, "flow-verify-1", resp.FlowID)
+
+	// Not found: identifier does not exist
+	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "missing@example.com").Return(false, nil)
+	resp, derr = ucase.ChallengeVerification(context.Background(), tenantID, "missing@example.com")
+	assert.NotNil(t, derr)
+	assert.Nil(t, resp)
+}
+
+func TestIntegration_VerifyIdentifier_Success_And_InvalidCode(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ucase, deps := buildIsolatedUseCase(ctrl)
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	flowID := "flow-verify-2"
+
+	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
+	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	// Success path: state == passed_challenge
+	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), flowID).Return(&domain.ChallengeSession{Identifier: "exists@example.com", IdentifierType: constants.IdentifierEmail.String()}, nil)
+	verifyResult := &kratos.VerificationFlow{State: constants.StatePassedChallenge}
+	deps.kratosService.EXPECT().SubmitVerificationFlow(gomock.Any(), tenantID, flowID, gomock.Any(), gomock.Eq(constants.IdentifierType(constants.IdentifierEmail.String())), gomock.Any()).Return(verifyResult, nil)
+	deps.challengeSessionRepo.EXPECT().DeleteChallenge(gomock.Any(), flowID).Return(nil)
+	vresp, verr := ucase.VerifyIdentifier(context.Background(), tenantID, flowID, "123456")
+	assert.Nil(t, verr)
+	assert.NotNil(t, vresp)
+	assert.True(t, vresp.Verified)
+
+	// Invalid code path: result state not passed; error returned and session not deleted
+	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), flowID).Return(&domain.ChallengeSession{Identifier: "exists@example.com", IdentifierType: constants.IdentifierEmail.String()}, nil)
+	deps.kratosService.EXPECT().SubmitVerificationFlow(gomock.Any(), tenantID, flowID, gomock.Any(), gomock.Eq(constants.IdentifierType(constants.IdentifierEmail.String())), gomock.Any()).Return(&kratos.VerificationFlow{State: "failed"}, nil)
+	vresp, verr = ucase.VerifyIdentifier(context.Background(), tenantID, flowID, "000000")
+	assert.NotNil(t, verr)
+	assert.Nil(t, vresp)
+}
+
+func TestIntegration_VerifyLogin_MissingSession(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ucase, deps := buildIsolatedUseCase(ctrl)
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	flowID := "flow-missing-session"
+	loginFlow := &kratos.LoginFlow{Id: flowID}
+
+	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
+	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	deps.kratosService.EXPECT().GetLoginFlow(gomock.Any(), tenantID, flowID).Return(loginFlow, nil)
+	// Return nil session value to trigger NotFound branch
+	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), flowID).Return(nil, nil)
+
+	resp, derr := ucase.VerifyLogin(context.Background(), tenantID, flowID, "000000")
+	assert.NotNil(t, derr)
+	assert.Nil(t, resp)
 }
