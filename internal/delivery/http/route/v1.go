@@ -124,12 +124,6 @@ func RegisterRoutes(
 	)
 
 	userRouter.PATCH(
-		"/me/update-identifier",
-		authMiddleware.RequireAuth(),
-		userHandler.ChangeIdentifier,
-	)
-
-	userRouter.POST(
 		"/me/update-lang",
 		authMiddleware.RequireAuth(),
 		userHandler.UpdateLang,
