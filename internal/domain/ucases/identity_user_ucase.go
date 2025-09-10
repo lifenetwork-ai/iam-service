@@ -286,6 +286,8 @@ func (u *userUseCase) VerifyRegister(
 			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(traits, constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(traits, constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(traits, constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -497,6 +499,8 @@ func (u *userUseCase) VerifyLogin(
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -647,6 +651,8 @@ func (u *userUseCase) Login(
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -712,6 +718,8 @@ func (u *userUseCase) RefreshToken(
 			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
