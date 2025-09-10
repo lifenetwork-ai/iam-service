@@ -67,5 +67,8 @@ func (r *userIdentifierMappingRepository) Create(tx *gorm.DB, mapping *domain.Us
 }
 
 func (r *userIdentifierMappingRepository) Update(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
-	return tx.Model(&domain.UserIdentifierMapping{}).Where("global_user_id = ? AND tenant_id = ?", mapping.GlobalUserID, mapping.TenantID).Updates(mapping).Error
+	if tx == nil {
+		tx = r.db
+	}
+	return tx.Model(&domain.UserIdentifierMapping{}).Where("id = ?", mapping.ID).Updates(mapping).Error
 }

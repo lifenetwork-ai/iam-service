@@ -219,7 +219,7 @@ func (u *userUseCase) VerifyRegister(
 	}
 
 	tenantName := extractStringFromTraits(traits, "tenant", "")
-	newTenantUserID := registrationResult.Session.Identity.Id
+	newIdentityID := registrationResult.Session.Identity.Id
 
 	// Get identifier and type from session value
 	identifier := sessionValue.Identifier
@@ -252,9 +252,8 @@ func (u *userUseCase) VerifyRegister(
 			ctx,
 			tenant,
 			sessionValue.GlobalUserID,
-			sessionValue.IdentityID,
-			sessionValue.TenantUserID,
-			newTenantUserID,
+			sessionValue.IdentityID, // the identity id of the old identifier to be deleted
+			newIdentityID,
 			identifier,
 			identifierType,
 		); err != nil {
@@ -264,7 +263,7 @@ func (u *userUseCase) VerifyRegister(
 	default:
 		// Bind IAM to registration
 		if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, identifier, identifierType)
+			return u.bindIAMToRegistration(ctx, tx, tenant, newIdentityID, identifier, identifierType)
 		}); err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_IAM_REGISTRATION_FAILED", "Failed to bind IAM to registration")
 		}
@@ -282,7 +281,7 @@ func (u *userUseCase) VerifyRegister(
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
 		User: types.IdentityUserResponse{
-			ID:       newTenantUserID,
+			ID:       newIdentityID,
 			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(traits, constants.IdentifierPhone.String(), ""),
@@ -300,9 +299,8 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
 	globalUserID string,
-	identityID string,
-	oldTenantUserID string,
-	newTenantUserID string,
+	oldIdentityID string, // the tenant user id of the old identifier to be deleted
+	newIdentityID string,
 	newIdentifier string,
 	newIdentifierType string,
 ) error {
@@ -310,18 +308,24 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	identifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndTenantUserID(
 		ctx,
 		tenant.ID.String(),
-		oldTenantUserID,
+		oldIdentityID,
 	)
 	if err != nil {
 		return fmt.Errorf("get existing mapping: %w", err)
+	}
+
+	// Get the old identifier
+	oldIdentity, err := u.userIdentityRepo.GetByID(ctx, nil, oldIdentityID)
+	if err != nil {
+		return fmt.Errorf("Old identity with id: %s not found: %w", oldIdentityID, err)
 	}
 
 	// Begin transaction
 	txErr := u.db.Transaction(func(tx *gorm.DB) error {
 		// Create identity for the new identifier with the existing GlobalUserID
 		if err := u.userIdentityRepo.Update(tx, &domain.UserIdentity{
-			ID:           identityID,
-			GlobalUserID: globalUserID,
+			ID:           oldIdentity.ID,
+			GlobalUserID: oldIdentity.GlobalUserID,
 			TenantID:     tenant.ID.String(),
 			Type:         newIdentifierType,
 			Value:        newIdentifier,
@@ -329,23 +333,11 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 			return fmt.Errorf("create new identity: %w", err)
 		}
 
-		if identifierMapping == nil {
-			if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
-				GlobalUserID: globalUserID,
-				TenantID:     tenant.ID.String(),
-				TenantUserID: newTenantUserID,
-			}); err != nil {
-				return fmt.Errorf("create mapping: %w", err)
-			}
-		} else {
-			if err := u.userIdentifierMappingRepo.Update(tx, &domain.UserIdentifierMapping{
-				ID:           identifierMapping.ID,
-				GlobalUserID: globalUserID,
-				TenantUserID: newTenantUserID,
-				TenantID:     tenant.ID.String(),
-			}); err != nil {
-				return fmt.Errorf("update mapping: %w", err)
-			}
+		if err := u.userIdentifierMappingRepo.Update(tx, &domain.UserIdentifierMapping{
+			ID:           identifierMapping.ID,
+			TenantUserID: newIdentityID,
+		}); err != nil {
+			return fmt.Errorf("update mapping: %w", err)
 		}
 
 		// If we reach here, all operations succeeded and the transaction will be committed
@@ -353,14 +345,14 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	})
 
 	if txErr != nil {
-		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newTenantUserID); cleanUpErr != nil {
+		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newIdentityID); cleanUpErr != nil {
 			logger.GetLogger().Errorf("Failed to clean up: %v", cleanUpErr)
 		}
 		return fmt.Errorf("failed to bind IAM to update identifier: %v", txErr)
 	}
 
 	// Delete the old identifier from Kratos
-	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldTenantUserID)); err != nil {
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldIdentityID)); err != nil {
 		return fmt.Errorf("failed to delete old identifier: %w", err)
 	}
 
@@ -917,7 +909,7 @@ func (u *userUseCase) DeleteIdentifier(
 	}
 
 	// 2. Get all user identities
-	identities, err := u.userIdentityRepo.ListByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
+	identities, err := u.userIdentityRepo.GetByGlobalUserID(ctx, nil, tenantID.String(), globalUserID)
 	if err != nil {
 		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to get user identifiers")
 	}
@@ -929,7 +921,7 @@ func (u *userUseCase) DeleteIdentifier(
 	}
 	for _, id := range identities {
 		if id.Type == identifierType {
-			identifierToDelete = id
+			identifierToDelete = &id
 			break
 		}
 	}
@@ -1010,7 +1002,7 @@ func (u *userUseCase) ChangeIdentifier(
 	}
 
 	// 4. Check user's current identifiers
-	identities, err := u.userIdentityRepo.ListByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
+	identities, err := u.userIdentityRepo.GetByGlobalUserID(ctx, nil, tenantID.String(), globalUserID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identities")
 	}
@@ -1023,11 +1015,11 @@ func (u *userUseCase) ChangeIdentifier(
 	// If user has multiple identifiers, use the one with the same type
 	var identity *domain.UserIdentity
 	if len(identities) == 1 {
-		identity = identities[0]
+		identity = &identities[0]
 	} else {
 		for _, id := range identities {
 			if id.Type == newIdentifierType {
-				identity = id
+				identity = &id
 				break
 			}
 		}
@@ -1072,7 +1064,7 @@ func (u *userUseCase) ChangeIdentifier(
 		IdentifierType: newIdentifierType,
 		Identifier:     newIdentifier,
 		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
-		IdentityID:     identity.ID,
+		IdentityID:     identity.ID, // the identity id of the old identifier to be deleted
 	}
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
