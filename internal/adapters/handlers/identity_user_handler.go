@@ -600,7 +600,7 @@ func (h *userHandler) ChallengeVerification(ctx *gin.Context) {
 	httpresponse.Success(ctx, http.StatusOK, result)
 }
 
-// UpdateLangSelf updates the authenticated user's preferred language (traits.lang).
+// UpdateLang updates the authenticated user's preferred language (traits.lang).
 // @Summary Update my language
 // @Description Update current user's preferred language (traits.lang).
 // @Param X-Tenant-Id header string true "Tenant ID"
@@ -614,7 +614,7 @@ func (h *userHandler) ChallengeVerification(ctx *gin.Context) {
 // @Failure 401 {object} response.ErrorResponse "Unauthorized"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/users/me/update-lang [patch]
-func (h *userHandler) UpdateLangSelf(ctx *gin.Context) {
+func (h *userHandler) UpdateLang(ctx *gin.Context) {
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)

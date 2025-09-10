@@ -123,10 +123,16 @@ func RegisterRoutes(
 		userHandler.DeleteIdentifier,
 	)
 
-	userRouter.POST(
-		"/verification/challenge",
+	userRouter.PATCH(
+		"/me/update-identifier",
 		authMiddleware.RequireAuth(),
-		userHandler.ChallengeVerification,
+		userHandler.ChangeIdentifier,
+	)
+
+	userRouter.POST(
+		"/me/update-lang",
+		authMiddleware.RequireAuth(),
+		userHandler.UpdateLang,
 	)
 
 	// SECTION: Courier (OTP delivery) routes
