@@ -57,6 +57,7 @@ type UserIdentityRepository interface {
 	Update(tx *gorm.DB, identity *domain.UserIdentity) error
 	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
 	ListByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) ([]*domain.UserIdentity, error)
+	ListByTenantAndKratosUserIDWithLang(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) ([]*domain.UserIdentity, string, error)
 	ExistsByTenantGlobalUserIDAndType(ctx context.Context, tenantID, globalUserID, identityType string) (bool, error)
 	Delete(tx *gorm.DB, identityID string) error
 }

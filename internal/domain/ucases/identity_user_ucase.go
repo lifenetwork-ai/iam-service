@@ -748,7 +748,7 @@ func (u *userUseCase) Profile(
 	kratosUserID := session.Identity.Id
 
 	// Get all identities for the user in the tenant
-	identities, qErr := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
+	identities, lang, qErr := u.userIdentityRepo.ListByTenantAndKratosUserIDWithLang(ctx, nil, tenantID.String(), kratosUserID)
 	if qErr != nil {
 		return nil, domainerrors.WrapInternal(qErr, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
 	}
@@ -777,6 +777,7 @@ func (u *userUseCase) Profile(
 	user.GlobalUserID = globalUserID
 	user.Email = emailFromDB
 	user.Phone = phoneFromDB
+	user.Lang = lang
 
 	return &user, nil
 }

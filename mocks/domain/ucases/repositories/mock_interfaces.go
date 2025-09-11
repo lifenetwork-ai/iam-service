@@ -611,6 +611,22 @@ func (mr *MockUserIdentityRepositoryMockRecorder) ListByTenantAndKratosUserID(ct
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByTenantAndKratosUserID", reflect.TypeOf((*MockUserIdentityRepository)(nil).ListByTenantAndKratosUserID), ctx, tx, tenantID, kratosUserID)
 }
 
+// ListByTenantAndKratosUserIDWithLang mocks base method.
+func (m *MockUserIdentityRepository) ListByTenantAndKratosUserIDWithLang(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) ([]*domain.UserIdentity, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByTenantAndKratosUserIDWithLang", ctx, tx, tenantID, kratosUserID)
+	ret0, _ := ret[0].([]*domain.UserIdentity)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListByTenantAndKratosUserIDWithLang indicates an expected call of ListByTenantAndKratosUserIDWithLang.
+func (mr *MockUserIdentityRepositoryMockRecorder) ListByTenantAndKratosUserIDWithLang(ctx, tx, tenantID, kratosUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByTenantAndKratosUserIDWithLang", reflect.TypeOf((*MockUserIdentityRepository)(nil).ListByTenantAndKratosUserIDWithLang), ctx, tx, tenantID, kratosUserID)
+}
+
 // Update mocks base method.
 func (m *MockUserIdentityRepository) Update(tx *gorm.DB, identity *domain.UserIdentity) error {
 	m.ctrl.T.Helper()

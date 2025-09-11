@@ -124,6 +124,66 @@ func (r *userIdentityRepository) ListByTenantAndKratosUserID(
 	return identities, nil
 }
 
+// ListByTenantAndKratosUserIDWithLang returns all identities that share the same
+// global_user_id as (tenant_id, kratos_user_id) and also returns the tenant-level lang.
+// Runs in a single DB round-trip.
+func (r *userIdentityRepository) ListByTenantAndKratosUserIDWithLang(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenantID, kratosUserID string,
+) ([]*domain.UserIdentity, string, error) {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+
+	// Temporary row type to collect ui.* plus mapping.lang
+	type row struct {
+		domain.UserIdentity
+		Lang *string `gorm:"column:lang"`
+	}
+
+	var rows []row
+	err := db.WithContext(ctx).
+		Table("user_identities ui").
+		Select(`
+			ui.id, ui.global_user_id, ui.type, ui.value, ui.created_at, ui.updated_at, ui.tenant_id, ui.kratos_user_id,
+			m.lang
+		`).
+		Joins(`LEFT JOIN user_identifier_mapping m ON m.global_user_id = ui.global_user_id`).
+		Where(`
+			ui.tenant_id = ?
+			AND ui.global_user_id = (
+				SELECT global_user_id
+				FROM user_identities
+				WHERE tenant_id = ? AND kratos_user_id = ?
+				LIMIT 1
+			)
+		`, tenantID, tenantID, kratosUserID).
+		Order("ui.type ASC, ui.created_at ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, "", err
+	}
+	if len(rows) == 0 {
+		return nil, "", gorm.ErrRecordNotFound
+	}
+
+	// Extract lang (same for the whole global_user_id), and build []*domain.UserIdentity
+	lang := ""
+	if rows[0].Lang != nil {
+		lang = *rows[0].Lang
+	}
+
+	identities := make([]*domain.UserIdentity, 0, len(rows))
+	for i := range rows {
+		ri := rows[i].UserIdentity // copy to avoid &loopvar pitfall
+		identities = append(identities, &ri)
+	}
+
+	return identities, lang, nil
+}
+
 // ExistsByTenantGlobalUserIDAndType checks by (tenant_id, global_user_id, type).
 func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 	ctx context.Context,
