@@ -614,6 +614,12 @@ func TestIntegration_Profile_Success(t *testing.T) {
 	}
 	deps.kratosService.EXPECT().WhoAmI(gomock.Any(), tenantID, "token").Return(session, nil)
 	deps.userIdentityRepo.EXPECT().FindGlobalUserIDByIdentity(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "user@example.com").Return("global-user", nil)
+	deps.userIdentityRepo.
+		EXPECT().
+		GetByGlobalUserID(gomock.Any(), nil, tenantID.String(), "global-user").
+		Return([]domain.UserIdentity{
+			{Type: constants.IdentifierEmail.String(), Value: "user@example.com"},
+		}, nil)
 
 	user, derr := ucase.Profile(ctx, tenantID)
 	assert.Nil(t, derr)
