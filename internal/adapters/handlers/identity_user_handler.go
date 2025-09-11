@@ -601,7 +601,7 @@ func (h *userHandler) ChallengeVerification(ctx *gin.Context) {
 }
 
 // UpdateLang updates the authenticated user's preferred language (traits.lang).
-// @Summary Update my language
+// @Summary Update user language
 // @Description Update current user's preferred language (traits.lang).
 // @Param X-Tenant-Id header string true "Tenant ID"
 // @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)

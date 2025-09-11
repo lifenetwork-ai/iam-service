@@ -1341,7 +1341,7 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Update my language
+      summary: Update user language
       tags:
       - users
   /api/v1/users/register:

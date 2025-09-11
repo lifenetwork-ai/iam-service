@@ -4,12 +4,12 @@ import "time"
 
 // IdentityUserDTO represents an User.
 type IdentityUserResponse struct {
-	GlobalUserID string `json:"global_user_id"`
+	GlobalUserID string `json:"global_user_id,omitempty"`
 	ID           string `json:"id"`
 	Seed         string `json:"seed,omitempty"`
 	UserName     string `json:"user_name,omitempty"`
-	Email        string `json:"email"`
-	Phone        string `json:"phone"`
+	Email        string `json:"email,omitempty"`
+	Phone        string `json:"phone,omitempty"`
 	Status       bool   `json:"status,omitempty"`
 	Name         string `json:"name,omitempty"`
 	FirstName    string `json:"first_name,omitempty"`

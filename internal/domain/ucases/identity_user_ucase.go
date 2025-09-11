@@ -238,12 +238,35 @@ func (u *userUseCase) VerifyRegister(
 
 	switch sessionValue.ChallengeType {
 	case constants.ChallengeTypeAddIdentifier:
-		// Handle add identifier challenge
-		inserted, err := u.userIdentityRepo.InsertOnceByTenantUserAndType(
-			ctx, nil, tenantID.String(), sessionValue.GlobalUserID, identifierType, identifier,
-		)
-		if err != nil || !inserted {
-			return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS", "Identifier of this type already added", nil)
+		if txErr := u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			// Insert 2nd identifier
+			inserted, err := u.userIdentityRepo.InsertOnceByTenantUserAndType(
+				ctx, nil, tenantID.String(), sessionValue.GlobalUserID, identifierType, identifier,
+			)
+			if err != nil {
+				return fmt.Errorf("insert identity: %w", err)
+			}
+			if !inserted {
+				return fmt.Errorf("identifier of this type already added")
+			}
+
+			// Create mapping
+			if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
+				GlobalUserID: sessionValue.GlobalUserID,
+				TenantID:     tenant.ID.String(),
+				TenantUserID: newTenantUserID,
+			}); err != nil {
+				return fmt.Errorf("create mapping: %w", err)
+			}
+
+			return nil
+		}); txErr != nil {
+			switch {
+			case strings.Contains(txErr.Error(), "identifier of this type already added"):
+				return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS", "Identifier of this type already added", nil)
+			default:
+				return nil, domainerrors.WrapInternal(txErr, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add identifier")
+			}
 		}
 
 	case constants.ChallengeTypeChangeIdentifier:
@@ -768,9 +791,32 @@ func (u *userUseCase) Profile(
 		return nil, domainerrors.WrapInternal(err, "MSG_LOOKUP_FAILED", "Failed to lookup user ID")
 	}
 
+	// Fetch all user identities by global user ID
+	identities, err := u.userIdentityRepo.GetByGlobalUserID(ctx, nil, tenantID.String(), globalUserID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
+	}
+
+	// Map Email/Phone from DB
+	var emailFromDB, phoneFromDB string
+	for _, id := range identities {
+		switch id.Type {
+		case constants.IdentifierEmail.String():
+			if emailFromDB == "" {
+				emailFromDB = id.Value
+			}
+		case constants.IdentifierPhone.String():
+			if phoneFromDB == "" {
+				phoneFromDB = id.Value
+			}
+		}
+	}
+
 	// Set user id
 	user.ID = session.Identity.Id
 	user.GlobalUserID = globalUserID
+	user.Email = emailFromDB
+	user.Phone = phoneFromDB
 
 	return &user, nil
 }

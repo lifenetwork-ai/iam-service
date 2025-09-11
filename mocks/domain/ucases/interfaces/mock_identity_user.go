@@ -222,6 +222,20 @@ func (mr *MockIdentityUserUseCaseMockRecorder) Register(ctx, tenantID, lang, ema
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockIdentityUserUseCase)(nil).Register), ctx, tenantID, lang, email, phone)
 }
 
+// UpdateLang mocks base method.
+func (m *MockIdentityUserUseCase) UpdateLang(ctx context.Context, tenantID uuid.UUID, tenantUserID, lang string) *errors.DomainError {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateLang", ctx, tenantID, tenantUserID, lang)
+	ret0, _ := ret[0].(*errors.DomainError)
+	return ret0
+}
+
+// UpdateLang indicates an expected call of UpdateLang.
+func (mr *MockIdentityUserUseCaseMockRecorder) UpdateLang(ctx, tenantID, tenantUserID, lang any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLang", reflect.TypeOf((*MockIdentityUserUseCase)(nil).UpdateLang), ctx, tenantID, tenantUserID, lang)
+}
+
 // VerifyIdentifier mocks base method.
 func (m *MockIdentityUserUseCase) VerifyIdentifier(ctx context.Context, tenantID uuid.UUID, flowID, code string) (*types.IdentityVerificationResponse, *errors.DomainError) {
 	m.ctrl.T.Helper()

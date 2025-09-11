@@ -1404,7 +1404,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Update my language",
+                "summary": "Update user language",
                 "parameters": [
                     {
                         "type": "string",
