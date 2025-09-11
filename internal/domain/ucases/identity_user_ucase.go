@@ -777,7 +777,9 @@ func (u *userUseCase) Profile(
 	user.GlobalUserID = globalUserID
 	user.Email = emailFromDB
 	user.Phone = phoneFromDB
-	user.Lang = lang
+	if user.Lang == "" {
+		user.Lang = lang
+	}
 
 	return &user, nil
 }

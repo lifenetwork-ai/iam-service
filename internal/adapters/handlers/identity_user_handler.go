@@ -392,7 +392,7 @@ func validateRegisterPayload(reqPayload dto.IdentityUserRegisterDTO) *dto.ErrorD
 // @Accept json
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
-// @Param Authorization header string true "Bearer Token (Bearer ory...)"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Param body body dto.IdentityUserAddIdentifierDTO true "Identifier info"
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent for verification"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -442,7 +442,7 @@ func (h *userHandler) AddIdentifier(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
-// @Param Authorization header string true "Bearer Token (Bearer ory...)"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Param body body dto.IdentityUserChangeIdentifierDTO true "Identifier info"
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent for verification"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -485,7 +485,7 @@ func (h *userHandler) ChangeIdentifier(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
-// @Param Authorization header string true "Bearer Token (Bearer ory...)"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Param body body dto.IdentityUserDeleteIdentifierDTO true "Identifier info"
 // @Success 200 {object} response.SuccessResponse{data=map[string]string} "Identifier deleted successfully"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
