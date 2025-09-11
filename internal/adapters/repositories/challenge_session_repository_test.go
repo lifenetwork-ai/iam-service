@@ -42,17 +42,17 @@ func TestChallengeSessionRepository(t *testing.T) {
 		var retrieved *domain.ChallengeSession
 		err = mockCache.RetrieveItem(sessionKey(sessionID), &retrieved)
 		require.NoError(t, err)
-		assert.Equal(t, challenge.IdentifierType, retrieved.IdentifierType)
-		assert.Equal(t, challenge.Identifier, retrieved.Identifier)
-		assert.Equal(t, challenge.OTP, retrieved.OTP)
+		require.Equal(t, challenge.IdentifierType, retrieved.IdentifierType)
+		require.Equal(t, challenge.Identifier, retrieved.Identifier)
+		require.Equal(t, challenge.OTP, retrieved.OTP)
 
 		// Test GetChallenge
 		retrievedChallenge, err := repo.GetChallenge(ctx, sessionID)
 		require.NoError(t, err)
 		assert.NotNil(t, retrievedChallenge)
-		assert.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
-		assert.Equal(t, challenge.Identifier, retrievedChallenge.Identifier)
-		assert.Equal(t, challenge.OTP, retrievedChallenge.OTP)
+		require.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
+		require.Equal(t, challenge.Identifier, retrievedChallenge.Identifier)
+		require.Equal(t, challenge.OTP, retrievedChallenge.OTP)
 	})
 
 	t.Run("GetChallenge - Not Found", func(t *testing.T) {
@@ -80,17 +80,17 @@ func TestChallengeSessionRepository(t *testing.T) {
 		var retrieved *domain.ChallengeSession
 		err = mockCache.RetrieveItem(sessionKey(sessionID), &retrieved)
 		require.NoError(t, err)
-		assert.Equal(t, challenge.IdentifierType, retrieved.IdentifierType)
-		assert.Equal(t, challenge.Identifier, retrieved.Identifier)
-		assert.Equal(t, challenge.OTP, retrieved.OTP)
+		require.Equal(t, challenge.IdentifierType, retrieved.IdentifierType)
+		require.Equal(t, challenge.Identifier, retrieved.Identifier)
+		require.Equal(t, challenge.OTP, retrieved.OTP)
 
 		// Test GetChallenge
 		retrievedChallenge, err := repo.GetChallenge(ctx, sessionID)
 		require.NoError(t, err)
 		assert.NotNil(t, retrievedChallenge)
-		assert.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
-		assert.Equal(t, challenge.Identifier, retrievedChallenge.Identifier)
-		assert.Equal(t, challenge.OTP, retrievedChallenge.OTP)
+		require.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
+		require.Equal(t, challenge.Identifier, retrievedChallenge.Identifier)
+		require.Equal(t, challenge.OTP, retrievedChallenge.OTP)
 	})
 
 	t.Run("RemoveChallenge", func(t *testing.T) {
