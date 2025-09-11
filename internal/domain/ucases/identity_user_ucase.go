@@ -337,7 +337,7 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 		}
 
 		if globalIdentifierMapping == nil {
-			if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
+			if err := u.userIdentifierMappingRepo.Create(ctx, tx, &domain.UserIdentifierMapping{
 				GlobalUserID: globalUserID,
 				Lang:         tenant.ID.String(),
 			}); err != nil {
@@ -427,7 +427,7 @@ func (u *userUseCase) bindIAMToRegistration(
 	}
 
 	// Create mapping
-	if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
+	if err := u.userIdentifierMappingRepo.Create(ctx, tx, &domain.UserIdentifierMapping{
 		GlobalUserID: globalUser.ID,
 		Lang:         lang,
 	}); err != nil {
@@ -1237,15 +1237,17 @@ func (u *userUseCase) VerifyIdentifier(
 	}, nil
 }
 
-// UpdateLang updates the user's preferred language (traits.lang) via Kratos Admin API.
-// It does NOT overwrite other traits.
+// UpdateLang updates lang across all Kratos identities that share the same global_user_id
+// within the given tenant, and then upserts the global mapping lang.
+// All Kratos updates are best-effort: if any fails, the function returns an error
+// and does NOT upsert the mapping to avoid inconsistent state.
 func (u *userUseCase) UpdateLang(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	kratosUserID string,
 	lang string,
 ) *domainerrors.DomainError {
-	// 1. Normalize & validate lang
+	// 1. Normalize & validate
 	lang = utils.NormalizeLang(lang)
 	if lang == "" {
 		return domainerrors.NewValidationError("MSG_INVALID_LANG", "Invalid language", nil)
@@ -1259,17 +1261,44 @@ func (u *userUseCase) UpdateLang(
 		return domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
 
-	// 3. Parse identity ID
-	identityID, err := uuid.Parse(kratosUserID)
+	// 3. Resolve peer identities (same global_user_id in this tenant)
+	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if err != nil {
-		return domainerrors.NewValidationError("MSG_INVALID_KRATOS_USER_ID", "Invalid Kratos user id", nil)
+		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
+	}
+	if len(identities) == 0 {
+		return domainerrors.NewNotFoundError("MSG_IDENTITIES_NOT_FOUND", "User identities")
+	}
+	globalUserID := identities[0].GlobalUserID
+
+	// 4. Update traits.lang on ALL related Kratos identities (dedup)
+	seen := make(map[string]struct{}, len(identities))
+	for _, id := range identities {
+		kratosID := strings.TrimSpace(id.KratosUserID)
+		if kratosID == "" {
+			continue
+		}
+		if _, ok := seen[kratosID]; ok {
+			continue
+		}
+		seen[kratosID] = struct{}{}
+
+		kuid, parseErr := uuid.Parse(kratosID)
+		if parseErr != nil {
+			return domainerrors.NewValidationError("MSG_INVALID_KRATOS_USER_ID", "Invalid Kratos user id", nil)
+		}
+		if updErr := u.kratosService.UpdateLangAdmin(ctx, tenantID, kuid, lang); updErr != nil {
+			return domainerrors.WrapInternal(updErr, "MSG_UPDATE_LANG_FAILED", "Failed to update language in Kratos")
+		}
 	}
 
-	// 4. Call Kratos Admin to update traits.lang (read->merge->update inside service)
-	if err := u.kratosService.UpdateLangAdmin(ctx, tenantID, identityID, lang); err != nil {
-		return domainerrors.WrapInternal(err, "MSG_UPDATE_LANG_FAILED", "Failed to update language")
+	// 5. Upsert global mapping lang (one row per global_user_id)
+	if err := u.userIdentifierMappingRepo.Upsert(ctx, u.db, &domain.UserIdentifierMapping{
+		GlobalUserID: globalUserID,
+		Lang:         lang,
+	}); err != nil {
+		return domainerrors.WrapInternal(err, "MSG_UPDATE_MAPPING_FAILED", "Failed to upsert mapping lang")
 	}
 
-	// 5. Success
 	return nil
 }
