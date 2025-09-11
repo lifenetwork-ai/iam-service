@@ -17,6 +17,7 @@ import (
 	mock_types "github.com/lifenetwork-ai/iam-service/mocks/infrastructures/rate_limiter/types"
 	kratos "github.com/ory/kratos-client-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // build isolated usecase with local mocks
@@ -99,8 +100,8 @@ func TestIntegration_ChangeIdentifierThenVerifyRegister_Success(t *testing.T) {
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), data.flowID, gomock.Any(), gomock.Any()).Return(nil)
 
 	changeResp, changeErr := ucase.ChangeIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, data.newIdentifier)
-	assert.Nil(t, changeErr)
-	assert.NotNil(t, changeResp)
+	require.Nil(t, changeErr)
+	require.NotNil(t, changeResp)
 
 	// VerifyRegister expectations
 	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), data.flowID).Return(&domain.ChallengeSession{
@@ -134,9 +135,9 @@ func TestIntegration_ChangeIdentifierThenVerifyRegister_Success(t *testing.T) {
 	deps.challengeSessionRepo.EXPECT().DeleteChallenge(gomock.Any(), data.flowID).Return(nil)
 
 	verifyResp, verifyErr := ucase.VerifyRegister(ctx, data.tenantID, data.flowID, "123456")
-	assert.Nil(t, verifyErr)
-	assert.NotNil(t, verifyResp)
-	assert.Equal(t, newTenantUserID, verifyResp.User.ID)
+	require.Nil(t, verifyErr)
+	require.NotNil(t, verifyResp)
+	require.Equal(t, newTenantUserID, verifyResp.User.ID)
 }
 
 func TestIntegration_ChangeIdentifierThenVerifyRegister_Failure_NoMutations(t *testing.T) {
@@ -174,8 +175,8 @@ func TestIntegration_ChangeIdentifierThenVerifyRegister_Failure_NoMutations(t *t
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), data.flowID, gomock.Any(), gomock.Any()).Return(nil)
 
 	changeResp, changeErr := ucase.ChangeIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, data.newIdentifier)
-	assert.Nil(t, changeErr)
-	assert.NotNil(t, changeResp)
+	require.Nil(t, changeErr)
+	require.NotNil(t, changeResp)
 
 	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), data.flowID).Return(&domain.ChallengeSession{
 		GlobalUserID:   data.globalUserID,
@@ -195,8 +196,8 @@ func TestIntegration_ChangeIdentifierThenVerifyRegister_Failure_NoMutations(t *t
 	deps.challengeSessionRepo.EXPECT().DeleteChallenge(gomock.Any(), data.flowID).Times(0)
 
 	verifyResp, verifyErr := ucase.VerifyRegister(ctx, data.tenantID, data.flowID, "000000")
-	assert.Error(t, verifyErr)
-	assert.Nil(t, verifyResp)
+	require.Error(t, verifyErr)
+	require.Nil(t, verifyResp)
 }
 
 // =========================
@@ -229,7 +230,7 @@ func TestIntegration_BindUpdateIdentifier_UpdateMappingFails_CleanupCalled(t *te
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), regFlow.Id, gomock.Any(), gomock.Any()).Return(nil)
 
 	_, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, oldTenantUserID, "new@example.com")
-	assert.Nil(t, derr)
+	require.Nil(t, derr)
 
 	// verify with mapping update fail to trigger rollbackKratosUpdateIdentifier
 	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), regFlow.Id).Return(&domain.ChallengeSession{
@@ -253,8 +254,8 @@ func TestIntegration_BindUpdateIdentifier_UpdateMappingFails_CleanupCalled(t *te
 	deps.tenantRepo.EXPECT().GetByName(tenant.Name).Return(tenant, nil)
 
 	resp, vErr := ucase.VerifyRegister(ctx, tenantID, regFlow.Id, "000000")
-	assert.NotNil(t, vErr)
-	assert.Nil(t, resp)
+	require.NotNil(t, vErr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_AddIdentifierThenVerifyRegister_Success(t *testing.T) {
@@ -303,8 +304,8 @@ func TestIntegration_AddIdentifierThenVerifyRegister_Success(t *testing.T) {
 		Return(nil)
 
 	addResp, addErr := ucase.AddNewIdentifier(ctx, data.tenantID, data.globalUserID, data.newIdentifier, constants.IdentifierEmail.String())
-	assert.Nil(t, addErr)
-	assert.NotNil(t, addResp)
+	require.Nil(t, addErr)
+	require.NotNil(t, addResp)
 
 	// --- VerifyRegister expectations (AddIdentifier path) ---
 	deps.challengeSessionRepo.EXPECT().
@@ -358,9 +359,9 @@ func TestIntegration_AddIdentifierThenVerifyRegister_Success(t *testing.T) {
 
 	// --- Execute ---
 	verifyResp, verifyErr := ucase.VerifyRegister(ctx, data.tenantID, data.flowID, "654321")
-	assert.Nil(t, verifyErr)
-	assert.NotNil(t, verifyResp)
-	assert.Equal(t, "tenant-user-add", verifyResp.User.ID)
+	require.Nil(t, verifyErr)
+	require.NotNil(t, verifyResp)
+	require.Equal(t, "tenant-user-add", verifyResp.User.ID)
 }
 
 func TestIntegration_DeleteIdentifier_Behavior(t *testing.T) {
@@ -387,7 +388,7 @@ func TestIntegration_DeleteIdentifier_Behavior(t *testing.T) {
 		{ID: "id-email", Type: constants.IdentifierEmail.String()},
 	}, nil)
 	derr := ucase.DeleteIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, constants.IdentifierEmail.String())
-	assert.NotNil(t, derr)
+	require.NotNil(t, derr)
 
 	// Case 2: delete when there are two identifiers
 	deps.userIdentityRepo.EXPECT().ListByTenantAndTenantUserID(gomock.Any(), gomock.Any(), data.tenantID.String(), data.tenantUserID).Return([]*domain.UserIdentity{
@@ -397,7 +398,7 @@ func TestIntegration_DeleteIdentifier_Behavior(t *testing.T) {
 	deps.userIdentityRepo.EXPECT().Delete(gomock.Any(), "id-email").Return(nil)
 	deps.kratosService.EXPECT().DeleteIdentifierAdmin(gomock.Any(), data.tenantID, gomock.Any()).Return(nil)
 	derr = ucase.DeleteIdentifier(ctx, data.globalUserID, data.tenantID, data.tenantUserID, constants.IdentifierEmail.String())
-	assert.Nil(t, derr)
+	require.Nil(t, derr)
 }
 
 func TestIntegration_RegisterThenVerifyRegister_Success(t *testing.T) {
@@ -433,10 +434,10 @@ func TestIntegration_RegisterThenVerifyRegister_Success(t *testing.T) {
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), data.flowID, gomock.Any(), gomock.Any()).Return(nil)
 
 	regResp, regErr := ucase.Register(ctx, data.tenantID, data.lang, data.email, "")
-	assert.Nil(t, regErr)
-	assert.NotNil(t, regResp)
-	assert.True(t, regResp.VerificationNeeded)
-	assert.Equal(t, data.flowID, regResp.VerificationFlow.FlowID)
+	require.Nil(t, regErr)
+	require.NotNil(t, regResp)
+	require.True(t, regResp.VerificationNeeded)
+	require.Equal(t, data.flowID, regResp.VerificationFlow.FlowID)
 
 	// VerifyRegister expectations for default register path
 	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), data.flowID).Return(&domain.ChallengeSession{
@@ -467,9 +468,9 @@ func TestIntegration_RegisterThenVerifyRegister_Success(t *testing.T) {
 	deps.challengeSessionRepo.EXPECT().DeleteChallenge(gomock.Any(), data.flowID).Return(nil)
 
 	verifyResp, verifyErr := ucase.VerifyRegister(ctx, data.tenantID, data.flowID, "112233")
-	assert.Nil(t, verifyErr)
-	assert.NotNil(t, verifyResp)
-	assert.Equal(t, "tenant-user-reg", verifyResp.User.ID)
+	require.Nil(t, verifyErr)
+	require.NotNil(t, verifyResp)
+	require.Equal(t, "tenant-user-reg", verifyResp.User.ID)
 }
 
 // =========================
@@ -499,9 +500,9 @@ func TestIntegration_ChallengeWithPhone_Success(t *testing.T) {
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
 
 	resp, derr := ucase.ChallengeWithPhone(ctx, tenantID, inputPhone)
-	assert.Nil(t, derr)
-	assert.NotNil(t, resp)
-	assert.Equal(t, flow.Id, resp.FlowID)
+	require.Nil(t, derr)
+	require.NotNil(t, resp)
+	require.Equal(t, flow.Id, resp.FlowID)
 }
 
 func TestIntegration_ChallengeWithEmail_Success(t *testing.T) {
@@ -525,9 +526,9 @@ func TestIntegration_ChallengeWithEmail_Success(t *testing.T) {
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
 
 	resp, derr := ucase.ChallengeWithEmail(ctx, tenantID, email)
-	assert.Nil(t, derr)
-	assert.NotNil(t, resp)
-	assert.Equal(t, flow.Id, resp.FlowID)
+	require.Nil(t, derr)
+	require.NotNil(t, resp)
+	require.Equal(t, flow.Id, resp.FlowID)
 }
 
 func TestIntegration_ChallengeWithEmail_RateLimitAndSubmitError(t *testing.T) {
@@ -543,8 +544,8 @@ func TestIntegration_ChallengeWithEmail_RateLimitAndSubmitError(t *testing.T) {
 	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	resp, derr := ucase.ChallengeWithEmail(context.Background(), tenantID, "user@example.com")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 
 	// Submit error
 	flow := &kratos.LoginFlow{Id: "flow-login-email-err"}
@@ -552,8 +553,8 @@ func TestIntegration_ChallengeWithEmail_RateLimitAndSubmitError(t *testing.T) {
 	deps.kratosService.EXPECT().InitializeLoginFlow(gomock.Any(), tenantID).Return(flow, nil)
 	deps.kratosService.EXPECT().SubmitLoginFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any(), gomock.Nil(), gomock.Nil()).Return(nil, assert.AnError)
 	resp, derr = ucase.ChallengeWithEmail(context.Background(), tenantID, "user@example.com")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_VerifyLogin_Success(t *testing.T) {
@@ -593,9 +594,9 @@ func TestIntegration_VerifyLogin_Success(t *testing.T) {
 	deps.challengeSessionRepo.EXPECT().DeleteChallenge(gomock.Any(), flowID).Return(nil)
 
 	resp, derr := ucase.VerifyLogin(ctx, tenantID, flowID, "123456")
-	assert.Nil(t, derr)
-	assert.NotNil(t, resp)
-	assert.Equal(t, "tenant-user-login", resp.User.ID)
+	require.Nil(t, derr)
+	require.NotNil(t, resp)
+	require.Equal(t, "tenant-user-login", resp.User.ID)
 }
 
 func TestIntegration_Logout_Success(t *testing.T) {
@@ -610,7 +611,7 @@ func TestIntegration_Logout_Success(t *testing.T) {
 	deps.kratosService.EXPECT().Logout(gomock.Any(), tenantID, "access-token").Return(nil)
 
 	derr := ucase.Logout(ctx, tenantID)
-	assert.Nil(t, derr)
+	require.Nil(t, derr)
 }
 
 func TestIntegration_RefreshToken_Success(t *testing.T) {
@@ -632,9 +633,9 @@ func TestIntegration_RefreshToken_Success(t *testing.T) {
 	deps.kratosService.EXPECT().GetSession(gomock.Any(), tenantID, "access-token").Return(session, nil)
 
 	resp, derr := ucase.RefreshToken(context.Background(), tenantID, "access-token", "refresh-token")
-	assert.Nil(t, derr)
-	assert.NotNil(t, resp)
-	assert.Equal(t, "tenant-user-refresh", resp.User.ID)
+	require.Nil(t, derr)
+	require.NotNil(t, resp)
+	require.Equal(t, "tenant-user-refresh", resp.User.ID)
 }
 
 func TestIntegration_Profile_Success(t *testing.T) {
@@ -660,10 +661,10 @@ func TestIntegration_Profile_Success(t *testing.T) {
 		}, nil)
 
 	user, derr := ucase.Profile(ctx, tenantID)
-	assert.Nil(t, derr)
-	assert.NotNil(t, user)
-	assert.Equal(t, "tenant-user-profile", user.ID)
-	assert.Equal(t, "global-user", user.GlobalUserID)
+	require.Nil(t, derr)
+	require.NotNil(t, user)
+	require.Equal(t, "tenant-user-profile", user.ID)
+	require.Equal(t, "global-user", user.GlobalUserID)
 }
 
 func TestIntegration_Login_Success(t *testing.T) {
@@ -695,9 +696,9 @@ func TestIntegration_Login_Success(t *testing.T) {
 	deps.kratosService.EXPECT().SubmitLoginFlow(gomock.Any(), tenantID, flow, gomock.Eq("password"), gomock.Any(), gomock.Any(), gomock.Nil()).Return(loginResult, nil)
 
 	resp, derr := ucase.Login(context.Background(), tenantID, username, password)
-	assert.Nil(t, derr)
-	assert.NotNil(t, resp)
-	assert.Equal(t, "tenant-user-login-pw", resp.User.ID)
+	require.Nil(t, derr)
+	require.NotNil(t, resp)
+	require.Equal(t, "tenant-user-login-pw", resp.User.ID)
 }
 
 // =========================
@@ -713,9 +714,9 @@ func TestIntegration_CheckIdentifier_Email_Success(t *testing.T) {
 	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "user@example.com").Return(true, nil)
 
 	ok, idType, derr := ucase.CheckIdentifier(context.Background(), tenantID, "user@example.com")
-	assert.Nil(t, derr)
-	assert.True(t, ok)
-	assert.Equal(t, constants.IdentifierEmail.String(), idType)
+	require.Nil(t, derr)
+	require.True(t, ok)
+	require.Equal(t, constants.IdentifierEmail.String(), idType)
 }
 
 func TestIntegration_CheckIdentifier_Phone_Success(t *testing.T) {
@@ -729,9 +730,9 @@ func TestIntegration_CheckIdentifier_Phone_Success(t *testing.T) {
 	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierPhone.String(), "+862025550123").Return(false, nil)
 
 	ok, idType, derr := ucase.CheckIdentifier(context.Background(), tenantID, "+862025550123")
-	assert.Nil(t, derr)
-	assert.False(t, ok)
-	assert.Equal(t, constants.IdentifierPhone.String(), idType)
+	require.Nil(t, derr)
+	require.False(t, ok)
+	require.Equal(t, constants.IdentifierPhone.String(), idType)
 }
 
 func TestIntegration_CheckIdentifier_RepoError(t *testing.T) {
@@ -744,9 +745,9 @@ func TestIntegration_CheckIdentifier_RepoError(t *testing.T) {
 	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "user@example.com").Return(false, assert.AnError)
 
 	ok, idType, derr := ucase.CheckIdentifier(context.Background(), tenantID, "user@example.com")
-	assert.NotNil(t, derr)
-	assert.False(t, ok)
-	assert.Equal(t, constants.IdentifierEmail.String(), idType)
+	require.NotNil(t, derr)
+	require.False(t, ok)
+	require.Equal(t, constants.IdentifierEmail.String(), idType)
 }
 
 // =========================
@@ -765,23 +766,23 @@ func TestIntegration_ChangeIdentifier_ValidationFailures(t *testing.T) {
 
 	// invalid types
 	resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "bad")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 
 	// empty identifier
 	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 
 	// invalid email
 	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "not-an-email")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 
 	// invalid phone
 	resp, derr = ucase.ChangeIdentifier(ctx, "g1", tenantID, "t1", "12345")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 // =========================
@@ -802,8 +803,8 @@ func TestIntegration_ChangeIdentifier_ConflictFailures(t *testing.T) {
 		deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "dup@example.com").Return(true, nil)
 		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "dup@example.com")
-		assert.NotNil(t, derr)
-		assert.Nil(t, resp)
+		require.NotNil(t, derr)
+		require.Nil(t, resp)
 	})
 
 	t.Run("no identifiers for user", func(t *testing.T) {
@@ -818,8 +819,8 @@ func TestIntegration_ChangeIdentifier_ConflictFailures(t *testing.T) {
 		deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "new@example.com").Return(false, nil)
 		deps.userIdentityRepo.EXPECT().ListByTenantAndTenantUserID(gomock.Any(), gomock.Any(), tenantID.String(), tenantUserID).Return([]*domain.UserIdentity{}, nil)
 		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "new@example.com")
-		assert.NotNil(t, derr)
-		assert.Nil(t, resp)
+		require.NotNil(t, derr)
+		require.Nil(t, resp)
 	})
 
 	t.Run("cross-type change when multiple identifiers", func(t *testing.T) {
@@ -840,8 +841,8 @@ func TestIntegration_ChangeIdentifier_ConflictFailures(t *testing.T) {
 		deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
 		deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
 		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "another@example.com")
-		assert.Nil(t, derr)
-		assert.NotNil(t, resp)
+		require.Nil(t, derr)
+		require.NotNil(t, resp)
 	})
 
 	t.Run("single identifier different type allows switch", func(t *testing.T) {
@@ -861,8 +862,8 @@ func TestIntegration_ChangeIdentifier_ConflictFailures(t *testing.T) {
 		deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
 		deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
 		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, "brandnew@example.com")
-		assert.Nil(t, derr)
-		assert.NotNil(t, resp)
+		require.Nil(t, derr)
+		require.NotNil(t, resp)
 	})
 
 	// Add the opposite direction: only email exists -> switch to phone
@@ -884,8 +885,8 @@ func TestIntegration_ChangeIdentifier_ConflictFailures(t *testing.T) {
 		deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
 		deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
 		resp, derr := ucase.ChangeIdentifier(ctx, "g1", tenantID, tenantUserID, newPhone)
-		assert.Nil(t, derr)
-		assert.NotNil(t, resp)
+		require.Nil(t, derr)
+		require.NotNil(t, resp)
 	})
 }
 
@@ -903,8 +904,8 @@ func TestIntegration_VerifyRegister_Change_GetChallengeError(t *testing.T) {
 	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), "flow-err").Return(nil, assert.AnError)
 
 	resp, derr := ucase.VerifyRegister(context.Background(), tenantID, "flow-err", "000000")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_VerifyRegister_Change_GetFlowError(t *testing.T) {
@@ -919,8 +920,8 @@ func TestIntegration_VerifyRegister_Change_GetFlowError(t *testing.T) {
 	deps.kratosService.EXPECT().GetRegistrationFlow(gomock.Any(), tenantID, "flow-err2").Return(nil, assert.AnError)
 
 	resp, derr := ucase.VerifyRegister(context.Background(), tenantID, "flow-err2", "000000")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_VerifyRegister_Change_TenantByNameError(t *testing.T) {
@@ -939,8 +940,8 @@ func TestIntegration_VerifyRegister_Change_TenantByNameError(t *testing.T) {
 	deps.tenantRepo.EXPECT().GetByName("tenant-name").Return(nil, assert.AnError)
 
 	resp, derr := ucase.VerifyRegister(context.Background(), tenantID, "flow-err3", "000000")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_ChallengeWithPhone_Negatives(t *testing.T) {
@@ -955,16 +956,16 @@ func TestIntegration_ChallengeWithPhone_Negatives(t *testing.T) {
 	deps.tenantRepo.EXPECT().GetByID(tenantID).Return(&domain.Tenant{ID: tenantID, Name: "tenant"}, nil)
 	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 	resp, derr := ucase.ChallengeWithPhone(context.Background(), tenantID, "+862025550123")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 
 	// Identity not found
 	deps.tenantRepo.EXPECT().GetByID(tenantID).Return(&domain.Tenant{ID: tenantID, Name: "tenant"}, nil)
 	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
 	deps.userIdentityRepo.EXPECT().GetByTypeAndValue(gomock.Any(), gomock.Any(), tenantID.String(), constants.IdentifierPhone.String(), "+862025550123").Return(nil, assert.AnError)
 	resp, derr = ucase.ChallengeWithPhone(context.Background(), tenantID, "+862025550123")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_VerifyRegister_InvalidTraits(t *testing.T) {
@@ -982,8 +983,8 @@ func TestIntegration_VerifyRegister_InvalidTraits(t *testing.T) {
 	verifyResult := &kratos.SuccessfulNativeRegistration{Session: &kratos.Session{Identity: &kratos.Identity{Id: "tu-bad", Traits: "not-a-map"}}, SessionToken: ptr("tok")}
 	deps.kratosService.EXPECT().SubmitRegistrationFlowWithCode(gomock.Any(), tenantID, flow, gomock.Any()).Return(verifyResult, nil)
 	resp, derr := ucase.VerifyRegister(context.Background(), tenantID, flow.Id, "000000")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_Register_Negatives(t *testing.T) {
@@ -998,16 +999,16 @@ func TestIntegration_Register_Negatives(t *testing.T) {
 	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
 	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "user@example.com").Return(true, nil)
 	resp, derr := ucase.Register(context.Background(), tenantID, "en", "user@example.com", "")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 
 	// Init flow error
 	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
 	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), tenantID.String(), constants.IdentifierEmail.String(), "user2@example.com").Return(false, nil)
 	deps.kratosService.EXPECT().InitializeRegistrationFlow(gomock.Any(), tenantID).Return(nil, assert.AnError)
 	resp, derr = ucase.Register(context.Background(), tenantID, "en", "user2@example.com", "")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 
 	// Save challenge error
 	flow := &kratos.RegistrationFlow{Id: "flow-save-err"}
@@ -1018,8 +1019,8 @@ func TestIntegration_Register_Negatives(t *testing.T) {
 	deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(assert.AnError)
 	resp, derr = ucase.Register(context.Background(), tenantID, "en", "user3@example.com", "")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_BindIAMToRegistration_Failures(t *testing.T) {
@@ -1043,8 +1044,8 @@ func TestIntegration_BindIAMToRegistration_Failures(t *testing.T) {
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
 
 	regResp, regErr := ucase.Register(ctx, tenantID, "en", "newuser@example.com", "")
-	assert.Nil(t, regErr)
-	assert.True(t, regResp.VerificationNeeded)
+	require.Nil(t, regErr)
+	require.True(t, regResp.VerificationNeeded)
 
 	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), flow.Id).Return(&domain.ChallengeSession{Identifier: "newuser@example.com", IdentifierType: constants.IdentifierEmail.String(), ChallengeType: constants.ChallengeTypeRegister}, nil)
 	deps.kratosService.EXPECT().GetRegistrationFlow(gomock.Any(), tenantID, flow.Id).Return(flow, nil)
@@ -1057,8 +1058,8 @@ func TestIntegration_BindIAMToRegistration_Failures(t *testing.T) {
 	deps.userIdentityRepo.EXPECT().InsertOnceByTenantUserAndType(gomock.Any(), gomock.Any(), tenantID.String(), gomock.Any(), constants.IdentifierEmail.String(), "newuser@example.com").Return(false, assert.AnError)
 
 	authResp, authErr := ucase.VerifyRegister(ctx, tenantID, flow.Id, "000000")
-	assert.NotNil(t, authErr)
-	assert.Nil(t, authResp)
+	require.NotNil(t, authErr)
+	require.Nil(t, authResp)
 }
 
 func TestIntegration_VerifyRegister_Register_SubmitCodeError(t *testing.T) {
@@ -1074,8 +1075,8 @@ func TestIntegration_VerifyRegister_Register_SubmitCodeError(t *testing.T) {
 	deps.kratosService.EXPECT().GetRegistrationFlow(gomock.Any(), tenantID, flow.Id).Return(flow, nil)
 	deps.kratosService.EXPECT().SubmitRegistrationFlowWithCode(gomock.Any(), tenantID, flow, gomock.Any()).Return(nil, assert.AnError)
 	resp, derr := ucase.VerifyRegister(context.Background(), tenantID, flow.Id, "000000")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_Register_SubmitRegistrationFlow_Error(t *testing.T) {
@@ -1092,8 +1093,8 @@ func TestIntegration_Register_SubmitRegistrationFlow_Error(t *testing.T) {
 	deps.tenantRepo.EXPECT().GetByID(tenantID).Return(&domain.Tenant{ID: tenantID, Name: "tenant-name"}, nil)
 	deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(nil, assert.AnError)
 	resp, derr := ucase.Register(context.Background(), tenantID, "en", "submiterr@example.com", "")
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_ChallengeWithPhone_SubmitError(t *testing.T) {
@@ -1111,8 +1112,8 @@ func TestIntegration_ChallengeWithPhone_SubmitError(t *testing.T) {
 	deps.kratosService.EXPECT().InitializeLoginFlow(gomock.Any(), tenantID).Return(flow, nil)
 	deps.kratosService.EXPECT().SubmitLoginFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any(), gomock.Nil(), gomock.Nil()).Return(nil, assert.AnError)
 	resp, derr := ucase.ChallengeWithPhone(context.Background(), tenantID, phone)
-	assert.NotNil(t, derr)
-	assert.Nil(t, resp)
+	require.NotNil(t, derr)
+	require.Nil(t, resp)
 }
 
 func TestIntegration_BindIAMToRegistration_MappingCreateError(t *testing.T) {
@@ -1134,7 +1135,7 @@ func TestIntegration_BindIAMToRegistration_MappingCreateError(t *testing.T) {
 	deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), tenantID, flow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
 	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), flow.Id, gomock.Any(), gomock.Any()).Return(nil)
 	_, derr := ucase.Register(ctx, tenantID, "en", "merr@example.com", "")
-	assert.Nil(t, derr)
+	require.Nil(t, derr)
 
 	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), flow.Id).Return(&domain.ChallengeSession{Identifier: "merr@example.com", IdentifierType: constants.IdentifierEmail.String(), ChallengeType: constants.ChallengeTypeRegister}, nil)
 	deps.kratosService.EXPECT().GetRegistrationFlow(gomock.Any(), tenantID, flow.Id).Return(flow, nil)
@@ -1146,8 +1147,8 @@ func TestIntegration_BindIAMToRegistration_MappingCreateError(t *testing.T) {
 	deps.userIdentityRepo.EXPECT().InsertOnceByTenantUserAndType(gomock.Any(), gomock.Any(), tenantID.String(), gomock.Any(), constants.IdentifierEmail.String(), "merr@example.com").Return(true, nil)
 	deps.userIdentifierMappingRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(assert.AnError)
 	authResp, authErr := ucase.VerifyRegister(ctx, tenantID, flow.Id, "000000")
-	assert.NotNil(t, authErr)
-	assert.Nil(t, authResp)
+	require.NotNil(t, authErr)
+	require.Nil(t, authResp)
 }
 
 func TestIntegration_Logout_InactiveSession(t *testing.T) {
@@ -1158,7 +1159,7 @@ func TestIntegration_Logout_InactiveSession(t *testing.T) {
 	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	deps.kratosService.EXPECT().GetSession(gomock.Any(), tenantID, "access-token").Return(&kratos.Session{Active: ptr(false)}, nil)
 	derr := ucase.Logout(ctx, tenantID)
-	assert.NotNil(t, derr)
+	require.NotNil(t, derr)
 }
 
 func TestIntegration_Profile_WhoAmI_Error(t *testing.T) {
@@ -1169,6 +1170,6 @@ func TestIntegration_Profile_WhoAmI_Error(t *testing.T) {
 	ctx := context.WithValue(context.Background(), constants.SessionTokenKey, "token")
 	deps.kratosService.EXPECT().WhoAmI(gomock.Any(), tenantID, "token").Return(nil, assert.AnError)
 	user, derr := ucase.Profile(ctx, tenantID)
-	assert.NotNil(t, derr)
-	assert.Nil(t, user)
+	require.NotNil(t, derr)
+	require.Nil(t, user)
 }
