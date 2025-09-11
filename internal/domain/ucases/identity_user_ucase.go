@@ -791,9 +791,32 @@ func (u *userUseCase) Profile(
 		return nil, domainerrors.WrapInternal(err, "MSG_LOOKUP_FAILED", "Failed to lookup user ID")
 	}
 
+	// Fetch all user identities by global user ID
+	identities, err := u.userIdentityRepo.GetByGlobalUserID(ctx, nil, tenantID.String(), globalUserID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
+	}
+
+	// Map Email/Phone from DB
+	var emailFromDB, phoneFromDB string
+	for _, id := range identities {
+		switch id.Type {
+		case constants.IdentifierEmail.String():
+			if emailFromDB == "" {
+				emailFromDB = id.Value
+			}
+		case constants.IdentifierPhone.String():
+			if phoneFromDB == "" {
+				phoneFromDB = id.Value
+			}
+		}
+	}
+
 	// Set user id
 	user.ID = session.Identity.Id
 	user.GlobalUserID = globalUserID
+	user.Email = emailFromDB
+	user.Phone = phoneFromDB
 
 	return &user, nil
 }
