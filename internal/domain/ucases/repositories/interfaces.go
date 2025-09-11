@@ -45,10 +45,12 @@ type UserIdentityChangeLogRepository interface {
 }
 
 type UserIdentifierMappingRepository interface {
+	GetByGlobalUserID(ctx context.Context, globalUserID string) (*domain.UserIdentifierMapping, error)
 	ExistsByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) (bool, error)
 	ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error)
-	Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
 	GetByTenantIDAndKratosUserID(ctx context.Context, tenantID, kratosUserID string) (*domain.UserIdentifierMapping, error)
+	Create(ctx context.Context, tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
+	Upsert(ctx context.Context, tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
 }
 
 type UserIdentityRepository interface {
@@ -57,7 +59,6 @@ type UserIdentityRepository interface {
 	Update(tx *gorm.DB, identity *domain.UserIdentity) error
 	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
 	ListByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) ([]*domain.UserIdentity, error)
-	ListByTenantAndKratosUserIDWithLang(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) ([]*domain.UserIdentity, string, error)
 	ExistsByTenantGlobalUserIDAndType(ctx context.Context, tenantID, globalUserID, identityType string) (bool, error)
 	Delete(tx *gorm.DB, identityID string) error
 }

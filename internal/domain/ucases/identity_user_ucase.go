@@ -286,7 +286,7 @@ func (u *userUseCase) VerifyRegister(
 		ExpiresAt:       registrationResult.Session.ExpiresAt,
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       newKratosUserID,
 			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
@@ -337,7 +337,7 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 		}
 
 		if globalIdentifierMapping == nil {
-			if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
+			if err := u.userIdentifierMappingRepo.Create(ctx, tx, &domain.UserIdentifierMapping{
 				GlobalUserID: globalUserID,
 				Lang:         tenant.ID.String(),
 			}); err != nil {
@@ -427,7 +427,7 @@ func (u *userUseCase) bindIAMToRegistration(
 	}
 
 	// Create mapping
-	if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
+	if err := u.userIdentifierMappingRepo.Create(ctx, tx, &domain.UserIdentifierMapping{
 		GlobalUserID: globalUser.ID,
 		Lang:         lang,
 	}); err != nil {
@@ -489,7 +489,7 @@ func (u *userUseCase) VerifyLogin(
 		ExpiresAt:       loginResult.Session.ExpiresAt,
 		IssuedAt:        loginResult.Session.IssuedAt,
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       loginResult.Session.Identity.Id,
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
@@ -641,7 +641,7 @@ func (u *userUseCase) Login(
 		ExpiresAt:       loginResult.Session.ExpiresAt,
 		IssuedAt:        loginResult.Session.IssuedAt,
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       loginResult.Session.Identity.Id,
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
@@ -708,7 +708,7 @@ func (u *userUseCase) RefreshToken(
 		ExpiresAt:       session.ExpiresAt,
 		IssuedAt:        session.IssuedAt,
 		AuthenticatedAt: session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       session.Identity.Id,
 			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
@@ -748,7 +748,7 @@ func (u *userUseCase) Profile(
 	kratosUserID := session.Identity.Id
 
 	// Get all identities for the user in the tenant
-	identities, lang, qErr := u.userIdentityRepo.ListByTenantAndKratosUserIDWithLang(ctx, nil, tenantID.String(), kratosUserID)
+	identities, qErr := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if qErr != nil {
 		return nil, domainerrors.WrapInternal(qErr, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
 	}
@@ -777,7 +777,6 @@ func (u *userUseCase) Profile(
 	user.GlobalUserID = globalUserID
 	user.Email = emailFromDB
 	user.Phone = phoneFromDB
-	user.Lang = lang
 
 	return &user, nil
 }
@@ -850,6 +849,13 @@ func (u *userUseCase) AddNewIdentifier(
 		"tenant": tenant.Name,
 	}
 	traits[identifierType] = identifier
+
+	// Try to fetch lang from mapping (if available)
+	if mapping, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, globalUserID); err == nil && mapping != nil {
+		if lang := strings.TrimSpace(mapping.Lang); lang != "" {
+			traits["lang"] = lang
+		}
+	}
 
 	// 6. Submit minimal traits to trigger OTP (email or phone)
 	if _, err := u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits); err != nil {
@@ -1231,15 +1237,17 @@ func (u *userUseCase) VerifyIdentifier(
 	}, nil
 }
 
-// UpdateLang updates the user's preferred language (traits.lang) via Kratos Admin API.
-// It does NOT overwrite other traits.
+// UpdateLang updates lang across all Kratos identities that share the same global_user_id
+// within the given tenant, and then upserts the global mapping lang.
+// All Kratos updates are best-effort: if any fails, the function returns an error
+// and does NOT upsert the mapping to avoid inconsistent state.
 func (u *userUseCase) UpdateLang(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	kratosUserID string,
 	lang string,
 ) *domainerrors.DomainError {
-	// 1. Normalize & validate lang
+	// 1. Normalize & validate
 	lang = utils.NormalizeLang(lang)
 	if lang == "" {
 		return domainerrors.NewValidationError("MSG_INVALID_LANG", "Invalid language", nil)
@@ -1253,17 +1261,40 @@ func (u *userUseCase) UpdateLang(
 		return domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
 
-	// 3. Parse identity ID
-	identityID, err := uuid.Parse(kratosUserID)
+	// 3. Resolve peer identities (same global_user_id in this tenant)
+	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if err != nil {
-		return domainerrors.NewValidationError("MSG_INVALID_KRATOS_USER_ID", "Invalid Kratos user id", nil)
+		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
+	}
+	if len(identities) == 0 {
+		return domainerrors.NewNotFoundError("MSG_IDENTITIES_NOT_FOUND", "User identities")
+	}
+	globalUserID := identities[0].GlobalUserID
+
+	// 4. Update traits.lang on ALL related Kratos identities
+	for _, id := range identities {
+		kratosID := strings.TrimSpace(id.KratosUserID)
+		if kratosID == "" {
+			continue
+		}
+
+		kuid, parseErr := uuid.Parse(kratosID)
+		if parseErr != nil {
+			return domainerrors.NewValidationError("MSG_INVALID_KRATOS_USER_ID", "Invalid Kratos user id", nil)
+		}
+
+		if updErr := u.kratosService.UpdateLangAdmin(ctx, tenantID, kuid, lang); updErr != nil {
+			return domainerrors.WrapInternal(updErr, "MSG_UPDATE_LANG_FAILED", "Failed to update language in Kratos")
+		}
 	}
 
-	// 4. Call Kratos Admin to update traits.lang (read->merge->update inside service)
-	if err := u.kratosService.UpdateLangAdmin(ctx, tenantID, identityID, lang); err != nil {
-		return domainerrors.WrapInternal(err, "MSG_UPDATE_LANG_FAILED", "Failed to update language")
+	// 5. Upsert global mapping lang (one row per global_user_id)
+	if err := u.userIdentifierMappingRepo.Upsert(ctx, u.db, &domain.UserIdentifierMapping{
+		GlobalUserID: globalUserID,
+		Lang:         lang,
+	}); err != nil {
+		return domainerrors.WrapInternal(err, "MSG_UPDATE_MAPPING_FAILED", "Failed to upsert mapping lang")
 	}
 
-	// 5. Success
 	return nil
 }

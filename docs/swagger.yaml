@@ -1142,7 +1142,8 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: Bearer Token (Bearer ory...)
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
         in: header
         name: Authorization
         required: true
@@ -1195,7 +1196,8 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: Bearer Token (Bearer ory...)
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
         in: header
         name: Authorization
         required: true
@@ -1250,7 +1252,8 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: Bearer Token (Bearer ory...)
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
         in: header
         name: Authorization
         required: true
