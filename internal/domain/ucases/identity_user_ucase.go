@@ -748,7 +748,7 @@ func (u *userUseCase) Profile(
 	kratosUserID := session.Identity.Id
 
 	// Get all identities for the user in the tenant
-	identities, lang, qErr := u.userIdentityRepo.ListByTenantAndKratosUserIDWithLang(ctx, nil, tenantID.String(), kratosUserID)
+	identities, qErr := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if qErr != nil {
 		return nil, domainerrors.WrapInternal(qErr, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
 	}
@@ -777,9 +777,6 @@ func (u *userUseCase) Profile(
 	user.GlobalUserID = globalUserID
 	user.Email = emailFromDB
 	user.Phone = phoneFromDB
-	if user.Lang == "" {
-		user.Lang = lang
-	}
 
 	return &user, nil
 }
@@ -852,6 +849,13 @@ func (u *userUseCase) AddNewIdentifier(
 		"tenant": tenant.Name,
 	}
 	traits[identifierType] = identifier
+
+	// Try to fetch lang from mapping (if available)
+	if mapping, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, globalUserID); err == nil && mapping != nil {
+		if lang := strings.TrimSpace(mapping.Lang); lang != "" {
+			traits["lang"] = lang
+		}
+	}
 
 	// 6. Submit minimal traits to trigger OTP (email or phone)
 	if _, err := u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits); err != nil {

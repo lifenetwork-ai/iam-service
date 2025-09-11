@@ -17,6 +17,19 @@ func NewUserIdentifierMappingRepository(db *gorm.DB) domainrepo.UserIdentifierMa
 	return &userIdentifierMappingRepository{db: db}
 }
 
+func (r *userIdentifierMappingRepository) GetByGlobalUserID(
+	ctx context.Context,
+	globalUserID string,
+) (*domain.UserIdentifierMapping, error) {
+	var mapping domain.UserIdentifierMapping
+	if err := r.db.WithContext(ctx).
+		Where("global_user_id = ?", globalUserID).
+		First(&mapping).Error; err != nil {
+		return nil, err
+	}
+	return &mapping, nil
+}
+
 func (r *userIdentifierMappingRepository) ExistsByTenantAndKratosUserID(
 	ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string,
 ) (bool, error) {
