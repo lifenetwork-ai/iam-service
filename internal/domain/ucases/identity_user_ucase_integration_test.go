@@ -281,44 +281,82 @@ func TestIntegration_AddIdentifierThenVerifyRegister_Success(t *testing.T) {
 		newIdentifier: "addemail@example.com",
 	}
 
-	// AddNewIdentifier expectations
-	deps.userIdentityRepo.EXPECT().ExistsWithinTenant(gomock.Any(), data.tenantID.String(), constants.IdentifierEmail.String(), data.newIdentifier).Return(false, nil)
-	deps.userIdentityRepo.EXPECT().ExistsByTenantGlobalUserIDAndType(gomock.Any(), data.tenantID.String(), data.globalUserID, constants.IdentifierEmail.String()).Return(false, nil)
+	// --- AddNewIdentifier expectations ---
+	deps.userIdentityRepo.EXPECT().
+		ExistsWithinTenant(gomock.Any(), data.tenantID.String(), constants.IdentifierEmail.String(), data.newIdentifier).
+		Return(false, nil)
+	deps.userIdentityRepo.EXPECT().
+		ExistsByTenantGlobalUserIDAndType(gomock.Any(), data.tenantID.String(), data.globalUserID, constants.IdentifierEmail.String()).
+		Return(false, nil)
 	regFlow := &kratos.RegistrationFlow{Id: data.flowID}
-	deps.kratosService.EXPECT().InitializeRegistrationFlow(gomock.Any(), data.tenantID).Return(regFlow, nil)
-	deps.tenantRepo.EXPECT().GetByID(data.tenantID).Return(&domain.Tenant{ID: data.tenantID, Name: "tenant-name"}, nil)
-	deps.kratosService.EXPECT().SubmitRegistrationFlow(gomock.Any(), data.tenantID, regFlow, gomock.Eq("code"), gomock.Any()).Return(&kratos.SuccessfulNativeRegistration{}, nil)
-	deps.challengeSessionRepo.EXPECT().SaveChallenge(gomock.Any(), data.flowID, gomock.Any(), gomock.Any()).Return(nil)
+	deps.kratosService.EXPECT().
+		InitializeRegistrationFlow(gomock.Any(), data.tenantID).
+		Return(regFlow, nil)
+	deps.tenantRepo.EXPECT().
+		GetByID(data.tenantID).
+		Return(&domain.Tenant{ID: data.tenantID, Name: "tenant-name"}, nil)
+	deps.kratosService.EXPECT().
+		SubmitRegistrationFlow(gomock.Any(), data.tenantID, regFlow, gomock.Eq("code"), gomock.Any()).
+		Return(&kratos.SuccessfulNativeRegistration{}, nil)
+	deps.challengeSessionRepo.EXPECT().
+		SaveChallenge(gomock.Any(), data.flowID, gomock.Any(), gomock.Any()).
+		Return(nil)
 
 	addResp, addErr := ucase.AddNewIdentifier(ctx, data.tenantID, data.globalUserID, data.newIdentifier, constants.IdentifierEmail.String())
 	assert.Nil(t, addErr)
 	assert.NotNil(t, addResp)
 
-	// VerifyRegister expectations for AddIdentifier path
-	deps.challengeSessionRepo.EXPECT().GetChallenge(gomock.Any(), data.flowID).Return(&domain.ChallengeSession{
-		GlobalUserID:   data.globalUserID,
-		Identifier:     data.newIdentifier,
-		IdentifierType: constants.IdentifierEmail.String(),
-		ChallengeType:  constants.ChallengeTypeAddIdentifier,
-	}, nil)
-	deps.kratosService.EXPECT().GetRegistrationFlow(gomock.Any(), data.tenantID, data.flowID).Return(regFlow, nil)
+	// --- VerifyRegister expectations (AddIdentifier path) ---
+	deps.challengeSessionRepo.EXPECT().
+		GetChallenge(gomock.Any(), data.flowID).
+		Return(&domain.ChallengeSession{
+			GlobalUserID:   data.globalUserID,
+			Identifier:     data.newIdentifier,
+			IdentifierType: constants.IdentifierEmail.String(),
+			ChallengeType:  constants.ChallengeTypeAddIdentifier,
+		}, nil)
+
+	deps.kratosService.EXPECT().
+		GetRegistrationFlow(gomock.Any(), data.tenantID, data.flowID).
+		Return(regFlow, nil)
+
 	verifyResult := &kratos.SuccessfulNativeRegistration{
 		Session: &kratos.Session{
-			Id:                    "session-id-add",
-			Active:                ptr(true),
-			ExpiresAt:             ptr(time.Now().Add(30 * time.Minute)),
-			IssuedAt:              ptr(time.Now()),
-			AuthenticatedAt:       ptr(time.Now()),
-			Identity:              &kratos.Identity{Id: "tenant-user-add", Traits: map[string]interface{}{"tenant": "tenant-name", string(constants.IdentifierEmail): data.newIdentifier}},
+			Id:              "session-id-add",
+			Active:          ptr(true),
+			ExpiresAt:       ptr(time.Now().Add(30 * time.Minute)),
+			IssuedAt:        ptr(time.Now()),
+			AuthenticatedAt: ptr(time.Now()),
+			Identity: &kratos.Identity{
+				Id:     "tenant-user-add",
+				Traits: map[string]interface{}{"tenant": "tenant-name", string(constants.IdentifierEmail): data.newIdentifier},
+			},
 			AuthenticationMethods: []kratos.SessionAuthenticationMethod{{Method: ptr("code")}},
 		},
 		SessionToken: ptr("token-add"),
 	}
-	deps.kratosService.EXPECT().SubmitRegistrationFlowWithCode(gomock.Any(), data.tenantID, regFlow, gomock.Any()).Return(verifyResult, nil)
-	deps.tenantRepo.EXPECT().GetByName("tenant-name").Return(&domain.Tenant{ID: data.tenantID, Name: "tenant-name"}, nil)
-	deps.userIdentityRepo.EXPECT().InsertOnceByTenantUserAndType(gomock.Any(), gomock.Any(), data.tenantID.String(), data.globalUserID, constants.IdentifierEmail.String(), data.newIdentifier).Return(true, nil)
-	deps.challengeSessionRepo.EXPECT().DeleteChallenge(gomock.Any(), data.flowID).Return(nil)
+	deps.kratosService.EXPECT().
+		SubmitRegistrationFlowWithCode(gomock.Any(), data.tenantID, regFlow, gomock.Any()).
+		Return(verifyResult, nil)
 
+	deps.tenantRepo.EXPECT().
+		GetByName("tenant-name").
+		Return(&domain.Tenant{ID: data.tenantID, Name: "tenant-name"}, nil)
+
+	deps.userIdentityRepo.EXPECT().
+		InsertOnceByTenantUserAndType(gomock.Any(), gomock.Any(), data.tenantID.String(), data.globalUserID, constants.IdentifierEmail.String(), data.newIdentifier).
+		Return(true, nil)
+
+	// 🔧 BỔ SUNG: expect Create(mapping) trong TX (dùng Any cho tx và mapping)
+	deps.userIdentifierMappingRepo.EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	deps.challengeSessionRepo.EXPECT().
+		DeleteChallenge(gomock.Any(), data.flowID).
+		Return(nil)
+
+	// --- Execute ---
 	verifyResp, verifyErr := ucase.VerifyRegister(ctx, data.tenantID, data.flowID, "654321")
 	assert.Nil(t, verifyErr)
 	assert.NotNil(t, verifyResp)
