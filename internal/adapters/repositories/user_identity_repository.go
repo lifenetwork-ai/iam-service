@@ -109,7 +109,6 @@ func (r *userIdentityRepository) ListByTenantAndKratosUserID(
 
 	if err := db.WithContext(ctx).
 		Where("tenant_id = ? AND kratos_user_id = ?", tenantID, kratosUserID).
-		Order("type ASC, created_at ASC").
 		Find(&identities).Error; err != nil {
 		return nil, err
 	}
