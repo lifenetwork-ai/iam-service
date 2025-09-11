@@ -566,36 +566,6 @@ func (mr *MockUserIdentityRepositoryMockRecorder) ExistsWithinTenant(ctx, tenant
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistsWithinTenant", reflect.TypeOf((*MockUserIdentityRepository)(nil).ExistsWithinTenant), ctx, tenantID, identityType, value)
 }
 
-// FindGlobalUserIDByIdentity mocks base method.
-func (m *MockUserIdentityRepository) FindGlobalUserIDByIdentity(ctx context.Context, tenantID, identityType, value string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindGlobalUserIDByIdentity", ctx, tenantID, identityType, value)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FindGlobalUserIDByIdentity indicates an expected call of FindGlobalUserIDByIdentity.
-func (mr *MockUserIdentityRepositoryMockRecorder) FindGlobalUserIDByIdentity(ctx, tenantID, identityType, value any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindGlobalUserIDByIdentity", reflect.TypeOf((*MockUserIdentityRepository)(nil).FindGlobalUserIDByIdentity), ctx, tenantID, identityType, value)
-}
-
-// GetByGlobalUserID mocks base method.
-func (m *MockUserIdentityRepository) GetByGlobalUserID(ctx context.Context, tx *gorm.DB, tenantID, globalUserID string) ([]domain.UserIdentity, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByGlobalUserID", ctx, tx, tenantID, globalUserID)
-	ret0, _ := ret[0].([]domain.UserIdentity)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByGlobalUserID indicates an expected call of GetByGlobalUserID.
-func (mr *MockUserIdentityRepositoryMockRecorder) GetByGlobalUserID(ctx, tx, tenantID, globalUserID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGlobalUserID", reflect.TypeOf((*MockUserIdentityRepository)(nil).GetByGlobalUserID), ctx, tx, tenantID, globalUserID)
-}
-
 // GetByTypeAndValue mocks base method.
 func (m *MockUserIdentityRepository) GetByTypeAndValue(ctx context.Context, tx *gorm.DB, tenantID, identityType, value string) (*domain.UserIdentity, error) {
 	m.ctrl.T.Helper()

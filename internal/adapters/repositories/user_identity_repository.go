@@ -38,23 +38,6 @@ func (r *userIdentityRepository) GetByTypeAndValue(
 	return &identity, nil
 }
 
-func (r *userIdentityRepository) FindGlobalUserIDByIdentity(
-	ctx context.Context,
-	tenantID string,
-	identityType string,
-	value string,
-) (string, error) {
-	var out struct{ GlobalUserID string }
-	if err := r.db.WithContext(ctx).
-		Model(&domain.UserIdentity{}).
-		Select("global_user_id").
-		Where("tenant_id = ? AND type = ? AND value = ?", tenantID, identityType, value).
-		First(&out).Error; err != nil {
-		return "", err
-	}
-	return out.GlobalUserID, nil
-}
-
 func (r *userIdentityRepository) InsertOnceByKratosUserAndType(
 	ctx context.Context,
 	tx *gorm.DB,
@@ -144,27 +127,6 @@ func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 		Where("tenant_id = ? AND global_user_id = ? AND type = ?", tenantID, globalUserID, identityType).
 		Count(&count).Error
 	return count > 0, err
-}
-
-// GetByGlobalUserID lists identities by (tenant_id, global_user_id).
-func (r *userIdentityRepository) GetByGlobalUserID(
-	ctx context.Context,
-	tx *gorm.DB,
-	tenantID, globalUserID string,
-) ([]domain.UserIdentity, error) {
-	var identities []domain.UserIdentity
-
-	db := r.db
-	if tx != nil {
-		db = tx
-	}
-
-	if err := db.WithContext(ctx).
-		Where("tenant_id = ? AND global_user_id = ?", tenantID, globalUserID).
-		Find(&identities).Error; err != nil {
-		return nil, err
-	}
-	return identities, nil
 }
 
 func (r *userIdentityRepository) Delete(tx *gorm.DB, identityID string) error {

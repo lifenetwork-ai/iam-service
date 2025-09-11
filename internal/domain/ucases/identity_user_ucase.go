@@ -745,28 +745,15 @@ func (u *userUseCase) Profile(
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_EXTRACT_USER_FAILED", "Failed to extract user traits")
 	}
+	kratosUserID := session.Identity.Id
 
-	// If user has no email or phone, return error
-	identifier := user.Email
-	if identifier == "" {
-		identifier = user.Phone
+	// Get all identities for the user in the tenant
+	identities, qErr := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
+	if qErr != nil {
+		return nil, domainerrors.WrapInternal(qErr, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
 	}
-
-	identifierType, err := utils.GetIdentifierType(identifier)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIER_TYPE_FAILED", "Failed to get identifier type")
-	}
-
-	// Lookup global user ID
-	globalUserID, err := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, tenantID.String(), identifierType, identifier)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_LOOKUP_FAILED", "Failed to lookup user ID")
-	}
-
-	// Fetch all user identities by global user ID
-	identities, err := u.userIdentityRepo.GetByGlobalUserID(ctx, nil, tenantID.String(), globalUserID)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
+	if len(identities) == 0 {
+		return nil, domainerrors.NewNotFoundError("MSG_IDENTITIES_NOT_FOUND", "User identities")
 	}
 
 	// Map Email/Phone from DB
@@ -783,9 +770,10 @@ func (u *userUseCase) Profile(
 			}
 		}
 	}
+	globalUserID := identities[0].GlobalUserID
 
 	// Set user id
-	user.ID = session.Identity.Id
+	user.ID = kratosUserID
 	user.GlobalUserID = globalUserID
 	user.Email = emailFromDB
 	user.Phone = phoneFromDB
