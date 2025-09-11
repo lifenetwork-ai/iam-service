@@ -286,7 +286,7 @@ func (u *userUseCase) VerifyRegister(
 		ExpiresAt:       registrationResult.Session.ExpiresAt,
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       newKratosUserID,
 			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
@@ -489,7 +489,7 @@ func (u *userUseCase) VerifyLogin(
 		ExpiresAt:       loginResult.Session.ExpiresAt,
 		IssuedAt:        loginResult.Session.IssuedAt,
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       loginResult.Session.Identity.Id,
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
@@ -641,7 +641,7 @@ func (u *userUseCase) Login(
 		ExpiresAt:       loginResult.Session.ExpiresAt,
 		IssuedAt:        loginResult.Session.IssuedAt,
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       loginResult.Session.Identity.Id,
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
@@ -708,7 +708,7 @@ func (u *userUseCase) RefreshToken(
 		ExpiresAt:       session.ExpiresAt,
 		IssuedAt:        session.IssuedAt,
 		AuthenticatedAt: session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       session.Identity.Id,
 			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),

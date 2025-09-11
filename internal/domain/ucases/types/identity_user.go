@@ -39,7 +39,7 @@ type IdentityUserAuthResponse struct {
 	AuthenticatedAt *time.Time `json:"authenticated_at,omitempty"`
 
 	// User information
-	User IdentityUserResponse `json:"user,omitempty"`
+	User *IdentityUserResponse `json:"user,omitempty"`
 
 	// Optional session metadata
 	AuthenticationMethods []string `json:"authentication_methods,omitempty"`
