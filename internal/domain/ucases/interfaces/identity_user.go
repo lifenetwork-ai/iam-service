@@ -79,7 +79,7 @@ type IdentityUserUseCase interface {
 		ctx context.Context,
 		globalUserID string,
 		tenantID uuid.UUID,
-		tenantUserID string,
+		kratosUserID string,
 		identifierType string,
 	) *errors.DomainError
 
@@ -87,7 +87,7 @@ type IdentityUserUseCase interface {
 		ctx context.Context,
 		globalUserID string,
 		tenantID uuid.UUID,
-		tenantUserID string,
+		kratosUserID string,
 		newIdentifier string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
 
@@ -113,7 +113,7 @@ type IdentityUserUseCase interface {
 	UpdateLang(
 		ctx context.Context,
 		tenantID uuid.UUID,
-		tenantUserID string,
+		kratosUserID string,
 		lang string,
 	) *errors.DomainError
 }
