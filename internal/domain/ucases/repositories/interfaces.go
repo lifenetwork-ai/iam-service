@@ -45,22 +45,19 @@ type UserIdentityChangeLogRepository interface {
 }
 
 type UserIdentifierMappingRepository interface {
-	ExistsByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (bool, error)
+	ExistsByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) (bool, error)
 	ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error)
 	Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
-	GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error)
-	GetByTenantIDAndTenantUserID(ctx context.Context, tenantID, tenantUserID string) (*domain.UserIdentifierMapping, error)
-	Update(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error
+	GetByTenantIDAndKratosUserID(ctx context.Context, tenantID, kratosUserID string) (*domain.UserIdentifierMapping, error)
 }
 
 type UserIdentityRepository interface {
 	GetByTypeAndValue(ctx context.Context, tx *gorm.DB, tenantID, identityType, value string) (*domain.UserIdentity, error)
 	FindGlobalUserIDByIdentity(ctx context.Context, tenantID, identityType, value string) (string, error)
-	InsertOnceByTenantUserAndType(ctx context.Context, tx *gorm.DB, tenantID, globalUserID, idType, value string) (bool, error)
+	InsertOnceByKratosUserAndType(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID, globalUserID, idType, value string) (bool, error)
 	Update(tx *gorm.DB, identity *domain.UserIdentity) error
 	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
-	GetByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (*domain.UserIdentity, error)
-	ListByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) ([]*domain.UserIdentity, error)
+	ListByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) ([]*domain.UserIdentity, error)
 	ExistsByTenantGlobalUserIDAndType(ctx context.Context, tenantID, globalUserID, identityType string) (bool, error)
 	GetByGlobalUserID(ctx context.Context, tx *gorm.DB, tenantID, globalUserID string) ([]domain.UserIdentity, error)
 	Delete(tx *gorm.DB, identityID string) error

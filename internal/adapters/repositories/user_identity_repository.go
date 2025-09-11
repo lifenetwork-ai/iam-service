@@ -61,29 +61,35 @@ func (r *userIdentityRepository) FindGlobalUserIDByIdentity(
 	return out.GlobalUserID, nil
 }
 
-func (r *userIdentityRepository) InsertOnceByTenantUserAndType(
+func (r *userIdentityRepository) InsertOnceByKratosUserAndType(
 	ctx context.Context,
 	tx *gorm.DB,
 	tenantID string,
+	kratosUserID string,
 	globalUserID string,
-	idType, value string,
+	idType string,
+	value string,
 ) (bool, error) {
 	db := r.db
 	if tx != nil {
 		db = tx
 	}
+
 	rec := &domain.UserIdentity{
 		TenantID:     tenantID,
+		KratosUserID: kratosUserID,
 		GlobalUserID: globalUserID,
 		Type:         idType,
 		Value:        value,
 	}
+
 	res := db.WithContext(ctx).
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "global_user_id"}, {Name: "type"}},
 			DoNothing: true,
 		}).
 		Create(rec)
+
 	if res.Error != nil {
 		return false, res.Error
 	}
@@ -108,50 +114,23 @@ func (r *userIdentityRepository) ExistsWithinTenant(
 	return count > 0, err
 }
 
-// GetByTenantAndTenantUserID retrieves the first user identity by tenant ID and tenant user ID
-// One tenant user can have multiple user identities, but we only return the first one
-func (r *userIdentityRepository) GetByTenantAndTenantUserID(
+// ListByTenantAndKratosUserID retrieves a list of user identities by tenant ID and Kratos user ID
+func (r *userIdentityRepository) ListByTenantAndKratosUserID(
 	ctx context.Context,
 	tx *gorm.DB,
-	tenantID, tenantUserID string,
-) (*domain.UserIdentity, error) {
-	var identity domain.UserIdentity
-
-	db := r.db.WithContext(ctx)
-	if tx != nil {
-		db = tx.WithContext(ctx)
-	}
-
-	err := db.
-		Model(&domain.UserIdentity{}).
-		Joins("JOIN user_identifier_mapping ON user_identifier_mapping.global_user_id = user_identities.global_user_id").
-		Where("user_identifier_mapping.tenant_id = ? AND user_identifier_mapping.tenant_user_id = ?", tenantID, tenantUserID).
-		First(&identity).Error
-	if err != nil {
-		return nil, err
-	}
-	return &identity, nil
-}
-
-// ListByTenantAndTenantUserID retrieves a list of user identities by tenant ID and tenant user ID
-func (r *userIdentityRepository) ListByTenantAndTenantUserID(
-	ctx context.Context,
-	tx *gorm.DB,
-	tenantID, tenantUserID string,
+	tenantID, kratosUserID string,
 ) ([]*domain.UserIdentity, error) {
 	var identities []*domain.UserIdentity
 
-	db := r.db.WithContext(ctx)
+	db := r.db
 	if tx != nil {
-		db = tx.WithContext(ctx)
+		db = tx
 	}
 
-	err := db.
-		Model(&domain.UserIdentity{}).
-		Joins("JOIN user_identifier_mapping ON user_identifier_mapping.global_user_id = user_identities.global_user_id").
-		Where("user_identifier_mapping.tenant_id = ? AND user_identifier_mapping.tenant_user_id = ?", tenantID, tenantUserID).
-		Find(&identities).Error
-	if err != nil {
+	if err := db.WithContext(ctx).
+		Where("tenant_id = ? AND kratos_user_id = ?", tenantID, kratosUserID).
+		Order("type ASC, created_at ASC").
+		Find(&identities).Error; err != nil {
 		return nil, err
 	}
 	return identities, nil

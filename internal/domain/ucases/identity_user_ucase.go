@@ -219,7 +219,7 @@ func (u *userUseCase) VerifyRegister(
 	}
 
 	tenantName := extractStringFromTraits(traits, "tenant", "")
-	newTenantUserID := registrationResult.Session.Identity.Id
+	newKratosUserID := registrationResult.Session.Identity.Id
 
 	// Get identifier and type from session value
 	identifier := sessionValue.Identifier
@@ -236,37 +236,19 @@ func (u *userUseCase) VerifyRegister(
 		})
 	}
 
+	// Extract language from traits
+	lang := extractStringFromTraits(traits, constants.IdentifierLang.String(), "")
+
 	switch sessionValue.ChallengeType {
 	case constants.ChallengeTypeAddIdentifier:
-		if txErr := u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			// Insert 2nd identifier
-			inserted, err := u.userIdentityRepo.InsertOnceByTenantUserAndType(
-				ctx, nil, tenantID.String(), sessionValue.GlobalUserID, identifierType, identifier,
-			)
-			if err != nil {
-				return fmt.Errorf("insert identity: %w", err)
-			}
-			if !inserted {
-				return fmt.Errorf("identifier of this type already added")
-			}
-
-			// Create mapping
-			if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
-				GlobalUserID: sessionValue.GlobalUserID,
-				TenantID:     tenant.ID.String(),
-				TenantUserID: newTenantUserID,
-			}); err != nil {
-				return fmt.Errorf("create mapping: %w", err)
-			}
-
-			return nil
-		}); txErr != nil {
-			switch {
-			case strings.Contains(txErr.Error(), "identifier of this type already added"):
-				return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS", "Identifier of this type already added", nil)
-			default:
-				return nil, domainerrors.WrapInternal(txErr, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add identifier")
-			}
+		inserted, err := u.userIdentityRepo.InsertOnceByKratosUserAndType(
+			ctx, nil, tenantID.String(), newKratosUserID, sessionValue.GlobalUserID, identifierType, identifier,
+		)
+		if err != nil {
+			return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add identifier")
+		}
+		if !inserted {
+			return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS", "Identifier of this type already added", nil)
 		}
 
 	case constants.ChallengeTypeChangeIdentifier:
@@ -276,8 +258,8 @@ func (u *userUseCase) VerifyRegister(
 			tenant,
 			sessionValue.GlobalUserID,
 			sessionValue.IdentityID,
-			sessionValue.TenantUserID,
-			newTenantUserID,
+			sessionValue.KratosUserID,
+			newKratosUserID,
 			identifier,
 			identifierType,
 		); err != nil {
@@ -287,7 +269,7 @@ func (u *userUseCase) VerifyRegister(
 	default:
 		// Bind IAM to registration
 		if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, identifier, identifierType)
+			return u.bindIAMToRegistration(ctx, tx, tenant, newKratosUserID, identifier, identifierType, lang)
 		}); err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_IAM_REGISTRATION_FAILED", "Failed to bind IAM to registration")
 		}
@@ -305,12 +287,12 @@ func (u *userUseCase) VerifyRegister(
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
 		User: types.IdentityUserResponse{
-			ID:       newTenantUserID,
+			ID:       newKratosUserID,
 			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(traits, constants.IdentifierPhone.String(), ""),
 			Tenant:   extractStringFromTraits(traits, constants.IdentifierTenant.String(), ""),
-			Lang:     extractStringFromTraits(traits, constants.IdentifierLang.String(), ""),
+			Lang:     lang,
 		},
 		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -319,23 +301,23 @@ func (u *userUseCase) VerifyRegister(
 }
 
 // bindIAMToUpdateIdentifier handles updating to a different identifier
-// keeping the same GlobalUserID but mapping to the new TenantUserID
+// keeping the same GlobalUserID but mapping to the new KratosUserID
 // All write operations are wrapped in a transaction to ensure atomicity
 func (u *userUseCase) bindIAMToUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
 	globalUserID string,
 	identityID string,
-	oldTenantUserID string,
-	newTenantUserID string,
+	oldKratosUserID string,
+	newKratosUserID string,
 	newIdentifier string,
 	newIdentifierType string,
 ) error {
 	// Pre-fetch the current mapping before starting the transaction
-	identifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndTenantUserID(
+	globalIdentifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndKratosUserID(
 		ctx,
 		tenant.ID.String(),
-		oldTenantUserID,
+		oldKratosUserID,
 	)
 	if err != nil {
 		return fmt.Errorf("get existing mapping: %w", err)
@@ -354,38 +336,27 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 			return fmt.Errorf("create new identity: %w", err)
 		}
 
-		if identifierMapping == nil {
+		if globalIdentifierMapping == nil {
 			if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
 				GlobalUserID: globalUserID,
-				TenantID:     tenant.ID.String(),
-				TenantUserID: newTenantUserID,
+				Lang:         tenant.ID.String(),
 			}); err != nil {
 				return fmt.Errorf("create mapping: %w", err)
 			}
-		} else {
-			if err := u.userIdentifierMappingRepo.Update(tx, &domain.UserIdentifierMapping{
-				ID:           identifierMapping.ID,
-				GlobalUserID: globalUserID,
-				TenantUserID: newTenantUserID,
-				TenantID:     tenant.ID.String(),
-			}); err != nil {
-				return fmt.Errorf("update mapping: %w", err)
-			}
 		}
-
 		// If we reach here, all operations succeeded and the transaction will be committed
 		return nil
 	})
 
 	if txErr != nil {
-		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newTenantUserID); cleanUpErr != nil {
+		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newKratosUserID); cleanUpErr != nil {
 			logger.GetLogger().Errorf("Failed to clean up: %v", cleanUpErr)
 		}
 		return fmt.Errorf("failed to bind IAM to update identifier: %v", txErr)
 	}
 
 	// Delete the old identifier from Kratos
-	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldTenantUserID)); err != nil {
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldKratosUserID)); err != nil {
 		return fmt.Errorf("failed to delete old identifier: %w", err)
 	}
 
@@ -396,10 +367,10 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 func (u *userUseCase) rollbackKratosUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
-	newTenantUserID string,
+	newKratosUserID string,
 ) error {
-	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(newTenantUserID)); err != nil {
-		return fmt.Errorf("failed to delete identifier with tenantID: %s and newTenantUserID: %s", tenant.ID.String(), newTenantUserID)
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(newKratosUserID)); err != nil {
+		return fmt.Errorf("failed to delete identifier with tenantID: %s and newKratosUserID: %s", tenant.ID.String(), newKratosUserID)
 	}
 
 	return nil
@@ -410,9 +381,10 @@ func (u *userUseCase) bindIAMToRegistration(
 	ctx context.Context,
 	tx *gorm.DB,
 	tenant *domain.Tenant,
-	newTenantUserID string,
+	newKratosUserID string,
 	identifier string,
 	identifierType string,
+	lang string,
 ) error {
 	var globalUserID string
 
@@ -426,7 +398,7 @@ func (u *userUseCase) bindIAMToRegistration(
 		globalUser = &domain.GlobalUser{ID: globalUserID}
 
 		// Check if already mapped
-		exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), newTenantUserID)
+		exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndKratosUserID(ctx, tx, tenant.ID.String(), newKratosUserID)
 		if err != nil {
 			return fmt.Errorf("check mapping exists: %w", err)
 		}
@@ -442,9 +414,10 @@ func (u *userUseCase) bindIAMToRegistration(
 	}
 
 	// Create identities
-	_, err := u.userIdentityRepo.InsertOnceByTenantUserAndType(
+	_, err := u.userIdentityRepo.InsertOnceByKratosUserAndType(
 		ctx, tx,
 		tenant.ID.String(),
+		newKratosUserID,
 		globalUserID,
 		identifierType,
 		identifier,
@@ -456,8 +429,7 @@ func (u *userUseCase) bindIAMToRegistration(
 	// Create mapping
 	if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
 		GlobalUserID: globalUser.ID,
-		TenantID:     tenant.ID.String(),
-		TenantUserID: newTenantUserID,
+		Lang:         lang,
 	}); err != nil {
 		return fmt.Errorf("create mapping: %w", err)
 	}
@@ -962,7 +934,7 @@ func (u *userUseCase) DeleteIdentifier(
 	ctx context.Context,
 	globalUserID string,
 	tenantID uuid.UUID,
-	tenantUserID string,
+	kratosUserID string,
 	identifierType string,
 ) *domainerrors.DomainError {
 	// 1. Validate identifier type
@@ -971,7 +943,7 @@ func (u *userUseCase) DeleteIdentifier(
 	}
 
 	// 2. Get all user identities
-	identities, err := u.userIdentityRepo.ListByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
+	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if err != nil {
 		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to get user identifiers")
 	}
@@ -1011,7 +983,7 @@ func (u *userUseCase) DeleteIdentifier(
 	}
 
 	// 6. Delete the identifier from Kratos
-	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenantID, uuid.MustParse(tenantUserID)); err != nil {
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenantID, uuid.MustParse(kratosUserID)); err != nil {
 		// Log the error but don't fail the operation since we've already deleted from our database
 		logger.GetLogger().Errorf("Failed to delete identifier from Kratos: %v", err)
 	}
@@ -1027,7 +999,7 @@ func (u *userUseCase) ChangeIdentifier(
 	ctx context.Context,
 	globalUserID string,
 	tenantID uuid.UUID,
-	tenantUserID string,
+	kratosUserID string,
 	newIdentifier string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// 1. Validate identifier type
@@ -1064,7 +1036,7 @@ func (u *userUseCase) ChangeIdentifier(
 	}
 
 	// 4. Check user's current identifiers
-	identities, err := u.userIdentityRepo.ListByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
+	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identities")
 	}
@@ -1122,7 +1094,7 @@ func (u *userUseCase) ChangeIdentifier(
 	// 8. Save challenge session
 	session := &domain.ChallengeSession{
 		GlobalUserID:   globalUserID,
-		TenantUserID:   tenantUserID,
+		KratosUserID:   kratosUserID,
 		IdentifierType: newIdentifierType,
 		Identifier:     newIdentifier,
 		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
@@ -1275,7 +1247,7 @@ func (u *userUseCase) VerifyIdentifier(
 func (u *userUseCase) UpdateLang(
 	ctx context.Context,
 	tenantID uuid.UUID,
-	tenantUserID string, // Kratos Identity ID
+	kratosUserID string,
 	lang string,
 ) *domainerrors.DomainError {
 	// 1. Normalize & validate lang
@@ -1293,9 +1265,9 @@ func (u *userUseCase) UpdateLang(
 	}
 
 	// 3. Parse identity ID
-	identityID, err := uuid.Parse(tenantUserID)
+	identityID, err := uuid.Parse(kratosUserID)
 	if err != nil {
-		return domainerrors.NewValidationError("MSG_INVALID_TENANT_USER_ID", "Invalid tenant user id", nil)
+		return domainerrors.NewValidationError("MSG_INVALID_KRATOS_USER_ID", "Invalid Kratos user id", nil)
 	}
 
 	// 4. Call Kratos Admin to update traits.lang (read->merge->update inside service)

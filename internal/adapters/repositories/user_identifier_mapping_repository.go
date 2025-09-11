@@ -17,55 +17,62 @@ func NewUserIdentifierMappingRepository(db *gorm.DB) domainrepo.UserIdentifierMa
 	return &userIdentifierMappingRepository{db: db}
 }
 
-func (r *userIdentifierMappingRepository) ExistsByTenantAndTenantUserID(
-	ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string,
+func (r *userIdentifierMappingRepository) ExistsByTenantAndKratosUserID(
+	ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string,
 ) (bool, error) {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+
 	var count int64
-	if err := tx.WithContext(ctx).
-		Model(&domain.UserIdentifierMapping{}).
-		Where("tenant_id = ? AND tenant_user_id = ?", tenantID, tenantUserID).
-		Count(&count).Error; err != nil {
+	err := db.WithContext(ctx).
+		Table((&domain.UserIdentifierMapping{}).TableName()+" AS m").
+		Joins("JOIN user_identities ui ON ui.global_user_id = m.global_user_id").
+		Where("ui.tenant_id = ? AND ui.kratos_user_id = ?", tenantID, kratosUserID).
+		Count(&count).Error
+	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
-func (r *userIdentifierMappingRepository) GetByTenantIDAndTenantUserID(ctx context.Context, tenantID, tenantUserID string) (*domain.UserIdentifierMapping, error) {
+func (r *userIdentifierMappingRepository) GetByTenantIDAndKratosUserID(
+	ctx context.Context, tenantID, kratosUserID string,
+) (*domain.UserIdentifierMapping, error) {
 	var mapping domain.UserIdentifierMapping
-	if err := r.db.WithContext(ctx).
-		Where("tenant_id = ? AND tenant_user_id = ?", tenantID, tenantUserID).
-		First(&mapping).Error; err != nil {
+	err := r.db.WithContext(ctx).
+		Model(&domain.UserIdentifierMapping{}).
+		Joins("JOIN user_identities ui ON ui.global_user_id = user_identifier_mapping.global_user_id").
+		Where("ui.tenant_id = ? AND ui.kratos_user_id = ?", tenantID, kratosUserID).
+		First(&mapping).Error
+	if err != nil {
 		return nil, err
 	}
 	return &mapping, nil
 }
 
-func (r *userIdentifierMappingRepository) GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error) {
-	var mapping domain.UserIdentifierMapping
-	if err := r.db.WithContext(ctx).
-		Joins("JOIN user_identities ON user_identities.global_user_id = user_identifier_mapping.global_user_id").
-		Where("user_identities.type = ? AND user_identities.value = ? AND user_identifier_mapping.tenant_id = ?", identifierType, identifierValue, tenantID).
-		First(&mapping).Error; err != nil {
-		return "", err
-	}
-	return mapping.TenantUserID, nil
-}
-
-func (r *userIdentifierMappingRepository) ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error) {
+func (r *userIdentifierMappingRepository) ExistsMapping(
+	ctx context.Context,
+	tenantID string,
+	globalUserID string,
+) (bool, error) {
 	var count int64
-	if err := r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Model(&domain.UserIdentifierMapping{}).
-		Where("tenant_id = ? AND global_user_id = ?", tenantID, globalUserID).
-		Count(&count).Error; err != nil {
+		Joins("JOIN user_identities ui ON ui.global_user_id = user_identifier_mapping.global_user_id").
+		Where("ui.tenant_id = ? AND user_identifier_mapping.global_user_id = ?", tenantID, globalUserID).
+		Count(&count).Error
+	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
 func (r *userIdentifierMappingRepository) Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
-	return tx.Create(mapping).Error
-}
-
-func (r *userIdentifierMappingRepository) Update(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
-	return tx.Model(&domain.UserIdentifierMapping{}).Where("global_user_id = ? AND tenant_id = ?", mapping.GlobalUserID, mapping.TenantID).Updates(mapping).Error
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+	return db.Create(mapping).Error
 }
