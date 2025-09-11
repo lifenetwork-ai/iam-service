@@ -1271,22 +1271,18 @@ func (u *userUseCase) UpdateLang(
 	}
 	globalUserID := identities[0].GlobalUserID
 
-	// 4. Update traits.lang on ALL related Kratos identities (dedup)
-	seen := make(map[string]struct{}, len(identities))
+	// 4. Update traits.lang on ALL related Kratos identities
 	for _, id := range identities {
 		kratosID := strings.TrimSpace(id.KratosUserID)
 		if kratosID == "" {
 			continue
 		}
-		if _, ok := seen[kratosID]; ok {
-			continue
-		}
-		seen[kratosID] = struct{}{}
 
 		kuid, parseErr := uuid.Parse(kratosID)
 		if parseErr != nil {
 			return domainerrors.NewValidationError("MSG_INVALID_KRATOS_USER_ID", "Invalid Kratos user id", nil)
 		}
+
 		if updErr := u.kratosService.UpdateLangAdmin(ctx, tenantID, kuid, lang); updErr != nil {
 			return domainerrors.WrapInternal(updErr, "MSG_UPDATE_LANG_FAILED", "Failed to update language in Kratos")
 		}
