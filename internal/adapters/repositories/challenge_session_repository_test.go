@@ -8,7 +8,6 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories/testutil"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,7 +48,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		// Test GetChallenge
 		retrievedChallenge, err := repo.GetChallenge(ctx, sessionID)
 		require.NoError(t, err)
-		assert.NotNil(t, retrievedChallenge)
+		require.NotNil(t, retrievedChallenge)
 		require.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
 		require.Equal(t, challenge.Identifier, retrievedChallenge.Identifier)
 		require.Equal(t, challenge.OTP, retrievedChallenge.OTP)
@@ -58,8 +57,8 @@ func TestChallengeSessionRepository(t *testing.T) {
 	t.Run("GetChallenge - Not Found", func(t *testing.T) {
 		// Test getting non-existent challenge
 		retrieved, err := repo.GetChallenge(ctx, "non-existent-session")
-		assert.Error(t, err)
-		assert.Nil(t, retrieved)
+		require.Error(t, err)
+		require.Nil(t, retrieved)
 	})
 
 	t.Run("SaveChallenge - Phone Challenge", func(t *testing.T) {
@@ -87,7 +86,7 @@ func TestChallengeSessionRepository(t *testing.T) {
 		// Test GetChallenge
 		retrievedChallenge, err := repo.GetChallenge(ctx, sessionID)
 		require.NoError(t, err)
-		assert.NotNil(t, retrievedChallenge)
+		require.NotNil(t, retrievedChallenge)
 		require.Equal(t, challenge.IdentifierType, retrievedChallenge.IdentifierType)
 		require.Equal(t, challenge.Identifier, retrievedChallenge.Identifier)
 		require.Equal(t, challenge.OTP, retrievedChallenge.OTP)
@@ -103,11 +102,11 @@ func TestChallengeSessionRepository(t *testing.T) {
 
 		// Verify items are gone
 		retrieved, err := repo.GetChallenge(ctx, "test-session-123")
-		assert.Error(t, err)
-		assert.Nil(t, retrieved)
+		require.Error(t, err)
+		require.Nil(t, retrieved)
 
 		retrieved, err = repo.GetChallenge(ctx, "test-session-456")
-		assert.Error(t, err)
-		assert.Nil(t, retrieved)
+		require.Error(t, err)
+		require.Nil(t, retrieved)
 	})
 }
