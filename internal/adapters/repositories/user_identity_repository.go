@@ -100,18 +100,27 @@ func (r *userIdentityRepository) ListByTenantAndKratosUserID(
 	tx *gorm.DB,
 	tenantID, kratosUserID string,
 ) ([]*domain.UserIdentity, error) {
-	var identities []*domain.UserIdentity
-
 	db := r.db
 	if tx != nil {
 		db = tx
 	}
 
-	if err := db.WithContext(ctx).
-		Where("tenant_id = ? AND kratos_user_id = ?", tenantID, kratosUserID).
-		Find(&identities).Error; err != nil {
+	var identities []*domain.UserIdentity
+	err := db.WithContext(ctx).
+		Where(`
+			tenant_id = ? 
+			AND global_user_id = (
+				SELECT global_user_id 
+				FROM user_identities 
+				WHERE tenant_id = ? AND kratos_user_id = ? 
+				LIMIT 1
+			)
+		`, tenantID, tenantID, kratosUserID).
+		Find(&identities).Error
+	if err != nil {
 		return nil, err
 	}
+
 	return identities, nil
 }
 
