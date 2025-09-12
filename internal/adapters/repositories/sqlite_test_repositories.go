@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/google/uuid"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -72,29 +73,35 @@ func NewSQLiteUserIdentifierMappingRepository(db *gorm.DB) domainrepo.UserIdenti
 	return &SQLiteUserIdentifierMappingRepository{db: db}
 }
 
-func (r *SQLiteUserIdentifierMappingRepository) ExistsByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (bool, error) {
+func (r *SQLiteUserIdentifierMappingRepository) GetByGlobalUserID(ctx context.Context, globalUserID string) (*domain.UserIdentifierMapping, error) {
+	var m domain.UserIdentifierMapping
+	if err := r.db.First(&m, "global_user_id = ?", globalUserID).Error; err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+func (r *SQLiteUserIdentifierMappingRepository) ExistsByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) (bool, error) {
 	if tx == nil {
 		tx = r.db
 	}
 	var c int64
-	if err := tx.Model(&domain.UserIdentifierMapping{}).Where("tenant_id = ? AND tenant_user_id = ?", tenantID, tenantUserID).Count(&c).Error; err != nil {
+	if err := tx.Model(&domain.UserIdentifierMapping{}).
+		Joins("JOIN user_identities ui ON ui.global_user_id = user_identifier_mapping.global_user_id").
+		Where("ui.tenant_id = ? AND ui.kratos_user_id = ?", tenantID, kratosUserID).
+		Count(&c).Error; err != nil {
 		return false, err
 	}
 	return c > 0, nil
 }
-func (r *SQLiteUserIdentifierMappingRepository) ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error) {
-	var c int64
-	if err := r.db.Model(&domain.UserIdentifierMapping{}).Where("tenant_id = ? AND global_user_id = ?", tenantID, globalUserID).Count(&c).Error; err != nil {
-		return false, err
-	}
-	return c > 0, nil
-}
-func (r *SQLiteUserIdentifierMappingRepository) Create(tx *gorm.DB, m *domain.UserIdentifierMapping) error {
+
+func (r *SQLiteUserIdentifierMappingRepository) Create(ctx context.Context, tx *gorm.DB, m *domain.UserIdentifierMapping) error {
 	if tx == nil {
 		tx = r.db
 	}
-	return tx.Create(m).Error
+	return tx.WithContext(ctx).Create(m).Error
 }
+
 func (r *SQLiteUserIdentifierMappingRepository) GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error) {
 	// get identity first
 	var i domain.UserIdentity
@@ -113,7 +120,7 @@ func (r *SQLiteUserIdentifierMappingRepository) GetByTenantIDAndIdentifier(ctx c
 	if m.ID == "" {
 		return "", fmt.Errorf("mapping with global user id: %s not found", i.GlobalUserID)
 	}
-	return m.TenantUserID, nil
+	return m.GlobalUserID, nil
 }
 func (r *SQLiteUserIdentifierMappingRepository) GetByGlobalUserIDAndTenantID(ctx context.Context, globalUserID, tenantID string) ([]*domain.UserIdentifierMapping, error) {
 	var m []*domain.UserIdentifierMapping
@@ -134,6 +141,32 @@ func (r *SQLiteUserIdentifierMappingRepository) Update(tx *gorm.DB, m *domain.Us
 		tx = r.db
 	}
 	return tx.Save(m).Error
+}
+
+func (r *SQLiteUserIdentifierMappingRepository) ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error) {
+	var c int64
+	if err := r.db.Model(&domain.UserIdentifierMapping{}).
+		Joins("JOIN user_identities ui ON ui.global_user_id = user_identifier_mapping.global_user_id").
+		Where("ui.tenant_id = ? AND user_identifier_mapping.global_user_id = ?", tenantID, globalUserID).
+		Count(&c).Error; err != nil {
+		return false, err
+	}
+	return c > 0, nil
+}
+
+func (r *SQLiteUserIdentifierMappingRepository) Upsert(ctx context.Context, tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+	return db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "global_user_id"}},
+			DoUpdates: clause.Assignments(map[string]any{
+				"lang": mapping.Lang,
+			}),
+		}).
+		Create(mapping).Error
 }
 
 // SQLiteUserIdentityRepository implements UserIdentityRepository for sqlite
@@ -171,7 +204,7 @@ func (r *SQLiteUserIdentityRepository) FindGlobalUserIDByIdentity(ctx context.Co
 	}
 	return u.GlobalUserID, nil
 }
-func (r *SQLiteUserIdentityRepository) InsertOnceByTenantUserAndType(ctx context.Context, tx *gorm.DB, tenantID, globalUserID, idType, value string) (bool, error) {
+func (r *SQLiteUserIdentityRepository) InsertOnceByKratosUserAndType(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID, globalUserID, idType, value string) (bool, error) {
 	if tx == nil {
 		tx = r.db
 	}
@@ -182,7 +215,13 @@ func (r *SQLiteUserIdentityRepository) InsertOnceByTenantUserAndType(ctx context
 	if exists {
 		return false, nil
 	}
-	return true, tx.Create(&domain.UserIdentity{TenantID: tenantID, GlobalUserID: globalUserID, Type: idType, Value: value}).Error
+	return true, tx.WithContext(ctx).Create(&domain.UserIdentity{
+		TenantID:     tenantID,
+		KratosUserID: kratosUserID,
+		GlobalUserID: globalUserID,
+		Type:         idType,
+		Value:        value,
+	}).Error
 }
 func (r *SQLiteUserIdentityRepository) Update(tx *gorm.DB, identity *domain.UserIdentity) error {
 	if tx == nil {
@@ -219,19 +258,54 @@ func (r *SQLiteUserIdentityRepository) ExistsByTenantGlobalUserIDAndType(ctx con
 	}
 	return c > 0, nil
 }
-func (r *SQLiteUserIdentityRepository) GetByGlobalUserID(ctx context.Context, tx *gorm.DB, tenantID, globalUserID string) ([]domain.UserIdentity, error) {
+func (r *SQLiteUserIdentityRepository) GetByGlobalUserIDAndTenantID(ctx context.Context, tx *gorm.DB, globalUserID, tenantID string) ([]*domain.UserIdentity, error) {
 	if tx == nil {
 		tx = r.db
 	}
-	var out []domain.UserIdentity
-	if err := tx.Where("tenant_id = ? AND global_user_id = ?", tenantID, globalUserID).Find(&out).Error; err != nil {
+	var out []*domain.UserIdentity
+	if err := tx.Where("global_user_id = ? AND tenant_id = ?", globalUserID, tenantID).Find(&out).Error; err != nil {
 		return nil, err
 	}
 	return out, nil
 }
+
 func (r *SQLiteUserIdentityRepository) Delete(tx *gorm.DB, identityID string) error {
 	if tx == nil {
 		tx = r.db
 	}
 	return tx.Delete(&domain.UserIdentity{}, "id = ?", identityID).Error
+}
+
+func (r *SQLiteUserIdentityRepository) GetByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) (*domain.UserIdentity, error) {
+	if tx == nil {
+		tx = r.db
+	}
+	var out *domain.UserIdentity
+	if err := tx.WithContext(ctx).
+		Where(`
+			tenant_id = ? 
+			AND global_user_id = (
+				SELECT global_user_id 
+				FROM user_identities 
+				WHERE tenant_id = ? AND kratos_user_id = ? 
+				LIMIT 1
+			)
+		`, tenantID, tenantID, kratosUserID).
+		First(&out).Error; err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (r *SQLiteUserIdentifierMappingRepository) GetByTenantIDAndKratosUserID(ctx context.Context, tenantID, kratosUserID string) (*domain.UserIdentifierMapping, error) {
+	var m domain.UserIdentifierMapping
+	err := r.db.WithContext(ctx).
+		Model(&domain.UserIdentifierMapping{}).
+		Joins("JOIN user_identities ui ON ui.global_user_id = user_identifier_mapping.global_user_id").
+		Where("ui.tenant_id = ? AND ui.kratos_user_id = ?", tenantID, kratosUserID).
+		First(&m).Error
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
 }

@@ -107,18 +107,18 @@ func (r *userIdentityRepository) ExistsWithinTenant(
 	return count > 0, err
 }
 
-// ListByTenantAndKratosUserID retrieves identities by (tenant_id, kratos_user_id).
-func (r *userIdentityRepository) ListByTenantAndKratosUserID(
+// GetByTenantAndKratosUserID retrieves identities by (tenant_id, kratos_user_id).
+func (r *userIdentityRepository) GetByTenantAndKratosUserID(
 	ctx context.Context,
 	tx *gorm.DB,
 	tenantID, kratosUserID string,
-) ([]*domain.UserIdentity, error) {
+) (*domain.UserIdentity, error) {
 	db := r.db
 	if tx != nil {
 		db = tx
 	}
 
-	var identities []*domain.UserIdentity
+	var identity *domain.UserIdentity
 	err := db.WithContext(ctx).
 		Where(`
 			tenant_id = ? 
@@ -129,12 +129,12 @@ func (r *userIdentityRepository) ListByTenantAndKratosUserID(
 				LIMIT 1
 			)
 		`, tenantID, tenantID, kratosUserID).
-		Find(&identities).Error
+		First(&identity).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return identities, nil
+	return identity, nil
 }
 
 // ExistsByTenantGlobalUserIDAndType checks by (tenant_id, global_user_id, type).
@@ -148,6 +148,23 @@ func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 		Where("tenant_id = ? AND global_user_id = ? AND type = ?", tenantID, globalUserID, identityType).
 		Count(&count).Error
 	return count > 0, err
+}
+
+// GetByGlobalUserID retrieves identities per tenant by (global_user_id).
+func (r *userIdentityRepository) GetByGlobalUserIDAndTenantID(ctx context.Context, tx *gorm.DB, globalUserID, tenantID string) ([]*domain.UserIdentity, error) {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+
+	var identities []*domain.UserIdentity
+	err := db.WithContext(ctx).
+		Where("global_user_id = ? AND tenant_id = ?", globalUserID, tenantID).
+		Find(&identities).Error
+	if err != nil {
+		return nil, err
+	}
+	return identities, nil
 }
 
 func (r *userIdentityRepository) Delete(tx *gorm.DB, identityID string) error {

@@ -60,7 +60,8 @@ type UserIdentityRepository interface {
 	InsertOnceByKratosUserAndType(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID, globalUserID, idType, value string) (bool, error)
 	Update(tx *gorm.DB, identity *domain.UserIdentity) error
 	ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error)
-	ListByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) ([]*domain.UserIdentity, error)
+	GetByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) (*domain.UserIdentity, error)
 	ExistsByTenantGlobalUserIDAndType(ctx context.Context, tenantID, globalUserID, identityType string) (bool, error)
+	GetByGlobalUserIDAndTenantID(ctx context.Context, tx *gorm.DB, globalUserID, tenantID string) ([]*domain.UserIdentity, error)
 	Delete(tx *gorm.DB, identityID string) error
 }

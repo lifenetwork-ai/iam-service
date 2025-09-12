@@ -281,10 +281,10 @@ func (u *userUseCase) VerifyRegister(
 
 	// Return authentication response
 	// Lookup GlobalUserID for the identifier involved in this flow to populate response
-	userGlobalID, _ := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenant.ID.String(), newKratosUserID)
+	userGlobalID, _ := u.userIdentityRepo.GetByTenantAndKratosUserID(ctx, nil, tenant.ID.String(), newKratosUserID)
 	var globalUserID string
-	if len(userGlobalID) > 0 {
-		globalUserID = userGlobalID[0].GlobalUserID
+	if userGlobalID != nil {
+		globalUserID = userGlobalID.GlobalUserID
 	}
 
 	return &types.IdentityUserAuthResponse{
@@ -762,7 +762,7 @@ func (u *userUseCase) Profile(
 	kratosUserID := session.Identity.Id
 
 	// Get all identities for the user in the tenant
-	identities, qErr := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
+	identities, qErr := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, user.GlobalUserID, tenantID.String())
 	if qErr != nil {
 		return nil, domainerrors.WrapInternal(qErr, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
 	}
@@ -952,14 +952,14 @@ func (u *userUseCase) DeleteIdentifier(
 	}
 
 	// 2. Get all user identities
-	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
+	identities, err := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, globalUserID, tenantID.String())
 	if err != nil {
 		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to get user identifiers")
 	}
 
 	// 3. Find the specific identifier to delete
 	var identifierToDelete *domain.UserIdentity
-	if len(identities) == 0 {
+	if identities == nil {
 		return domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS", fmt.Sprintf("User does not have an identifier of type %s", identifierType), nil)
 	}
 	for _, id := range identities {
@@ -1045,7 +1045,7 @@ func (u *userUseCase) ChangeIdentifier(
 	}
 
 	// 4. Check user's current identifiers
-	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
+	identities, err := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, globalUserID, tenantID.String())
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identities")
 	}
@@ -1070,27 +1070,6 @@ func (u *userUseCase) ChangeIdentifier(
 	// Should not happen
 	if identity == nil {
 		return nil, domainerrors.NewInternalError("MSG_INTERNAL_ERROR", "Cannot find identifier to be changed")
-	}
-
-	mappings, err := u.userIdentifierMappingRepo.GetByGlobalUserIDAndTenantID(ctx, globalUserID, tenantID.String())
-	if err != nil {
-		return nil, domainerrors.NewInternalError("MSG_MAPPING_NOT_FOUND", "User mapping not found")
-	}
-
-	if len(mappings) == 0 {
-		return nil, domainerrors.NewInternalError("MSG_MAPPING_NOT_FOUND", "User mapping not found")
-	}
-
-	// check all mappings to get the correct tenant user id
-	for range mappings {
-		kratosIdentity, err := u.kratosService.GetIdentity(ctx, tenantID, uuid.MustParse(kratosUserID))
-		if err != nil {
-			return nil, domainerrors.NewInternalError("MSG_GET_IDENTITY_FAILED", "Failed to get identity")
-		}
-		fmt.Println("kratosIdentity", kratosIdentity.Traits)
-		if kratosIdentity.Traits.(map[string]interface{})[identity.Type] == identity.Value {
-			break
-		}
 	}
 
 	// 5. Rate limit
@@ -1279,7 +1258,7 @@ func (u *userUseCase) VerifyIdentifier(
 func (u *userUseCase) UpdateLang(
 	ctx context.Context,
 	tenantID uuid.UUID,
-	kratosUserID string,
+	globalUserID string,
 	lang string,
 ) *domainerrors.DomainError {
 	// 1. Normalize & validate
@@ -1297,14 +1276,13 @@ func (u *userUseCase) UpdateLang(
 	}
 
 	// 3. Resolve peer identities (same global_user_id in this tenant)
-	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
+	identities, err := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, globalUserID, tenantID.String())
 	if err != nil {
 		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
 	}
 	if len(identities) == 0 {
 		return domainerrors.NewNotFoundError("MSG_IDENTITIES_NOT_FOUND", "User identities")
 	}
-	globalUserID := identities[0].GlobalUserID
 
 	// 4. Update traits.lang on ALL related Kratos identities
 	for _, id := range identities {

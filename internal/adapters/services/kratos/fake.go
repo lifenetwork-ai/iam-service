@@ -33,6 +33,7 @@ type FakeKratosService struct {
 	sessions   map[string]*kratos.Session
 	flows      map[string]*flowRecord
 	faults     Faults
+	langs      map[uuid.UUID]string
 }
 
 type flowRecord struct {
@@ -46,6 +47,7 @@ func NewFakeKratosService() *FakeKratosService {
 		identities: make(map[uuid.UUID]map[string]*kratos.Identity),
 		sessions:   make(map[string]*kratos.Session),
 		flows:      make(map[string]*flowRecord),
+		langs:      make(map[uuid.UUID]string),
 	}
 }
 
@@ -423,6 +425,14 @@ func (f *FakeKratosService) GetIdentity(ctx context.Context, tenantID, identityI
 		}
 	}
 	return nil, fmt.Errorf("identity not found")
+}
+
+func (f *FakeKratosService) UpdateLangAdmin(ctx context.Context, tenantID, identityID uuid.UUID, newLang string) error {
+	if f.faults.NetworkError {
+		return errors.New("network error")
+	}
+	f.langs[tenantID] = newLang
+	return nil
 }
 
 // helpers

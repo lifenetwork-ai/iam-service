@@ -498,6 +498,21 @@ func (mr *MockUserIdentifierMappingRepositoryMockRecorder) GetByGlobalUserID(ctx
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGlobalUserID", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).GetByGlobalUserID), ctx, globalUserID)
 }
 
+// GetByGlobalUserIDAndTenantID mocks base method.
+func (m *MockUserIdentifierMappingRepository) GetByGlobalUserIDAndTenantID(ctx context.Context, globalUserID, tenantID string) ([]*domain.UserIdentifierMapping, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByGlobalUserIDAndTenantID", ctx, globalUserID, tenantID)
+	ret0, _ := ret[0].([]*domain.UserIdentifierMapping)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByGlobalUserIDAndTenantID indicates an expected call of GetByGlobalUserIDAndTenantID.
+func (mr *MockUserIdentifierMappingRepositoryMockRecorder) GetByGlobalUserIDAndTenantID(ctx, globalUserID, tenantID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGlobalUserIDAndTenantID", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).GetByGlobalUserIDAndTenantID), ctx, globalUserID, tenantID)
+}
+
 // GetByTenantIDAndKratosUserID mocks base method.
 func (m *MockUserIdentifierMappingRepository) GetByTenantIDAndKratosUserID(ctx context.Context, tenantID, kratosUserID string) (*domain.UserIdentifierMapping, error) {
 	m.ctrl.T.Helper()
@@ -593,6 +608,36 @@ func (m *MockUserIdentityRepository) ExistsWithinTenant(ctx context.Context, ten
 func (mr *MockUserIdentityRepositoryMockRecorder) ExistsWithinTenant(ctx, tenantID, identityType, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistsWithinTenant", reflect.TypeOf((*MockUserIdentityRepository)(nil).ExistsWithinTenant), ctx, tenantID, identityType, value)
+}
+
+// GetByGlobalUserIDAndTenantID mocks base method.
+func (m *MockUserIdentityRepository) GetByGlobalUserIDAndTenantID(ctx context.Context, tx *gorm.DB, globalUserID, tenantID string) ([]*domain.UserIdentity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByGlobalUserIDAndTenantID", ctx, tx, globalUserID, tenantID)
+	ret0, _ := ret[0].([]*domain.UserIdentity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByGlobalUserIDAndTenantID indicates an expected call of GetByGlobalUserIDAndTenantID.
+func (mr *MockUserIdentityRepositoryMockRecorder) GetByGlobalUserIDAndTenantID(ctx, tx, globalUserID, tenantID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGlobalUserIDAndTenantID", reflect.TypeOf((*MockUserIdentityRepository)(nil).GetByGlobalUserIDAndTenantID), ctx, tx, globalUserID, tenantID)
+}
+
+// GetByID mocks base method.
+func (m *MockUserIdentityRepository) GetByID(ctx context.Context, tx *gorm.DB, identityID string) (*domain.UserIdentity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, tx, identityID)
+	ret0, _ := ret[0].(*domain.UserIdentity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockUserIdentityRepositoryMockRecorder) GetByID(ctx, tx, identityID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserIdentityRepository)(nil).GetByID), ctx, tx, identityID)
 }
 
 // GetByTypeAndValue mocks base method.
