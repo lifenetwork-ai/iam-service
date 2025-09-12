@@ -194,7 +194,6 @@ func (u *userUseCase) VerifyRegister(
 	}
 
 	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, flowID)
-	fmt.Println("sessionValue", sessionValue)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHALLENGE_SESSION_NOT_FOUND", "Challenge session not found")
 	}
@@ -258,7 +257,6 @@ func (u *userUseCase) VerifyRegister(
 			ctx,
 			tenant,
 			sessionValue.GlobalUserID,
-			sessionValue.IdentityID,
 			sessionValue.KratosUserID,
 			newKratosUserID,
 			identifier,
@@ -316,26 +314,24 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
 	globalUserID string,
-	oldIdentityID string, // the identity id of the old identifier to be deleted
 	oldKratosUserID string,
 	newKratosUserID string,
 	newIdentifier string,
 	newIdentifierType string,
 ) error {
 	// Pre-fetch the current mapping before starting the transaction
-	globalIdentifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndKratosUserID(
+	globalIdentifierMapping, err := u.userIdentifierMappingRepo.GetByGlobalUserID(
 		ctx,
-		tenant.ID.String(),
-		oldKratosUserID,
+		globalUserID,
 	)
-	if err != nil {
+	if err != nil || globalIdentifierMapping == nil {
 		return fmt.Errorf("get existing mapping: %w", err)
 	}
 
 	// Get the old identifier
-	oldIdentity, err := u.userIdentityRepo.GetByID(ctx, nil, oldIdentityID)
+	oldIdentity, err := u.userIdentityRepo.GetByTenantAndKratosUserID(ctx, nil, tenant.ID.String(), oldKratosUserID)
 	if err != nil {
-		return fmt.Errorf("old identity with id: %s not found: %w", oldIdentityID, err)
+		return fmt.Errorf("old identity with id: %s in tenant %s not found: %w", oldKratosUserID, tenant.ID.String(), err)
 	}
 
 	// Begin transaction
@@ -343,21 +339,11 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 		// Create identity for the new identifier with the existing GlobalUserID
 		if err := u.userIdentityRepo.Update(tx, &domain.UserIdentity{
 			ID:           oldIdentity.ID,
-			GlobalUserID: oldIdentity.GlobalUserID,
-			TenantID:     tenant.ID.String(),
+			KratosUserID: newKratosUserID,
 			Type:         newIdentifierType,
 			Value:        newIdentifier,
 		}); err != nil {
 			return fmt.Errorf("create new identity: %w", err)
-		}
-
-		if globalIdentifierMapping == nil {
-			if err := u.userIdentifierMappingRepo.Create(ctx, tx, &domain.UserIdentifierMapping{
-				GlobalUserID: globalUserID,
-				Lang:         tenant.ID.String(),
-			}); err != nil {
-				return fmt.Errorf("create mapping: %w", err)
-			}
 		}
 		// If we reach here, all operations succeeded and the transaction will be committed
 		return nil
@@ -370,7 +356,7 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 		return fmt.Errorf("failed to bind IAM to update identifier: %v", txErr)
 	}
 	// Delete the old identifier from Kratos
-	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldKratosUserID)); err != nil {
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldIdentity.KratosUserID)); err != nil {
 		return fmt.Errorf("failed to delete old identifier: %w", err)
 	}
 
@@ -1008,7 +994,7 @@ func (u *userUseCase) ChangeIdentifier(
 	ctx context.Context,
 	globalUserID string,
 	tenantID uuid.UUID,
-	kratosUserID string,
+	_ string,
 	newIdentifier string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// 1. Validate identifier type
@@ -1103,11 +1089,10 @@ func (u *userUseCase) ChangeIdentifier(
 	// 8. Save challenge session
 	session := &domain.ChallengeSession{
 		GlobalUserID:   globalUserID,
-		KratosUserID:   kratosUserID,
+		KratosUserID:   identity.KratosUserID, // the kratos user id of the old identifier to be deleted
 		IdentifierType: newIdentifierType,
 		Identifier:     newIdentifier,
 		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
-		IdentityID:     identity.ID, // the identity id of the old identifier to be deleted
 	}
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")

@@ -226,8 +226,6 @@ func (f *FakeKratosService) DeleteIdentifierAdmin(ctx context.Context, tenantID,
 		return errors.New("delete failed")
 	}
 
-	fmt.Println("identityID", identityID.String())
-	fmt.Println("tenantID", tenantID.String())
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -235,18 +233,19 @@ func (f *FakeKratosService) DeleteIdentifierAdmin(ctx context.Context, tenantID,
 	if !ok {
 		return fmt.Errorf("tenant not found")
 	}
-	fmt.Println("idMap", idMap)
 
-	// Remove every identifier string that points to this identityID
+	// Completely remove the identity from the map
+	var keyToDelete string
 	for key, ident := range idMap {
-		fmt.Println("ident", ident.Id)
-
 		if ident.Id == identityID.String() {
-			delete(idMap, key)
+			keyToDelete = key
+			break
 		}
 	}
 
-	fmt.Println("idMap", idMap)
+	if keyToDelete != "" {
+		delete(idMap, keyToDelete)
+	}
 
 	// Optional: clean up if tenant has no identities left
 	if len(idMap) == 0 {

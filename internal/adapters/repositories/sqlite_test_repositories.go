@@ -227,7 +227,7 @@ func (r *SQLiteUserIdentityRepository) Update(tx *gorm.DB, identity *domain.User
 	if tx == nil {
 		tx = r.db
 	}
-	return tx.Model(&domain.UserIdentity{}).Where("id = ?", identity.ID).Updates(map[string]interface{}{"global_user_id": identity.GlobalUserID, "tenant_id": identity.TenantID, "type": identity.Type, "value": identity.Value}).Error
+	return tx.Model(&domain.UserIdentity{}).Where("id = ?", identity.ID).Updates(identity).Error
 }
 func (r *SQLiteUserIdentityRepository) ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error) {
 	var c int64
