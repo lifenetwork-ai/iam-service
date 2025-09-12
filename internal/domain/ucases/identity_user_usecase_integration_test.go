@@ -247,3 +247,72 @@ func TestIntegration_ChangeIdentifier_PhoneToPhone_LoginChecks(t *testing.T) {
 		require.NotNil(t, loginResp)
 	})
 }
+
+func TestIntegration_ChangeIdentifier_PhoneToEmail_LoginChecks(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ucase, deps, db := buildUseCaseWithSQLiteRepos(ctrl)
+	ctx := context.Background()
+
+	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
+	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	tenantID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+
+	oldPhone := "+84345381013"
+	newEmail := "newemail@test.com"
+
+	// Seed DB state
+	_ = db.Create(&domain.Tenant{ID: tenantID, Name: "tenant-name"}).Error
+
+	// Register a phone identity (only phone exists initially)
+	registerResp, registerErr := ucase.Register(ctx, tenantID, "en", "", oldPhone)
+	require.Nil(t, registerErr)
+	require.NotNil(t, registerResp)
+
+	verifyRegisterResp, verifyErr := ucase.VerifyRegister(ctx, tenantID, registerResp.VerificationFlow.FlowID, "000000")
+	require.Nil(t, verifyErr)
+	require.NotNil(t, verifyRegisterResp)
+	globalUserID := verifyRegisterResp.User.GlobalUserID
+
+	// Act: change identifier phone→email (since only one identifier exists, it should replace it)
+	changeResp, changeErr := ucase.ChangeIdentifier(ctx, globalUserID, tenantID, verifyRegisterResp.User.ID, newEmail)
+	require.Nil(t, changeErr)
+	require.NotNil(t, changeResp)
+
+	verifyChangeResp, verifyErr := ucase.VerifyRegister(ctx, tenantID, changeResp.FlowID, "000000")
+	require.Nil(t, verifyErr)
+	require.NotNil(t, verifyChangeResp)
+
+	// Query identities in IAM, ensure there is ONLY the new email identity (old phone removed)
+	identities, ucaseErr := ucase.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, globalUserID, tenantID.String())
+	require.Nil(t, ucaseErr)
+	require.NotNil(t, identities)
+	require.Equal(t, 1, len(identities))
+	require.Equal(t, constants.IdentifierEmail.String(), identities[0].Type)
+	require.Equal(t, newEmail, identities[0].Value)
+
+	// Query Kratos, ensure old phone is deleted and new email exists
+	servc := deps.kratosService.(*kratos_service.FakeKratosService)
+	ids, _ := servc.GetIdentities(ctx, tenantID)
+	newId, ok := ids[newEmail]
+	require.True(t, ok)
+	require.Equal(t, newEmail, newId.Traits.(map[string]interface{})[constants.IdentifierEmail.String()])
+	_, ok = ids[oldPhone]
+	require.False(t, ok)
+
+	// Check: login with new email works, old phone fails
+	t.Run("login with new email works", func(t *testing.T) {
+		loginResp, err := ucase.ChallengeWithEmail(ctx, tenantID, newEmail)
+		require.Nil(t, err)
+		require.NotNil(t, loginResp)
+	})
+
+	t.Run("login with old phone fails", func(t *testing.T) {
+		loginResp, err := ucase.ChallengeWithPhone(ctx, tenantID, oldPhone)
+		require.NotNil(t, err)
+		require.Nil(t, loginResp)
+		require.Contains(t, err.Error(), "not found")
+	})
+}
