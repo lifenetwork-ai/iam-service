@@ -46,6 +46,7 @@ type KratosService interface {
 	GetIdentity(ctx context.Context, tenantID, identityID uuid.UUID) (*kratos.Identity, error)
 	UpdateIdentifierTraitAdmin(ctx context.Context, tenantID, identityID uuid.UUID, traits map[string]interface{}) error
 	DeleteIdentifierAdmin(ctx context.Context, tenantID, identityID uuid.UUID) error
+	UpdateLangAdmin(ctx context.Context, tenantID, identityID uuid.UUID, newLang string) error
 }
 
 type KetoService interface {

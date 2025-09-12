@@ -4,7 +4,7 @@ import "time"
 
 // IdentityUserDTO represents an User.
 type IdentityUserResponse struct {
-	GlobalUserID string `json:"global_user_id"`
+	GlobalUserID string `json:"global_user_id,omitempty"`
 	ID           string `json:"id"`
 	Seed         string `json:"seed,omitempty"`
 	UserName     string `json:"user_name,omitempty"`
@@ -39,7 +39,7 @@ type IdentityUserAuthResponse struct {
 	AuthenticatedAt *time.Time `json:"authenticated_at,omitempty"`
 
 	// User information
-	User IdentityUserResponse `json:"user,omitempty"`
+	User *IdentityUserResponse `json:"user,omitempty"`
 
 	// Optional session metadata
 	AuthenticationMethods []string `json:"authentication_methods,omitempty"`

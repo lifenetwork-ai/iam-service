@@ -104,18 +104,18 @@ func (mr *MockIdentityUserUseCaseMockRecorder) ChallengeWithPhone(ctx, tenantID,
 }
 
 // ChangeIdentifier mocks base method.
-func (m *MockIdentityUserUseCase) ChangeIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, tenantUserID, newIdentifier string) (*types.IdentityUserChallengeResponse, *errors.DomainError) {
+func (m *MockIdentityUserUseCase) ChangeIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, kratosUserID, newIdentifier string) (*types.IdentityUserChallengeResponse, *errors.DomainError) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ChangeIdentifier", ctx, globalUserID, tenantID, tenantUserID, newIdentifier)
+	ret := m.ctrl.Call(m, "ChangeIdentifier", ctx, globalUserID, tenantID, kratosUserID, newIdentifier)
 	ret0, _ := ret[0].(*types.IdentityUserChallengeResponse)
 	ret1, _ := ret[1].(*errors.DomainError)
 	return ret0, ret1
 }
 
 // ChangeIdentifier indicates an expected call of ChangeIdentifier.
-func (mr *MockIdentityUserUseCaseMockRecorder) ChangeIdentifier(ctx, globalUserID, tenantID, tenantUserID, newIdentifier any) *gomock.Call {
+func (mr *MockIdentityUserUseCaseMockRecorder) ChangeIdentifier(ctx, globalUserID, tenantID, kratosUserID, newIdentifier any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).ChangeIdentifier), ctx, globalUserID, tenantID, tenantUserID, newIdentifier)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).ChangeIdentifier), ctx, globalUserID, tenantID, kratosUserID, newIdentifier)
 }
 
 // CheckIdentifier mocks base method.
@@ -135,17 +135,17 @@ func (mr *MockIdentityUserUseCaseMockRecorder) CheckIdentifier(ctx, tenantID, id
 }
 
 // DeleteIdentifier mocks base method.
-func (m *MockIdentityUserUseCase) DeleteIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, tenantUserID, identifierType string) *errors.DomainError {
+func (m *MockIdentityUserUseCase) DeleteIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, kratosUserID, identifierType string) *errors.DomainError {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteIdentifier", ctx, globalUserID, tenantID, tenantUserID, identifierType)
+	ret := m.ctrl.Call(m, "DeleteIdentifier", ctx, globalUserID, tenantID, kratosUserID, identifierType)
 	ret0, _ := ret[0].(*errors.DomainError)
 	return ret0
 }
 
 // DeleteIdentifier indicates an expected call of DeleteIdentifier.
-func (mr *MockIdentityUserUseCaseMockRecorder) DeleteIdentifier(ctx, globalUserID, tenantID, tenantUserID, identifierType any) *gomock.Call {
+func (mr *MockIdentityUserUseCaseMockRecorder) DeleteIdentifier(ctx, globalUserID, tenantID, kratosUserID, identifierType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).DeleteIdentifier), ctx, globalUserID, tenantID, tenantUserID, identifierType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).DeleteIdentifier), ctx, globalUserID, tenantID, kratosUserID, identifierType)
 }
 
 // Login mocks base method.
@@ -220,6 +220,20 @@ func (m *MockIdentityUserUseCase) Register(ctx context.Context, tenantID uuid.UU
 func (mr *MockIdentityUserUseCaseMockRecorder) Register(ctx, tenantID, lang, email, phone any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockIdentityUserUseCase)(nil).Register), ctx, tenantID, lang, email, phone)
+}
+
+// UpdateLang mocks base method.
+func (m *MockIdentityUserUseCase) UpdateLang(ctx context.Context, tenantID uuid.UUID, kratosUserID, lang string) *errors.DomainError {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateLang", ctx, tenantID, kratosUserID, lang)
+	ret0, _ := ret[0].(*errors.DomainError)
+	return ret0
+}
+
+// UpdateLang indicates an expected call of UpdateLang.
+func (mr *MockIdentityUserUseCaseMockRecorder) UpdateLang(ctx, tenantID, kratosUserID, lang any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLang", reflect.TypeOf((*MockIdentityUserUseCase)(nil).UpdateLang), ctx, tenantID, kratosUserID, lang)
 }
 
 // VerifyIdentifier mocks base method.

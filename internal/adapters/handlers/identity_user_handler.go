@@ -392,7 +392,7 @@ func validateRegisterPayload(reqPayload dto.IdentityUserRegisterDTO) *dto.ErrorD
 // @Accept json
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
-// @Param Authorization header string true "Bearer Token (Bearer ory...)"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Param body body dto.IdentityUserAddIdentifierDTO true "Identifier info"
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent for verification"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -442,7 +442,7 @@ func (h *userHandler) AddIdentifier(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
-// @Param Authorization header string true "Bearer Token (Bearer ory...)"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Param body body dto.IdentityUserChangeIdentifierDTO true "Identifier info"
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserChallengeResponse} "OTP sent for verification"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -485,7 +485,7 @@ func (h *userHandler) ChangeIdentifier(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
-// @Param Authorization header string true "Bearer Token (Bearer ory...)"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
 // @Param body body dto.IdentityUserDeleteIdentifierDTO true "Identifier info"
 // @Success 200 {object} response.SuccessResponse{data=map[string]string} "Identifier deleted successfully"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
@@ -598,4 +598,51 @@ func (h *userHandler) ChallengeVerification(ctx *gin.Context) {
 	}
 
 	httpresponse.Success(ctx, http.StatusOK, result)
+}
+
+// UpdateLang updates the authenticated user's preferred language (traits.lang).
+// @Summary Update user language
+// @Description Update current user's preferred language (traits.lang).
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Param Authorization header string true "Bearer Token (Bearer ory...)" default(Bearer <token>)
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param body body dto.IdentityUserUpdateLangDTO true "Language payload"
+// @Success 200 {object} response.SuccessResponse{data=map[string]string} "Language updated"
+// @Failure 400 {object} response.ErrorResponse "Invalid request payload"
+// @Failure 401 {object} response.ErrorResponse "Unauthorized"
+// @Failure 500 {object} response.ErrorResponse "Internal server error"
+// @Router /api/v1/users/me/update-lang [patch]
+func (h *userHandler) UpdateLang(ctx *gin.Context) {
+	tenant, err := middleware.GetTenantFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
+		return
+	}
+
+	user, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "MSG_UNAUTHORIZED", "Unauthorized", nil)
+		return
+	}
+
+	var req dto.IdentityUserUpdateLangDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
+		return
+	}
+
+	lang := utils.NormalizeLang(req.Lang)
+	if lang == "" || !utils.IsLangSupported(lang) {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_NOT_SUPPORTED_LANGUAGE", "Unsupported language", []interface{}{req.Lang})
+		return
+	}
+
+	if usecaseErr := h.ucase.UpdateLang(ctx, tenant.ID, user.ID, lang); usecaseErr != nil {
+		handleDomainError(ctx, usecaseErr)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusOK, map[string]string{"message": "Language updated"})
 }

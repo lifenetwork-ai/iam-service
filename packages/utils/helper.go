@@ -15,6 +15,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
+// NormalizeFields normalizes struct fields by setting any field with value "string" to an empty string.
 func NormalizeFields(payload interface{}) {
 	val := reflect.ValueOf(payload).Elem() // Dereference pointer to get the struct
 

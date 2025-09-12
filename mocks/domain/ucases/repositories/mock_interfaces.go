@@ -440,32 +440,32 @@ func (m *MockUserIdentifierMappingRepository) EXPECT() *MockUserIdentifierMappin
 }
 
 // Create mocks base method.
-func (m *MockUserIdentifierMappingRepository) Create(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
+func (m *MockUserIdentifierMappingRepository) Create(ctx context.Context, tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", tx, mapping)
+	ret := m.ctrl.Call(m, "Create", ctx, tx, mapping)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockUserIdentifierMappingRepositoryMockRecorder) Create(tx, mapping any) *gomock.Call {
+func (mr *MockUserIdentifierMappingRepositoryMockRecorder) Create(ctx, tx, mapping any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).Create), tx, mapping)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).Create), ctx, tx, mapping)
 }
 
-// ExistsByTenantAndTenantUserID mocks base method.
-func (m *MockUserIdentifierMappingRepository) ExistsByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (bool, error) {
+// ExistsByTenantAndKratosUserID mocks base method.
+func (m *MockUserIdentifierMappingRepository) ExistsByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExistsByTenantAndTenantUserID", ctx, tx, tenantID, tenantUserID)
+	ret := m.ctrl.Call(m, "ExistsByTenantAndKratosUserID", ctx, tx, tenantID, kratosUserID)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ExistsByTenantAndTenantUserID indicates an expected call of ExistsByTenantAndTenantUserID.
-func (mr *MockUserIdentifierMappingRepositoryMockRecorder) ExistsByTenantAndTenantUserID(ctx, tx, tenantID, tenantUserID any) *gomock.Call {
+// ExistsByTenantAndKratosUserID indicates an expected call of ExistsByTenantAndKratosUserID.
+func (mr *MockUserIdentifierMappingRepositoryMockRecorder) ExistsByTenantAndKratosUserID(ctx, tx, tenantID, kratosUserID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistsByTenantAndTenantUserID", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).ExistsByTenantAndTenantUserID), ctx, tx, tenantID, tenantUserID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistsByTenantAndKratosUserID", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).ExistsByTenantAndKratosUserID), ctx, tx, tenantID, kratosUserID)
 }
 
 // ExistsMapping mocks base method.
@@ -483,48 +483,48 @@ func (mr *MockUserIdentifierMappingRepositoryMockRecorder) ExistsMapping(ctx, te
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistsMapping", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).ExistsMapping), ctx, tenantID, globalUserID)
 }
 
-// GetByTenantIDAndIdentifier mocks base method.
-func (m *MockUserIdentifierMappingRepository) GetByTenantIDAndIdentifier(ctx context.Context, tenantID, identifierType, identifierValue string) (string, error) {
+// GetByGlobalUserID mocks base method.
+func (m *MockUserIdentifierMappingRepository) GetByGlobalUserID(ctx context.Context, globalUserID string) (*domain.UserIdentifierMapping, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByTenantIDAndIdentifier", ctx, tenantID, identifierType, identifierValue)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByTenantIDAndIdentifier indicates an expected call of GetByTenantIDAndIdentifier.
-func (mr *MockUserIdentifierMappingRepositoryMockRecorder) GetByTenantIDAndIdentifier(ctx, tenantID, identifierType, identifierValue any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTenantIDAndIdentifier", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).GetByTenantIDAndIdentifier), ctx, tenantID, identifierType, identifierValue)
-}
-
-// GetByTenantIDAndTenantUserID mocks base method.
-func (m *MockUserIdentifierMappingRepository) GetByTenantIDAndTenantUserID(ctx context.Context, tenantID, tenantUserID string) (*domain.UserIdentifierMapping, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByTenantIDAndTenantUserID", ctx, tenantID, tenantUserID)
+	ret := m.ctrl.Call(m, "GetByGlobalUserID", ctx, globalUserID)
 	ret0, _ := ret[0].(*domain.UserIdentifierMapping)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetByTenantIDAndTenantUserID indicates an expected call of GetByTenantIDAndTenantUserID.
-func (mr *MockUserIdentifierMappingRepositoryMockRecorder) GetByTenantIDAndTenantUserID(ctx, tenantID, tenantUserID any) *gomock.Call {
+// GetByGlobalUserID indicates an expected call of GetByGlobalUserID.
+func (mr *MockUserIdentifierMappingRepositoryMockRecorder) GetByGlobalUserID(ctx, globalUserID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTenantIDAndTenantUserID", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).GetByTenantIDAndTenantUserID), ctx, tenantID, tenantUserID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGlobalUserID", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).GetByGlobalUserID), ctx, globalUserID)
 }
 
-// Update mocks base method.
-func (m *MockUserIdentifierMappingRepository) Update(tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
+// GetByTenantIDAndKratosUserID mocks base method.
+func (m *MockUserIdentifierMappingRepository) GetByTenantIDAndKratosUserID(ctx context.Context, tenantID, kratosUserID string) (*domain.UserIdentifierMapping, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", tx, mapping)
+	ret := m.ctrl.Call(m, "GetByTenantIDAndKratosUserID", ctx, tenantID, kratosUserID)
+	ret0, _ := ret[0].(*domain.UserIdentifierMapping)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByTenantIDAndKratosUserID indicates an expected call of GetByTenantIDAndKratosUserID.
+func (mr *MockUserIdentifierMappingRepositoryMockRecorder) GetByTenantIDAndKratosUserID(ctx, tenantID, kratosUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTenantIDAndKratosUserID", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).GetByTenantIDAndKratosUserID), ctx, tenantID, kratosUserID)
+}
+
+// Upsert mocks base method.
+func (m *MockUserIdentifierMappingRepository) Upsert(ctx context.Context, tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Upsert", ctx, tx, mapping)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Update indicates an expected call of Update.
-func (mr *MockUserIdentifierMappingRepositoryMockRecorder) Update(tx, mapping any) *gomock.Call {
+// Upsert indicates an expected call of Upsert.
+func (mr *MockUserIdentifierMappingRepositoryMockRecorder) Upsert(ctx, tx, mapping any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).Update), tx, mapping)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockUserIdentifierMappingRepository)(nil).Upsert), ctx, tx, mapping)
 }
 
 // MockUserIdentityRepository is a mock of UserIdentityRepository interface.
@@ -595,51 +595,6 @@ func (mr *MockUserIdentityRepositoryMockRecorder) ExistsWithinTenant(ctx, tenant
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistsWithinTenant", reflect.TypeOf((*MockUserIdentityRepository)(nil).ExistsWithinTenant), ctx, tenantID, identityType, value)
 }
 
-// FindGlobalUserIDByIdentity mocks base method.
-func (m *MockUserIdentityRepository) FindGlobalUserIDByIdentity(ctx context.Context, tenantID, identityType, value string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindGlobalUserIDByIdentity", ctx, tenantID, identityType, value)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FindGlobalUserIDByIdentity indicates an expected call of FindGlobalUserIDByIdentity.
-func (mr *MockUserIdentityRepositoryMockRecorder) FindGlobalUserIDByIdentity(ctx, tenantID, identityType, value any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindGlobalUserIDByIdentity", reflect.TypeOf((*MockUserIdentityRepository)(nil).FindGlobalUserIDByIdentity), ctx, tenantID, identityType, value)
-}
-
-// GetByGlobalUserID mocks base method.
-func (m *MockUserIdentityRepository) GetByGlobalUserID(ctx context.Context, tx *gorm.DB, tenantID, globalUserID string) ([]domain.UserIdentity, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByGlobalUserID", ctx, tx, tenantID, globalUserID)
-	ret0, _ := ret[0].([]domain.UserIdentity)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByGlobalUserID indicates an expected call of GetByGlobalUserID.
-func (mr *MockUserIdentityRepositoryMockRecorder) GetByGlobalUserID(ctx, tx, tenantID, globalUserID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGlobalUserID", reflect.TypeOf((*MockUserIdentityRepository)(nil).GetByGlobalUserID), ctx, tx, tenantID, globalUserID)
-}
-
-// GetByTenantAndTenantUserID mocks base method.
-func (m *MockUserIdentityRepository) GetByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (*domain.UserIdentity, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByTenantAndTenantUserID", ctx, tx, tenantID, tenantUserID)
-	ret0, _ := ret[0].(*domain.UserIdentity)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByTenantAndTenantUserID indicates an expected call of GetByTenantAndTenantUserID.
-func (mr *MockUserIdentityRepositoryMockRecorder) GetByTenantAndTenantUserID(ctx, tx, tenantID, tenantUserID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTenantAndTenantUserID", reflect.TypeOf((*MockUserIdentityRepository)(nil).GetByTenantAndTenantUserID), ctx, tx, tenantID, tenantUserID)
-}
-
 // GetByTypeAndValue mocks base method.
 func (m *MockUserIdentityRepository) GetByTypeAndValue(ctx context.Context, tx *gorm.DB, tenantID, identityType, value string) (*domain.UserIdentity, error) {
 	m.ctrl.T.Helper()
@@ -655,19 +610,34 @@ func (mr *MockUserIdentityRepositoryMockRecorder) GetByTypeAndValue(ctx, tx, ten
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTypeAndValue", reflect.TypeOf((*MockUserIdentityRepository)(nil).GetByTypeAndValue), ctx, tx, tenantID, identityType, value)
 }
 
-// InsertOnceByTenantUserAndType mocks base method.
-func (m *MockUserIdentityRepository) InsertOnceByTenantUserAndType(ctx context.Context, tx *gorm.DB, tenantID, globalUserID, idType, value string) (bool, error) {
+// InsertOnceByKratosUserAndType mocks base method.
+func (m *MockUserIdentityRepository) InsertOnceByKratosUserAndType(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID, globalUserID, idType, value string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InsertOnceByTenantUserAndType", ctx, tx, tenantID, globalUserID, idType, value)
+	ret := m.ctrl.Call(m, "InsertOnceByKratosUserAndType", ctx, tx, tenantID, kratosUserID, globalUserID, idType, value)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// InsertOnceByTenantUserAndType indicates an expected call of InsertOnceByTenantUserAndType.
-func (mr *MockUserIdentityRepositoryMockRecorder) InsertOnceByTenantUserAndType(ctx, tx, tenantID, globalUserID, idType, value any) *gomock.Call {
+// InsertOnceByKratosUserAndType indicates an expected call of InsertOnceByKratosUserAndType.
+func (mr *MockUserIdentityRepositoryMockRecorder) InsertOnceByKratosUserAndType(ctx, tx, tenantID, kratosUserID, globalUserID, idType, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertOnceByTenantUserAndType", reflect.TypeOf((*MockUserIdentityRepository)(nil).InsertOnceByTenantUserAndType), ctx, tx, tenantID, globalUserID, idType, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertOnceByKratosUserAndType", reflect.TypeOf((*MockUserIdentityRepository)(nil).InsertOnceByKratosUserAndType), ctx, tx, tenantID, kratosUserID, globalUserID, idType, value)
+}
+
+// ListByTenantAndKratosUserID mocks base method.
+func (m *MockUserIdentityRepository) ListByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) ([]*domain.UserIdentity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByTenantAndKratosUserID", ctx, tx, tenantID, kratosUserID)
+	ret0, _ := ret[0].([]*domain.UserIdentity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByTenantAndKratosUserID indicates an expected call of ListByTenantAndKratosUserID.
+func (mr *MockUserIdentityRepositoryMockRecorder) ListByTenantAndKratosUserID(ctx, tx, tenantID, kratosUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByTenantAndKratosUserID", reflect.TypeOf((*MockUserIdentityRepository)(nil).ListByTenantAndKratosUserID), ctx, tx, tenantID, kratosUserID)
 }
 
 // Update mocks base method.

@@ -526,6 +526,30 @@ func (k *kratosServiceImpl) DeleteIdentifierAdmin(ctx context.Context, tenantID,
 	return nil
 }
 
+func (k *kratosServiceImpl) UpdateLangAdmin(
+	ctx context.Context,
+	tenantID, identityID uuid.UUID,
+	newLang string,
+) error {
+	adminAPI, err := k.client.AdminAPI(tenantID)
+	if err != nil {
+		return fmt.Errorf("get admin API failed: %w", err)
+	}
+
+	patches := []kratos.JsonPatch{
+		{Op: "add", Path: "/traits/lang", Value: newLang},
+	}
+
+	_, _, err = adminAPI.IdentityAPI.
+		PatchIdentity(ctx, identityID.String()).
+		JsonPatch(patches).
+		Execute()
+	if err != nil {
+		return fmt.Errorf("patch identity failed: %w", err)
+	}
+	return nil
+}
+
 // parseKratosErrorResponse parses error response from Kratos and returns appropriate error
 func parseKratosErrorResponse(resp *http.Response, defaultErr error) error {
 	if resp == nil {

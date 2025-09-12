@@ -11,8 +11,7 @@ import (
 type UserIdentifierMapping struct {
 	ID           string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
 	GlobalUserID string    `json:"global_user_id" gorm:"type:uuid;not null"`
-	TenantID     string    `json:"tenant_id" gorm:"type:uuid;not null"`
-	TenantUserID string    `json:"tenant_user_id" gorm:"type:uuid;not null"`
+	Lang         string    `json:"lang" gorm:"type:varchar(10);not null"`
 	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }

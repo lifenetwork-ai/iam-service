@@ -14,3 +14,12 @@ ON user_identities (tenant_id, global_user_id, type);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_tenant_type_value
 ON user_identities (tenant_id, type, value);
+
+ALTER TABLE user_identities
+ADD COLUMN IF NOT EXISTS kratos_user_id UUID;
+
+CREATE INDEX IF NOT EXISTS idx_user_identities_tenant_kratos
+ON user_identities (tenant_id, kratos_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_user_identities_global
+ON user_identities (global_user_id);

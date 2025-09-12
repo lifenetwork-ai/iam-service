@@ -123,6 +123,12 @@ func RegisterRoutes(
 		userHandler.DeleteIdentifier,
 	)
 
+	userRouter.PATCH(
+		"/me/update-lang",
+		authMiddleware.RequireAuth(),
+		userHandler.UpdateLang,
+	)
+
 	userRouter.POST(
 		"/verification/challenge",
 		authMiddleware.RequireAuth(),

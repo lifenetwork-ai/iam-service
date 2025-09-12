@@ -33,8 +33,6 @@ lint:
 
 swagger:
 	swag init -g ./cmd/main.go -d ./ -o ./docs
-wiring: 
-	wire ./wire
 
 migrate:
 	go run cmd/migration/main.go
