@@ -455,6 +455,5 @@ func (u *adminUseCase) AddIdentifierAdmin(
 		KratosUserID: newKratosUserID,
 		Identifier:   newIdentifier,
 		Lang:         lang,
-		UpdatedAt:    time.Now().Unix(),
 	}, nil
 }

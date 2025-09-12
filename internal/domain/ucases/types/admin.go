@@ -10,5 +10,4 @@ type AdminAddIdentifierResponse struct {
 	KratosUserID string `json:"kratos_user_id"`
 	Identifier   string `json:"new_identifier"`
 	Lang         string `json:"lang"`
-	UpdatedAt    int64  `json:"updated_at"`
 }
