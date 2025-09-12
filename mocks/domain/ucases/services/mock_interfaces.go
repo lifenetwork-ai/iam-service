@@ -47,17 +47,17 @@ func (m *MockKratosService) EXPECT() *MockKratosServiceMockRecorder {
 }
 
 // DeleteIdentifierAdmin mocks base method.
-func (m *MockKratosService) DeleteIdentifierAdmin(ctx context.Context, tenantID, identityID uuid.UUID) error {
+func (m *MockKratosService) DeleteIdentifierAdmin(ctx context.Context, tenantID, kratosUserID uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteIdentifierAdmin", ctx, tenantID, identityID)
+	ret := m.ctrl.Call(m, "DeleteIdentifierAdmin", ctx, tenantID, kratosUserID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteIdentifierAdmin indicates an expected call of DeleteIdentifierAdmin.
-func (mr *MockKratosServiceMockRecorder) DeleteIdentifierAdmin(ctx, tenantID, identityID any) *gomock.Call {
+func (mr *MockKratosServiceMockRecorder) DeleteIdentifierAdmin(ctx, tenantID, kratosUserID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentifierAdmin", reflect.TypeOf((*MockKratosService)(nil).DeleteIdentifierAdmin), ctx, tenantID, identityID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentifierAdmin", reflect.TypeOf((*MockKratosService)(nil).DeleteIdentifierAdmin), ctx, tenantID, kratosUserID)
 }
 
 // GetIdentity mocks base method.

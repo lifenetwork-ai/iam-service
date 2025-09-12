@@ -398,11 +398,11 @@ func (u *userUseCase) bindIAMToRegistration(
 		globalUser = &domain.GlobalUser{ID: globalUserID}
 
 		// Check if already mapped
-		exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndKratosUserID(ctx, tx, tenant.ID.String(), newKratosUserID)
+		exists, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, globalUserID)
 		if err != nil {
 			return fmt.Errorf("check mapping exists: %w", err)
 		}
-		if exists {
+		if exists != nil {
 			return nil
 		}
 	} else {

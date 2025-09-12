@@ -143,17 +143,6 @@ func (r *SQLiteUserIdentifierMappingRepository) Update(tx *gorm.DB, m *domain.Us
 	return tx.Save(m).Error
 }
 
-func (r *SQLiteUserIdentifierMappingRepository) ExistsMapping(ctx context.Context, tenantID, globalUserID string) (bool, error) {
-	var c int64
-	if err := r.db.Model(&domain.UserIdentifierMapping{}).
-		Joins("JOIN user_identities ui ON ui.global_user_id = user_identifier_mapping.global_user_id").
-		Where("ui.tenant_id = ? AND user_identifier_mapping.global_user_id = ?", tenantID, globalUserID).
-		Count(&c).Error; err != nil {
-		return false, err
-	}
-	return c > 0, nil
-}
-
 func (r *SQLiteUserIdentifierMappingRepository) Upsert(ctx context.Context, tx *gorm.DB, mapping *domain.UserIdentifierMapping) error {
 	db := r.db
 	if tx != nil {
