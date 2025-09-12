@@ -14,18 +14,32 @@ import (
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
+	domainservice "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
+	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type adminUseCase struct {
-	tenantRepo       domainrepo.TenantRepository
-	adminAccountRepo domainrepo.AdminAccountRepository
+	tenantRepo                domainrepo.TenantRepository
+	adminAccountRepo          domainrepo.AdminAccountRepository
+	userIdentityRepo          domainrepo.UserIdentityRepository
+	userIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository
+	kratosService             domainservice.KratosService
 }
 
-func NewAdminUseCase(tenantRepo domainrepo.TenantRepository, adminAccountRepo domainrepo.AdminAccountRepository) interfaces.AdminUseCase {
+func NewAdminUseCase(
+	tenantRepo domainrepo.TenantRepository,
+	adminAccountRepo domainrepo.AdminAccountRepository,
+	userIdentityRepo domainrepo.UserIdentityRepository,
+	userIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository,
+	kratosService domainservice.KratosService,
+) interfaces.AdminUseCase {
 	return &adminUseCase{
-		tenantRepo:       tenantRepo,
-		adminAccountRepo: adminAccountRepo,
+		tenantRepo:                tenantRepo,
+		adminAccountRepo:          adminAccountRepo,
+		userIdentityRepo:          userIdentityRepo,
+		userIdentifierMappingRepo: userIdentifierMappingRepo,
+		kratosService:             kratosService,
 	}
 }
 
@@ -349,4 +363,12 @@ func (u *adminUseCase) DeleteTenant(ctx context.Context, id string) (*domain.Ten
 	}
 
 	return &domainTenant, nil
+}
+
+func (u *adminUseCase) AddIdentifierAdmin(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	req types.AdminAddIdentifierDTO,
+) (*types.AdminAddIdentifierResponse, *domainerrors.DomainError) {
+	return nil, nil
 }
