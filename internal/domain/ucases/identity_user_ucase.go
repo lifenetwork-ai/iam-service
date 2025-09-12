@@ -869,26 +869,6 @@ func (u *userUseCase) AddNewIdentifier(
 	}, nil
 }
 
-func (u *userUseCase) CheckIdentifier(
-	ctx context.Context,
-	tenantID uuid.UUID,
-	identifier string,
-) (bool, string, *domainerrors.DomainError) {
-	// 1. Validate input
-	idType, identifier, derr := inferAndNormalizeIdentifier(identifier)
-	if derr != nil {
-		return false, idType, derr
-	}
-
-	// 2. Repo check (tenant-scoped)
-	ok, repoErr := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
-	if repoErr != nil {
-		return false, idType, domainerrors.WrapInternal(repoErr, "MSG_LOOKUP_FAILED", "Failed to check identifier")
-	}
-
-	return ok, idType, nil
-}
-
 // DeleteIdentifier deletes a user's identifier (email or phone)
 // Prevents deletion when user only has one identifier
 func (u *userUseCase) DeleteIdentifier(

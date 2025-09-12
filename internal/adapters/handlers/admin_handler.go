@@ -14,13 +14,11 @@ import (
 
 type adminHandler struct {
 	adminUCase interfaces.AdminUseCase
-	userUCase  interfaces.IdentityUserUseCase
 }
 
-func NewAdminHandler(adminUCase interfaces.AdminUseCase, userUCase interfaces.IdentityUserUseCase) *adminHandler {
+func NewAdminHandler(adminUCase interfaces.AdminUseCase) *adminHandler {
 	return &adminHandler{
 		adminUCase: adminUCase,
-		userUCase:  userUCase,
 	}
 }
 
@@ -251,26 +249,26 @@ func (h *adminHandler) DeleteTenant(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param X-Tenant-Id header string true "Tenant ID"
-// @Param body body dto.CheckIdentifierDTO true "Identifier payload"
+// @Param body body dto.AdminCheckIdentifierPayloadDTO true "Identifier payload"
 // @Success 200 {object} response.SuccessResponse{data=dto.CheckIdentifierResponse}
 // @Failure 400 {object} response.ErrorResponse
 // @Failure 401 {object} response.ErrorResponse
 // @Failure 500 {object} response.ErrorResponse
 // @Router /api/v1/admin/identifiers/check [post]
-func (h *adminHandler) CheckIdentifier(ctx *gin.Context) {
+func (h *adminHandler) CheckIdentifierAdmin(ctx *gin.Context) {
 	tenant, err := middleware.GetTenantFromContext(ctx)
 	if err != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
 		return
 	}
 
-	var req dto.CheckIdentifierDTO
+	var req dto.AdminCheckIdentifierPayloadDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid payload", err)
 		return
 	}
 
-	registered, _, derr := h.userUCase.CheckIdentifier(ctx, tenant.ID, req.Identifier)
+	registered, _, derr := h.adminUCase.CheckIdentifierAdmin(ctx, tenant.ID, req.Identifier)
 	if derr != nil {
 		handleDomainError(ctx, derr)
 		return

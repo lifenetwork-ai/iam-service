@@ -45,6 +45,7 @@ type CheckIdentifierResponse struct {
 	Registered bool `json:"registered"`
 }
 
+// AdminAddIdentifierResponse represents the response after an admin adds a new identifier to a user.
 type AdminAddIdentifierResponse struct {
 	GlobalUserID string `json:"global_user_id"`
 	KratosUserID string `json:"kratos_user_id"`

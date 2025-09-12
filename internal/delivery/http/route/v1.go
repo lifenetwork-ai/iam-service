@@ -24,7 +24,7 @@ func RegisterRoutes(
 	adminRouter := v1.Group("admin")
 
 	// Admin Tenant Management subgroup
-	adminHandler := handlers.NewAdminHandler(ucases.AdminUCase, ucases.IdentityUserUCase)
+	adminHandler := handlers.NewAdminHandler(ucases.AdminUCase)
 	accountRouter := adminRouter.Group("accounts")
 	{
 		accountRouter.Use(
@@ -42,7 +42,8 @@ func RegisterRoutes(
 		identifierGroup.Use(
 			middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
 		)
-		identifierGroup.POST("/check", adminHandler.CheckIdentifier)
+		identifierGroup.POST("/check", adminHandler.CheckIdentifierAdmin)
+		identifierGroup.POST("/add", adminHandler.AddIdentifierAdmin)
 	}
 
 	// Admin Tenant Management subgroup

@@ -181,7 +181,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CheckIdentifierDTO"
+                            "$ref": "#/definitions/dto.AdminCheckIdentifierPayloadDTO"
                         }
                     }
                 ],
@@ -1774,7 +1774,7 @@
                 }
             }
         },
-        "dto.CheckIdentifierDTO": {
+        "dto.AdminCheckIdentifierPayloadDTO": {
             "type": "object",
             "required": [
                 "identifier"

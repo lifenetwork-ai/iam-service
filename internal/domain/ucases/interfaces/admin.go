@@ -22,5 +22,6 @@ type AdminUseCase interface {
 	UpdateTenant(ctx context.Context, id, name, publicURL, adminURL string) (*domain.Tenant, *domainerrors.DomainError)
 	DeleteTenant(ctx context.Context, id string) (*domain.Tenant, *domainerrors.DomainError)
 	// User Identity Management
+	CheckIdentifierAdmin(ctx context.Context, tenantID uuid.UUID, identifier string) (bool, string, *domainerrors.DomainError)
 	AddIdentifierAdmin(ctx context.Context, tenantID uuid.UUID, req dto.AdminAddIdentifierPayloadDTO) (*dto.AdminAddIdentifierResponse, *domainerrors.DomainError)
 }

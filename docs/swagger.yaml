@@ -38,7 +38,7 @@ definitions:
       new_identifier:
         type: string
     type: object
-  dto.CheckIdentifierDTO:
+  dto.AdminCheckIdentifierPayloadDTO:
     properties:
       identifier:
         type: string
@@ -526,7 +526,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.CheckIdentifierDTO'
+          $ref: '#/definitions/dto.AdminCheckIdentifierPayloadDTO'
       produces:
       - application/json
       responses:

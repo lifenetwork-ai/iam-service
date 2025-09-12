@@ -365,6 +365,26 @@ func (u *adminUseCase) DeleteTenant(ctx context.Context, id string) (*domain.Ten
 	return &domainTenant, nil
 }
 
+func (u *adminUseCase) CheckIdentifierAdmin(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	identifier string,
+) (bool, string, *domainerrors.DomainError) {
+	// 1. Validate input
+	idType, identifier, derr := inferAndNormalizeIdentifier(identifier)
+	if derr != nil {
+		return false, idType, derr
+	}
+
+	// 2. Repo check (tenant-scoped)
+	ok, repoErr := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
+	if repoErr != nil {
+		return false, idType, domainerrors.WrapInternal(repoErr, "MSG_LOOKUP_FAILED", "Failed to check identifier")
+	}
+
+	return ok, idType, nil
+}
+
 func (u *adminUseCase) AddIdentifierAdmin(
 	ctx context.Context,
 	tenantID uuid.UUID,

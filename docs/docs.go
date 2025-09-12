@@ -188,7 +188,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CheckIdentifierDTO"
+                            "$ref": "#/definitions/dto.AdminCheckIdentifierPayloadDTO"
                         }
                     }
                 ],
@@ -1781,7 +1781,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CheckIdentifierDTO": {
+        "dto.AdminCheckIdentifierPayloadDTO": {
             "type": "object",
             "required": [
                 "identifier"

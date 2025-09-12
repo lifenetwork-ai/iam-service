@@ -91,12 +91,6 @@ type IdentityUserUseCase interface {
 		newIdentifier string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
 
-	CheckIdentifier(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		identifier string,
-	) (bool, string, *errors.DomainError)
-
 	ChallengeVerification(
 		ctx context.Context,
 		tenantID uuid.UUID,
