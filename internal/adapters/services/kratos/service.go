@@ -526,7 +526,6 @@ func (k *kratosServiceImpl) DeleteIdentifierAdmin(ctx context.Context, tenantID,
 	return nil
 }
 
-// UpdateLangAdmin updates traits.lang for a given identity via Admin API without overwriting other traits.
 func (k *kratosServiceImpl) UpdateLangAdmin(
 	ctx context.Context,
 	tenantID, identityID uuid.UUID,
@@ -537,25 +536,16 @@ func (k *kratosServiceImpl) UpdateLangAdmin(
 		return fmt.Errorf("get admin API failed: %w", err)
 	}
 
-	// 1. Read current identity (to avoid overwriting other traits)
-	idt, _, err := adminAPI.IdentityAPI.GetIdentity(ctx, identityID.String()).Execute()
-	if err != nil {
-		return fmt.Errorf("get identity failed: %w", err)
+	patches := []kratos.JsonPatch{
+		{Op: "add", Path: "/traits/lang", Value: newLang},
 	}
 
-	// 2. Merge: keep existing traits, only set lang
-	traits, ok := idt.Traits.(map[string]interface{})
-	if !ok || traits == nil {
-		traits = map[string]interface{}{}
-	}
-	traits["lang"] = newLang
-
-	// 3. Update
-	_, _, err = adminAPI.IdentityAPI.UpdateIdentity(ctx, identityID.String()).
-		UpdateIdentityBody(kratos.UpdateIdentityBody{Traits: traits}).
+	_, _, err = adminAPI.IdentityAPI.
+		PatchIdentity(ctx, identityID.String()).
+		JsonPatch(patches).
 		Execute()
 	if err != nil {
-		return fmt.Errorf("update identity failed: %w", err)
+		return fmt.Errorf("patch identity failed: %w", err)
 	}
 	return nil
 }
