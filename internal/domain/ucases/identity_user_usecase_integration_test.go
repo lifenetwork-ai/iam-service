@@ -31,8 +31,7 @@ func buildUseCaseWithSQLiteRepos(ctrl *gomock.Controller) (*userUseCase, struct 
 	challengeSessionRepo      domainrepo.ChallengeSessionRepository
 	kratosService             domainservice.KratosService
 	rateLimiter               *mock_types.MockRateLimiter
-}, *gorm.DB,
-) {
+}, *gorm.DB) {
 	deps := struct {
 		tenantRepo                domainrepo.TenantRepository
 		globalUserRepo            domainrepo.GlobalUserRepository
@@ -43,8 +42,9 @@ func buildUseCaseWithSQLiteRepos(ctrl *gomock.Controller) (*userUseCase, struct 
 		rateLimiter               *mock_types.MockRateLimiter
 	}{}
 
-	// Use a shared in-memory SQLite database so all connections share the same schema
-	db, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	// Use a uniquely named in-memory SQLite database per test to prevent state leakage
+	uniqueDSN := "file:" + uuid.NewString() + "?mode=memory&cache=shared"
+	db, _ := gorm.Open(sqlite.Open(uniqueDSN), &gorm.Config{})
 	// Create SQLite-compatible schemas
 	_ = db.Exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, public_url TEXT, admin_url TEXT, created_at datetime, updated_at datetime)").Error
 	_ = db.Exec("CREATE TABLE IF NOT EXISTS global_users (id TEXT PRIMARY KEY, created_at datetime, updated_at datetime)").Error
@@ -146,6 +146,7 @@ func TestIntegration_ChangeIdentifier_EmailToEmail_LoginChecks(t *testing.T) {
 		loginResp, err := ucase.ChallengeWithEmail(ctx, tenantID, newEmail)
 		require.Nil(t, err)
 		require.NotNil(t, loginResp)
+
 	})
 	t.Run("login with old email fails", func(t *testing.T) {
 		loginResp, err := ucase.ChallengeWithEmail(ctx, tenantID, oldEmail)
