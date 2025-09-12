@@ -31,7 +31,8 @@ func buildUseCaseWithSQLiteRepos(ctrl *gomock.Controller) (*userUseCase, struct 
 	challengeSessionRepo      domainrepo.ChallengeSessionRepository
 	kratosService             domainservice.KratosService
 	rateLimiter               *mock_types.MockRateLimiter
-}, *gorm.DB) {
+}, *gorm.DB,
+) {
 	deps := struct {
 		tenantRepo                domainrepo.TenantRepository
 		globalUserRepo            domainrepo.GlobalUserRepository
@@ -145,7 +146,6 @@ func TestIntegration_ChangeIdentifier_EmailToEmail_LoginChecks(t *testing.T) {
 		loginResp, err := ucase.ChallengeWithEmail(ctx, tenantID, newEmail)
 		require.Nil(t, err)
 		require.NotNil(t, loginResp)
-
 	})
 	t.Run("login with old email fails", func(t *testing.T) {
 		loginResp, err := ucase.ChallengeWithEmail(ctx, tenantID, oldEmail)

@@ -3,8 +3,9 @@ package domain
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/google/uuid"
 )
 
 // Represent an identity method (email, phone, social) for a global user.

@@ -26,6 +26,7 @@ func (r *SQLiteTenantRepository) Update(t *domain.Tenant) error { return r.db.Sa
 func (r *SQLiteTenantRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&domain.Tenant{}, "id = ?", id).Error
 }
+
 func (r *SQLiteTenantRepository) GetByID(id uuid.UUID) (*domain.Tenant, error) {
 	var t domain.Tenant
 	if err := r.db.First(&t, "id = ?", id).Error; err != nil {
@@ -33,10 +34,12 @@ func (r *SQLiteTenantRepository) GetByID(id uuid.UUID) (*domain.Tenant, error) {
 	}
 	return &t, nil
 }
+
 func (r *SQLiteTenantRepository) List() ([]*domain.Tenant, error) {
 	var ts []*domain.Tenant
 	return ts, r.db.Find(&ts).Error
 }
+
 func (r *SQLiteTenantRepository) GetByName(name string) (*domain.Tenant, error) {
 	var t domain.Tenant
 	if err := r.db.First(&t, "name = ?", name).Error; err != nil {
@@ -59,6 +62,7 @@ func (r *SQLiteGlobalUserRepository) GetByID(ctx context.Context, id string) (*d
 	}
 	return &g, nil
 }
+
 func (r *SQLiteGlobalUserRepository) Create(tx *gorm.DB, g *domain.GlobalUser) error {
 	if tx == nil {
 		tx = r.db
@@ -122,6 +126,7 @@ func (r *SQLiteUserIdentifierMappingRepository) GetByTenantIDAndIdentifier(ctx c
 	}
 	return m.GlobalUserID, nil
 }
+
 func (r *SQLiteUserIdentifierMappingRepository) GetByGlobalUserIDAndTenantID(ctx context.Context, globalUserID, tenantID string) ([]*domain.UserIdentifierMapping, error) {
 	var m []*domain.UserIdentifierMapping
 	if err := r.db.Find(&m, "global_user_id = ? AND tenant_id = ?", globalUserID, tenantID).Error; err != nil {
@@ -129,6 +134,7 @@ func (r *SQLiteUserIdentifierMappingRepository) GetByGlobalUserIDAndTenantID(ctx
 	}
 	return m, nil
 }
+
 func (r *SQLiteUserIdentifierMappingRepository) GetByTenantIDAndTenantUserID(ctx context.Context, tenantID, tenantUserID string) (*domain.UserIdentifierMapping, error) {
 	var m domain.UserIdentifierMapping
 	if err := r.db.First(&m, "tenant_id = ? AND tenant_user_id = ?", tenantID, tenantUserID).Error; err != nil {
@@ -136,6 +142,7 @@ func (r *SQLiteUserIdentifierMappingRepository) GetByTenantIDAndTenantUserID(ctx
 	}
 	return &m, nil
 }
+
 func (r *SQLiteUserIdentifierMappingRepository) Update(tx *gorm.DB, m *domain.UserIdentifierMapping) error {
 	if tx == nil {
 		tx = r.db
@@ -186,6 +193,7 @@ func (r *SQLiteUserIdentityRepository) GetByTypeAndValue(ctx context.Context, tx
 	}
 	return &u, nil
 }
+
 func (r *SQLiteUserIdentityRepository) FindGlobalUserIDByIdentity(ctx context.Context, tenantID, identityType, value string) (string, error) {
 	var u domain.UserIdentity
 	if err := r.db.First(&u, "tenant_id = ? AND type = ? AND value = ?", tenantID, identityType, value).Error; err != nil {
@@ -193,6 +201,7 @@ func (r *SQLiteUserIdentityRepository) FindGlobalUserIDByIdentity(ctx context.Co
 	}
 	return u.GlobalUserID, nil
 }
+
 func (r *SQLiteUserIdentityRepository) InsertOnceByKratosUserAndType(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID, globalUserID, idType, value string) (bool, error) {
 	if tx == nil {
 		tx = r.db
@@ -212,12 +221,14 @@ func (r *SQLiteUserIdentityRepository) InsertOnceByKratosUserAndType(ctx context
 		Value:        value,
 	}).Error
 }
+
 func (r *SQLiteUserIdentityRepository) Update(tx *gorm.DB, identity *domain.UserIdentity) error {
 	if tx == nil {
 		tx = r.db
 	}
 	return tx.Model(&domain.UserIdentity{}).Where("id = ?", identity.ID).Updates(identity).Error
 }
+
 func (r *SQLiteUserIdentityRepository) ExistsWithinTenant(ctx context.Context, tenantID, identityType, value string) (bool, error) {
 	var c int64
 	if err := r.db.Model(&domain.UserIdentity{}).Where("tenant_id = ? AND type = ? AND value = ?", tenantID, identityType, value).Count(&c).Error; err != nil {
@@ -225,6 +236,7 @@ func (r *SQLiteUserIdentityRepository) ExistsWithinTenant(ctx context.Context, t
 	}
 	return c > 0, nil
 }
+
 func (r *SQLiteUserIdentityRepository) GetByTenantAndTenantUserID(ctx context.Context, tx *gorm.DB, tenantID, tenantUserID string) (*domain.UserIdentity, error) {
 	if tx == nil {
 		tx = r.db
@@ -247,6 +259,7 @@ func (r *SQLiteUserIdentityRepository) ExistsByTenantGlobalUserIDAndType(ctx con
 	}
 	return c > 0, nil
 }
+
 func (r *SQLiteUserIdentityRepository) GetByGlobalUserIDAndTenantID(ctx context.Context, tx *gorm.DB, globalUserID, tenantID string) ([]*domain.UserIdentity, error) {
 	if tx == nil {
 		tx = r.db

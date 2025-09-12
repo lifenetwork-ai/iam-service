@@ -3,8 +3,9 @@ package domain
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/google/uuid"
 )
 
 // Represent a tenant-specific user identifier mapping to global user.
