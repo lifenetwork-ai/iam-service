@@ -57,3 +57,8 @@ func ToAdminAccountDTO(a domain.AdminAccount) AdminAccountDTO {
 		UpdatedAt: a.UpdatedAt,
 	}
 }
+
+type AdminAddIdentifierPayloadDTO struct {
+	ExistingIdentifier string `json:"existing_identifier" binding:"required"`
+	NewIdentifier      string `json:"new_identifier" binding:"required"`
+}

@@ -44,3 +44,10 @@ func (e *ErrorDTOResponse) Error() string {
 type CheckIdentifierResponse struct {
 	Registered bool `json:"registered"`
 }
+
+type AdminAddIdentifierResponse struct {
+	GlobalUserID string `json:"global_user_id"`
+	KratosUserID string `json:"kratos_user_id"`
+	Identifier   string `json:"new_identifier"`
+	Lang         string `json:"lang"`
+}

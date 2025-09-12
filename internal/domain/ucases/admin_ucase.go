@@ -9,13 +9,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domaintypes "github.com/lifenetwork-ai/iam-service/internal/domain/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	domainservice "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
-	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
@@ -368,8 +368,8 @@ func (u *adminUseCase) DeleteTenant(ctx context.Context, id string) (*domain.Ten
 func (u *adminUseCase) AddIdentifierAdmin(
 	ctx context.Context,
 	tenantID uuid.UUID,
-	req types.AdminAddIdentifierDTO,
-) (*types.AdminAddIdentifierResponse, *domainerrors.DomainError) {
+	req dto.AdminAddIdentifierPayloadDTO,
+) (*dto.AdminAddIdentifierResponse, *domainerrors.DomainError) {
 	// 1. Infer & normalize both identifiers
 	exType, exIdentifier, derr := inferAndNormalizeIdentifier(req.ExistingIdentifier)
 	if derr != nil {
@@ -450,7 +450,7 @@ func (u *adminUseCase) AddIdentifierAdmin(
 	}
 
 	// 9. Return response
-	return &types.AdminAddIdentifierResponse{
+	return &dto.AdminAddIdentifierResponse{
 		GlobalUserID: globalUserID,
 		KratosUserID: newKratosUserID,
 		Identifier:   newIdentifier,

@@ -278,3 +278,43 @@ func (h *adminHandler) CheckIdentifier(ctx *gin.Context) {
 
 	httpresponse.Success(ctx, http.StatusOK, dto.CheckIdentifierResponse{Registered: registered})
 }
+
+// AddIdentifierAdmin adds a new identifier (email/phone) for an existing user (admin-only).
+// The user is resolved by existing_identifier (tenant-scoped). The new identifier must be of a different type.
+// Internally, this creates a new Kratos identity (OTP-only) and maps it to the same global user.
+// @Summary Add a new identifier for a user (admin)
+// @Security BasicAuth
+// @Description Infer types from values. existing_identifier resolves the user; new_identifier must be a different type (email vs phone). Creates a new Kratos identity and maps it to the same global user. No OTP is triggered.
+// @Tags identifiers
+// @Accept json
+// @Produce json
+// @Param X-Tenant-Id header string true "Tenant ID"
+// @Param body body dto.AdminAddIdentifierPayloadDTO true "Payload with existing_identifier and new_identifier"
+// @Success 201 {object} dto.AdminAddIdentifierResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Failure 409 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /api/v1/admin/identifiers/add [post]
+func (h *adminHandler) AddIdentifierAdmin(ctx *gin.Context) {
+	tenant, err := middleware.GetTenantFromContext(ctx)
+	if err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_TENANT", "Invalid tenant", err)
+		return
+	}
+
+	var req dto.AdminAddIdentifierPayloadDTO
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid request payload", err)
+		return
+	}
+
+	resp, derr := h.adminUCase.AddIdentifierAdmin(ctx, tenant.ID, req)
+	if derr != nil {
+		handleDomainError(ctx, derr)
+		return
+	}
+
+	httpresponse.Success(ctx, http.StatusCreated, resp)
+}

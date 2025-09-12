@@ -17,6 +17,27 @@ definitions:
       username:
         type: string
     type: object
+  dto.AdminAddIdentifierPayloadDTO:
+    properties:
+      existing_identifier:
+        type: string
+      new_identifier:
+        type: string
+    required:
+    - existing_identifier
+    - new_identifier
+    type: object
+  dto.AdminAddIdentifierResponse:
+    properties:
+      global_user_id:
+        type: string
+      kratos_user_id:
+        type: string
+      lang:
+        type: string
+      new_identifier:
+        type: string
+    type: object
   dto.CheckIdentifierDTO:
     properties:
       identifier:
@@ -437,6 +458,57 @@ paths:
       summary: Create a new admin account
       tags:
       - admin
+  /api/v1/admin/identifiers/add:
+    post:
+      consumes:
+      - application/json
+      description: Infer types from values. existing_identifier resolves the user;
+        new_identifier must be a different type (email vs phone). Creates a new Kratos
+        identity and maps it to the same global user. No OTP is triggered.
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Payload with existing_identifier and new_identifier
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdminAddIdentifierPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AdminAddIdentifierResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Add a new identifier for a user (admin)
+      tags:
+      - identifiers
   /api/v1/admin/identifiers/check:
     post:
       consumes:

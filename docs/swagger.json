@@ -73,6 +73,82 @@
                 }
             }
         },
+        "/api/v1/admin/identifiers/add": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Infer types from values. existing_identifier resolves the user; new_identifier must be a different type (email vs phone). Creates a new Kratos identity and maps it to the same global user. No OTP is triggered.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "identifiers"
+                ],
+                "summary": "Add a new identifier for a user (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload with existing_identifier and new_identifier",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminAddIdentifierPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminAddIdentifierResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/admin/identifiers/check": {
             "post": {
                 "security": [
@@ -1662,6 +1738,38 @@
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AdminAddIdentifierPayloadDTO": {
+            "type": "object",
+            "required": [
+                "existing_identifier",
+                "new_identifier"
+            ],
+            "properties": {
+                "existing_identifier": {
+                    "type": "string"
+                },
+                "new_identifier": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AdminAddIdentifierResponse": {
+            "type": "object",
+            "properties": {
+                "global_user_id": {
+                    "type": "string"
+                },
+                "kratos_user_id": {
+                    "type": "string"
+                },
+                "lang": {
+                    "type": "string"
+                },
+                "new_identifier": {
                     "type": "string"
                 }
             }
