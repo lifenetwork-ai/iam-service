@@ -13,28 +13,40 @@ import (
 )
 
 // normalizeTraitsIdentifiers normalizes email and phone identifiers in traits
-func normalizeTraitsIdentifiers(in map[string]interface{}) map[string]interface{} {
+func normalizeTraitsIdentifiers(in map[string]interface{}) (map[string]interface{}, error) {
 	if in == nil {
-		return map[string]interface{}{}
+		return nil, fmt.Errorf("traits cannot be nil")
 	}
+
 	traits := make(map[string]interface{}, len(in))
 	maps.Copy(traits, in)
 
-	// email (singular)
+	// tenant (required)
+	if v, ok := traits["tenant"]; !ok || v == nil || strings.TrimSpace(fmt.Sprint(v)) == "" {
+		return nil, fmt.Errorf("traits.tenant is required")
+	}
+
+	// email (optional but may be identifier)
 	if raw, ok := traits["email"]; ok {
 		if s, ok := raw.(string); ok {
 			traits["email"] = strings.ToLower(strings.TrimSpace(s))
 		}
 	}
 
-	// phone (singular)
-	if raw, ok := traits["phone"]; ok {
+	// phone_number (optional but may be identifier)
+	if raw, ok := traits["phone_number"]; ok {
 		if s, ok := raw.(string); ok {
-			traits["phone"] = strings.TrimSpace(s)
+			traits["phone_number"] = strings.TrimSpace(s)
 		}
 	}
 
-	return traits
+	// Must have at least email or phone_number (per schema anyOf)
+	if _, hasEmail := traits["email"]; !hasEmail {
+		if _, hasPhone := traits["phone_number"]; !hasPhone {
+			return nil, fmt.Errorf("either traits.email or traits.phone_number is required")
+		}
+	}
+	return traits, nil
 }
 
 // parseKratosErrorResponse parses error response from Kratos and returns appropriate error

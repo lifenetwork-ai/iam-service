@@ -552,7 +552,6 @@ func (k *kratosServiceImpl) UpdateLangAdmin(
 func (k *kratosServiceImpl) CreateIdentityAdmin(
 	ctx context.Context,
 	tenantID uuid.UUID,
-	schemaID string,
 	traits map[string]interface{},
 ) (*kratos.Identity, error) {
 	adminAPI, err := k.client.AdminAPI(tenantID)
@@ -560,19 +559,19 @@ func (k *kratosServiceImpl) CreateIdentityAdmin(
 		return nil, fmt.Errorf("get admin API failed: %w", err)
 	}
 
-	normTraits := normalizeTraitsIdentifiers(traits)
+	normTraits, err := normalizeTraitsIdentifiers(traits)
+	if err != nil {
+		return nil, err
+	}
 
 	body := kratos.CreateIdentityBody{
-		SchemaId: schemaID,
+		SchemaId: "default",
 		Traits:   normTraits,
 	}
 
-	identity, resp, err := adminAPI.IdentityAPI.
-		CreateIdentity(ctx).
-		CreateIdentityBody(body).
-		Execute()
+	identity, resp, err := adminAPI.IdentityAPI.CreateIdentity(ctx).
+		CreateIdentityBody(body).Execute()
 	if err != nil {
-		// 400/409 schema/traits invalid or identifier already exists
 		if resp != nil && (resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusConflict) {
 			if e := parseKratosErrorResponse(resp, fmt.Errorf("create identity failed: %w", err)); e != nil {
 				return nil, e
