@@ -33,7 +33,7 @@ test:
 .PHONY: test-integration
 test-integration:
 
-	go test -v -tags=integration ./internal/domain/ucases/integration
+	go test -v -tags=integration ./...
 
 .PHONY: test-unit
 # Run all unit tests (exclude integration-tagged tests)
