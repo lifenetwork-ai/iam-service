@@ -9,23 +9,37 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domaintypes "github.com/lifenetwork-ai/iam-service/internal/domain/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
+	domainservice "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type adminUseCase struct {
-	tenantRepo       domainrepo.TenantRepository
-	adminAccountRepo domainrepo.AdminAccountRepository
+	tenantRepo                domainrepo.TenantRepository
+	adminAccountRepo          domainrepo.AdminAccountRepository
+	userIdentityRepo          domainrepo.UserIdentityRepository
+	userIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository
+	kratosService             domainservice.KratosService
 }
 
-func NewAdminUseCase(tenantRepo domainrepo.TenantRepository, adminAccountRepo domainrepo.AdminAccountRepository) interfaces.AdminUseCase {
+func NewAdminUseCase(
+	tenantRepo domainrepo.TenantRepository,
+	adminAccountRepo domainrepo.AdminAccountRepository,
+	userIdentityRepo domainrepo.UserIdentityRepository,
+	userIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository,
+	kratosService domainservice.KratosService,
+) interfaces.AdminUseCase {
 	return &adminUseCase{
-		tenantRepo:       tenantRepo,
-		adminAccountRepo: adminAccountRepo,
+		tenantRepo:                tenantRepo,
+		adminAccountRepo:          adminAccountRepo,
+		userIdentityRepo:          userIdentityRepo,
+		userIdentifierMappingRepo: userIdentifierMappingRepo,
+		kratosService:             kratosService,
 	}
 }
 
@@ -349,4 +363,117 @@ func (u *adminUseCase) DeleteTenant(ctx context.Context, id string) (*domain.Ten
 	}
 
 	return &domainTenant, nil
+}
+
+func (u *adminUseCase) CheckIdentifierAdmin(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	identifier string,
+) (bool, string, *domainerrors.DomainError) {
+	// 1. Validate input
+	idType, identifier, derr := inferAndNormalizeIdentifier(identifier)
+	if derr != nil {
+		return false, idType, derr
+	}
+
+	// 2. Repo check (tenant-scoped)
+	ok, repoErr := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
+	if repoErr != nil {
+		return false, idType, domainerrors.WrapInternal(repoErr, "MSG_LOOKUP_FAILED", "Failed to check identifier")
+	}
+
+	return ok, idType, nil
+}
+
+func (u *adminUseCase) AddIdentifierAdmin(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	req dto.AdminAddIdentifierPayloadDTO,
+) (*dto.AdminAddIdentifierResponse, *domainerrors.DomainError) {
+	// 1. Infer & normalize both identifiers
+	exType, exIdentifier, derr := inferAndNormalizeIdentifier(req.ExistingIdentifier)
+	if derr != nil {
+		return nil, domainerrors.NewValidationError("MSG_INVALID_EXISTING_IDENTIFIER", derr.Error(), nil)
+	}
+	newType, newIdentifier, derr := inferAndNormalizeIdentifier(req.NewIdentifier)
+	if derr != nil {
+		return nil, domainerrors.NewValidationError("MSG_INVALID_NEW_IDENTIFIER", derr.Error(), nil)
+	}
+	// Type must differ
+	if exType == newType {
+		return nil, domainerrors.NewValidationError("MSG_TYPE_MUST_DIFFER", "Existing and new identifier types must differ (email vs phone)", nil)
+	}
+
+	// 2. Ensure tenant exists
+	tenant, err := u.tenantRepo.GetByID(tenantID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
+	}
+
+	// 3. Lookup existing identifier (tenant-scoped)
+	existingIdentifier, err := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), exType, exIdentifier)
+	if err != nil || existingIdentifier == nil {
+		return nil, domainerrors.NewNotFoundError("MSG_EXISTING_IDENTIFIER_NOT_FOUND", "Existing identifier not found")
+	}
+	globalUserID := existingIdentifier.GlobalUserID
+
+	// 4. Get lang
+	mapping, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, globalUserID)
+	if err != nil || mapping == nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_MAPPING_NOT_FOUND", "Failed to load user mapping")
+	}
+	lang := strings.TrimSpace(mapping.Lang)
+
+	// 5. Uniqueness check within tenant
+	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), newType, newIdentifier)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
+	}
+	if exists {
+		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_ALREADY_EXISTS", "Identifier has already been registered", nil)
+	}
+
+	// 6. User must not already have identifier of this type
+	hasType, err := u.userIdentityRepo.ExistsByTenantGlobalUserIDAndType(ctx, tenantID.String(), globalUserID, newType)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identity type")
+	}
+	if hasType {
+		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS",
+			fmt.Sprintf("User already has an identifier of type %s", newType), nil)
+	}
+
+	// 7. Create in Kratos
+	traits := map[string]interface{}{
+		"tenant": tenant.Name, // schema requires
+		"lang":   lang,        // keep lang identical
+	}
+	traits[newType] = newIdentifier // "email" | "phone_number"
+
+	newKratos, err := u.kratosService.CreateIdentityAdmin(ctx, tenantID, traits)
+	if err != nil {
+		return nil, domainerrors.NewValidationError("MSG_CREATE_IDENTITY_FAILED", fmt.Sprintf("Failed to create identity: %v", err), nil)
+	}
+	newKratosUserID := newKratos.Id
+
+	// 8. Persist DB: attach identifier to same global_user_id
+	if ok, err := u.userIdentityRepo.InsertOnceByKratosUserAndType(
+		ctx, nil,
+		tenantID.String(), newKratosUserID, globalUserID,
+		newType, newIdentifier,
+	); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_IDENTITY_FAILED", "Failed to save identifier")
+	} else if !ok {
+		// race-safe no-op (unique on (tenant_id, global_user_id, type))
+		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS",
+			fmt.Sprintf("User already has an identifier of type %s", newType), nil)
+	}
+
+	// 9. Return response
+	return &dto.AdminAddIdentifierResponse{
+		GlobalUserID: globalUserID,
+		KratosUserID: newKratosUserID,
+		Identifier:   newIdentifier,
+		Lang:         lang,
+	}, nil
 }

@@ -43,6 +43,7 @@ type KratosService interface {
 	GetSettingsFlow(ctx context.Context, tenantID uuid.UUID, flowID, sessionToken string) (*kratos.SettingsFlow, error)
 
 	// Admin API
+	CreateIdentityAdmin(ctx context.Context, tenantID uuid.UUID, traits map[string]interface{}) (*kratos.Identity, error)
 	GetIdentity(ctx context.Context, tenantID, identityID uuid.UUID) (*kratos.Identity, error)
 	UpdateIdentifierTraitAdmin(ctx context.Context, tenantID, identityID uuid.UUID, traits map[string]interface{}) error
 	DeleteIdentifierAdmin(ctx context.Context, tenantID, kratosUserID uuid.UUID) error

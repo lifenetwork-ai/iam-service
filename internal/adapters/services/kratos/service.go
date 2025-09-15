@@ -2,10 +2,8 @@ package kratos
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/conf"
@@ -14,7 +12,6 @@ import (
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	domainservice "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
 	kratos "github.com/ory/kratos-client-go"
-	"github.com/pkg/errors"
 )
 
 type kratosServiceImpl struct {
@@ -550,29 +547,37 @@ func (k *kratosServiceImpl) UpdateLangAdmin(
 	return nil
 }
 
-// parseKratosErrorResponse parses error response from Kratos and returns appropriate error
-func parseKratosErrorResponse(resp *http.Response, defaultErr error) error {
-	if resp == nil {
-		return defaultErr
+// CreateIdentityAdmin creates a brand-new identity via Kratos Admin API,
+// intended for OTP (code) auth flows (no password credentials).
+func (k *kratosServiceImpl) CreateIdentityAdmin(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	traits map[string]interface{},
+) (*kratos.Identity, error) {
+	adminAPI, err := k.client.AdminAPI(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("get admin API failed: %w", err)
 	}
 
-	var kratosResp kratos_types.KratosErrorResponse
-	if err := json.NewDecoder(resp.Body).Decode(&kratosResp); err != nil {
-		return defaultErr
+	normTraits, err := normalizeTraitsIdentifiers(traits)
+	if err != nil {
+		return nil, err
 	}
 
-	errMsgs := kratosResp.GetErrorMessages()
-	if len(errMsgs) > 0 {
-		return fmt.Errorf("error occurred while submitting flow: %s", strings.Join(errMsgs, "; "))
+	body := kratos.CreateIdentityBody{
+		SchemaId: "default",
+		Traits:   normTraits,
 	}
 
-	// Handle different states if no explicit error messages
-	switch kratosResp.State {
-	case constants.StateSentEmail:
-		return nil
-	case constants.StateChooseMethod:
-		return errors.New("error occurred while submitting flow")
-	default:
-		return defaultErr
+	identity, resp, err := adminAPI.IdentityAPI.CreateIdentity(ctx).
+		CreateIdentityBody(body).Execute()
+	if err != nil {
+		if resp != nil && (resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusConflict) {
+			if e := parseKratosErrorResponse(resp, fmt.Errorf("create identity failed: %w", err)); e != nil {
+				return nil, e
+			}
+		}
+		return nil, fmt.Errorf("create identity failed: %w", err)
 	}
+	return identity, nil
 }

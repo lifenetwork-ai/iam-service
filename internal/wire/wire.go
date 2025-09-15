@@ -8,7 +8,6 @@ import (
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	keto "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/kratos"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
@@ -63,9 +62,15 @@ func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
 			repos.GlobalUserRepo,
 			repos.UserIdentityRepo,
 			repos.UserIdentifierMappingRepo,
-			kratos.NewKratosService(repos.TenantRepo),
+			instances.KratosServiceInstance(repos.TenantRepo),
 		),
-		AdminUCase:      ucases.NewAdminUseCase(repos.TenantRepo, repos.AdminAccountRepo),
+		AdminUCase: ucases.NewAdminUseCase(
+			repos.TenantRepo,
+			repos.AdminAccountRepo,
+			repos.UserIdentityRepo,
+			repos.UserIdentifierMappingRepo,
+			instances.KratosServiceInstance(repos.TenantRepo),
+		),
 		TenantUCase:     ucases.NewTenantUseCase(repos.TenantRepo),
 		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo), repos.UserIdentityRepo),
 		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background()), instances.SMSProviderInstance(), repos.CacheRepo),

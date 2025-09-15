@@ -796,26 +796,13 @@ func (u *userUseCase) AddNewIdentifier(
 	identifierType string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// 1. Validate input
-	if identifierType == constants.IdentifierEmail.String() {
-		// Normalize and validate email
-		identifier = strings.ToLower(identifier)
-		if !utils.IsEmail(identifier) {
-			return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
-		}
-	}
-
-	if identifierType == constants.IdentifierPhone.String() {
-		normalizedPhone, _, err := utils.NormalizePhoneE164(identifier, constants.DefaultRegion)
-		if err != nil {
-			code := codeInvalidPhone
-			msg := msgInvalidPhone
-			return nil, domainerrors.NewValidationError(code, msg, nil)
-		}
-		identifier = normalizedPhone
+	idType, identifier, derr := inferAndNormalizeIdentifier(identifier)
+	if derr != nil {
+		return nil, derr
 	}
 
 	// 2. Check if identifier already exists globally
-	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), identifierType, identifier)
+	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
 	}
@@ -886,47 +873,6 @@ func (u *userUseCase) AddNewIdentifier(
 		Receiver:    identifier,
 		ChallengeAt: time.Now().Unix(),
 	}, nil
-}
-
-func (u *userUseCase) CheckIdentifier(
-	ctx context.Context,
-	tenantID uuid.UUID,
-	identifier string,
-) (bool, string, *domainerrors.DomainError) {
-	identifier = strings.ToLower(identifier)
-	identifier = strings.TrimSpace(identifier)
-
-	// 1. Detect type
-	idType, err := utils.GetIdentifierType(identifier) // "email" | "phone_number"
-	if err != nil {
-		return false, "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", map[string]interface{}{"identifier": identifier}).WithCause(err)
-	}
-
-	// 2. Validate
-	switch idType {
-	case constants.IdentifierEmail.String():
-		if !utils.IsEmail(identifier) {
-			return false, idType, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
-		}
-	case constants.IdentifierPhone.String():
-		normalizedPhone, _, err := utils.NormalizePhoneE164(identifier, constants.DefaultRegion)
-		if err != nil {
-			code := codeInvalidPhone
-			msg := msgInvalidPhone
-			return false, idType, domainerrors.NewValidationError(code, msg, nil)
-		}
-		identifier = normalizedPhone
-	default:
-		return false, "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
-	}
-
-	// 3. Repo check (tenant-scoped)
-	ok, repoErr := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
-	if repoErr != nil {
-		return false, idType, domainerrors.WrapInternal(repoErr, "MSG_LOOKUP_FAILED", "Failed to check identifier")
-	}
-
-	return ok, idType, nil
 }
 
 // DeleteIdentifier deletes a user's identifier (email or phone)
@@ -1003,31 +949,13 @@ func (u *userUseCase) ChangeIdentifier(
 	_ string,
 	newIdentifier string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
-	// 1. Validate identifier type
-	newIdentifierType, err := utils.GetIdentifierType(newIdentifier)
-	if err != nil {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
-	}
-	if newIdentifierType != constants.IdentifierEmail.String() && newIdentifierType != constants.IdentifierPhone.String() {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil).WithCause(err)
+	// 1. Validate input
+	newIdentifierType, newIdentifier, derr := inferAndNormalizeIdentifier(newIdentifier)
+	if derr != nil {
+		return nil, derr
 	}
 
-	// 2. Validate new identifier value
-	if newIdentifier == "" {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_REQUEST", "Identifier is required", nil).WithCause(err)
-	}
-	if newIdentifierType == constants.IdentifierEmail.String() && !utils.IsEmail(newIdentifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil).WithCause(err)
-	}
-	if newIdentifierType == constants.IdentifierPhone.String() {
-		normalizedPhone, _, err := utils.NormalizePhoneE164(newIdentifier, constants.DefaultRegion)
-		if err != nil {
-			return nil, domainerrors.NewValidationError(codeInvalidPhone, msgInvalidPhone, nil).WithCause(err)
-		}
-		newIdentifier = normalizedPhone
-	}
-
-	// 3. Check if new identifier already exists globally
+	// 2. Check if new identifier already exists globally
 	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), newIdentifierType, newIdentifier)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
@@ -1064,13 +992,13 @@ func (u *userUseCase) ChangeIdentifier(
 		return nil, domainerrors.NewInternalError("MSG_INTERNAL_ERROR", "Cannot find identifier to be changed")
 	}
 
-	// 5. Rate limit
+	// 4. Rate limit
 	key := fmt.Sprintf("challenge:change:%s:%s", newIdentifierType, newIdentifier)
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
 
-	// 6. Initialize a registration flow
+	// 5. Initialize a registration flow
 	flow, err := u.kratosService.InitializeRegistrationFlow(ctx, tenantID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_INIT_REG_FLOW_FAILED", "Failed to initialize registration flow")
@@ -1082,7 +1010,7 @@ func (u *userUseCase) ChangeIdentifier(
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
 
-	// 7. Submit minimal traits to trigger OTP
+	// 6. Submit minimal traits to trigger OTP
 	traits := map[string]interface{}{
 		"tenant": tenant.Name,
 	}
@@ -1092,7 +1020,7 @@ func (u *userUseCase) ChangeIdentifier(
 		return nil, domainerrors.WrapInternal(err, "MSG_REGISTRATION_FAILED", "Registration failed").WithCause(err)
 	}
 
-	// 8. Save challenge session
+	// 7. Save challenge session
 	session := &domain.ChallengeSession{
 		GlobalUserID:   globalUserID,
 		KratosUserID:   identity.KratosUserID, // the kratos user id of the old identifier to be deleted
@@ -1104,7 +1032,7 @@ func (u *userUseCase) ChangeIdentifier(
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
 	}
 
-	// 9. Return response
+	// 8. Return response
 	return &types.IdentityUserChallengeResponse{
 		FlowID:      flow.Id,
 		Receiver:    newIdentifier,
@@ -1118,23 +1046,9 @@ func (u *userUseCase) ChallengeVerification(
 	identifier string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// 1. Detect & normalize
-	identifier = strings.TrimSpace(strings.ToLower(identifier))
-	idType, err := utils.GetIdentifierType(identifier) // "email" | "phone_number"
-	if err != nil {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
-	}
-	switch idType {
-	case constants.IdentifierEmail.String():
-		if !utils.IsEmail(identifier) {
-			return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
-		}
-	case constants.IdentifierPhone.String():
-		identifier, _, err = utils.NormalizePhoneE164(identifier, constants.DefaultRegion)
-		if err != nil {
-			return nil, domainerrors.NewValidationError(codeInvalidPhone, msgInvalidPhone, nil)
-		}
-	default:
-		return nil, domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
+	idType, identifier, derr := inferAndNormalizeIdentifier(identifier)
+	if derr != nil {
+		return nil, derr
 	}
 
 	// Make sure identifier exists in the system

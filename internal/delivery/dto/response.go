@@ -44,3 +44,11 @@ func (e *ErrorDTOResponse) Error() string {
 type CheckIdentifierResponse struct {
 	Registered bool `json:"registered"`
 }
+
+// AdminAddIdentifierResponse represents the response after an admin adds a new identifier to a user.
+type AdminAddIdentifierResponse struct {
+	GlobalUserID string `json:"global_user_id"`
+	KratosUserID string `json:"kratos_user_id"`
+	Identifier   string `json:"new_identifier"`
+	Lang         string `json:"lang"`
+}

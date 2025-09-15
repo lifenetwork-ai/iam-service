@@ -3,6 +3,8 @@ package interfaces
 import (
 	"context"
 
+	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/types"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -19,4 +21,7 @@ type AdminUseCase interface {
 	CreateTenant(ctx context.Context, name, publicURL, adminURL string) (*domain.Tenant, *domainerrors.DomainError)
 	UpdateTenant(ctx context.Context, id, name, publicURL, adminURL string) (*domain.Tenant, *domainerrors.DomainError)
 	DeleteTenant(ctx context.Context, id string) (*domain.Tenant, *domainerrors.DomainError)
+	// User Identity Management
+	CheckIdentifierAdmin(ctx context.Context, tenantID uuid.UUID, identifier string) (bool, string, *domainerrors.DomainError)
+	AddIdentifierAdmin(ctx context.Context, tenantID uuid.UUID, req dto.AdminAddIdentifierPayloadDTO) (*dto.AdminAddIdentifierResponse, *domainerrors.DomainError)
 }
