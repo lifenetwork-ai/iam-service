@@ -747,8 +747,14 @@ func (u *userUseCase) Profile(
 	}
 	kratosUserID := session.Identity.Id
 
+	// Get the single identity based on the kratos user id
+	identity, err := u.userIdentityRepo.GetByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTITY_FAILED", "Failed to get identity")
+	}
+
 	// Get all identities for the user in the tenant
-	identities, qErr := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, user.GlobalUserID, tenantID.String())
+	identities, qErr := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, identity.GlobalUserID, tenantID.String())
 	if qErr != nil {
 		return nil, domainerrors.WrapInternal(qErr, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
 	}
