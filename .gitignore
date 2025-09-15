@@ -60,6 +60,8 @@ yarn-error.log*
 # Testing
 coverage
 coverage.json
+coverage.out
+coverage.html
 
 # Typechain
 typechain
@@ -69,3 +71,6 @@ typechain-types
 cache
 
 cmd/__*
+
+# AI-assissted
+.claude

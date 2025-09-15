@@ -262,10 +262,26 @@ func (f *FakeKratosService) CreateIdentityAdmin(ctx context.Context, tenantID uu
 	if f.faults.FailRegistration {
 		return nil, errors.New("create identity failed")
 	}
-	// Persist the identity
-	f.identities[tenantID] = make(map[string]*kratos.Identity)
-	f.identities[tenantID][traits[constants.IdentifierEmail.String()].(string)] = &kratos.Identity{Id: uuid.NewString(), Traits: traits}
-	return &kratos.Identity{Id: uuid.NewString(), Traits: traits}, nil
+	// Persist the identity without clobbering existing entries and support both email and phone
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.identities[tenantID] == nil {
+		f.identities[tenantID] = make(map[string]*kratos.Identity)
+	}
+	identity := &kratos.Identity{Id: uuid.NewString(), Traits: traits}
+	if v, ok := traits[constants.IdentifierEmail.String()]; ok && v != nil {
+		if s, ok := v.(string); ok && s != "" {
+			f.identities[tenantID][s] = identity
+			return identity, nil
+		}
+	}
+	if v, ok := traits[constants.IdentifierPhone.String()]; ok && v != nil {
+		if s, ok := v.(string); ok && s != "" {
+			f.identities[tenantID][s] = identity
+			return identity, nil
+		}
+	}
+	return nil, fmt.Errorf("no valid identifier trait provided")
 }
 
 // --- Additional interface methods to satisfy KratosService ---
@@ -440,7 +456,7 @@ func (f *FakeKratosService) GetIdentity(ctx context.Context, tenantID, identityI
 }
 
 func (f *FakeKratosService) UpdateLangAdmin(ctx context.Context, tenantID, identityID uuid.UUID, newLang string) error {
-	if f.faults.NetworkError {
+	if f.faults.NetworkError || f.faults.FailUpdate {
 		return errors.New("network error")
 	}
 	f.langs[tenantID] = newLang
