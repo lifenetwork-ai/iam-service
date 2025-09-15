@@ -137,6 +137,36 @@ func (r *userIdentityRepository) GetByTenantAndKratosUserID(
 	return identity, nil
 }
 
+// ListByTenantAndKratosUserID retrieves identities by (tenant_id, kratos_user_id).
+func (r *userIdentityRepository) ListByTenantAndKratosUserID(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenantID, kratosUserID string,
+) ([]*domain.UserIdentity, error) {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+
+	var identities []*domain.UserIdentity
+	err := db.WithContext(ctx).
+		Where(`
+			tenant_id = ? 
+			AND global_user_id = (
+				SELECT global_user_id 
+				FROM user_identities 
+				WHERE tenant_id = ? AND kratos_user_id = ? 
+				LIMIT 1
+			)
+		`, tenantID, tenantID, kratosUserID).
+		Find(&identities).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return identities, nil
+}
+
 // ExistsByTenantGlobalUserIDAndType checks by (tenant_id, global_user_id, type).
 func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 	ctx context.Context,

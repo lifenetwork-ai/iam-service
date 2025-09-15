@@ -201,6 +201,34 @@ func (r *SQLiteUserIdentityRepository) GetByTenantAndTenantUserID(ctx context.Co
 	return &u, nil
 }
 
+func (r *SQLiteUserIdentityRepository) ListByTenantAndKratosUserID(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenantID, kratosUserID string,
+) ([]*domain.UserIdentity, error) {
+	if tx == nil {
+		tx = r.db
+	}
+
+	var identities []*domain.UserIdentity
+	err := tx.WithContext(ctx).
+		Where(`
+			tenant_id = ? 
+			AND global_user_id = (
+				SELECT global_user_id 
+				FROM user_identities 
+				WHERE tenant_id = ? AND kratos_user_id = ? 
+				LIMIT 1
+			)
+		`, tenantID, tenantID, kratosUserID).
+		Find(&identities).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return identities, nil
+}
+
 func (r *SQLiteUserIdentityRepository) ExistsByTenantGlobalUserIDAndType(ctx context.Context, tenantID, globalUserID, identityType string) (bool, error) {
 	var c int64
 	if err := r.db.Model(&domain.UserIdentity{}).Where("tenant_id = ? AND global_user_id = ? AND type = ?", tenantID, globalUserID, identityType).Count(&c).Error; err != nil {

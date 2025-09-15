@@ -747,14 +747,8 @@ func (u *userUseCase) Profile(
 	}
 	kratosUserID := session.Identity.Id
 
-	// Get the single identity based on the kratos user id
-	identity, err := u.userIdentityRepo.GetByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTITY_FAILED", "Failed to get identity")
-	}
-
 	// Get all identities for the user in the tenant
-	identities, qErr := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, identity.GlobalUserID, tenantID.String())
+	identities, qErr := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if qErr != nil {
 		return nil, domainerrors.WrapInternal(qErr, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
 	}
@@ -1163,7 +1157,7 @@ func (u *userUseCase) VerifyIdentifier(
 func (u *userUseCase) UpdateLang(
 	ctx context.Context,
 	tenantID uuid.UUID,
-	globalUserID string,
+	kratosUserID string,
 	lang string,
 ) *domainerrors.DomainError {
 	// 1. Normalize & validate
@@ -1181,7 +1175,7 @@ func (u *userUseCase) UpdateLang(
 	}
 
 	// 3. Resolve peer identities (same global_user_id in this tenant)
-	identities, err := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, globalUserID, tenantID.String())
+	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if err != nil {
 		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
 	}
@@ -1208,7 +1202,7 @@ func (u *userUseCase) UpdateLang(
 
 	// 5. Upsert global mapping lang (one row per global_user_id)
 	if err := u.userIdentifierMappingRepo.Upsert(ctx, u.db, &domain.UserIdentifierMapping{
-		GlobalUserID: globalUserID,
+		GlobalUserID: identities[0].GlobalUserID,
 		Lang:         lang,
 	}); err != nil {
 		return domainerrors.WrapInternal(err, "MSG_UPDATE_MAPPING_FAILED", "Failed to upsert mapping lang")
