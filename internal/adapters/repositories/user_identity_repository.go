@@ -120,15 +120,7 @@ func (r *userIdentityRepository) GetByTenantAndKratosUserID(
 
 	var identity *domain.UserIdentity
 	err := db.WithContext(ctx).
-		Where(`
-			tenant_id = ? 
-			AND global_user_id = (
-				SELECT global_user_id 
-				FROM user_identities 
-				WHERE tenant_id = ? AND kratos_user_id = ? 
-				LIMIT 1
-			)
-		`, tenantID, tenantID, kratosUserID).
+		Where("tenant_id = ? AND kratos_user_id = ?", tenantID, kratosUserID).
 		First(&identity).Error
 	if err != nil {
 		return nil, err

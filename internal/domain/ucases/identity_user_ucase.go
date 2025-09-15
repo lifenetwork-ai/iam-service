@@ -339,6 +339,7 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 		// Create identity for the new identifier with the existing GlobalUserID
 		if err := u.userIdentityRepo.Update(tx, &domain.UserIdentity{
 			ID:           oldIdentity.ID,
+			GlobalUserID: oldIdentity.GlobalUserID,
 			KratosUserID: newKratosUserID,
 			Type:         newIdentifierType,
 			Value:        newIdentifier,
@@ -940,7 +941,7 @@ func (u *userUseCase) ChangeIdentifier(
 	ctx context.Context,
 	globalUserID string,
 	tenantID uuid.UUID,
-	_ string,
+	kratosUserID string,
 	newIdentifier string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// 1. Validate input
@@ -959,7 +960,7 @@ func (u *userUseCase) ChangeIdentifier(
 	}
 
 	// 4. Check user's current identifiers
-	identities, err := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, globalUserID, tenantID.String())
+	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identities")
 	}
@@ -981,6 +982,7 @@ func (u *userUseCase) ChangeIdentifier(
 			}
 		}
 	}
+
 	// Should not happen
 	if identity == nil {
 		return nil, domainerrors.NewInternalError("MSG_INTERNAL_ERROR", "Cannot find identifier to be changed")
