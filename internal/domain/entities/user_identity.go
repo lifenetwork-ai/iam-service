@@ -20,6 +20,7 @@ type UserIdentity struct {
 	UpdatedAt    time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
+// Needed for SQLite tests because GORM does not support default values for UUIDs.
 func (u *UserIdentity) BeforeCreate(tx *gorm.DB) (err error) {
 	if u.ID == "" {
 		uuid, err := uuid.NewRandom()
