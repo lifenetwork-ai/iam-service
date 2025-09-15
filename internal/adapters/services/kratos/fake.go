@@ -255,6 +255,19 @@ func (f *FakeKratosService) DeleteIdentifierAdmin(ctx context.Context, tenantID,
 	return nil
 }
 
+func (f *FakeKratosService) CreateIdentityAdmin(ctx context.Context, tenantID uuid.UUID, traits map[string]interface{}) (*kratos.Identity, error) {
+	if f.faults.NetworkError {
+		return nil, errors.New("network error")
+	}
+	if f.faults.FailRegistration {
+		return nil, errors.New("create identity failed")
+	}
+	// Persist the identity
+	f.identities[tenantID] = make(map[string]*kratos.Identity)
+	f.identities[tenantID][traits[constants.IdentifierEmail.String()].(string)] = &kratos.Identity{Id: uuid.NewString(), Traits: traits}
+	return &kratos.Identity{Id: uuid.NewString(), Traits: traits}, nil
+}
+
 // --- Additional interface methods to satisfy KratosService ---
 
 func (f *FakeKratosService) GetRegistrationFlow(ctx context.Context, tenantID uuid.UUID, flowID string) (*kratos.RegistrationFlow, error) {
