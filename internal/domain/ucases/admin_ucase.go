@@ -205,6 +205,7 @@ func (u *adminUseCase) CreateTenant(ctx context.Context, name, publicURL, adminU
 
 	// Create new tenant
 	tenant := domain.Tenant{
+		ID:        uuid.New(),
 		Name:      name,
 		PublicURL: publicURL,
 		AdminURL:  adminURL,

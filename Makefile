@@ -29,6 +29,22 @@ lint:
 test:
 	go test -v ./...
 
+# Run only integration tests under ucases/integration
+.PHONY: test-integration
+test-integration:
+
+	go test -v -tags=integration ./internal/domain/ucases/integration
+
+.PHONY: test-unit
+# Run all unit tests (exclude integration-tagged tests)
+test-unit:
+	go test -v -tags "" $(shell go list ./... | grep -v "/internal/domain/ucases/integration")
+
+.PHONY: cover-ucases-integration
+# Coverage for ucases when running integration tests only
+cover-ucases-integration:
+	go test -v -tags=integration -coverpkg=github.com/lifenetwork-ai/iam-service/internal/domain/ucases -coverprofile=ucases_integration_coverage.out ./internal/domain/ucases/integration
+
 swagger:
 	swag init -g ./cmd/main.go -d ./ -o ./docs
 
