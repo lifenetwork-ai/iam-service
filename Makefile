@@ -6,11 +6,6 @@ human-network-iam-service:
 clean:
 	rm -i -f human-network-iam-service
 
-run-test:
-	go test -v ./internal/infrastructures/caching/test
-	go test -v ./internal/util/test
-	go test -v ./test
-
 restart: stop clean build start
 	@echo "human-network-iam-service restarted!"
 
@@ -30,6 +25,9 @@ stop:
 
 lint:
 	docker run --rm -v $(PWD):/app -w /app golangci/golangci-lint:v1.64.8 golangci-lint run --fix
+
+test:
+	go test -v ./...
 
 swagger:
 	swag init -g ./cmd/main.go -d ./ -o ./docs

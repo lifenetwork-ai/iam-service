@@ -18,6 +18,19 @@ func NewUserIdentityRepository(db *gorm.DB) domainrepo.UserIdentityRepository {
 	return &userIdentityRepository{db: db}
 }
 
+func (r *userIdentityRepository) GetByID(ctx context.Context, tx *gorm.DB, identityID string) (*domain.UserIdentity, error) {
+	var identity domain.UserIdentity
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+	err := db.WithContext(ctx).First(&identity).Error
+	if err != nil {
+		return nil, err
+	}
+	return &identity, nil
+}
+
 func (r *userIdentityRepository) GetByTypeAndValue(
 	ctx context.Context,
 	tx *gorm.DB,
@@ -94,6 +107,28 @@ func (r *userIdentityRepository) ExistsWithinTenant(
 	return count > 0, err
 }
 
+// GetByTenantAndKratosUserID retrieves identities by (tenant_id, kratos_user_id).
+func (r *userIdentityRepository) GetByTenantAndKratosUserID(
+	ctx context.Context,
+	tx *gorm.DB,
+	tenantID, kratosUserID string,
+) (*domain.UserIdentity, error) {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+
+	var identity *domain.UserIdentity
+	err := db.WithContext(ctx).
+		Where("tenant_id = ? AND kratos_user_id = ?", tenantID, kratosUserID).
+		First(&identity).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return identity, nil
+}
+
 // ListByTenantAndKratosUserID retrieves identities by (tenant_id, kratos_user_id).
 func (r *userIdentityRepository) ListByTenantAndKratosUserID(
 	ctx context.Context,
@@ -135,6 +170,23 @@ func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 		Where("tenant_id = ? AND global_user_id = ? AND type = ?", tenantID, globalUserID, identityType).
 		Count(&count).Error
 	return count > 0, err
+}
+
+// GetByGlobalUserID retrieves identities per tenant by (global_user_id).
+func (r *userIdentityRepository) GetByGlobalUserIDAndTenantID(ctx context.Context, tx *gorm.DB, globalUserID, tenantID string) ([]*domain.UserIdentity, error) {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+
+	var identities []*domain.UserIdentity
+	err := db.WithContext(ctx).
+		Where("global_user_id = ? AND tenant_id = ?", globalUserID, tenantID).
+		Find(&identities).Error
+	if err != nil {
+		return nil, err
+	}
+	return identities, nil
 }
 
 func (r *userIdentityRepository) Delete(tx *gorm.DB, identityID string) error {
