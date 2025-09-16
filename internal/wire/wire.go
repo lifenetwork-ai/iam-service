@@ -5,7 +5,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	keto "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
@@ -52,12 +51,12 @@ type UseCases struct {
 }
 
 // Initialize use cases
-func InitializeUseCases(db *gorm.DB, repos *Repos, config *conf.Configuration) *UseCases {
+func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
 	// Return all use cases
 	return &UseCases{
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
 			db,
-			config.DevReviewer,
+
 			instances.RateLimiterInstance(),
 			repos.ChallengeSessionRepo,
 			repos.TenantRepo,

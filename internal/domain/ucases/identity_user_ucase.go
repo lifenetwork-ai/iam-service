@@ -30,7 +30,6 @@ var (
 
 type userUseCase struct {
 	db                        *gorm.DB
-	devReviewerConfig         conf.DevReviewerConfiguration
 	rateLimiter               ratelimiters.RateLimiter
 	tenantRepo                domainrepo.TenantRepository
 	globalUserRepo            domainrepo.GlobalUserRepository
@@ -42,7 +41,6 @@ type userUseCase struct {
 
 func NewIdentityUserUseCase(
 	db *gorm.DB,
-	devReviewerConfig conf.DevReviewerConfiguration,
 	rateLimiter ratelimiters.RateLimiter,
 	challengeSessionRepo domainrepo.ChallengeSessionRepository,
 	tenantRepo domainrepo.TenantRepository,
@@ -53,7 +51,6 @@ func NewIdentityUserUseCase(
 ) interfaces.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,
-		devReviewerConfig:         devReviewerConfig,
 		rateLimiter:               rateLimiter,
 		challengeSessionRepo:      challengeSessionRepo,
 		tenantRepo:                tenantRepo,
@@ -92,24 +89,38 @@ func (u *userUseCase) ChallengeWithPhone(
 	// Check if the identifier exists in the database
 	_, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierPhone.String(), phone)
 	if err != nil {
-		return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Phone number").WithDetails([]interface{}{
-			map[string]string{
-				"field": "phone",
-				"error": "Phone number not registered in the system",
-			},
-		})
+		// Dev bypass logic
+		if conf.IsDevReviewerBypassEnabled() && phone == conf.DevReviewerIdentifier() {
+			// Create minimum identity with traits { phone: <phone> }
+			if _, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
+				"phone": phone,
+			}); e != nil {
+				return nil, domainerrors.WrapInternal(e, "MSG_CREATE_IDENTITY_FAILED", "Failed to create identity (dev bypass)")
+			}
+		} else {
+			return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Phone number").WithDetails([]interface{}{
+				map[string]string{
+					"field": "phone",
+					"error": "Phone number not registered in the system",
+				},
+			})
+		}
 	}
 
-	// Initialize verification flow with Kratos
+	// Initialize login flow with Kratos
 	flow, err := u.kratosService.InitializeLoginFlow(ctx, tenantID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to initialize verification flow")
 	}
 
-	// Submit login flow to Kratos
-	_, err = u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &phone, nil, nil)
-	if err != nil {
-		return nil, domainerrors.NewUnauthorizedError("MSG_LOGIN_FAILED", "Login failed").WithCause(err)
+	// Dev bypass: ignore sending OTP
+	if conf.IsDevReviewerBypassEnabled() && phone == conf.DevReviewerIdentifier() {
+		logger.GetLogger().Infof("Dev bypass enabled: skip sending OTP to %s", phone)
+	} else {
+		// If not dev bypass, submit login flow to send OTP
+		if _, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &phone, nil, nil); err != nil {
+			return nil, domainerrors.NewUnauthorizedError("MSG_LOGIN_FAILED", "Login failed").WithCause(err)
+		}
 	}
 
 	// Create challenge session
@@ -134,6 +145,12 @@ func (u *userUseCase) ChallengeWithEmail(
 	tenantID uuid.UUID,
 	email string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
+	// Get tenant
+	_, err := u.tenantRepo.GetByID(tenantID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
+	}
+
 	// Normalize and validate email
 	email = strings.ToLower(email)
 	if !utils.IsEmail(email) {
@@ -155,16 +172,41 @@ func (u *userUseCase) ChallengeWithEmail(
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
 
+	// Check if the identifier exists in the database
+	_, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierEmail.String(), email)
+	if err != nil {
+		// Dev bypass logic
+		if conf.IsDevReviewerBypassEnabled() && email == conf.DevReviewerIdentifier() {
+			// Create minimum identity with traits { email: <email> }
+			if _, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
+				"email": email,
+			}); e != nil {
+				return nil, domainerrors.WrapInternal(e, "MSG_CREATE_IDENTITY_FAILED", "Failed to create identity (dev bypass)")
+			}
+		} else {
+			return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Email not registered in the system").WithDetails([]interface{}{
+				map[string]string{
+					"field": "email",
+					"error": "Email not registered in the system",
+				},
+			})
+		}
+	}
+
 	// Initialize login flow with Kratos
 	flow, err := u.kratosService.InitializeLoginFlow(ctx, tenantID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to initialize login flow")
 	}
 
-	// Submit login flow to Kratos
-	_, err = u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &email, nil, nil)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to submit login flow")
+	// Dev bypass: ignore sending OTP
+	if conf.IsDevReviewerBypassEnabled() && email == conf.DevReviewerIdentifier() {
+		logger.GetLogger().Infof("Dev bypass enabled: skip sending OTP to %s", email)
+	} else {
+		// If not dev bypass, submit login flow to send OTP
+		if _, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &email, nil, nil); err != nil {
+			return nil, domainerrors.NewUnauthorizedError("MSG_LOGIN_FAILED", "Login failed").WithCause(err)
+		}
 	}
 
 	// Create challenge session
