@@ -515,7 +515,7 @@ func (u *userUseCase) VerifyLogin(
 
 		// Retrieve the OTP from cache
 		cacheKey := &cachetypes.Keyer{Raw: fmt.Sprintf("otp:%s:%s", tenant.Name, identifier)}
-		deadline := time.Now().Add(3 * time.Second)
+		deadline := time.Now().Add(constants.DevBypassOTPFetchTimeout)
 		var realCode string
 
 		for {
@@ -529,7 +529,7 @@ func (u *userUseCase) VerifyLogin(
 					"Failed to fetch real OTP (dev bypass)",
 				)
 			}
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(constants.DevBypassOTPPollInterval)
 		}
 		code = realCode
 	}
