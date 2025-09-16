@@ -1,6 +1,7 @@
 package instances
 
 import (
+	"context"
 	"sync"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
@@ -14,8 +15,11 @@ var (
 )
 
 func SMSProviderInstance() services.SMSProvider {
+	// Initialize cache repository
+	cacheRepo := CacheRepositoryInstance(context.Background())
+
 	smsProviderOnce.Do(func() {
-		smsProvider = sms.NewSMSProvider(conf.GetSmsConfiguration())
+		smsProvider = sms.NewSMSProvider(conf.GetSmsConfiguration(), cacheRepo)
 	})
 	return smsProvider
 }

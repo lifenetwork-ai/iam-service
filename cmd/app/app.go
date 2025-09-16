@@ -42,7 +42,7 @@ func RunApp(config *conf.Configuration) {
 	repos := wire.InitializeRepos(db, cacheRepository)
 
 	// Initialize use cases
-	ucases := wire.InitializeUseCases(db, repos)
+	ucases := wire.InitializeUseCases(db, repos, cacheRepository)
 
 	// Register routes
 	routev1.RegisterRoutes(

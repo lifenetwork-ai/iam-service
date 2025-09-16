@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
+	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/rate_limiter/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -31,6 +32,7 @@ var (
 
 type userUseCase struct {
 	db                        *gorm.DB
+	cacheRepo                 cachetypes.CacheRepository
 	rateLimiter               ratelimiters.RateLimiter
 	tenantRepo                domainrepo.TenantRepository
 	globalUserRepo            domainrepo.GlobalUserRepository
@@ -42,6 +44,7 @@ type userUseCase struct {
 
 func NewIdentityUserUseCase(
 	db *gorm.DB,
+	cacheRepo cachetypes.CacheRepository,
 	rateLimiter ratelimiters.RateLimiter,
 	challengeSessionRepo domainrepo.ChallengeSessionRepository,
 	tenantRepo domainrepo.TenantRepository,
@@ -52,6 +55,7 @@ func NewIdentityUserUseCase(
 ) interfaces.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,
+		cacheRepo:                 cacheRepo,
 		rateLimiter:               rateLimiter,
 		challengeSessionRepo:      challengeSessionRepo,
 		tenantRepo:                tenantRepo,
@@ -147,7 +151,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	email string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// Get tenant
-	tenant, err := u.tenantRepo.GetByID(tenantID)
+	_, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
@@ -175,23 +179,12 @@ func (u *userUseCase) ChallengeWithEmail(
 
 	// Check if the identifier exists in the database
 	if _, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierEmail.String(), email); err != nil {
-		// Dev bypass logic
-		if conf.IsDevReviewerBypassEnabled() && email == conf.DevReviewerIdentifier() {
-			// Create minimum identity with traits { email: <email> }
-			if _, statusCode, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
-				"email":  email,
-				"tenant": tenant.Name,
-			}); e != nil && statusCode != http.StatusConflict {
-				return nil, domainerrors.WrapInternal(e, "MSG_CREATE_IDENTITY_FAILED", "Failed to create identity (dev bypass)")
-			}
-		} else {
-			return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Email not registered in the system").WithDetails([]interface{}{
-				map[string]string{
-					"field": "email",
-					"error": "Email not registered in the system",
-				},
-			})
-		}
+		return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Email not registered in the system").WithDetails([]interface{}{
+			map[string]string{
+				"field": "email",
+				"error": "Email not registered in the system",
+			},
+		})
 	}
 
 	// Initialize login flow with Kratos
@@ -200,14 +193,9 @@ func (u *userUseCase) ChallengeWithEmail(
 		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to initialize login flow")
 	}
 
-	// Dev bypass: ignore sending OTP
-	if conf.IsDevReviewerBypassEnabled() && email == conf.DevReviewerIdentifier() {
-		logger.GetLogger().Infof("Dev bypass enabled: skip sending OTP to %s", email)
-	} else {
-		// If not dev bypass, submit login flow to send OTP
-		if _, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &email, nil, nil); err != nil {
-			return nil, domainerrors.NewUnauthorizedError("MSG_LOGIN_FAILED", "Login failed").WithCause(err)
-		}
+	// Submit login flow to send OTP
+	if _, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &email, nil, nil); err != nil {
+		return nil, domainerrors.NewUnauthorizedError("MSG_LOGIN_FAILED", "Login failed").WithCause(err)
 	}
 
 	// Create challenge session
@@ -524,19 +512,31 @@ func (u *userUseCase) VerifyLogin(
 		identifier == conf.DevReviewerIdentifier() &&
 		code == conf.DevReviewerMagicOTP()
 	if useDevBypass {
-		// Trigger send real OTP to Courier
-		if _, err := u.kratosService.SubmitLoginFlow(
-			ctx, tenantID, flow, constants.MethodTypeCode.String(), &identifier, nil, nil,
-		); err != nil {
-			return nil, domainerrors.NewUnauthorizedError("MSG_LOGIN_FAILED", "Login failed (trigger send real OTP)").WithCause(err)
-		}
-
-		// Get the real OTP from Courier
-		code, err = u.kratosService.GetLatestCourierOTP(ctx, tenantID, identifier)
+		// Get tenant
+		tenant, err := u.tenantRepo.GetByID(tenantID)
 		if err != nil {
-			return nil, domainerrors.WrapInternal(err, "MSG_FETCH_COURIER_CODE_FAILED", "Failed to fetch real OTP (dev bypass)")
+			return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 		}
 
+		// Retrieve the OTP from cache
+		cacheKey := &cachetypes.Keyer{Raw: fmt.Sprintf("otp:%s:%s", tenant.Name, identifier)}
+		deadline := time.Now().Add(3 * time.Second)
+		var realCode string
+
+		for {
+			if err := u.cacheRepo.RetrieveItem(cacheKey, &realCode); err == nil && realCode != "" {
+				break
+			}
+			if time.Now().After(deadline) {
+				return nil, domainerrors.WrapInternal(
+					fmt.Errorf("no fresh otp for %s", identifier),
+					"MSG_FETCH_COURIER_CODE_FAILED",
+					"Failed to fetch real OTP (dev bypass)",
+				)
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+		code = realCode
 	}
 
 	// Submit login flow with provided code

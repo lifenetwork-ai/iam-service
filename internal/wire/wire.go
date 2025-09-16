@@ -51,12 +51,12 @@ type UseCases struct {
 }
 
 // Initialize use cases
-func InitializeUseCases(db *gorm.DB, repos *Repos) *UseCases {
+func InitializeUseCases(db *gorm.DB, repos *Repos, cacheRepo types.CacheRepository) *UseCases {
 	// Return all use cases
 	return &UseCases{
 		IdentityUserUCase: ucases.NewIdentityUserUseCase(
 			db,
-
+			cacheRepo,
 			instances.RateLimiterInstance(),
 			repos.ChallengeSessionRepo,
 			repos.TenantRepo,

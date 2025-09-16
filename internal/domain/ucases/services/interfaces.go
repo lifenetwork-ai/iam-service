@@ -48,7 +48,6 @@ type KratosService interface {
 	UpdateIdentifierTraitAdmin(ctx context.Context, tenantID, identityID uuid.UUID, traits map[string]interface{}) error
 	DeleteIdentifierAdmin(ctx context.Context, tenantID, identityID uuid.UUID) error
 	UpdateLangAdmin(ctx context.Context, tenantID, identityID uuid.UUID, newLang string) error
-	GetLatestCourierOTP(ctx context.Context, tenantID uuid.UUID, identifier string) (string, error)
 }
 
 type KetoService interface {

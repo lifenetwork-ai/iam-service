@@ -5,24 +5,28 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
+	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type smsProvider struct {
-	config *conf.SmsConfiguration
+	config    *conf.SmsConfiguration
+	cacheRepo cachetypes.CacheRepository
 
 	twillioClient  *TwilioClient
 	whatsappClient *WhatsAppClient
 }
 
-func NewSMSProvider(config *conf.SmsConfiguration) *smsProvider {
+func NewSMSProvider(config *conf.SmsConfiguration, cache cachetypes.CacheRepository) *smsProvider {
 	return &smsProvider{
 		config:         config,
+		cacheRepo:      cache,
 		twillioClient:  NewTwilioClient(config.Twilio.TwilioAccountSID, config.Twilio.TwilioAuthToken, config.Twilio.TwilioBaseURL),
 		whatsappClient: NewWhatsAppClient(config.Whatsapp.WhatsappAccessToken, config.Whatsapp.WhatsappPhoneID, config.Whatsapp.WhatsappBaseURL),
 	}
@@ -32,6 +36,10 @@ func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel
 	otpMessage := GetOTPMessage(tenantName, otp, ttl)
 
 	if conf.IsDevReviewerBypassEnabled() && receiver == conf.DevReviewerIdentifier() {
+		// Capture the OTP in cache for dev reviewer
+		key := &cachetypes.Keyer{Raw: fmt.Sprintf("otp:%s:%s", tenantName, receiver)}
+		_ = s.cacheRepo.SaveItem(key, otp, ttl)
+
 		logger.GetLogger().Infof("Dev bypass enabled: skip sending OTP",
 			"receiver", receiver,
 			"tenant", tenantName,

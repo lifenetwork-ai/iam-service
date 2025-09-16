@@ -16,7 +16,7 @@ var (
 // RateLimiterInstance returns a singleton instance of the rate limiter.
 func RateLimiterInstance() types.RateLimiter {
 	rateLimiterOnce.Do(func() {
-		// Use in-memory cache client (you can switch to Redis later)
+		// Initialize cache repository
 		cacheRepo := CacheRepositoryInstance(context.Background())
 
 		// Use fixed window limiter
