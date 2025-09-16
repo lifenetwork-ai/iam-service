@@ -23,3 +23,18 @@ func GetSmsConfiguration() *SmsConfiguration {
 func IsDebugMode() bool {
 	return configuration.Env == "DEV"
 }
+
+func IsDevReviewerBypassEnabled() bool {
+	return configuration.DevReviewer.DevReviewerByPass
+}
+
+func DevReviewerMagicOTP() string {
+	if v := configuration.DevReviewer.DevReviewerMagicOTP; v != "" {
+		return v
+	}
+	return "123456"
+}
+
+func DevReviewerIdentifier() string {
+	return configuration.DevReviewer.DevReviewerIdentifier
+}

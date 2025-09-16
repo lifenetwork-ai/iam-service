@@ -41,6 +41,7 @@ type Configuration struct {
 	KratosConfig KratosConfiguration      `mapstructure:",squash"`
 	Keto         KetoConfiguration        `mapstructure:",squash"`
 	Sms          SmsConfiguration         `mapstructure:",squash"`
+	DevReviewer  DevReviewerConfiguration `mapstructure:",squash"`
 }
 
 type TwilioConfiguration struct {
@@ -54,6 +55,12 @@ type WhatsappConfiguration struct {
 	WhatsappPhoneID     string `mapstructure:"WHATSAPP_PHONE_ID"`
 	WhatsappAccessToken string `mapstructure:"WHATSAPP_ACCESS_TOKEN"`
 	WhatsappBaseURL     string `mapstructure:"WHATSAPP_BASE_URL"`
+}
+
+type DevReviewerConfiguration struct {
+	DevReviewerByPass     bool   `mapstructure:"DEV_REVIEWER_BYPASS"`
+	DevReviewerMagicOTP   string `mapstructure:"DEV_REVIEWER_MAGIC_OTP"`
+	DevReviewerIdentifier string `mapstructure:"DEV_REVIEWER_IDENTIFIER"`
 }
 
 type SmsConfiguration struct {
@@ -92,6 +99,9 @@ var defaultConfigurations = map[string]any{
 	"WHATSAPP_ACCESS_TOKEN":          "",
 	"TWILIO_BASE_URL":                "https://api.twilio.com/2010-04-01",
 	"WHATSAPP_BASE_URL":              "https://graph.facebook.com/v22.0",
+	"DEV_REVIEWER_BYPASS":            "false",
+	"DEV_REVIEWER_MAGIC_OTP":         "123456",
+	"DEV_REVIEWER_IDENTIFIER":        "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations
