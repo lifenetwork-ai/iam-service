@@ -46,18 +46,34 @@ func (m *MockKratosService) EXPECT() *MockKratosServiceMockRecorder {
 	return m.recorder
 }
 
-// DeleteIdentifierAdmin mocks base method.
-func (m *MockKratosService) DeleteIdentifierAdmin(ctx context.Context, tenantID, kratosUserID uuid.UUID) error {
+// CreateIdentityAdmin mocks base method.
+func (m *MockKratosService) CreateIdentityAdmin(ctx context.Context, tenantID uuid.UUID, traits map[string]any) (*client.Identity, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteIdentifierAdmin", ctx, tenantID, kratosUserID)
+	ret := m.ctrl.Call(m, "CreateIdentityAdmin", ctx, tenantID, traits)
+	ret0, _ := ret[0].(*client.Identity)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateIdentityAdmin indicates an expected call of CreateIdentityAdmin.
+func (mr *MockKratosServiceMockRecorder) CreateIdentityAdmin(ctx, tenantID, traits any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityAdmin", reflect.TypeOf((*MockKratosService)(nil).CreateIdentityAdmin), ctx, tenantID, traits)
+}
+
+// DeleteIdentifierAdmin mocks base method.
+func (m *MockKratosService) DeleteIdentifierAdmin(ctx context.Context, tenantID, identityID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIdentifierAdmin", ctx, tenantID, identityID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteIdentifierAdmin indicates an expected call of DeleteIdentifierAdmin.
-func (mr *MockKratosServiceMockRecorder) DeleteIdentifierAdmin(ctx, tenantID, kratosUserID any) *gomock.Call {
+func (mr *MockKratosServiceMockRecorder) DeleteIdentifierAdmin(ctx, tenantID, identityID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentifierAdmin", reflect.TypeOf((*MockKratosService)(nil).DeleteIdentifierAdmin), ctx, tenantID, kratosUserID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentifierAdmin", reflect.TypeOf((*MockKratosService)(nil).DeleteIdentifierAdmin), ctx, tenantID, identityID)
 }
 
 // GetIdentity mocks base method.
