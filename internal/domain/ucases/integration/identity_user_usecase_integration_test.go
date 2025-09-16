@@ -130,9 +130,9 @@ func TestIntegration_ChangeIdentifier_EmailToEmail_LoginChecks(t *testing.T) {
 	})
 	t.Run("login with old email fails", func(t *testing.T) {
 		loginResp, err := ucase.ChallengeWithEmail(ctx, tenantID, oldEmail)
-		require.NotNil(t, err)
 		require.Nil(t, loginResp)
-		require.Contains(t, err.Error(), "email not found")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "not registered")
 	})
 	t.Run("login with phone still works", func(t *testing.T) {
 		loginResp, err := ucase.ChallengeWithPhone(ctx, tenantID, phone)
