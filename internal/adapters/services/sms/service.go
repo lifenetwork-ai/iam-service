@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
@@ -30,8 +29,18 @@ func NewSMSProvider(config *conf.SmsConfiguration) *smsProvider {
 }
 
 func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration) error {
-	logger.GetLogger().Infof("Sending OTP to %s", receiver)
 	otpMessage := GetOTPMessage(tenantName, otp, ttl)
+
+	if conf.IsDevReviewerBypassEnabled() && receiver == conf.DevReviewerIdentifier() {
+		logger.GetLogger().Infof("Dev bypass enabled: skip sending OTP",
+			"receiver", receiver,
+			"tenant", tenantName,
+			"ttl", ttl,
+		)
+		return nil
+	}
+
+	logger.GetLogger().Infof("Sending OTP to %s", receiver)
 	switch channel {
 	case constants.ChannelSMS:
 		return s.sendSMS(ctx, tenantName, receiver, otpMessage)
@@ -45,7 +54,7 @@ func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel
 }
 
 func (s *smsProvider) sendToWebhook(ctx context.Context, tenantName, receiver, message string) error {
-	url := os.Getenv("MOCK_WEBHOOK_URL")
+	url := conf.GetMockWebhookURL()
 	if url == "" {
 		return errors.New("MOCK_WEBHOOK_URL is not set")
 	}

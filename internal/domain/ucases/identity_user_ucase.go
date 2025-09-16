@@ -515,10 +515,31 @@ func (u *userUseCase) VerifyLogin(
 			map[string]string{"field": "session", "error": "Session not found"},
 		})
 	}
-
-	// Submit login flow with code
 	identifier := sessionValue.Identifier
-	loginResult, err := u.kratosService.SubmitLoginFlow(
+
+	var loginResult *client.SuccessfulNativeLogin
+
+	useDevBypass := conf.IsDevReviewerBypassEnabled() &&
+		identifier == conf.DevReviewerIdentifier() &&
+		code == conf.DevReviewerMagicOTP()
+	if useDevBypass {
+		// Trigger send real OTP to Courier
+		if _, err := u.kratosService.SubmitLoginFlow(
+			ctx, tenantID, flow, constants.MethodTypeCode.String(), &identifier, nil, nil,
+		); err != nil {
+			return nil, domainerrors.NewUnauthorizedError("MSG_LOGIN_FAILED", "Login failed (trigger send real OTP)").WithCause(err)
+		}
+
+		// Get the real OTP from Courier
+		code, err = u.kratosService.GetLatestCourierOTP(ctx, tenantID, identifier)
+		if err != nil {
+			return nil, domainerrors.WrapInternal(err, "MSG_FETCH_COURIER_CODE_FAILED", "Failed to fetch real OTP (dev bypass)")
+		}
+
+	}
+
+	// Submit login flow with provided code
+	loginResult, err = u.kratosService.SubmitLoginFlow(
 		ctx, tenantID, flow, constants.MethodTypeCode.String(), &identifier, nil, &code,
 	)
 	if err != nil {

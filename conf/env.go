@@ -30,18 +30,19 @@ type RootAccountConfiguration struct {
 }
 
 type Configuration struct {
-	Database     DatabaseConfiguration    `mapstructure:",squash"`
-	Redis        RedisConfiguration       `mapstructure:",squash"`
-	RootAccount  RootAccountConfiguration `mapstructure:",squash"`
-	AppName      string                   `mapstructure:"APP_NAME"`
-	AppPort      uint32                   `mapstructure:"APP_PORT"`
-	Env          string                   `mapstructure:"ENV"`
-	LogLevel     string                   `mapstructure:"LOG_LEVEL"`
-	CacheType    string                   `mapstructure:"CACHE_TYPE"`
-	KratosConfig KratosConfiguration      `mapstructure:",squash"`
-	Keto         KetoConfiguration        `mapstructure:",squash"`
-	Sms          SmsConfiguration         `mapstructure:",squash"`
-	DevReviewer  DevReviewerConfiguration `mapstructure:",squash"`
+	Database       DatabaseConfiguration    `mapstructure:",squash"`
+	Redis          RedisConfiguration       `mapstructure:",squash"`
+	RootAccount    RootAccountConfiguration `mapstructure:",squash"`
+	AppName        string                   `mapstructure:"APP_NAME"`
+	AppPort        uint32                   `mapstructure:"APP_PORT"`
+	Env            string                   `mapstructure:"ENV"`
+	LogLevel       string                   `mapstructure:"LOG_LEVEL"`
+	CacheType      string                   `mapstructure:"CACHE_TYPE"`
+	MockWebhookURL string                   `mapstructure:"MOCK_WEBHOOK_URL"`
+	KratosConfig   KratosConfiguration      `mapstructure:",squash"`
+	Keto           KetoConfiguration        `mapstructure:",squash"`
+	Sms            SmsConfiguration         `mapstructure:",squash"`
+	DevReviewer    DevReviewerConfiguration `mapstructure:",squash"`
 }
 
 type TwilioConfiguration struct {

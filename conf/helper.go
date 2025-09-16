@@ -38,3 +38,7 @@ func DevReviewerMagicOTP() string {
 func DevReviewerIdentifier() string {
 	return configuration.DevReviewer.DevReviewerIdentifier
 }
+
+func GetMockWebhookURL() string {
+	return configuration.MockWebhookURL
+}
