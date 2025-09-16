@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/lifenetwork-ai/iam-service/constants"
@@ -74,4 +75,14 @@ func parseKratosErrorResponse(resp *http.Response, defaultErr error) error {
 	default:
 		return defaultErr
 	}
+}
+
+// extractSixDigitCode parses the first 6-digit substring it finds.
+func extractSixDigitCode(s string) (string, error) {
+	re := regexp.MustCompile(`\b(\d{6})\b`)
+	m := re.FindStringSubmatch(s)
+	if len(m) < 2 {
+		return "", fmt.Errorf("no 6-digit code found")
+	}
+	return m[1], nil
 }

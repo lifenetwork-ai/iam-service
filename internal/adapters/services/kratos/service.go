@@ -581,3 +581,50 @@ func (k *kratosServiceImpl) CreateIdentityAdmin(
 	}
 	return identity, nil
 }
+
+// GetLatestCourierOTP fetches the newest 6-digit OTP sent to an identifier.
+func (k *kratosServiceImpl) GetLatestCourierOTP(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	identifier string,
+) (string, error) {
+	adminAPI, err := k.client.AdminAPI(tenantID)
+	if err != nil {
+		return "", fmt.Errorf("get admin API failed: %w", err)
+	}
+
+	msgs, _, err := adminAPI.CourierAPI.ListCourierMessages(ctx).Execute()
+	if err != nil {
+		return "", fmt.Errorf("list courier messages failed: %w", err)
+	}
+
+	var newest *kratos.Message
+	for i := range msgs {
+		m := msgs[i]
+		// Filter exactly recipient
+		if m.Recipient == identifier {
+			if newest == nil || m.CreatedAt.After(newest.CreatedAt) {
+				newest = &m
+			}
+		}
+	}
+
+	if newest == nil {
+		return "", fmt.Errorf("no courier message found for identifier %s", identifier)
+	}
+
+	// If body is empty fallback to subject
+	body := newest.Body
+	if body == "" {
+		body = newest.Subject
+	}
+	if body == "" {
+		return "", fmt.Errorf("empty courier message content")
+	}
+
+	code, err := extractSixDigitCode(body)
+	if err != nil {
+		return "", err
+	}
+	return code, nil
+}
