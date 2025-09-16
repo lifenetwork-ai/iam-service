@@ -68,7 +68,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	phone string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// Get tenant
-	_, err := u.tenantRepo.GetByID(tenantID)
+	tenant, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
@@ -93,7 +93,8 @@ func (u *userUseCase) ChallengeWithPhone(
 		if conf.IsDevReviewerBypassEnabled() && phone == conf.DevReviewerIdentifier() {
 			// Create minimum identity with traits { phone: <phone> }
 			if _, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
-				"phone": phone,
+				"phone_number": phone,
+				"tenant":       tenant.Name,
 			}); e != nil {
 				return nil, domainerrors.WrapInternal(e, "MSG_CREATE_IDENTITY_FAILED", "Failed to create identity (dev bypass)")
 			}
@@ -146,7 +147,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	email string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// Get tenant
-	_, err := u.tenantRepo.GetByID(tenantID)
+	tenant, err := u.tenantRepo.GetByID(tenantID)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
@@ -179,7 +180,8 @@ func (u *userUseCase) ChallengeWithEmail(
 		if conf.IsDevReviewerBypassEnabled() && email == conf.DevReviewerIdentifier() {
 			// Create minimum identity with traits { email: <email> }
 			if _, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
-				"email": email,
+				"email":  email,
+				"tenant": tenant.Name,
 			}); e != nil {
 				return nil, domainerrors.WrapInternal(e, "MSG_CREATE_IDENTITY_FAILED", "Failed to create identity (dev bypass)")
 			}
