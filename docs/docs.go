@@ -80,6 +80,158 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/identifiers/add": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Infer types from values. existing_identifier resolves the user; new_identifier must be a different type (email vs phone). Creates a new Kratos identity and maps it to the same global user. No OTP is triggered.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "identifiers"
+                ],
+                "summary": "Add a new identifier for a user (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload with existing_identifier and new_identifier",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminAddIdentifierPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminAddIdentifierResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/identifiers/check": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Return true if the given identifier (email/phone) already exists in this tenant.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "identifiers"
+                ],
+                "summary": "Check if an identifier is registered in this tenant",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifier payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminCheckIdentifierPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.CheckIdentifierResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/admin/tenants": {
             "get": {
                 "security": [
@@ -816,7 +968,7 @@ const docTemplate = `{
         },
         "/api/v1/users/challenge-verify": {
             "post": {
-                "description": "Verify either a login challenge or registration flow\nVerify a one-time code sent to user for either login or registration challenge.",
+                "description": "Verify either a login challenge, registration or verification flow\nVerify a one-time code sent to user for either login, registration or verification challenge.",
                 "consumes": [
                     "application/json"
                 ],
@@ -826,7 +978,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Verify login or registration challenge",
+                "summary": "Verify login, registration or verification challenge",
                 "parameters": [
                     {
                         "type": "string",
@@ -836,7 +988,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Verification payload. ` + "`" + `type` + "`" + ` must be one of: ` + "`" + `register` + "`" + `, ` + "`" + `login` + "`" + `",
+                        "description": "Verification payload. ` + "`" + `type` + "`" + ` must be one of: ` + "`" + `register` + "`" + `, ` + "`" + `login` + "`" + `, ` + "`" + `verify` + "`" + `.",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
@@ -1149,6 +1301,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
                         "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
@@ -1210,6 +1363,94 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users/me/delete-identifier": {
+            "delete": {
+                "description": "Delete a user's identifier (email or phone)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete user identifier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifier info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserDeleteIdentifierDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Identifier deleted successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Identifier or type already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/me/update-identifier": {
             "post": {
                 "description": "Update a user's identifier (email or phone)",
@@ -1233,6 +1474,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
                         "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
@@ -1244,7 +1486,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserUpdateIdentifierDTO"
+                            "$ref": "#/definitions/dto.IdentityUserChangeIdentifierDTO"
                         }
                     }
                 ],
@@ -1281,6 +1523,88 @@ const docTemplate = `{
                     },
                     "429": {
                         "description": "Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me/update-lang": {
+            "patch": {
+                "description": "Update current user's preferred language (traits.lang).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update user language",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Language payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserUpdateLangDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Language updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -1370,6 +1694,97 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/users/verification/challenge": {
+            "post": {
+                "description": "Trigger verification flow to send OTP to an identifier (email or phone).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Send verification code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifier to verify",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityVerificationChallengeDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.IdentityUserChallengeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Identifier does not belong to the authenticated user",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Identifier not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1396,6 +1811,57 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.AdminAddIdentifierPayloadDTO": {
+            "type": "object",
+            "required": [
+                "existing_identifier",
+                "new_identifier"
+            ],
+            "properties": {
+                "existing_identifier": {
+                    "type": "string"
+                },
+                "new_identifier": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AdminAddIdentifierResponse": {
+            "type": "object",
+            "properties": {
+                "global_user_id": {
+                    "type": "string"
+                },
+                "kratos_user_id": {
+                    "type": "string"
+                },
+                "lang": {
+                    "type": "string"
+                },
+                "new_identifier": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AdminCheckIdentifierPayloadDTO": {
+            "type": "object",
+            "required": [
+                "identifier"
+            ],
+            "properties": {
+                "identifier": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CheckIdentifierResponse": {
+            "type": "object",
+            "properties": {
+                "registered": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1595,7 +2061,8 @@ const docTemplate = `{
                     "type": "string",
                     "enum": [
                         "register",
-                        "login"
+                        "login",
+                        "verify"
                     ]
                 }
             }
@@ -1628,6 +2095,32 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.IdentityUserChangeIdentifierDTO": {
+            "type": "object",
+            "required": [
+                "new_identifier"
+            ],
+            "properties": {
+                "new_identifier": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityUserDeleteIdentifierDTO": {
+            "type": "object",
+            "required": [
+                "identifier_type"
+            ],
+            "properties": {
+                "identifier_type": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "phone_number"
+                    ]
+                }
+            }
+        },
         "dto.IdentityUserRegisterDTO": {
             "type": "object",
             "required": [
@@ -1649,21 +2142,24 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.IdentityUserUpdateIdentifierDTO": {
+        "dto.IdentityUserUpdateLangDTO": {
             "type": "object",
             "required": [
-                "identifier_type",
-                "new_identifier"
+                "lang"
             ],
             "properties": {
-                "identifier_type": {
-                    "type": "string",
-                    "enum": [
-                        "email",
-                        "phone_number"
-                    ]
-                },
-                "new_identifier": {
+                "lang": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityVerificationChallengeDTO": {
+            "type": "object",
+            "required": [
+                "identifier"
+            ],
+            "properties": {
+                "identifier": {
                     "type": "string"
                 }
             }
@@ -1896,6 +2392,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "lang": {
                     "type": "string"
                 },
                 "last_name": {

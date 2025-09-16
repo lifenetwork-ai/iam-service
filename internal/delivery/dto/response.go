@@ -39,3 +39,16 @@ type ErrorDTOResponse struct {
 func (e *ErrorDTOResponse) Error() string {
 	return fmt.Sprintf("code: %s, message: %s, details: %v", e.Code, e.Message, e.Details)
 }
+
+// CheckIdentifierResponse represents the response for checking if an identifier exists.
+type CheckIdentifierResponse struct {
+	Registered bool `json:"registered"`
+}
+
+// AdminAddIdentifierResponse represents the response after an admin adds a new identifier to a user.
+type AdminAddIdentifierResponse struct {
+	GlobalUserID string `json:"global_user_id"`
+	KratosUserID string `json:"kratos_user_id"`
+	Identifier   string `json:"new_identifier"`
+	Lang         string `json:"lang"`
+}

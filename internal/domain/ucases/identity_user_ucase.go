@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -19,6 +20,11 @@ import (
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
 	client "github.com/ory/kratos-client-go"
+)
+
+var (
+	codeInvalidPhone = "MSG_INVALID_PHONE_NUMBER"
+	msgInvalidPhone  = "Invalid phone number"
 )
 
 type userUseCase struct {
@@ -66,17 +72,11 @@ func (u *userUseCase) ChallengeWithPhone(
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
 
-	if !utils.IsPhoneNumber(phone) {
-		return nil, domainerrors.NewValidationError(
-			"MSG_INVALID_PHONE_NUMBER",
-			"Invalid phone number",
-			[]interface{}{
-				map[string]string{
-					"field": "phone",
-					"error": "Invalid phone number",
-				},
-			},
-		)
+	phone, _, err = utils.NormalizePhoneE164(phone, constants.DefaultRegion)
+	if err != nil {
+		code := codeInvalidPhone
+		msg := msgInvalidPhone
+		return nil, domainerrors.NewValidationError(code, msg, nil)
 	}
 
 	// Check rate limit for phone challenges
@@ -86,7 +86,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Check if the identifier exists in the database
-	_, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, constants.IdentifierPhone.String(), phone)
+	_, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierPhone.String(), phone)
 	if err != nil {
 		return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Phone number").WithDetails([]interface{}{
 			map[string]string{
@@ -130,6 +130,8 @@ func (u *userUseCase) ChallengeWithEmail(
 	tenantID uuid.UUID,
 	email string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
+	// Normalize and validate email
+	email = strings.ToLower(email)
 	if !utils.IsEmail(email) {
 		return nil, domainerrors.NewValidationError(
 			"MSG_INVALID_EMAIL",
@@ -216,20 +218,12 @@ func (u *userUseCase) VerifyRegister(
 		return nil, domainerrors.NewInternalError("MSG_INVALID_TRAITS", "Failed to parse identity traits")
 	}
 
-	email := extractStringFromTraits(traits, constants.IdentifierEmail.String(), "")
-	phone := extractStringFromTraits(traits, constants.IdentifierPhone.String(), "")
 	tenantName := extractStringFromTraits(traits, "tenant", "")
-	newTenantUserID := registrationResult.Session.Identity.Id
+	newKratosUserID := registrationResult.Session.Identity.Id
 
-	// Determine identifier and type
-	identifier := email
-	if phone != "" {
-		identifier = phone
-	}
-	identifierType, err := utils.GetIdentifierType(identifier)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIER_TYPE_FAILED", "Failed to get identifier type")
-	}
+	// Get identifier and type from session value
+	identifier := sessionValue.Identifier
+	identifierType := sessionValue.IdentifierType
 
 	// Get tenant by name
 	tenant, err := u.tenantRepo.GetByName(tenantName)
@@ -242,27 +236,39 @@ func (u *userUseCase) VerifyRegister(
 		})
 	}
 
+	// Extract language from traits
+	lang := extractStringFromTraits(traits, constants.IdentifierLang.String(), "")
+
 	switch sessionValue.ChallengeType {
 	case constants.ChallengeTypeAddIdentifier:
-		// Handle add identifier challenge
-		if err := u.userIdentityRepo.FirstOrCreate(u.db, &domain.UserIdentity{
-			GlobalUserID: sessionValue.GlobalUserID,
-			Type:         identifierType,
-			Value:        identifier,
-		}); err != nil {
-			return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add new identifier")
+		inserted, err := u.userIdentityRepo.InsertOnceByKratosUserAndType(
+			ctx, nil, tenantID.String(), newKratosUserID, sessionValue.GlobalUserID, identifierType, identifier,
+		)
+		if err != nil {
+			return nil, domainerrors.WrapInternal(err, "MSG_ADD_IDENTIFIER_FAILED", "Failed to add identifier")
+		}
+		if !inserted {
+			return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_EXISTS", "Identifier of this type already added", nil)
 		}
 
 	case constants.ChallengeTypeChangeIdentifier:
 		// Handle change identifier challenge
-		if err := u.bindIAMToUpdateIdentifier(ctx, tenant, sessionValue.TenantUserID, newTenantUserID, identifier, identifierType, sessionValue); err != nil {
+		if err := u.bindIAMToUpdateIdentifier(
+			ctx,
+			tenant,
+			sessionValue.GlobalUserID,
+			sessionValue.KratosUserID,
+			newKratosUserID,
+			identifier,
+			identifierType,
+		); err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_UPDATE_IDENTIFIER_FAILED", "Failed to update identifier")
 		}
 
 	default:
 		// Bind IAM to registration
 		if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			return u.bindIAMToRegistration(ctx, tx, tenant, newTenantUserID, identifier, identifierType)
+			return u.bindIAMToRegistration(ctx, tx, tenant, newKratosUserID, identifier, identifierType, lang)
 		}); err != nil {
 			return nil, domainerrors.WrapInternal(err, "MSG_IAM_REGISTRATION_FAILED", "Failed to bind IAM to registration")
 		}
@@ -272,6 +278,13 @@ func (u *userUseCase) VerifyRegister(
 	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
 
 	// Return authentication response
+	// Lookup GlobalUserID for the identifier involved in this flow to populate response
+	userGlobalID, _ := u.userIdentityRepo.GetByTenantAndKratosUserID(ctx, nil, tenant.ID.String(), newKratosUserID)
+	var globalUserID string
+	if userGlobalID != nil {
+		globalUserID = userGlobalID.GlobalUserID
+	}
+
 	return &types.IdentityUserAuthResponse{
 		SessionID:       registrationResult.Session.Id,
 		SessionToken:    *registrationResult.SessionToken,
@@ -279,11 +292,14 @@ func (u *userUseCase) VerifyRegister(
 		ExpiresAt:       registrationResult.Session.ExpiresAt,
 		IssuedAt:        registrationResult.Session.IssuedAt,
 		AuthenticatedAt: registrationResult.Session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
-			ID:       newTenantUserID,
-			UserName: extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
-			Email:    email,
-			Phone:    phone,
+		User: &types.IdentityUserResponse{
+			ID:           newKratosUserID,
+			GlobalUserID: globalUserID,
+			UserName:     extractStringFromTraits(traits, constants.IdentifierUsername.String(), ""),
+			Email:        extractStringFromTraits(traits, constants.IdentifierEmail.String(), ""),
+			Phone:        extractStringFromTraits(traits, constants.IdentifierPhone.String(), ""),
+			Tenant:       extractStringFromTraits(traits, constants.IdentifierTenant.String(), ""),
+			Lang:         lang,
 		},
 		AuthenticationMethods: utils.Map(registrationResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -292,71 +308,57 @@ func (u *userUseCase) VerifyRegister(
 }
 
 // bindIAMToUpdateIdentifier handles updating to a different identifier
-// keeping the same GlobalUserID but mapping to the new TenantUserID
-// All operations are wrapped in a transaction to ensure atomicity
+// keeping the same GlobalUserID but mapping to the new KratosUserID
+// All write operations are wrapped in a transaction to ensure atomicity
 func (u *userUseCase) bindIAMToUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
-	oldTenantUserID string,
-	newTenantUserID string,
+	globalUserID string,
+	oldKratosUserID string,
+	newKratosUserID string,
 	newIdentifier string,
 	newIdentifierType string,
-	sessionValue *domain.ChallengeSession,
 ) error {
-	err := u.db.Transaction(func(tx *gorm.DB) error {
-		// Use the existing GlobalUserID from the session
-		globalUserID := sessionValue.GlobalUserID
+	// Pre-fetch the current mapping before starting the transaction
+	globalIdentifierMapping, err := u.userIdentifierMappingRepo.GetByGlobalUserID(
+		ctx,
+		globalUserID,
+	)
+	if err != nil || globalIdentifierMapping == nil {
+		return fmt.Errorf("get existing mapping: %w", err)
+	}
 
+	// Get the old identifier
+	oldIdentity, err := u.userIdentityRepo.GetByTenantAndKratosUserID(ctx, nil, tenant.ID.String(), oldKratosUserID)
+	if err != nil {
+		return fmt.Errorf("old identity with id: %s in tenant %s not found: %w", oldKratosUserID, tenant.ID.String(), err)
+	}
+
+	// Begin transaction
+	txErr := u.db.Transaction(func(tx *gorm.DB) error {
 		// Create identity for the new identifier with the existing GlobalUserID
 		if err := u.userIdentityRepo.Update(tx, &domain.UserIdentity{
-			ID:           sessionValue.IdentityID,
-			GlobalUserID: globalUserID,
+			ID:           oldIdentity.ID,
+			GlobalUserID: oldIdentity.GlobalUserID,
+			KratosUserID: newKratosUserID,
 			Type:         newIdentifierType,
 			Value:        newIdentifier,
 		}); err != nil {
 			return fmt.Errorf("create new identity: %w", err)
 		}
-
-		// Find the existing mapping for this global user and tenant
-		identifierMapping, err := u.userIdentifierMappingRepo.GetByTenantIDAndTenantUserID(ctx, tenant.ID.String(), oldTenantUserID)
-		if err != nil {
-			return fmt.Errorf("get existing mapping: %w", err)
-		}
-
-		if identifierMapping == nil {
-			if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
-				GlobalUserID: globalUserID,
-				TenantID:     tenant.ID.String(),
-				TenantUserID: newTenantUserID,
-			}); err != nil {
-				return fmt.Errorf("create mapping: %w", err)
-			}
-		} else {
-			// Update the mapping to the new tenant user id
-			if err := u.userIdentifierMappingRepo.Update(tx, &domain.UserIdentifierMapping{
-				ID:           identifierMapping.ID,
-				GlobalUserID: globalUserID,
-				TenantUserID: newTenantUserID,
-				TenantID:     tenant.ID.String(),
-			}); err != nil {
-				return fmt.Errorf("update mapping: %w", err)
-			}
-		}
-
 		// If we reach here, all operations succeeded and the transaction will be committed
 		return nil
 	})
-	if err != nil {
-		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newTenantUserID); cleanUpErr != nil {
+
+	if txErr != nil {
+		if cleanUpErr := u.rollbackKratosUpdateIdentifier(ctx, tenant, newKratosUserID); cleanUpErr != nil {
 			logger.GetLogger().Errorf("Failed to clean up: %v", cleanUpErr)
 		}
-		return fmt.Errorf("failed to bind IAM to update identifier: %v", err)
+		return fmt.Errorf("failed to bind IAM to update identifier: %v", txErr)
 	}
-
 	// Delete the old identifier from Kratos
-	err = u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldTenantUserID))
-	if err != nil {
-		return fmt.Errorf("failed to delete identifier: %v", err)
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(oldIdentity.KratosUserID)); err != nil {
+		return fmt.Errorf("failed to delete old identifier: %w", err)
 	}
 
 	return nil
@@ -366,10 +368,10 @@ func (u *userUseCase) bindIAMToUpdateIdentifier(
 func (u *userUseCase) rollbackKratosUpdateIdentifier(
 	ctx context.Context,
 	tenant *domain.Tenant,
-	newTenantUserID string,
+	newKratosUserID string,
 ) error {
-	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(newTenantUserID)); err != nil {
-		return fmt.Errorf("failed to delete identifier with tenantID: %s and newTenantUserID: %s", tenant.ID.String(), newTenantUserID)
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenant.ID, uuid.MustParse(newKratosUserID)); err != nil {
+		return fmt.Errorf("failed to delete identifier with tenantID: %s and newKratosUserID: %s", tenant.ID.String(), newKratosUserID)
 	}
 
 	return nil
@@ -380,14 +382,15 @@ func (u *userUseCase) bindIAMToRegistration(
 	ctx context.Context,
 	tx *gorm.DB,
 	tenant *domain.Tenant,
-	newTenantUserID string,
+	newKratosUserID string,
 	identifier string,
 	identifierType string,
+	lang string,
 ) error {
 	var globalUserID string
 
 	// Lookup existing identity
-	if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, identifierType, identifier); err == nil {
+	if identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, tx, tenant.ID.String(), identifierType, identifier); err == nil {
 		globalUserID = identity.GlobalUserID
 	}
 
@@ -396,11 +399,11 @@ func (u *userUseCase) bindIAMToRegistration(
 		globalUser = &domain.GlobalUser{ID: globalUserID}
 
 		// Check if already mapped
-		exists, err := u.userIdentifierMappingRepo.ExistsByTenantAndTenantUserID(ctx, tx, tenant.ID.String(), newTenantUserID)
+		exists, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, globalUserID)
 		if err != nil {
 			return fmt.Errorf("check mapping exists: %w", err)
 		}
-		if exists {
+		if exists != nil {
 			return nil
 		}
 	} else {
@@ -408,22 +411,26 @@ func (u *userUseCase) bindIAMToRegistration(
 		if err := u.globalUserRepo.Create(tx, globalUser); err != nil {
 			return fmt.Errorf("create global user: %w", err)
 		}
+		globalUserID = globalUser.ID
 	}
 
 	// Create identities
-	if err := u.userIdentityRepo.FirstOrCreate(tx, &domain.UserIdentity{
-		GlobalUserID: globalUser.ID,
-		Type:         identifierType,
-		Value:        identifier,
-	}); err != nil {
+	_, err := u.userIdentityRepo.InsertOnceByKratosUserAndType(
+		ctx, tx,
+		tenant.ID.String(),
+		newKratosUserID,
+		globalUserID,
+		identifierType,
+		identifier,
+	)
+	if err != nil {
 		return fmt.Errorf("create identity: %w", err)
 	}
 
 	// Create mapping
-	if err := u.userIdentifierMappingRepo.Create(tx, &domain.UserIdentifierMapping{
+	if err := u.userIdentifierMappingRepo.Create(ctx, tx, &domain.UserIdentifierMapping{
 		GlobalUserID: globalUser.ID,
-		TenantID:     tenant.ID.String(),
-		TenantUserID: newTenantUserID,
+		Lang:         lang,
 	}); err != nil {
 		return fmt.Errorf("create mapping: %w", err)
 	}
@@ -483,11 +490,13 @@ func (u *userUseCase) VerifyLogin(
 		ExpiresAt:       loginResult.Session.ExpiresAt,
 		IssuedAt:        loginResult.Session.IssuedAt,
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       loginResult.Session.Identity.Id,
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -503,9 +512,21 @@ func (u *userUseCase) Register(
 	email string,
 	phone string,
 ) (*types.IdentityUserAuthResponse, *domainerrors.DomainError) {
-	// Validate phone number if provided
-	if phone != "" && !utils.IsPhoneNumber(phone) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number format", []any{"Phone number must be in international format (e.g., +1234567890)"})
+	// Normalize and validate phone number if provided
+	if phone != "" {
+		normalizedPhone, _, err := utils.NormalizePhoneE164(phone, constants.DefaultRegion)
+		if err != nil {
+			code := codeInvalidPhone
+			msg := msgInvalidPhone
+			return nil, domainerrors.NewValidationError(code, msg, nil)
+		}
+		phone = normalizedPhone
+	}
+
+	// Normalize and validate email address if provided
+	email = strings.ToLower(email)
+	if email != "" && !utils.IsEmail(email) {
+		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL_ADDRESS", "Invalid email address format", []any{"Email address must be a valid format"})
 	}
 
 	// Check rate limit for registration attempts
@@ -557,10 +578,10 @@ func (u *userUseCase) Register(
 		"lang":   lang,
 	}
 	if email != "" {
-		traits[constants.IdentifierEmail.String()] = email
+		traits[constants.IdentifierEmail.String()] = identifierValue
 	}
 	if phone != "" {
-		traits[constants.IdentifierPhone.String()] = phone
+		traits[constants.IdentifierPhone.String()] = identifierValue
 	}
 
 	// Submit registration flow
@@ -569,20 +590,12 @@ func (u *userUseCase) Register(
 		logger.GetLogger().Errorf("Failed to submit registration flow: %v", err)
 		return nil, domainerrors.NewValidationError("MSG_REGISTRATION_FAILED", "Registration failed", []interface{}{err.Error()})
 	}
-	receiver := email
-	if receiver == "" {
-		receiver = phone
-	}
 
 	// Save challenge session
 	session := &domain.ChallengeSession{
-		GlobalUserID:  "",
-		ChallengeType: constants.ChallengeTypeRegister,
-	}
-	if email != "" {
-		session.Identifier = email
-	} else {
-		session.Identifier = phone
+		ChallengeType:  constants.ChallengeTypeRegister,
+		Identifier:     identifierValue,
+		IdentifierType: identifierType,
 	}
 
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
@@ -594,7 +607,7 @@ func (u *userUseCase) Register(
 		VerificationNeeded: true,
 		VerificationFlow: &types.IdentityUserChallengeResponse{
 			FlowID:      flow.Id,
-			Receiver:    receiver,
+			Receiver:    identifierValue,
 			ChallengeAt: time.Now().Unix(),
 		},
 	}, nil
@@ -629,11 +642,13 @@ func (u *userUseCase) Login(
 		ExpiresAt:       loginResult.Session.ExpiresAt,
 		IssuedAt:        loginResult.Session.IssuedAt,
 		AuthenticatedAt: loginResult.Session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       loginResult.Session.Identity.Id,
 			UserName: extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(loginResult.Session.Identity.Traits.(map[string]interface{}), constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(loginResult.Session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -694,11 +709,13 @@ func (u *userUseCase) RefreshToken(
 		ExpiresAt:       session.ExpiresAt,
 		IssuedAt:        session.IssuedAt,
 		AuthenticatedAt: session.AuthenticatedAt,
-		User: types.IdentityUserResponse{
+		User: &types.IdentityUserResponse{
 			ID:       session.Identity.Id,
 			UserName: extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierUsername.String(), ""),
 			Email:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierEmail.String(), ""),
 			Phone:    extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierPhone.String(), ""),
+			Tenant:   extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierTenant.String(), ""),
+			Lang:     extractStringFromTraits(session.Identity.Traits.(map[string]interface{}), constants.IdentifierLang.String(), ""),
 		},
 		AuthenticationMethods: utils.Map(session.AuthenticationMethods, func(method client.SessionAuthenticationMethod) string {
 			return *method.Method
@@ -729,27 +746,38 @@ func (u *userUseCase) Profile(
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_EXTRACT_USER_FAILED", "Failed to extract user traits")
 	}
+	kratosUserID := session.Identity.Id
 
-	// If user has no email or phone, return error
-	identifier := user.Email
-	if identifier == "" {
-		identifier = user.Phone
+	// Get all identities for the user in the tenant
+	identities, qErr := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
+	if qErr != nil {
+		return nil, domainerrors.WrapInternal(qErr, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
+	}
+	if len(identities) == 0 {
+		return nil, domainerrors.NewNotFoundError("MSG_IDENTITIES_NOT_FOUND", "User identities")
 	}
 
-	identifierType, err := utils.GetIdentifierType(identifier)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIER_TYPE_FAILED", "Failed to get identifier type")
+	// Map Email/Phone from DB
+	var emailFromDB, phoneFromDB string
+	for _, id := range identities {
+		switch id.Type {
+		case constants.IdentifierEmail.String():
+			if emailFromDB == "" {
+				emailFromDB = id.Value
+			}
+		case constants.IdentifierPhone.String():
+			if phoneFromDB == "" {
+				phoneFromDB = id.Value
+			}
+		}
 	}
-
-	// Lookup global user ID
-	globalUserID, err := u.userIdentityRepo.FindGlobalUserIDByIdentity(ctx, tenantID.String(), identifierType, identifier)
-	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_LOOKUP_FAILED", "Failed to lookup user ID")
-	}
+	globalUserID := identities[0].GlobalUserID
 
 	// Set user id
-	user.ID = session.Identity.Id
+	user.ID = kratosUserID
 	user.GlobalUserID = globalUserID
+	user.Email = emailFromDB
+	user.Phone = phoneFromDB
 
 	return &user, nil
 }
@@ -763,15 +791,13 @@ func (u *userUseCase) AddNewIdentifier(
 	identifierType string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
 	// 1. Validate input
-	if identifierType == constants.IdentifierEmail.String() && !utils.IsEmail(identifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
-	}
-	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneNumber(identifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE_NUMBER", "Invalid phone number", nil)
+	idType, identifier, derr := inferAndNormalizeIdentifier(identifier)
+	if derr != nil {
+		return nil, derr
 	}
 
 	// 2. Check if identifier already exists globally
-	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), identifierType, identifier)
+	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
 	}
@@ -780,7 +806,7 @@ func (u *userUseCase) AddNewIdentifier(
 	}
 
 	// 3. Check if user already has this identifier type
-	hasType, err := u.userIdentityRepo.ExistsByGlobalUserIDAndType(ctx, globalUserID, identifierType)
+	hasType, err := u.userIdentityRepo.ExistsByTenantGlobalUserIDAndType(ctx, tenantID.String(), globalUserID, identifierType)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identity type")
 	}
@@ -812,6 +838,13 @@ func (u *userUseCase) AddNewIdentifier(
 	}
 	traits[identifierType] = identifier
 
+	// Try to fetch lang from mapping (if available)
+	if mapping, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, globalUserID); err == nil && mapping != nil {
+		if lang := strings.TrimSpace(mapping.Lang); lang != "" {
+			traits["lang"] = lang
+		}
+	}
+
 	// 6. Submit minimal traits to trigger OTP (email or phone)
 	if _, err := u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_REGISTRATION_FAILED", "Registration failed").WithCause(err)
@@ -819,11 +852,11 @@ func (u *userUseCase) AddNewIdentifier(
 
 	// 7. Save challenge session
 	session := &domain.ChallengeSession{
-		GlobalUserID:  globalUserID,
-		ChallengeType: constants.ChallengeTypeAddIdentifier,
+		GlobalUserID:   globalUserID,
+		ChallengeType:  constants.ChallengeTypeAddIdentifier,
+		Identifier:     identifier,
+		IdentifierType: identifierType,
 	}
-	session.Identifier = identifier
-	session.IdentifierType = identifierType
 
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
@@ -837,29 +870,88 @@ func (u *userUseCase) AddNewIdentifier(
 	}, nil
 }
 
-// UpdateIdentifier updates a user's identifier (email or phone)
-func (u *userUseCase) UpdateIdentifier(
+// DeleteIdentifier deletes a user's identifier (email or phone)
+// Prevents deletion when user only has one identifier
+func (u *userUseCase) DeleteIdentifier(
 	ctx context.Context,
 	globalUserID string,
 	tenantID uuid.UUID,
-	tenantUserID string,
-	identifier string,
+	kratosUserID string,
 	identifierType string,
+) *domainerrors.DomainError {
+	// 1. Validate identifier type
+	if identifierType != constants.IdentifierEmail.String() && identifierType != constants.IdentifierPhone.String() {
+		return domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
+	}
+
+	// 2. Get all user identities
+	identities, err := u.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, globalUserID, tenantID.String())
+	if err != nil {
+		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to get user identifiers")
+	}
+
+	// 3. Find the specific identifier to delete
+	var identifierToDelete *domain.UserIdentity
+	if identities == nil {
+		return domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS", fmt.Sprintf("User does not have an identifier of type %s", identifierType), nil)
+	}
+	for _, id := range identities {
+		if id.Type == identifierType {
+			identifierToDelete = id
+			break
+		}
+	}
+
+	if identifierToDelete == nil {
+		return domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS", fmt.Sprintf("User does not have an identifier of type %s", identifierType), nil)
+	}
+
+	// 4. Check if this is the only identifier
+	// Filter to only count email and phone identifiers
+	identifierCount := 0
+	for _, id := range identities {
+		if id.Type == constants.IdentifierEmail.String() || id.Type == constants.IdentifierPhone.String() {
+			identifierCount++
+		}
+	}
+
+	if identifierCount <= 1 {
+		return domainerrors.NewConflictError("MSG_CANNOT_DELETE_ONLY_IDENTIFIER", "Cannot delete the only identifier", nil)
+	}
+
+	// 5. Delete the identifier from the database
+	if err := u.userIdentityRepo.Delete(nil, identifierToDelete.ID); err != nil {
+		return domainerrors.WrapInternal(err, "MSG_DELETE_IDENTIFIER_FAILED", "Failed to delete identifier")
+	}
+
+	// 6. Delete the identifier from Kratos
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenantID, uuid.MustParse(kratosUserID)); err != nil {
+		// Log the error but don't fail the operation since we've already deleted from our database
+		logger.GetLogger().Errorf("Failed to delete identifier from Kratos: %v", err)
+	}
+
+	return nil
+}
+
+// ChangeIdentifier changes a user's identifier from one type to another.
+// Rules:
+// - If user has exactly one identifier type (email OR phone): allow switching to the other type.
+// - If user has more than one identifier type: will replace the same type (email→email or phone→phone).
+func (u *userUseCase) ChangeIdentifier(
+	ctx context.Context,
+	globalUserID string,
+	tenantID uuid.UUID,
+	kratosUserID string,
+	newIdentifier string,
 ) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
-	if identifier == "" {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_REQUEST", "Identifier is required", nil)
+	// 1. Validate input
+	newIdentifierType, newIdentifier, derr := inferAndNormalizeIdentifier(newIdentifier)
+	if derr != nil {
+		return nil, derr
 	}
 
-	if identifierType == constants.IdentifierEmail.String() && !utils.IsEmail(identifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
-	}
-
-	if identifierType == constants.IdentifierPhone.String() && !utils.IsPhoneNumber(identifier) {
-		return nil, domainerrors.NewValidationError("MSG_INVALID_PHONE", "Invalid phone number", nil)
-	}
-
-	// 2. Check if identifier already exists globally
-	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), identifierType, identifier)
+	// 2. Check if new identifier already exists globally
+	exists, err := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), newIdentifierType, newIdentifier)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
 	}
@@ -867,17 +959,37 @@ func (u *userUseCase) UpdateIdentifier(
 		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_ALREADY_EXISTS", "Identifier has already been registered", nil)
 	}
 
-	// 3. Check if user already has this identifier type
-	identity, err := u.userIdentityRepo.GetByTenantAndTenantUserID(ctx, nil, tenantID.String(), tenantUserID)
+	// 4. Check user's current identifiers
+	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identity type")
+		return nil, domainerrors.WrapInternal(err, "MSG_CHECK_TYPE_EXIST_FAILED", "Failed to check user identities")
 	}
+	if len(identities) == 0 {
+		return nil, domainerrors.NewConflictError("MSG_NO_IDENTIFIER_EXISTS", "User has no identifier", nil)
+	}
+
+	// Find the identifier to be changed
+	// If user has only one identifier, use it
+	// If user has multiple identifiers, use the one with the same type
+	var identity *domain.UserIdentity
+	if len(identities) == 1 {
+		identity = identities[0]
+	} else {
+		for _, id := range identities {
+			if id.Type == newIdentifierType {
+				identity = id
+				break
+			}
+		}
+	}
+
+	// Should not happen
 	if identity == nil {
-		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_TYPE_NOT_EXISTS", fmt.Sprintf("User does not have an identifier of type %s", identifierType), nil)
+		return nil, domainerrors.NewInternalError("MSG_INTERNAL_ERROR", "Cannot find identifier to be changed")
 	}
 
 	// 4. Rate limit
-	key := fmt.Sprintf("challenge:update:%s:%s", identifierType, identifier)
+	key := fmt.Sprintf("challenge:change:%s:%s", newIdentifierType, newIdentifier)
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
 	}
@@ -894,11 +1006,11 @@ func (u *userUseCase) UpdateIdentifier(
 		return nil, domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
 	}
 
-	// 6. Submit minimal traits to trigger OTP (email or phone)
+	// 6. Submit minimal traits to trigger OTP
 	traits := map[string]interface{}{
 		"tenant": tenant.Name,
 	}
-	traits[identifierType] = identifier
+	traits[newIdentifierType] = newIdentifier
 
 	if _, err := u.kratosService.SubmitRegistrationFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), traits); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_REGISTRATION_FAILED", "Registration failed").WithCause(err)
@@ -907,21 +1019,196 @@ func (u *userUseCase) UpdateIdentifier(
 	// 7. Save challenge session
 	session := &domain.ChallengeSession{
 		GlobalUserID:   globalUserID,
-		TenantUserID:   tenantUserID,
-		IdentifierType: identifierType,
-		Identifier:     identifier,
+		KratosUserID:   identity.KratosUserID, // the kratos user id of the old identifier to be deleted
+		IdentifierType: newIdentifierType,
+		Identifier:     newIdentifier,
 		ChallengeType:  constants.ChallengeTypeChangeIdentifier,
-		IdentityID:     identity.ID,
 	}
-
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVE_CHALLENGE_FAILED", "Failed to save challenge session")
 	}
 
-	// 9. Return response
+	// 8. Return response
 	return &types.IdentityUserChallengeResponse{
 		FlowID:      flow.Id,
+		Receiver:    newIdentifier,
+		ChallengeAt: time.Now().Unix(),
+	}, nil
+}
+
+func (u *userUseCase) ChallengeVerification(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	identifier string,
+) (*types.IdentityUserChallengeResponse, *domainerrors.DomainError) {
+	// 1. Detect & normalize
+	idType, identifier, derr := inferAndNormalizeIdentifier(identifier)
+	if derr != nil {
+		return nil, derr
+	}
+
+	// Make sure identifier exists in the system
+	ok, repoErr := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
+	if repoErr != nil {
+		return nil, domainerrors.WrapInternal(repoErr, "MSG_LOOKUP_FAILED", "Failed to check identifier")
+	}
+	if !ok {
+		// Only allow verifying existing identifiers
+		return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Identifier not found in tenant").WithDetails([]interface{}{
+			map[string]string{"field": idType, "error": "Identifier not registered in the system"},
+		})
+	}
+
+	// 2. Rate limit
+	key := fmt.Sprintf("challenge:verification:%s:%s:%s", idType, identifier, tenantID.String())
+	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+	}
+
+	// 3. Init verification flow
+	flowID, err := u.kratosService.InitializeVerificationFlow(ctx, tenantID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to initialize verification flow")
+	}
+
+	// 4. Submit verification without code -> trigger send OTP
+	var codePtr *string // nil
+	idPtr := &identifier
+	_, err = u.kratosService.SubmitVerificationFlow(
+		ctx, tenantID, flowID, idPtr, constants.IdentifierType(idType), codePtr,
+	)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_SEND_VERIFICATION_FAILED", "Failed to send verification code")
+	}
+
+	// 5. Save challenge session
+	session := &domain.ChallengeSession{
+		ChallengeType:  constants.ChallengeTypeVerifyIdentifier,
+		Identifier:     identifier,
+		IdentifierType: idType,
+	}
+	if err := u.challengeSessionRepo.SaveChallenge(ctx, flowID, session, constants.DefaultChallengeDuration); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
+	}
+
+	// 6. Response
+	return &types.IdentityUserChallengeResponse{
+		FlowID:      flowID,
 		Receiver:    identifier,
 		ChallengeAt: time.Now().Unix(),
 	}, nil
+}
+
+func (u *userUseCase) VerifyIdentifier(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	flowID string,
+	code string,
+) (*types.IdentityVerificationResponse, *domainerrors.DomainError) {
+	// 1. Rate limit
+	key := "verify:identifier:" + flowID
+	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+	}
+
+	// 2. Load session
+	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, flowID)
+	if err != nil || sessionValue == nil {
+		return nil, domainerrors.NewNotFoundError("MSG_CHALLENGE_SESSION_NOT_FOUND", "Challenge session")
+	}
+
+	// 3. Submit verification with code
+	id := sessionValue.Identifier
+	result, err := u.kratosService.SubmitVerificationFlow(
+		ctx, tenantID, flowID, &id, constants.IdentifierType(sessionValue.IdentifierType), &code,
+	)
+	if err != nil {
+		return nil, domainerrors.NewValidationError("MSG_VERIFICATION_FAILED", "Verification failed", []interface{}{err.Error()})
+	}
+
+	// 4. Check state/result
+	verified := false
+	if result != nil {
+		if s, ok := result.State.(string); ok && strings.EqualFold(s, constants.StatePassedChallenge) {
+			verified = true
+		}
+	}
+
+	if !verified {
+		// Do NOT delete the session here; allow user to retry
+		return nil, domainerrors.NewValidationError("MSG_VERIFICATION_FAILED", "Invalid or expired verification code", nil)
+	}
+
+	// 5. Cleanup session
+	_ = u.challengeSessionRepo.DeleteChallenge(ctx, flowID)
+
+	// 6. Response
+	return &types.IdentityVerificationResponse{
+		FlowID:         flowID,
+		Identifier:     sessionValue.Identifier,
+		IdentifierType: sessionValue.IdentifierType,
+		Verified:       verified,
+		VerifiedAt:     time.Now().Unix(),
+	}, nil
+}
+
+// UpdateLang updates lang across all Kratos identities that share the same global_user_id
+// within the given tenant, and then upserts the global mapping lang.
+// All Kratos updates are best-effort: if any fails, the function returns an error
+// and does NOT upsert the mapping to avoid inconsistent state.
+func (u *userUseCase) UpdateLang(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	kratosUserID string,
+	lang string,
+) *domainerrors.DomainError {
+	// 1. Normalize & validate
+	lang = utils.NormalizeLang(lang)
+	if lang == "" {
+		return domainerrors.NewValidationError("MSG_INVALID_LANG", "Invalid language", nil)
+	}
+	if !utils.IsLangSupported(lang) {
+		return domainerrors.NewValidationError("MSG_UNSUPPORTED_LANG", "Unsupported language", nil)
+	}
+
+	// 2. Ensure tenant exists
+	if _, err := u.tenantRepo.GetByID(tenantID); err != nil {
+		return domainerrors.WrapInternal(err, "MSG_GET_TENANT_FAILED", "Failed to get tenant")
+	}
+
+	// 3. Resolve peer identities (same global_user_id in this tenant)
+	identities, err := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
+	if err != nil {
+		return domainerrors.WrapInternal(err, "MSG_GET_IDENTIFIERS_FAILED", "Failed to fetch user identifiers")
+	}
+	if len(identities) == 0 {
+		return domainerrors.NewNotFoundError("MSG_IDENTITIES_NOT_FOUND", "User identities")
+	}
+
+	// 4. Update traits.lang on ALL related Kratos identities
+	for _, id := range identities {
+		kratosID := strings.TrimSpace(id.KratosUserID)
+		if kratosID == "" {
+			continue
+		}
+
+		kuid, parseErr := uuid.Parse(kratosID)
+		if parseErr != nil {
+			return domainerrors.NewValidationError("MSG_INVALID_KRATOS_USER_ID", "Invalid Kratos user id", nil)
+		}
+
+		if updErr := u.kratosService.UpdateLangAdmin(ctx, tenantID, kuid, lang); updErr != nil {
+			return domainerrors.WrapInternal(updErr, "MSG_UPDATE_LANG_FAILED", "Failed to update language in Kratos")
+		}
+	}
+
+	// 5. Upsert global mapping lang (one row per global_user_id)
+	if err := u.userIdentifierMappingRepo.Upsert(ctx, u.db, &domain.UserIdentifierMapping{
+		GlobalUserID: identities[0].GlobalUserID,
+		Lang:         lang,
+	}); err != nil {
+		return domainerrors.WrapInternal(err, "MSG_UPDATE_MAPPING_FAILED", "Failed to upsert mapping lang")
+	}
+
+	return nil
 }

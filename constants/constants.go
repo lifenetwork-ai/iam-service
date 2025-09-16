@@ -45,6 +45,7 @@ const (
 	ChallengeTypeRegister         = "register"
 	ChallengeTypeChangeIdentifier = "change_identifier"
 	ChallengeTypeAddIdentifier    = "add_identifier"
+	ChallengeTypeVerifyIdentifier = "verify_identifier"
 )
 
 // HTTP Headers
@@ -77,4 +78,8 @@ const (
 	DefaultLanguage    = "en" // Default language for user registration
 	EnglishLanguage    = "en"
 	VietnameseLanguage = "vi"
+)
+
+const (
+	DefaultRegion = "VN"
 )

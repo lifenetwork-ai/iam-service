@@ -12,6 +12,7 @@ const (
 	IdentifierPhone    IdentifierType = "phone_number"
 	IdentifierUsername IdentifierType = "username"
 	IdentifierTenant   IdentifierType = "tenant"
+	IdentifierLang     IdentifierType = "lang"
 )
 
 // MethodType represents the types of login/registration/setting methods
@@ -37,17 +38,12 @@ func (t FlowType) String() string {
 const (
 	FlowTypeLogin    FlowType = "login"
 	FlowTypeRegister FlowType = "register"
-	FlowTypeSetting  FlowType = "setting"
+	FlowTypeVerify   FlowType = "verify"
 )
 
-// TraitType represents the types of traits in the identity service
-type TraitType string
-
-func (t TraitType) String() string {
-	return string(t)
-}
-
+// State
 const (
-	TraitTypeEmail TraitType = "email"
-	TraitTypePhone TraitType = "phone_number"
+	StatePassedChallenge = "passed_challenge"
+	StateSentEmail       = "sent_email"
+	StateChooseMethod    = "choose_method"
 )

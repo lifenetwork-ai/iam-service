@@ -11,6 +11,7 @@ import (
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 // extractSessionToken extracts and validates the session token from context
@@ -72,6 +73,7 @@ func extractUserFromTraits(traits interface{}, fallbackEmail, fallbackPhone stri
 		Email:    extractStringFromTraits(traitsMap, constants.IdentifierEmail.String(), fallbackEmail),
 		Phone:    extractStringFromTraits(traitsMap, constants.IdentifierPhone.String(), fallbackPhone),
 		Tenant:   extractStringFromTraits(traitsMap, constants.IdentifierTenant.String(), ""),
+		Lang:     extractStringFromTraits(traitsMap, constants.IdentifierLang.String(), ""),
 	}, nil
 }
 
@@ -129,5 +131,47 @@ func normalizeTenant(t string) string {
 		return constants.TenantGenetica
 	default:
 		return t
+	}
+}
+
+// extractOTPFromBody extracts the OTP from the body
+// TODO: make this more robust to handle different OTP formats
+func extractOTPFromBody(body string) string {
+	// Regex to find OTP
+	re := regexp.MustCompile(`\d{6}`)
+	matches := re.FindStringSubmatch(body)
+	if len(matches) == 0 {
+		return ""
+	}
+
+	return matches[0]
+}
+
+// inferAndNormalizeIdentifier infers the identifier type (email or phone) and normalizes it.
+func inferAndNormalizeIdentifier(identifier string) (string, string, *domainerrors.DomainError) {
+	raw := strings.TrimSpace(identifier)
+
+	idType, err := utils.GetIdentifierType(raw) // e.g. "email" | "phone_number"
+	if err != nil {
+		return "", "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
+	}
+
+	switch idType {
+	case constants.IdentifierEmail.String():
+		email := strings.ToLower(raw)
+		if !utils.IsEmail(email) || len(email) > 320 {
+			return "", "", domainerrors.NewValidationError("MSG_INVALID_EMAIL", "Invalid email", nil)
+		}
+		return constants.IdentifierEmail.String(), email, nil
+
+	case constants.IdentifierPhone.String():
+		phone, _, normErr := utils.NormalizePhoneE164(raw, constants.DefaultRegion)
+		if normErr != nil {
+			return "", "", domainerrors.NewValidationError("MSG_INVALID_PHONE", "Invalid phone", nil)
+		}
+		return constants.IdentifierPhone.String(), phone, nil
+
+	default:
+		return "", "", domainerrors.NewValidationError("MSG_INVALID_IDENTIFIER_TYPE", "Invalid identifier type", nil)
 	}
 }

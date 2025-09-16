@@ -1,7 +1,7 @@
 # =====================
 # Build stage
 # =====================
-FROM golang:1.22.4-alpine AS builder
+FROM golang:1.23.1-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies

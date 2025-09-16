@@ -6,11 +6,6 @@ human-network-iam-service:
 clean:
 	rm -i -f human-network-iam-service
 
-run-test:
-	go test -v ./internal/infrastructures/caching/test
-	go test -v ./internal/util/test
-	go test -v ./test
-
 restart: stop clean build start
 	@echo "human-network-iam-service restarted!"
 
@@ -31,10 +26,27 @@ stop:
 lint:
 	docker run --rm -v $(PWD):/app -w /app golangci/golangci-lint:v1.64.8 golangci-lint run --fix
 
+test:
+	go test -v ./...
+
+# Run only integration tests under ucases/integration
+.PHONY: test-integration
+test-integration:
+
+	go test -v -tags=integration ./...
+
+.PHONY: test-unit
+# Run all unit tests (exclude integration-tagged tests)
+test-unit:
+	go test -v -tags "" $(shell go list ./... | grep -v "/internal/domain/ucases/integration")
+
+.PHONY: cover-ucases-integration
+# Coverage for ucases when running integration tests only
+cover-ucases-integration:
+	go test -v -tags=integration -coverpkg=github.com/lifenetwork-ai/iam-service/internal/domain/ucases -coverprofile=ucases_integration_coverage.out ./internal/domain/ucases/integration
+
 swagger:
 	swag init -g ./cmd/main.go -d ./ -o ./docs
-wiring: 
-	wire ./wire
 
 migrate:
 	go run cmd/migration/main.go

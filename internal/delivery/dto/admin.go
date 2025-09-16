@@ -57,3 +57,14 @@ func ToAdminAccountDTO(a domain.AdminAccount) AdminAccountDTO {
 		UpdatedAt: a.UpdatedAt,
 	}
 }
+
+// AdminAddIdentifierPayloadDTO represents the payload for adding a new identifier to a user.
+type AdminAddIdentifierPayloadDTO struct {
+	ExistingIdentifier string `json:"existing_identifier" binding:"required"`
+	NewIdentifier      string `json:"new_identifier" binding:"required"`
+}
+
+// AdminCheckIdentifierPayloadDTO represents the payload for checking if an identifier exists.
+type AdminCheckIdentifierPayloadDTO struct {
+	Identifier string `json:"identifier" binding:"required"`
+}

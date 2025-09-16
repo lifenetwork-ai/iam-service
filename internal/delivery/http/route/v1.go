@@ -33,6 +33,20 @@ func RegisterRoutes(
 		accountRouter.POST("/", adminHandler.CreateAdminAccount)
 	}
 
+	// Admin Identifier Management subgroup
+	identifierGroup := adminRouter.Group("identifiers")
+	{
+		identifierGroup.Use(
+			middleware.AdminAuthMiddleware(repos.AdminAccountRepo),
+		)
+		identifierGroup.Use(
+			middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
+		)
+		identifierGroup.POST("/check", adminHandler.CheckIdentifierAdmin)
+		identifierGroup.POST("/add", adminHandler.AddIdentifierAdmin)
+	}
+
+	// Admin Tenant Management subgroup
 	tenantRouter := adminRouter.Group("tenants")
 	{
 		tenantRouter.Use(middleware.AdminAuthMiddleware(repos.AdminAccountRepo))
@@ -101,7 +115,25 @@ func RegisterRoutes(
 	userRouter.POST(
 		"/me/update-identifier",
 		authMiddleware.RequireAuth(),
-		userHandler.UpdateIdentifier,
+		userHandler.ChangeIdentifier,
+	)
+
+	userRouter.DELETE(
+		"/me/delete-identifier",
+		authMiddleware.RequireAuth(),
+		userHandler.DeleteIdentifier,
+	)
+
+	userRouter.PATCH(
+		"/me/update-lang",
+		authMiddleware.RequireAuth(),
+		userHandler.UpdateLang,
+	)
+
+	userRouter.POST(
+		"/verification/challenge",
+		authMiddleware.RequireAuth(),
+		userHandler.ChallengeVerification,
 	)
 
 	// SECTION: Courier (OTP delivery) routes

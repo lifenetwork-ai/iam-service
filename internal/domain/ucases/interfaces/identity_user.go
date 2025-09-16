@@ -75,12 +75,39 @@ type IdentityUserUseCase interface {
 		identifierType string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
 
-	UpdateIdentifier(
+	DeleteIdentifier(
 		ctx context.Context,
 		globalUserID string,
 		tenantID uuid.UUID,
-		tenantUserID string,
-		identifier string,
+		kratosUserID string,
 		identifierType string,
+	) *errors.DomainError
+
+	ChangeIdentifier(
+		ctx context.Context,
+		globalUserID string,
+		tenantID uuid.UUID,
+		kratosUserID string,
+		newIdentifier string,
 	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
+
+	ChallengeVerification(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		identifier string,
+	) (*types.IdentityUserChallengeResponse, *errors.DomainError)
+
+	VerifyIdentifier(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		flowID string,
+		code string,
+	) (*types.IdentityVerificationResponse, *errors.DomainError)
+
+	UpdateLang(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		kratosUserID string,
+		lang string,
+	) *errors.DomainError
 }

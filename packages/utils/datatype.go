@@ -10,23 +10,47 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 )
 
-func IsPhoneNumber(phone string) bool {
-	// Check if the phone number is valid
-	phoneValidator := regexp.MustCompile(`^(\+?(\d{1,3}))?(\d{10,15})$`)
-	return phoneValidator.MatchString(phone)
-}
+func IsEmail(s string) bool {
+	localPartRe := regexp.MustCompile(`^[A-Za-z0-9.!#$%&'*+/=?^_{}|~-]+$`)
+	domainRe := regexp.MustCompile(`^(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$`)
 
-func IsEmail(email string) bool {
-	// Check if the email is valid
-	_, err := mail.ParseAddress(email)
-	return err == nil
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return false
+	}
+	addr, err := mail.ParseAddress(s)
+	if err != nil {
+		return false
+	}
+	e := strings.ToLower(addr.Address)
+	at := strings.LastIndexByte(e, '@')
+	if at <= 0 || at == len(e)-1 {
+		return false
+	}
+	local := e[:at]
+	domain := e[at+1:]
+
+	if !localPartRe.MatchString(local) ||
+		strings.HasPrefix(local, ".") ||
+		strings.HasSuffix(local, ".") ||
+		strings.Contains(local, "..") {
+		return false
+	}
+	// This line catches your case (no dot in domain)
+	if !domainRe.MatchString(domain) {
+		return false
+	}
+	if len(local) > 64 || len(e) > 254 {
+		return false
+	}
+	return true
 }
 
 func GetIdentifierType(identifier string) (string, error) {
 	if IsEmail(identifier) {
 		return constants.IdentifierEmail.String(), nil
 	}
-	if IsPhoneNumber(identifier) {
+	if IsPhoneE164(identifier) {
 		return constants.IdentifierPhone.String(), nil
 	}
 	return "", fmt.Errorf("invalid identifier format")

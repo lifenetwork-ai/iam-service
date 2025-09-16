@@ -17,6 +17,39 @@ definitions:
       username:
         type: string
     type: object
+  dto.AdminAddIdentifierPayloadDTO:
+    properties:
+      existing_identifier:
+        type: string
+      new_identifier:
+        type: string
+    required:
+    - existing_identifier
+    - new_identifier
+    type: object
+  dto.AdminAddIdentifierResponse:
+    properties:
+      global_user_id:
+        type: string
+      kratos_user_id:
+        type: string
+      lang:
+        type: string
+      new_identifier:
+        type: string
+    type: object
+  dto.AdminCheckIdentifierPayloadDTO:
+    properties:
+      identifier:
+        type: string
+    required:
+    - identifier
+    type: object
+  dto.CheckIdentifierResponse:
+    properties:
+      registered:
+        type: boolean
+    type: object
   dto.CheckPermissionRequestDTO:
     properties:
       namespace:
@@ -149,6 +182,7 @@ definitions:
         enum:
         - register
         - login
+        - verify
         type: string
     required:
     - code
@@ -173,6 +207,23 @@ definitions:
     required:
     - new_identifier
     type: object
+  dto.IdentityUserChangeIdentifierDTO:
+    properties:
+      new_identifier:
+        type: string
+    required:
+    - new_identifier
+    type: object
+  dto.IdentityUserDeleteIdentifierDTO:
+    properties:
+      identifier_type:
+        enum:
+        - email
+        - phone_number
+        type: string
+    required:
+    - identifier_type
+    type: object
   dto.IdentityUserRegisterDTO:
     properties:
       email:
@@ -187,18 +238,19 @@ definitions:
     required:
     - lang
     type: object
-  dto.IdentityUserUpdateIdentifierDTO:
+  dto.IdentityUserUpdateLangDTO:
     properties:
-      identifier_type:
-        enum:
-        - email
-        - phone_number
-        type: string
-      new_identifier:
+      lang:
         type: string
     required:
-    - identifier_type
-    - new_identifier
+    - lang
+    type: object
+  dto.IdentityVerificationChallengeDTO:
+    properties:
+      identifier:
+        type: string
+    required:
+    - identifier
     type: object
   dto.SelfCheckPermissionRequestDTO:
     properties:
@@ -355,6 +407,8 @@ definitions:
         type: string
       id:
         type: string
+      lang:
+        type: string
       last_name:
         type: string
       name:
@@ -421,6 +475,104 @@ paths:
       summary: Create a new admin account
       tags:
       - admin
+  /api/v1/admin/identifiers/add:
+    post:
+      consumes:
+      - application/json
+      description: Infer types from values. existing_identifier resolves the user;
+        new_identifier must be a different type (email vs phone). Creates a new Kratos
+        identity and maps it to the same global user. No OTP is triggered.
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Payload with existing_identifier and new_identifier
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdminAddIdentifierPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AdminAddIdentifierResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Add a new identifier for a user (admin)
+      tags:
+      - identifiers
+  /api/v1/admin/identifiers/check:
+    post:
+      consumes:
+      - application/json
+      description: Return true if the given identifier (email/phone) already exists
+        in this tenant.
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Identifier payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdminCheckIdentifierPayloadDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CheckIdentifierResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Check if an identifier is registered in this tenant
+      tags:
+      - identifiers
   /api/v1/admin/tenants:
     get:
       consumes:
@@ -905,15 +1057,16 @@ paths:
       consumes:
       - application/json
       description: |-
-        Verify either a login challenge or registration flow
-        Verify a one-time code sent to user for either login or registration challenge.
+        Verify either a login challenge, registration or verification flow
+        Verify a one-time code sent to user for either login, registration or verification challenge.
       parameters:
       - description: Tenant ID
         in: header
         name: X-Tenant-Id
         required: true
         type: string
-      - description: 'Verification payload. `type` must be one of: `register`, `login`'
+      - description: 'Verification payload. `type` must be one of: `register`, `login`,
+          `verify`.'
         in: body
         name: challenge
         required: true
@@ -938,7 +1091,7 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: Verify login or registration challenge
+      summary: Verify login, registration or verification challenge
       tags:
       - users
   /api/v1/users/challenge-with-email:
@@ -1118,7 +1271,8 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: Bearer Token (Bearer ory...)
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
         in: header
         name: Authorization
         required: true
@@ -1160,6 +1314,62 @@ paths:
       summary: Add new identifier (email or phone)
       tags:
       - users
+  /api/v1/users/me/delete-identifier:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user's identifier (email or phone)
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Identifier info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserDeleteIdentifierDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Identifier deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Identifier or type already exists
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Delete user identifier
+      tags:
+      - users
   /api/v1/users/me/update-identifier:
     post:
       consumes:
@@ -1171,7 +1381,8 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: Bearer Token (Bearer ory...)
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
         in: header
         name: Authorization
         required: true
@@ -1181,7 +1392,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.IdentityUserUpdateIdentifierDTO'
+          $ref: '#/definitions/dto.IdentityUserChangeIdentifierDTO'
       produces:
       - application/json
       responses:
@@ -1211,6 +1422,58 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Update user identifier
+      tags:
+      - users
+  /api/v1/users/me/update-lang:
+    patch:
+      consumes:
+      - application/json
+      description: Update current user's preferred language (traits.lang).
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Language payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityUserUpdateLangDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Language updated
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update user language
       tags:
       - users
   /api/v1/users/register:
@@ -1261,6 +1524,65 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Register a new user
+      tags:
+      - users
+  /api/v1/users/verification/challenge:
+    post:
+      consumes:
+      - application/json
+      description: Trigger verification flow to send OTP to an identifier (email or
+        phone).
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - default: Bearer <token>
+        description: Bearer Token (Bearer ory...)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Identifier to verify
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IdentityVerificationChallengeDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.IdentityUserChallengeResponse'
+              type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Identifier does not belong to the authenticated user
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Identifier not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Send verification code
       tags:
       - users
 securityDefinitions:
