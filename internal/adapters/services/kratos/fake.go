@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -255,33 +257,64 @@ func (f *FakeKratosService) DeleteIdentifierAdmin(ctx context.Context, tenantID,
 	return nil
 }
 
-func (f *FakeKratosService) CreateIdentityAdmin(ctx context.Context, tenantID uuid.UUID, traits map[string]interface{}) (*kratos.Identity, error) {
+// FakeKratosService.CreateIdentityAdmin fakes Kratos Admin identity creation.
+// Returns: (*kratos.Identity, httpStatus, error)
+func (f *FakeKratosService) CreateIdentityAdmin(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	traits map[string]interface{},
+) (*kratos.Identity, int, error) {
+	// Simulated faults
 	if f.faults.NetworkError {
-		return nil, errors.New("network error")
+		return nil, http.StatusServiceUnavailable, errors.New("network error")
 	}
 	if f.faults.FailRegistration {
-		return nil, errors.New("create identity failed")
+		return nil, http.StatusInternalServerError, errors.New("create identity failed")
 	}
-	// Persist the identity without clobbering existing entries and support both email and phone
+
+	// Extract a usable identifier from traits (email or phone)
+	idf := firstNonEmptyString(
+		traits[constants.IdentifierEmail.String()],
+		traits["email"],
+		traits[constants.IdentifierPhone.String()],
+		traits["phone"],
+		traits["phone_number"],
+	)
+	if strings.TrimSpace(idf) == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("no valid identifier trait provided")
+	}
+
+	// Persist without clobbering existing entries
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
 	if f.identities[tenantID] == nil {
 		f.identities[tenantID] = make(map[string]*kratos.Identity)
 	}
-	identity := &kratos.Identity{Id: uuid.NewString(), Traits: traits}
-	if v, ok := traits[constants.IdentifierEmail.String()]; ok && v != nil {
-		if s, ok := v.(string); ok && s != "" {
-			f.identities[tenantID][s] = identity
-			return identity, nil
+
+	if _, exists := f.identities[tenantID][idf]; exists {
+		// Simulate Kratos 409 conflict
+		return nil, http.StatusConflict, fmt.Errorf("identity %q already exists", idf)
+	}
+
+	identity := &kratos.Identity{
+		Id:     uuid.NewString(),
+		Traits: traits,
+	}
+	f.identities[tenantID][idf] = identity
+
+	// Simulate 201 Created
+	return identity, http.StatusCreated, nil
+}
+
+// helper: pick first non-empty string from a list of interface{} candidates
+func firstNonEmptyString(candidates ...interface{}) string {
+	for _, v := range candidates {
+		if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+			return s
 		}
 	}
-	if v, ok := traits[constants.IdentifierPhone.String()]; ok && v != nil {
-		if s, ok := v.(string); ok && s != "" {
-			f.identities[tenantID][s] = identity
-			return identity, nil
-		}
-	}
-	return nil, fmt.Errorf("no valid identifier trait provided")
+	return ""
 }
 
 // --- Additional interface methods to satisfy KratosService ---

@@ -625,6 +625,21 @@ func (mr *MockUserIdentityRepositoryMockRecorder) InsertOnceByKratosUserAndType(
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertOnceByKratosUserAndType", reflect.TypeOf((*MockUserIdentityRepository)(nil).InsertOnceByKratosUserAndType), ctx, tx, tenantID, kratosUserID, globalUserID, idType, value)
 }
 
+// ListByTenantAndKratosUserID mocks base method.
+func (m *MockUserIdentityRepository) ListByTenantAndKratosUserID(ctx context.Context, tx *gorm.DB, tenantID, kratosUserID string) ([]*domain.UserIdentity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByTenantAndKratosUserID", ctx, tx, tenantID, kratosUserID)
+	ret0, _ := ret[0].([]*domain.UserIdentity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByTenantAndKratosUserID indicates an expected call of ListByTenantAndKratosUserID.
+func (mr *MockUserIdentityRepositoryMockRecorder) ListByTenantAndKratosUserID(ctx, tx, tenantID, kratosUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByTenantAndKratosUserID", reflect.TypeOf((*MockUserIdentityRepository)(nil).ListByTenantAndKratosUserID), ctx, tx, tenantID, kratosUserID)
+}
+
 // Update mocks base method.
 func (m *MockUserIdentityRepository) Update(tx *gorm.DB, identity *domain.UserIdentity) error {
 	m.ctrl.T.Helper()

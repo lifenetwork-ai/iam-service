@@ -27,7 +27,8 @@ import (
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	domainservice "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
-	mock_types "github.com/lifenetwork-ai/iam-service/mocks/infrastructures/rate_limiter/types"
+	mock_cache_types "github.com/lifenetwork-ai/iam-service/mocks/infrastructures/caching/types"
+	mock_rl_types "github.com/lifenetwork-ai/iam-service/mocks/infrastructures/rate_limiter/types"
 	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -36,13 +37,14 @@ import (
 
 // testDeps groups repositories and fakes used by tests
 type testDeps struct {
+	cacheRepo                 *mock_cache_types.MockCacheRepository
 	tenantRepo                domainrepo.TenantRepository
 	globalUserRepo            domainrepo.GlobalUserRepository
 	userIdentityRepo          domainrepo.UserIdentityRepository
 	userIdentifierMappingRepo domainrepo.UserIdentifierMappingRepository
 	challengeSessionRepo      domainrepo.ChallengeSessionRepository
 	kratosService             domainservice.KratosService
-	rateLimiter               *mock_types.MockRateLimiter
+	rateLimiter               *mock_rl_types.MockRateLimiter
 }
 
 // containerSem limits how many Postgres containers run concurrently.
@@ -126,16 +128,18 @@ func startPostgresAndBuildUCase(t *testing.T, ctx context.Context, ctrl *gomock.
 
 	inMemCache := caching.NewCachingRepository(context.Background(), caching.NewGoCacheClient(cache.New(5*time.Minute, 10*time.Minute)))
 	deps := testDeps{}
+	deps.cacheRepo = mock_cache_types.NewMockCacheRepository(ctrl)
 	deps.tenantRepo = adaptersrepo.NewTenantRepository(db)
 	deps.globalUserRepo = adaptersrepo.NewGlobalUserRepository(db)
 	deps.userIdentityRepo = adaptersrepo.NewUserIdentityRepository(db)
 	deps.userIdentifierMappingRepo = adaptersrepo.NewUserIdentifierMappingRepository(db)
 	deps.challengeSessionRepo = adaptersrepo.NewChallengeSessionRepository(inMemCache)
 	deps.kratosService = kratos_service.NewFakeKratosService()
-	deps.rateLimiter = mock_types.NewMockRateLimiter(ctrl)
+	deps.rateLimiter = mock_rl_types.NewMockRateLimiter(ctrl)
 
 	ucase := ucases.NewIdentityUserUseCase(
 		db,
+		deps.cacheRepo,
 		deps.rateLimiter,
 		deps.challengeSessionRepo,
 		deps.tenantRepo,
@@ -208,7 +212,7 @@ func startPostgresAndBuildAdminUCase(t *testing.T, ctx context.Context, ctrl *go
 	deps.userIdentifierMappingRepo = adaptersrepo.NewUserIdentifierMappingRepository(db)
 	deps.challengeSessionRepo = adaptersrepo.NewChallengeSessionRepository(inMemCache)
 	deps.kratosService = kratos_service.NewFakeKratosService()
-	deps.rateLimiter = mock_types.NewMockRateLimiter(ctrl)
+	deps.rateLimiter = mock_rl_types.NewMockRateLimiter(ctrl)
 
 	// Create admin use case
 	adminUcase := ucases.NewAdminUseCase(

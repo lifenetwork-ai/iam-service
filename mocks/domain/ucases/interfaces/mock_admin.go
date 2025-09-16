@@ -13,6 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
+	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	types "github.com/lifenetwork-ai/iam-service/internal/domain/types"
 	errors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -41,6 +43,37 @@ func NewMockAdminUseCase(ctrl *gomock.Controller) *MockAdminUseCase {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAdminUseCase) EXPECT() *MockAdminUseCaseMockRecorder {
 	return m.recorder
+}
+
+// AddIdentifierAdmin mocks base method.
+func (m *MockAdminUseCase) AddIdentifierAdmin(ctx context.Context, tenantID uuid.UUID, req dto.AdminAddIdentifierPayloadDTO) (*dto.AdminAddIdentifierResponse, *errors.DomainError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddIdentifierAdmin", ctx, tenantID, req)
+	ret0, _ := ret[0].(*dto.AdminAddIdentifierResponse)
+	ret1, _ := ret[1].(*errors.DomainError)
+	return ret0, ret1
+}
+
+// AddIdentifierAdmin indicates an expected call of AddIdentifierAdmin.
+func (mr *MockAdminUseCaseMockRecorder) AddIdentifierAdmin(ctx, tenantID, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddIdentifierAdmin", reflect.TypeOf((*MockAdminUseCase)(nil).AddIdentifierAdmin), ctx, tenantID, req)
+}
+
+// CheckIdentifierAdmin mocks base method.
+func (m *MockAdminUseCase) CheckIdentifierAdmin(ctx context.Context, tenantID uuid.UUID, identifier string) (bool, string, *errors.DomainError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckIdentifierAdmin", ctx, tenantID, identifier)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(*errors.DomainError)
+	return ret0, ret1, ret2
+}
+
+// CheckIdentifierAdmin indicates an expected call of CheckIdentifierAdmin.
+func (mr *MockAdminUseCaseMockRecorder) CheckIdentifierAdmin(ctx, tenantID, identifier any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIdentifierAdmin", reflect.TypeOf((*MockAdminUseCase)(nil).CheckIdentifierAdmin), ctx, tenantID, identifier)
 }
 
 // CreateAdminAccount mocks base method.

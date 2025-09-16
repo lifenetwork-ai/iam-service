@@ -8,7 +8,7 @@ import (
 )
 
 type fixedWindowRateLimiter struct {
-	cacheRepo cachetypes.CacheRepository // dùng interface mới
+	cacheRepo cachetypes.CacheRepository
 }
 
 func NewFixedWindowRateLimiter(cache cachetypes.CacheRepository) types.RateLimiter {

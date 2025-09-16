@@ -69,6 +69,10 @@ const (
 	// OTP worker interval
 	OTPDeliveryWorkerInterval = 10 * time.Second
 	OTPRetryWorkerInterval    = 30 * time.Second
+
+	// Dev bypass OTP constants
+	DevBypassOTPFetchTimeout = 3 * time.Second // how long we wait for the fresh OTP to appear in cache
+	DevBypassOTPPollInterval = 200 * time.Millisecond
 )
 
 const (

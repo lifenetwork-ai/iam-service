@@ -5,33 +5,51 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
+	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type smsProvider struct {
-	config *conf.SmsConfiguration
+	config    *conf.SmsConfiguration
+	cacheRepo cachetypes.CacheRepository
 
 	twillioClient  *TwilioClient
 	whatsappClient *WhatsAppClient
 }
 
-func NewSMSProvider(config *conf.SmsConfiguration) *smsProvider {
+func NewSMSProvider(config *conf.SmsConfiguration, cache cachetypes.CacheRepository) *smsProvider {
 	return &smsProvider{
 		config:         config,
+		cacheRepo:      cache,
 		twillioClient:  NewTwilioClient(config.Twilio.TwilioAccountSID, config.Twilio.TwilioAuthToken, config.Twilio.TwilioBaseURL),
 		whatsappClient: NewWhatsAppClient(config.Whatsapp.WhatsappAccessToken, config.Whatsapp.WhatsappPhoneID, config.Whatsapp.WhatsappBaseURL),
 	}
 }
 
 func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration) error {
-	logger.GetLogger().Infof("Sending OTP to %s", receiver)
+	logger.GetLogger().Infof("Preparing to send OTP %s to %s via %s", otp, receiver, channel)
 	otpMessage := GetOTPMessage(tenantName, otp, ttl)
+
+	if conf.IsDevReviewerBypassEnabled() && receiver == conf.DevReviewerIdentifier() {
+		// Capture the OTP in cache for dev reviewer
+		key := &cachetypes.Keyer{Raw: fmt.Sprintf("otp:%s:%s", tenantName, receiver)}
+		_ = s.cacheRepo.SaveItem(key, otp, ttl)
+
+		logger.GetLogger().Infof("Dev bypass enabled: skip sending OTP",
+			"receiver", receiver,
+			"tenant", tenantName,
+			"ttl", ttl,
+		)
+		return nil
+	}
+
+	logger.GetLogger().Infof("Sending OTP to %s", receiver)
 	switch channel {
 	case constants.ChannelSMS:
 		return s.sendSMS(ctx, tenantName, receiver, otpMessage)
@@ -45,7 +63,7 @@ func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel
 }
 
 func (s *smsProvider) sendToWebhook(ctx context.Context, tenantName, receiver, message string) error {
-	url := os.Getenv("MOCK_WEBHOOK_URL")
+	url := conf.GetMockWebhookURL()
 	if url == "" {
 		return errors.New("MOCK_WEBHOOK_URL is not set")
 	}
