@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	ratelimiters "github.com/lifenetwork-ai/iam-service/infrastructures/rate_limiter/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -29,6 +30,7 @@ var (
 
 type userUseCase struct {
 	db                        *gorm.DB
+	devReviewerConfig         conf.DevReviewerConfiguration
 	rateLimiter               ratelimiters.RateLimiter
 	tenantRepo                domainrepo.TenantRepository
 	globalUserRepo            domainrepo.GlobalUserRepository
@@ -40,6 +42,7 @@ type userUseCase struct {
 
 func NewIdentityUserUseCase(
 	db *gorm.DB,
+	devReviewerConfig conf.DevReviewerConfiguration,
 	rateLimiter ratelimiters.RateLimiter,
 	challengeSessionRepo domainrepo.ChallengeSessionRepository,
 	tenantRepo domainrepo.TenantRepository,
@@ -50,6 +53,7 @@ func NewIdentityUserUseCase(
 ) interfaces.IdentityUserUseCase {
 	return &userUseCase{
 		db:                        db,
+		devReviewerConfig:         devReviewerConfig,
 		rateLimiter:               rateLimiter,
 		challengeSessionRepo:      challengeSessionRepo,
 		tenantRepo:                tenantRepo,
