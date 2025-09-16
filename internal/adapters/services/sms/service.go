@@ -33,6 +33,7 @@ func NewSMSProvider(config *conf.SmsConfiguration, cache cachetypes.CacheReposit
 }
 
 func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration) error {
+	logger.GetLogger().Infof("Preparing to send OTP %s to %s via %s", otp, receiver, channel)
 	otpMessage := GetOTPMessage(tenantName, otp, ttl)
 
 	if conf.IsDevReviewerBypassEnabled() && receiver == conf.DevReviewerIdentifier() {

@@ -118,14 +118,9 @@ func (u *userUseCase) ChallengeWithPhone(
 		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to initialize verification flow")
 	}
 
-	// Dev bypass: ignore sending OTP
-	if conf.IsDevReviewerBypassEnabled() && phone == conf.DevReviewerIdentifier() {
-		logger.GetLogger().Infof("Dev bypass enabled: skip sending OTP to %s", phone)
-	} else {
-		// If not dev bypass, submit login flow to send OTP
-		if _, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &phone, nil, nil); err != nil {
-			return nil, domainerrors.NewUnauthorizedError("MSG_LOGIN_FAILED", "Login failed").WithCause(err)
-		}
+	// Submit login flow to send OTP
+	if _, err := u.kratosService.SubmitLoginFlow(ctx, tenantID, flow, constants.MethodTypeCode.String(), &phone, nil, nil); err != nil {
+		return nil, domainerrors.NewUnauthorizedError("MSG_LOGIN_FAILED", "Login failed").WithCause(err)
 	}
 
 	// Create challenge session
