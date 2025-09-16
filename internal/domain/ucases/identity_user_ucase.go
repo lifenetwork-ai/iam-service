@@ -812,6 +812,12 @@ func (u *userUseCase) Profile(
 	}
 	kratosUserID := session.Identity.Id
 
+	// Dev reviewer bypass
+	if conf.IsDevReviewerBypassEnabled() && user.Phone == conf.DevReviewerIdentifier() {
+		user.ID = kratosUserID
+		return &user, nil
+	}
+
 	// Get all identities for the user in the tenant
 	identities, qErr := u.userIdentityRepo.ListByTenantAndKratosUserID(ctx, nil, tenantID.String(), kratosUserID)
 	if qErr != nil {
