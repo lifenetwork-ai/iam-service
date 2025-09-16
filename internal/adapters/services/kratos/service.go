@@ -553,15 +553,15 @@ func (k *kratosServiceImpl) CreateIdentityAdmin(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	traits map[string]interface{},
-) (*kratos.Identity, error) {
+) (*kratos.Identity, int, error) {
 	adminAPI, err := k.client.AdminAPI(tenantID)
 	if err != nil {
-		return nil, fmt.Errorf("get admin API failed: %w", err)
+		return nil, http.StatusInternalServerError, fmt.Errorf("get admin API failed: %w", err)
 	}
-
+	// Normalize traits to ensure identifiers are correctly set
 	normTraits, err := normalizeTraitsIdentifiers(traits)
 	if err != nil {
-		return nil, err
+		return nil, http.StatusBadRequest, fmt.Errorf("normalize traits failed: %w", err)
 	}
 
 	body := kratos.CreateIdentityBody{
@@ -574,12 +574,12 @@ func (k *kratosServiceImpl) CreateIdentityAdmin(
 	if err != nil {
 		if resp != nil && (resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusConflict) {
 			if e := parseKratosErrorResponse(resp, fmt.Errorf("create identity failed: %w", err)); e != nil {
-				return nil, e
+				return nil, resp.StatusCode, e
 			}
 		}
-		return nil, fmt.Errorf("create identity failed: %w", err)
+		return nil, http.StatusInternalServerError, fmt.Errorf("create identity failed: %w", err)
 	}
-	return identity, nil
+	return identity, http.StatusCreated, nil
 }
 
 // GetLatestCourierOTP fetches the newest 6-digit OTP sent to an identifier.

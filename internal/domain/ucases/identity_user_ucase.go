@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -87,15 +88,14 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Check if the identifier exists in the database
-	_, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierPhone.String(), phone)
-	if err != nil {
+	if _, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierPhone.String(), phone); err != nil {
 		// Dev bypass logic
 		if conf.IsDevReviewerBypassEnabled() && phone == conf.DevReviewerIdentifier() {
 			// Create minimum identity with traits { phone: <phone> }
-			if _, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
+			if _, statusCode, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
 				"phone_number": phone,
 				"tenant":       tenant.Name,
-			}); e != nil {
+			}); e != nil && statusCode != http.StatusConflict {
 				return nil, domainerrors.WrapInternal(e, "MSG_CREATE_IDENTITY_FAILED", "Failed to create identity (dev bypass)")
 			}
 		} else {
@@ -174,15 +174,14 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	// Check if the identifier exists in the database
-	_, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierEmail.String(), email)
-	if err != nil {
+	if _, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierEmail.String(), email); err != nil {
 		// Dev bypass logic
 		if conf.IsDevReviewerBypassEnabled() && email == conf.DevReviewerIdentifier() {
 			// Create minimum identity with traits { email: <email> }
-			if _, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
+			if _, statusCode, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
 				"email":  email,
 				"tenant": tenant.Name,
-			}); e != nil {
+			}); e != nil && statusCode != http.StatusConflict {
 				return nil, domainerrors.WrapInternal(e, "MSG_CREATE_IDENTITY_FAILED", "Failed to create identity (dev bypass)")
 			}
 		} else {

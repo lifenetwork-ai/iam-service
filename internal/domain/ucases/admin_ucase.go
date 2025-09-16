@@ -451,7 +451,7 @@ func (u *adminUseCase) AddIdentifierAdmin(
 	}
 	traits[newType] = newIdentifier // "email" | "phone_number"
 
-	newKratos, err := u.kratosService.CreateIdentityAdmin(ctx, tenantID, traits)
+	newKratos, _, err := u.kratosService.CreateIdentityAdmin(ctx, tenantID, traits)
 	if err != nil {
 		return nil, domainerrors.NewValidationError("MSG_CREATE_IDENTITY_FAILED", fmt.Sprintf("Failed to create identity: %v", err), nil)
 	}
