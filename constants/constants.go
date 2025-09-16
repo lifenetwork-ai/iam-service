@@ -76,7 +76,6 @@ const (
 )
 
 const (
-	DefaultLanguage    = "en" // Default language for user registration
 	EnglishLanguage    = "en"
 	VietnameseLanguage = "vi"
 )

@@ -33,7 +33,6 @@ func NewSMSProvider(config *conf.SmsConfiguration, cache cachetypes.CacheReposit
 }
 
 func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration) error {
-	logger.GetLogger().Infof("Preparing to send OTP %s to %s via %s", otp, receiver, channel)
 	otpMessage := GetOTPMessage(tenantName, otp, ttl)
 
 	if conf.IsDevReviewerBypassEnabled() && receiver == conf.DevReviewerIdentifier() {
@@ -41,11 +40,7 @@ func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel
 		key := &cachetypes.Keyer{Raw: fmt.Sprintf("otp:%s:%s", tenantName, receiver)}
 		_ = s.cacheRepo.SaveItem(key, otp, ttl)
 
-		logger.GetLogger().Infof("Dev bypass enabled: skip sending OTP",
-			"receiver", receiver,
-			"tenant", tenantName,
-			"ttl", ttl,
-		)
+		logger.GetLogger().Infof("Dev bypass enabled: skip sending OTP to %s", receiver)
 		return nil
 	}
 

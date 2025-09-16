@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domaintypes "github.com/lifenetwork-ai/iam-service/internal/domain/types"
@@ -375,6 +376,11 @@ func (u *adminUseCase) CheckIdentifierAdmin(
 	idType, identifier, derr := inferAndNormalizeIdentifier(identifier)
 	if derr != nil {
 		return false, idType, derr
+	}
+
+	// Dev bypass logic
+	if conf.IsDevReviewerBypassEnabled() && identifier == conf.DevReviewerIdentifier() {
+		return true, idType, nil
 	}
 
 	// 2. Repo check (tenant-scoped)

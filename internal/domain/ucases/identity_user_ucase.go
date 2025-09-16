@@ -95,10 +95,11 @@ func (u *userUseCase) ChallengeWithPhone(
 	if _, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierPhone.String(), phone); err != nil {
 		// Dev bypass logic
 		if conf.IsDevReviewerBypassEnabled() && phone == conf.DevReviewerIdentifier() {
-			// Create minimum identity with traits { phone: <phone> }
+			// Create identity with traits
 			if _, statusCode, e := u.kratosService.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
 				"phone_number": phone,
 				"tenant":       tenant.Name,
+				"lang":         constants.EnglishLanguage,
 			}); e != nil && statusCode != http.StatusConflict {
 				return nil, domainerrors.WrapInternal(e, "MSG_CREATE_IDENTITY_FAILED", "Failed to create identity (dev bypass)")
 			}
