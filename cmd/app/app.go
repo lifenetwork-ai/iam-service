@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
@@ -71,7 +70,7 @@ func RunApp(config *conf.Configuration) {
 
 	go workers.NewZaloRefreshTokenWorker(
 		instances.SMSServiceInstance(repos.ZaloTokenRepo),
-	).Start(ctx, 6*time.Hour)
+	).Start(ctx, constants.ZaloRefreshTokenWorkerInterval)
 
 	// Handle shutdown signals
 	waitForShutdownSignal(cancel)
