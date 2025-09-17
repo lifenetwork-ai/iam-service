@@ -3,19 +3,23 @@ package common
 import (
 	"context"
 
-	"github.com/lifenetwork-ai/iam-service/conf"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
-type ZaloTokenCrypto struct{}
+type ZaloTokenCrypto struct {
+	dbEncryptionKey string
+}
 
-func NewZaloTokenCrypto() *ZaloTokenCrypto {
-	return &ZaloTokenCrypto{}
+func NewZaloTokenCrypto(dbEncryptionKey string) *ZaloTokenCrypto {
+	return &ZaloTokenCrypto{
+		dbEncryptionKey: dbEncryptionKey,
+	}
 }
 
 func (c *ZaloTokenCrypto) Encrypt(ctx context.Context, token *domain.ZaloToken) (*domain.ZaloToken, error) {
-	key := conf.GetDbEncryptionKey()
+	key := [32]byte{}
+	copy(key[:], []byte(c.dbEncryptionKey))
 	encryptedAccess, err := utils.Encrypt(key, token.AccessToken)
 	if err != nil {
 		return nil, err
@@ -33,7 +37,8 @@ func (c *ZaloTokenCrypto) Encrypt(ctx context.Context, token *domain.ZaloToken) 
 }
 
 func (c *ZaloTokenCrypto) Decrypt(ctx context.Context, token *domain.ZaloToken) (*domain.ZaloToken, error) {
-	key := conf.GetDbEncryptionKey()
+	key := [32]byte{}
+	copy(key[:], []byte(c.dbEncryptionKey))
 	decryptedAccess, err := utils.Decrypt(key, token.AccessToken)
 	if err != nil {
 		return nil, err
@@ -43,6 +48,7 @@ func (c *ZaloTokenCrypto) Decrypt(ctx context.Context, token *domain.ZaloToken) 
 		return nil, err
 	}
 	return &domain.ZaloToken{
+		ID:           token.ID,
 		AccessToken:  decryptedAccess,
 		RefreshToken: decryptedRefresh,
 		UpdatedAt:    token.UpdatedAt,

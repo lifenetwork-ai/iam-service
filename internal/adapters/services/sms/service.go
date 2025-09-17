@@ -38,7 +38,7 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 		zaloProvider, err := provider.NewZaloProvider(context.Background(), config.Zalo, zaloTokenRepo)
 		if err != nil {
 			logger.GetLogger().Errorf("Failed to create Zalo provider: %v", err)
-			// Don't return error, just log and continue without Zalo
+			panic(err)
 		} else {
 			factory.providers[constants.ChannelZalo] = zaloProvider
 		}
@@ -66,31 +66,6 @@ func (f *SMSProviderFactory) GetSupportedChannels() []string {
 		channels = append(channels, channel)
 	}
 	return channels
-}
-
-// RefreshAllTokens refreshes tokens for all providers that support it
-func (f *SMSProviderFactory) RefreshAllTokens(ctx context.Context) error {
-	var errors []error
-	for channel, provider := range f.providers {
-		if err := provider.RefreshToken(ctx); err != nil {
-			logger.GetLogger().Errorf("Failed to refresh token for %s: %v", channel, err)
-			errors = append(errors, fmt.Errorf("channel %s: %w", channel, err))
-		}
-	}
-
-	if len(errors) > 0 {
-		return fmt.Errorf("failed to refresh tokens: %v", errors)
-	}
-	return nil
-}
-
-// HealthCheckAll performs health checks on all providers
-func (f *SMSProviderFactory) HealthCheckAll(ctx context.Context) map[string]error {
-	results := make(map[string]error)
-	for channel, provider := range f.providers {
-		results[channel] = provider.HealthCheck(ctx)
-	}
-	return results
 }
 
 // SMSService is the main service that orchestrates SMS sending
@@ -124,16 +99,6 @@ func (s *SMSService) SendOTP(ctx context.Context, tenantName, receiver, channel,
 // GetSupportedChannels returns all supported channels
 func (s *SMSService) GetSupportedChannels() []string {
 	return s.factory.GetSupportedChannels()
-}
-
-// RefreshTokens refreshes tokens for all providers
-func (s *SMSService) RefreshTokens(ctx context.Context) error {
-	return s.factory.RefreshAllTokens(ctx)
-}
-
-// HealthCheck performs health checks on all providers
-func (s *SMSService) HealthCheck(ctx context.Context) map[string]error {
-	return s.factory.HealthCheckAll(ctx)
 }
 
 func (s *SMSService) GetProvider(channel string) (provider.SMSProvider, error) {

@@ -38,7 +38,7 @@ func (t *TwilioProvider) SendOTP(ctx context.Context, tenantName, receiver, otp 
 	return nil
 }
 
-func (t *TwilioProvider) RefreshToken(ctx context.Context) error {
+func (t *TwilioProvider) RefreshToken(ctx context.Context, refreshToken string) error {
 	// Twilio doesn't require token refresh - using API key authentication
 	return nil
 }

@@ -106,7 +106,7 @@ var defaultConfigurations = map[string]any{
 	"WHATSAPP_BASE_URL":              "https://graph.facebook.com/v22.0",
 	"ZALO_ACCESS_TOKEN":              "",
 	"ZALO_BASE_URL":                  "https://business.openapi.zalo.me",
-	"ZALO_TEMPLATE_ID":               "473988",
+	"ZALO_TEMPLATE_ID":               "",
 	"ZALO_REFRESH_TOKEN":             "",
 	"ZALO_SECRET_KEY":                "",
 	"ZALO_APP_ID":                    "",

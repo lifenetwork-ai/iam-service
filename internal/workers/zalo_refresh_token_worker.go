@@ -76,7 +76,7 @@ func (w *zaloRefreshTokenWorker) processZaloToken(ctx context.Context) {
 		return
 	}
 
-	err = provider.RefreshToken(ctx)
+	err = provider.RefreshToken(ctx, "")
 	if err != nil {
 		logger.GetLogger().Errorf("[%s] failed to refresh zalo token: %v", w.Name(), err)
 		return

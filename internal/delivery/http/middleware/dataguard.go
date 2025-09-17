@@ -66,6 +66,12 @@ func RequestDataGuardMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// By pass for Zalo token admin endpoints
+		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/admin/sms/zalo") {
+			c.Next()
+			return
+		}
+
 		var bodyBytes []byte
 		var err error
 

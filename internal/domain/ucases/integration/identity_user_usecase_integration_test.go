@@ -78,8 +78,6 @@ func TestIntegration_ChangeIdentifier_EmailToEmail_LoginChecks(t *testing.T) {
 	require.NotNil(t, registerResp)
 
 	verifyRegisterResp, verifyErr := ucase.VerifyRegister(ctx, tenantID, registerResp.VerificationFlow.FlowID, "000000")
-	fmt.Println("verifyRegisterResp", verifyRegisterResp)
-	fmt.Println("verifyErr", verifyErr)
 	require.Nil(t, verifyErr)
 	require.NotNil(t, verifyRegisterResp)
 	globalUserID = verifyRegisterResp.User.GlobalUserID

@@ -71,7 +71,7 @@ func RunApp(config *conf.Configuration) {
 
 	go workers.NewZaloRefreshTokenWorker(
 		instances.SMSServiceInstance(repos.ZaloTokenRepo),
-	).Start(ctx, 12*time.Hour)
+	).Start(ctx, 6*time.Hour)
 
 	// Handle shutdown signals
 	waitForShutdownSignal(cancel)

@@ -22,17 +22,35 @@ type ZaloClient struct {
 	appID        string
 	accessToken  string
 	refreshToken string
+	oauthBaseURL string
 }
 
-// ZaloTemplateRequest represents the request payload for sending template messages
-type ZaloTemplateRequest struct {
+type ZaloTemplateInfo struct {
+	TemplateID      int    `json:"templateId"`
+	TemplateName    string `json:"templateName"`
+	CreatedTime     int    `json:"createdTime"`
+	Status          string `json:"status"`
+	TemplateQuality string `json:"templateQuality"`
+}
+
+type ZaloGetAllTemplatesResponse struct {
+	Error    any                `json:"error"`
+	Message  string             `json:"message"`
+	Data     []ZaloTemplateInfo `json:"data"`
+	Metadata struct {
+		Total int `json:"total"`
+	} `json:"metadata"`
+}
+
+// ZaloSendNotificationRequest represents the request payload for sending templatenotification messages
+type ZaloSendNotificationRequest struct {
 	Phone        string                 `json:"phone"`
 	TemplateID   int                    `json:"template_id"`
 	TemplateData map[string]interface{} `json:"template_data"`
 }
 
-// ZaloTemplateResponse represents the response from Zalo API
-type ZaloTemplateResponse struct {
+// ZaloSendNotificationResponse represents the response from Zalo API
+type ZaloSendNotificationResponse struct {
 	Error   int    `json:"error"`
 	Message string `json:"message"`
 	Data    struct {
@@ -67,22 +85,32 @@ type ZaloTokenRefreshResponse struct {
 }
 
 func NewZaloClient(ctx context.Context, baseURL, secretKey, appID, accessToken, refreshToken string) (*ZaloClient, error) {
+	return NewZaloClientWithHTTP(ctx, baseURL, secretKey, appID, accessToken, refreshToken, nil, "")
+}
+
+// NewZaloClientWithHTTP allows injecting http.Client and OAuth base URL for testing
+func NewZaloClientWithHTTP(ctx context.Context, baseURL, secretKey, appID, accessToken, refreshToken string, httpClient *http.Client, oauthBaseURL string) (*ZaloClient, error) {
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 30 * time.Second}
+	}
+	if oauthBaseURL == "" {
+		oauthBaseURL = "https://oauth.zaloapp.com"
+	}
 	return &ZaloClient{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client:       httpClient,
 		baseURL:      baseURL,
 		secretKey:    secretKey,
 		appID:        appID,
 		accessToken:  accessToken,
 		refreshToken: refreshToken,
+		oauthBaseURL: oauthBaseURL,
 	}, nil
 }
 
 // SendTemplateMessage sends a template message via Zalo API
-func (c *ZaloClient) SendTemplateMessage(ctx context.Context, phone string, templateID int, templateData map[string]interface{}) (*ZaloTemplateResponse, error) {
+func (c *ZaloClient) SendTemplateMessage(ctx context.Context, phone string, templateID int, templateData map[string]interface{}) (*ZaloSendNotificationResponse, error) {
 	// Prepare the request payload
-	payload := ZaloTemplateRequest{
+	payload := ZaloSendNotificationRequest{
 		Phone:        phone,
 		TemplateID:   templateID,
 		TemplateData: templateData,
@@ -112,13 +140,16 @@ func (c *ZaloClient) SendTemplateMessage(ctx context.Context, phone string, temp
 	defer resp.Body.Close()
 
 	// Parse response
-	var zaloResp ZaloTemplateResponse
+	var zaloResp ZaloSendNotificationResponse
 	if err := json.NewDecoder(resp.Body).Decode(&zaloResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
+	// If Zalo responded with a non-zero error code, surface the response to the caller
+	// and let higher layers decide whether it is retryable. Do not return a Go error here
+	// so callers can inspect resp.Error and handle backoff semantics correctly.
 	if zaloResp.Error != 0 {
-		return &zaloResp, fmt.Errorf("zalo API error: %d - %s", zaloResp.Error, zaloResp.Message)
+		return &zaloResp, nil
 	}
 
 	// Check for HTTP errors
@@ -130,7 +161,7 @@ func (c *ZaloClient) SendTemplateMessage(ctx context.Context, phone string, temp
 }
 
 // SendOTP sends an OTP message using a template
-func (c *ZaloClient) SendOTP(ctx context.Context, phone, otp string, templateID int) (*ZaloTemplateResponse, error) {
+func (c *ZaloClient) SendOTP(ctx context.Context, phone, otp string, templateID int) (*ZaloSendNotificationResponse, error) {
 	templateData := map[string]interface{}{
 		"otp": otp,
 	}
@@ -139,13 +170,16 @@ func (c *ZaloClient) SendOTP(ctx context.Context, phone, otp string, templateID 
 }
 
 // Update RefreshAccessToken to persist new tokens in DB
-func (c *ZaloClient) RefreshAccessToken(ctx context.Context) (*ZaloTokenRefreshResponse, error) {
+func (c *ZaloClient) RefreshAccessToken(ctx context.Context, refreshToken string) (*ZaloTokenRefreshResponse, error) {
+	if refreshToken == "" {
+		return nil, fmt.Errorf("refresh token is required")
+	}
 	data := url.Values{}
-	data.Set("refresh_token", c.refreshToken)
+	data.Set("refresh_token", refreshToken)
 	data.Set("app_id", c.appID)
 	data.Set("grant_type", "refresh_token")
 
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://oauth.zaloapp.com/v4/oa/access_token", strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, "POST", c.oauthBaseURL+"/v4/oa/access_token", strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create refresh token request: %w", err)
 	}
@@ -177,58 +211,33 @@ func (c *ZaloClient) UpdateTokens(ctx context.Context, tokenResp *ZaloTokenRefre
 	return nil
 }
 
-func (c *ZaloClient) HealthCheck(ctx context.Context) error {
-	// Use a minimal template request to test API connectivity and authentication
-	// This is more reliable than a generic health endpoint as it tests the actual API
-	payload := ZaloTemplateRequest{
-		Phone:      "0000000000", // Dummy phone number for health check
-		TemplateID: 1,            // Minimal template ID
-		TemplateData: map[string]interface{}{
-			"test": "health_check",
-		},
-	}
-
-	// Marshal the payload to JSON
-	bodyBytes, err := json.Marshal(payload)
+func (c *ZaloClient) GetAllTemplates(ctx context.Context) (*ZaloGetAllTemplatesResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/template/all?offset=0&limit=100", c.baseURL), nil)
 	if err != nil {
-		return fmt.Errorf("failed to marshal health check payload: %w", err)
+		return nil, fmt.Errorf("failed to create get all templates request: %w", err)
 	}
 
-	// Create HTTP request
-	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/message/template", bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("failed to create health check request: %w", err)
-	}
-
-	// Set headers
 	req.Header.Set("access_token", c.accessToken)
 	req.Header.Set("Content-Type", "application/json")
 
-	// Send request
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send health check request: %w", err)
+		return nil, fmt.Errorf("failed to send get all templates request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Parse response
-	var zaloResp ZaloTemplateResponse
+	var zaloResp ZaloGetAllTemplatesResponse
 	if err := json.NewDecoder(resp.Body).Decode(&zaloResp); err != nil {
-		return fmt.Errorf("failed to decode health check response: %w", err)
+		return nil, fmt.Errorf("failed to decode get all templates response: %w", err)
 	}
 
-	// Check for authentication errors (token invalid)
-	if zaloResp.Error == TokenInvalidError {
-		return fmt.Errorf("Zalo health check failed: access token is invalid")
-	}
+	return &zaloResp, nil
+}
 
-	// Check for HTTP errors
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("Zalo health check failed: HTTP %s", resp.Status)
-	}
+func (c *ZaloClient) GetAccessToken(ctx context.Context) string {
+	return c.accessToken
+}
 
-	// If we get here, the API is reachable and the token is valid
-	// The actual message sending might fail due to invalid template/phone, but that's expected
-	// and doesn't indicate a health problem
-	return nil
+func (c *ZaloClient) GetRefreshToken(ctx context.Context) string {
+	return c.refreshToken
 }

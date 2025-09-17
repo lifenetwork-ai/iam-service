@@ -3,6 +3,7 @@ package ucases
 import (
 	"context"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
@@ -18,7 +19,7 @@ type smsTokenUseCase struct {
 func NewSmsTokenUseCase(zaloRepository domainrepo.ZaloTokenRepository) interfaces.SmsTokenUseCase {
 	return &smsTokenUseCase{
 		zaloRepository:  zaloRepository,
-		zaloTokenCrypto: common.NewZaloTokenCrypto(),
+		zaloTokenCrypto: common.NewZaloTokenCrypto(conf.GetConfiguration().DbEncryptionKey),
 	}
 }
 

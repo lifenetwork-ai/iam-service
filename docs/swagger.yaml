@@ -143,16 +143,6 @@ definitions:
     - name
     - public_url
     type: object
-  dto.CreateZaloTokenRequestDTO:
-    properties:
-      access_token:
-        type: string
-      refresh_token:
-        type: string
-    required:
-    - access_token
-    - refresh_token
-    type: object
   dto.DelegateAccessRequestDTO:
     properties:
       identifier:
@@ -252,6 +242,24 @@ definitions:
     required:
     - identifier
     type: object
+  dto.RefreshZaloTokenRequestDTO:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  dto.RefreshZaloTokenResponseDTO:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      refresh_token:
+        type: string
+      updated_at:
+        type: string
+    type: object
   dto.SelfCheckPermissionRequestDTO:
     properties:
       namespace:
@@ -324,7 +332,11 @@ definitions:
     properties:
       access_token:
         type: string
+      expires_at:
+        type: string
       refresh_token:
+        type: string
+      updated_at:
         type: string
     type: object
   response.ErrorResponse:
@@ -573,6 +585,79 @@ paths:
       summary: Check if an identifier is registered in this tenant
       tags:
       - identifiers
+  /api/v1/admin/sms/zalo/health:
+    get:
+      consumes:
+      - application/json
+      description: Perform a health check against the Zalo API using current token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Zalo provider health check
+      tags:
+      - sms
+  /api/v1/admin/sms/zalo/token:
+    get:
+      consumes:
+      - application/json
+      description: Get Zalo token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Zalo token
+          schema:
+            $ref: '#/definitions/dto.ZaloTokenResponseDTO'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get Zalo token
+      tags:
+      - sms
+  /api/v1/admin/sms/zalo/token/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh the Zalo access token using the refresh token and return
+        the new token details
+      parameters:
+      - description: Refresh Zalo token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RefreshZaloTokenRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Refreshed Zalo token
+          schema:
+            $ref: '#/definitions/dto.RefreshZaloTokenResponseDTO'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Refresh Zalo token
+      tags:
+      - sms
   /api/v1/admin/tenants:
     get:
       consumes:
@@ -1012,46 +1097,6 @@ paths:
       summary: User-facing permission check
       tags:
       - permissions
-  /api/v1/sms/zalo:
-    get:
-      consumes:
-      - application/json
-      description: Get Zalo token
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.ZaloTokenResponseDTO'
-      security:
-      - BasicAuth: []
-      summary: Get Zalo token
-      tags:
-      - Zalo
-    post:
-      consumes:
-      - application/json
-      description: Set Zalo token
-      parameters:
-      - description: Zalo token
-        in: body
-        name: token
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateZaloTokenRequestDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.ZaloTokenResponseDTO'
-      security:
-      - BasicAuth: []
-      summary: Set Zalo token
-      tags:
-      - Zalo
   /api/v1/users/challenge-verify:
     post:
       consumes:

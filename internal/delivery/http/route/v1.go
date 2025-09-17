@@ -8,6 +8,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/handlers"
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	"github.com/lifenetwork-ai/iam-service/internal/wire"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 func RegisterRoutes(
@@ -31,6 +32,23 @@ func RegisterRoutes(
 			middleware.RootAuthMiddleware(),
 		)
 		accountRouter.POST("/", adminHandler.CreateAdminAccount)
+	}
+
+	// Admin SMS/Zalo token management
+	smsTokenHandler := handlers.NewSmsTokenHandler(ucases.SmsTokenUCase, instances.SMSServiceInstance(repos.ZaloTokenRepo))
+	smsRouter := adminRouter.Group("sms")
+	{
+		// Read requires Admin or Root
+		smsRouter.Use(middleware.AdminAuthMiddleware(repos.AdminAccountRepo))
+		smsRouter.GET("/zalo/token", smsTokenHandler.GetZaloToken)
+		smsRouter.GET("/zalo/health", smsTokenHandler.GetZaloHealth)
+	}
+
+	{
+		// Write requires Root
+		rootOnly := adminRouter.Group("sms")
+		rootOnly.Use(middleware.RootAuthMiddleware())
+		rootOnly.POST("/zalo/token/refresh", smsTokenHandler.RefreshZaloToken)
 	}
 
 	// Admin Identifier Management subgroup

@@ -73,7 +73,7 @@ func (w *WebhookProvider) SendOTP(ctx context.Context, tenantName, receiver, otp
 	return nil
 }
 
-func (w *WebhookProvider) RefreshToken(ctx context.Context) error {
+func (w *WebhookProvider) RefreshToken(ctx context.Context, refreshToken string) error {
 	// Webhook doesn't require token refresh
 	return nil
 }

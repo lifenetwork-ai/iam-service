@@ -38,7 +38,7 @@ func (w *WhatsAppProvider) SendOTP(ctx context.Context, tenantName, receiver, ot
 	return nil
 }
 
-func (w *WhatsAppProvider) RefreshToken(ctx context.Context) error {
+func (w *WhatsAppProvider) RefreshToken(ctx context.Context, refreshToken string) error {
 	// TODO: Implement WhatsApp token refresh when needed
 	// For now, WhatsApp uses long-lived tokens
 	return nil
