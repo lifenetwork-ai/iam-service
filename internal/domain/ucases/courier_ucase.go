@@ -129,6 +129,7 @@ func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) 
 	return nil
 }
 
+// https://geneticavietnam.slack.com/archives/C09DUSTLF1V/p1757998590863439?thread_ts=1757998451.351149&cid=C09DUSTLF1V
 func (u *courierUseCase) GetAvailableChannels(ctx context.Context, tenantName, receiver string) []string {
 	var channels []string
 
@@ -136,10 +137,13 @@ func (u *courierUseCase) GetAvailableChannels(ctx context.Context, tenantName, r
 	channels = append(channels, constants.ChannelSMS, constants.ChannelWhatsApp)
 
 	// If the receiver is a Vietnamese number and the tenant supports Zalo, add Zalo
-	if strings.HasPrefix(receiver, "+84") && strings.ToLower(tenantName) == constants.TenantGenetica {
-		channels = append(channels, constants.ChannelZalo)
+	if strings.ToLower(tenantName) == constants.TenantGenetica {
+		if strings.HasPrefix(receiver, "+84") {
+			channels = []string{constants.ChannelZalo, constants.ChannelSMS}
+		} else {
+			channels = []string{constants.ChannelSMS}
+		}
 	}
-
 	return channels
 }
 
