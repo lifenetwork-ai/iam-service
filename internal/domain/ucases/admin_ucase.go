@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domaintypes "github.com/lifenetwork-ai/iam-service/internal/domain/types"
@@ -377,6 +378,11 @@ func (u *adminUseCase) CheckIdentifierAdmin(
 		return false, idType, derr
 	}
 
+	// Dev bypass logic
+	if conf.IsDevReviewerBypassEnabled() && identifier == conf.DevReviewerIdentifier() {
+		return true, idType, nil
+	}
+
 	// 2. Repo check (tenant-scoped)
 	ok, repoErr := u.userIdentityRepo.ExistsWithinTenant(ctx, tenantID.String(), idType, identifier)
 	if repoErr != nil {
@@ -451,7 +457,7 @@ func (u *adminUseCase) AddIdentifierAdmin(
 	}
 	traits[newType] = newIdentifier // "email" | "phone_number"
 
-	newKratos, err := u.kratosService.CreateIdentityAdmin(ctx, tenantID, traits)
+	newKratos, _, err := u.kratosService.CreateIdentityAdmin(ctx, tenantID, traits)
 	if err != nil {
 		return nil, domainerrors.NewValidationError("MSG_CREATE_IDENTITY_FAILED", fmt.Sprintf("Failed to create identity: %v", err), nil)
 	}

@@ -16,7 +16,7 @@ var (
 	smsServiceErr  error
 )
 
-// SMSProviderInstance returns a singleton instance of the SMS service
+// SMSServiceInstance returns a singleton instance of the SMS service
 func SMSServiceInstance(zaloTokenRepo domainrepo.ZaloTokenRepository) *sms.SMSService {
 	smsServiceOnce.Do(func() {
 		service, err := sms.NewSMSService(conf.GetSmsConfiguration(), zaloTokenRepo)

@@ -118,22 +118,6 @@ func (mr *MockIdentityUserUseCaseMockRecorder) ChangeIdentifier(ctx, globalUserI
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).ChangeIdentifier), ctx, globalUserID, tenantID, kratosUserID, newIdentifier)
 }
 
-// CheckIdentifier mocks base method.
-func (m *MockIdentityUserUseCase) CheckIdentifier(ctx context.Context, tenantID uuid.UUID, identifier string) (bool, string, *errors.DomainError) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckIdentifier", ctx, tenantID, identifier)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(*errors.DomainError)
-	return ret0, ret1, ret2
-}
-
-// CheckIdentifier indicates an expected call of CheckIdentifier.
-func (mr *MockIdentityUserUseCaseMockRecorder) CheckIdentifier(ctx, tenantID, identifier any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIdentifier", reflect.TypeOf((*MockIdentityUserUseCase)(nil).CheckIdentifier), ctx, tenantID, identifier)
-}
-
 // DeleteIdentifier mocks base method.
 func (m *MockIdentityUserUseCase) DeleteIdentifier(ctx context.Context, globalUserID string, tenantID uuid.UUID, kratosUserID, identifierType string) *errors.DomainError {
 	m.ctrl.T.Helper()

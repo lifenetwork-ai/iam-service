@@ -72,10 +72,13 @@ const (
 
 	// Zalo refresh token worker interval
 	ZaloRefreshTokenWorkerInterval = 4 * time.Hour
+
+	// Dev bypass OTP constants
+	DevBypassOTPFetchTimeout = 10 * time.Second // how long we wait for the fresh OTP to appear in cache
+	DevBypassOTPPollInterval = 200 * time.Millisecond
 )
 
 const (
-	DefaultLanguage    = "en" // Default language for user registration
 	EnglishLanguage    = "en"
 	VietnameseLanguage = "vi"
 )
