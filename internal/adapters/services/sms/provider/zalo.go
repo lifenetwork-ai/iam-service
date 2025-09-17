@@ -127,7 +127,6 @@ func (z *ZaloProvider) HealthCheck(ctx context.Context) error {
 	}
 
 	return nil
-
 }
 
 // RefreshToken refreshes the Zalo token
@@ -253,7 +252,6 @@ func (z *ZaloProvider) getTokenFromDB(ctx context.Context) (*domain.ZaloToken, e
 		return nil, fmt.Errorf("failed to decrypt Zalo token: %w", err)
 	}
 	return decryptedToken, nil
-
 }
 
 // saveTokenToDB encrypts the Zalo token and saves it to the database

@@ -40,7 +40,6 @@ func RegisterRoutes(
 	{
 		// Read requires Admin or Root
 		smsRouter.Use(middleware.AdminAuthMiddleware(repos.AdminAccountRepo))
-		smsRouter.GET("/zalo/token", smsTokenHandler.GetZaloToken)
 		smsRouter.GET("/zalo/health", smsTokenHandler.GetZaloHealth)
 	}
 
@@ -48,6 +47,7 @@ func RegisterRoutes(
 		// Write requires Root
 		rootOnly := adminRouter.Group("sms")
 		rootOnly.Use(middleware.RootAuthMiddleware())
+		rootOnly.GET("/zalo/token", smsTokenHandler.GetZaloToken)
 		rootOnly.POST("/zalo/token/refresh", smsTokenHandler.RefreshZaloToken)
 	}
 
