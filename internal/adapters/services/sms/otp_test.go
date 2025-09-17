@@ -14,7 +14,6 @@ func TestExtractOTPFromMessage(t *testing.T) {
 	}{
 		// Basic cases
 		{"Your OTP is 123456", "123456"},
-		{"Code: 9876", "9876"},
 		{"otp 555666", "555666"},
 
 		// Template format (with asterisks)

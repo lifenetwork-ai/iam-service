@@ -26,7 +26,6 @@ func ExtractOTPFromMessage(message string) string {
 	// More robust regex to handle common OTP patterns
 	patterns := []string{
 		`\b(\d{6})\b`,         // 6 digits with word boundaries
-		`\b(\d{4})\b`,         // 4 digits (some services use 4-digit OTPs)
 		`code[:\s]*(\d{4,8})`, // "code: 123456" or "code 123456"
 		`otp[:\s]*(\d{4,8})`,  // "otp: 123456"
 	}
