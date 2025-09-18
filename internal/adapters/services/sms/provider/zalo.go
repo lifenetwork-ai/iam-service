@@ -177,6 +177,7 @@ func (z *ZaloProvider) createInitialToken(ctx context.Context) (*domain.ZaloToke
 	}
 
 	token := &domain.ZaloToken{
+		ID:           1,
 		AccessToken:  z.config.ZaloAccessToken,
 		RefreshToken: z.config.ZaloRefreshToken,
 		UpdatedAt:    time.Now(),
@@ -262,6 +263,7 @@ func (z *ZaloProvider) saveTokenToDB(ctx context.Context, resp *client.ZaloToken
 	}
 
 	dbToken := &domain.ZaloToken{
+		ID:           1,
 		AccessToken:  resp.AccessToken,
 		RefreshToken: resp.RefreshToken,
 		ExpiresAt:    time.Now().Add(time.Duration(expiresIn) * time.Second),
@@ -271,11 +273,6 @@ func (z *ZaloProvider) saveTokenToDB(ctx context.Context, resp *client.ZaloToken
 	encryptedToken, err := z.zaloTokenCryptoService.Encrypt(ctx, dbToken)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt tokens: %w", err)
-	}
-
-	// If a token already exists, keep the same ID so we update instead of appending a new row
-	if existing, getErr := z.getTokenFromDB(ctx); getErr == nil && existing != nil {
-		encryptedToken.ID = existing.ID
 	}
 
 	if err := z.tokenRepo.Save(ctx, encryptedToken); err != nil {
@@ -313,17 +310,13 @@ func (z *ZaloProvider) syncTokensBeforeSend(ctx context.Context) error {
 		return z.refreshAndSaveToken(ctx, token.RefreshToken)
 	}
 
-	// Otherwise, update client to use the latest tokens from storage.
-	// Tokens in storage may be encrypted; try to decrypt, but fall back if already plaintext (e.g., in tests).
-	decryptedToken, err := z.zaloTokenCryptoService.Decrypt(ctx, token)
-	if err != nil {
-		decryptedToken = token
-	}
+	// Update the client to use the latest tokens from storage.
 	_ = z.client.UpdateTokens(ctx, &client.ZaloTokenRefreshResponse{
-		AccessToken:  decryptedToken.AccessToken,
-		RefreshToken: decryptedToken.RefreshToken,
-		ExpiresIn:    "0",
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		ExpiresIn:    token.ExpiresAt.Format(time.RFC3339),
 	})
+
 	return nil
 }
 
@@ -341,7 +334,7 @@ func (z *ZaloProvider) createClient(ctx context.Context) error {
 
 	// If token is expired, refresh it first
 	if z.isTokenExpired(token) {
-		if err := z.refreshAndSaveToken(ctx, z.client.GetRefreshToken(ctx)); err != nil {
+		if err := z.refreshAndSaveToken(ctx, token.RefreshToken); err != nil {
 			return fmt.Errorf("failed to refresh expired token: %w", err)
 		}
 		// Get the refreshed token

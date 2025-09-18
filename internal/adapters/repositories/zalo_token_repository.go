@@ -30,6 +30,7 @@ func (r *zaloTokenRepository) Get(ctx context.Context) (*domain.ZaloToken, error
 	return &token, nil
 }
 
+// Save creates or updates the token
 func (r *zaloTokenRepository) Save(ctx context.Context, token *domain.ZaloToken) error {
 	token.UpdatedAt = time.Now()
 	return r.db.WithContext(ctx).Save(token).Error
