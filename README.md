@@ -1,3 +1,4 @@
+[![codecov](https://codecov.io/gh/lifenetwork-ai/iam-service/graph/badge.svg?token=G3CKBzhKbk)](https://codecov.io/gh/lifenetwork-ai/iam-service)
 ## Setup development tools
 
 ### Install golangci-lint
