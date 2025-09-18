@@ -44,7 +44,7 @@ func (s *smsProvider) SendOTP(ctx context.Context, tenantName, receiver, channel
 		return nil
 	}
 
-	logger.GetLogger().Infof("Sending OTP to %s", receiver)
+	logger.GetLogger().Infof("Sending OTP to %s using %s", receiver, channel)
 	switch channel {
 	case constants.ChannelSMS:
 		return s.sendSMS(ctx, tenantName, receiver, otpMessage)
