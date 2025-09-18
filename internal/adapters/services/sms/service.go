@@ -23,7 +23,7 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 		providers: make(map[string]provider.SMSProvider),
 	}
 
-	// Initialize Twilio provider
+  // Initialize Twilio provider
 	if config.Twilio.TwilioAccountSID != "" {
 		factory.providers[constants.ChannelSMS] = provider.NewTwilioProvider(config.Twilio)
 	}
