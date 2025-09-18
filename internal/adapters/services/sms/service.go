@@ -18,12 +18,13 @@ type SMSProviderFactory struct {
 }
 
 // NewSMSProviderFactory creates a new factory with all configured providers
+// Don't return error because we want to continue initializing the service even if some providers are not configured
 func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloTokenRepository) (*SMSProviderFactory, error) {
 	factory := &SMSProviderFactory{
 		providers: make(map[string]provider.SMSProvider),
 	}
 
-  // Initialize Twilio provider
+	// Initialize Twilio provider
 	if config.Twilio.TwilioAccountSID != "" {
 		factory.providers[constants.ChannelSMS] = provider.NewTwilioProvider(config.Twilio)
 	}
@@ -38,7 +39,6 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 		zaloProvider, err := provider.NewZaloProvider(context.Background(), config.Zalo, zaloTokenRepo)
 		if err != nil {
 			logger.GetLogger().Errorf("Failed to create Zalo provider: %v", err)
-			panic(err)
 		} else {
 			factory.providers[constants.ChannelZalo] = zaloProvider
 		}
@@ -75,11 +75,7 @@ type SMSService struct {
 
 // NewSMSService creates a new SMS service with the factory
 func NewSMSService(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloTokenRepository) (*SMSService, error) {
-	factory, err := NewSMSProviderFactory(config, zaloTokenRepo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create SMS provider factory: %w", err)
-	}
-
+	factory, _ := NewSMSProviderFactory(config, zaloTokenRepo)
 	return &SMSService{
 		factory: factory,
 	}, nil
