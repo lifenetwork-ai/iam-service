@@ -67,8 +67,9 @@ const (
 	BaseRetryDuration  = 3 * time.Second // Base duration for exponential backoff
 
 	// OTP worker interval
-	OTPDeliveryWorkerInterval = 10 * time.Second
-	OTPRetryWorkerInterval    = 30 * time.Second
+	OTPDeliveryWorkerInterval     = 3 * time.Second
+	OTPRetryWorkerInterval        = 10 * time.Second
+	OTPSendMaxReceiverConcurrency = 10
 
 	// Zalo refresh token worker interval
 	ZaloRefreshTokenWorkerInterval = 4 * time.Hour
