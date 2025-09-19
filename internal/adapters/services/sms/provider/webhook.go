@@ -79,7 +79,7 @@ func (w *WebhookProvider) RefreshToken(ctx context.Context, refreshToken string)
 }
 
 func (w *WebhookProvider) GetChannelType() string {
-	return "webhook"
+	return constants.DefaultSMSChannel
 }
 
 func (w *WebhookProvider) HealthCheck(ctx context.Context) error {

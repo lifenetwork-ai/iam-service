@@ -45,7 +45,7 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 	}
 
 	// Always add webhook as fallback
-	factory.providers["webhook"] = provider.NewWebhookProvider()
+	factory.providers[constants.DefaultSMSChannel] = provider.NewWebhookProvider()
 
 	return factory, nil
 }

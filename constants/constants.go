@@ -87,3 +87,7 @@ const (
 const (
 	DefaultRegion = "VN"
 )
+
+const (
+	DefaultSMSChannel = "webhook"
+)
