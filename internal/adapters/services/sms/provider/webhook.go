@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
@@ -25,7 +25,7 @@ func NewWebhookProvider() SMSProvider {
 func (w *WebhookProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error {
 	logger.GetLogger().Infof("Sending OTP to %s via webhook", receiver)
 
-	url := os.Getenv("MOCK_WEBHOOK_URL")
+	url := conf.GetMockWebhookURL()
 	if url == "" {
 		return errors.New("MOCK_WEBHOOK_URL is not set")
 	}
@@ -84,9 +84,9 @@ func (w *WebhookProvider) GetChannelType() string {
 
 func (w *WebhookProvider) HealthCheck(ctx context.Context) error {
 	// Check if webhook URL is configured
-	url := os.Getenv("MOCK_WEBHOOK_URL")
+	url := conf.GetMockWebhookURL()
 	if url == "" {
-		return errors.New("MOCK_WEBHOOK_URL is not configured")
+		return errors.New("MOCK_WEBHOOK_URL is not set")
 	}
 	return nil
 }
