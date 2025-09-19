@@ -255,7 +255,7 @@ func (z *ZaloProvider) getTokenFromDB(ctx context.Context) (*domain.ZaloToken, e
 	return decryptedToken, nil
 }
 
-// saveTokenToDB encrypts the Zalo token and saves it to the database
+// saveTokenToDB encrypts the newly refreshed Zalo token and saves it to the database
 func (z *ZaloProvider) saveTokenToDB(ctx context.Context, resp *client.ZaloTokenRefreshResponse) error {
 	expiresIn, err := strconv.Atoi(resp.ExpiresIn)
 	if err != nil {
