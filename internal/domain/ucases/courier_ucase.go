@@ -131,20 +131,18 @@ func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) 
 
 // https://geneticavietnam.slack.com/archives/C09DUSTLF1V/p1757998590863439?thread_ts=1757998451.351149&cid=C09DUSTLF1V
 func (u *courierUseCase) GetAvailableChannels(ctx context.Context, tenantName, receiver string) []string {
-	var channels []string
+	tn := strings.TrimSpace(strings.ToLower(tenantName))
 
-	// Always supported SMS and WhatsApp channels
-	channels = append(channels, constants.ChannelSMS, constants.ChannelWhatsApp)
+	switch {
+	case strings.EqualFold(tn, strings.ToLower(constants.TenantGenetica)):
+		return []string{constants.ChannelSMS, constants.ChannelZalo}
 
-	// If the receiver is a Vietnamese number and the tenant supports Zalo, add Zalo
-	if strings.ToLower(tenantName) == constants.TenantGenetica {
-		if strings.HasPrefix(receiver, "+84") {
-			channels = []string{constants.ChannelZalo, constants.ChannelSMS}
-		} else {
-			channels = []string{constants.ChannelSMS}
-		}
+	case strings.EqualFold(tn, strings.ToLower(constants.TenantLifeAI)):
+		return []string{constants.ChannelSMS, constants.ChannelWhatsApp}
+
+	default:
+		return []string{constants.ChannelSMS, constants.ChannelWhatsApp, constants.ChannelZalo}
 	}
-	return channels
 }
 
 func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver string) *domainerrors.DomainError {
