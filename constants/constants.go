@@ -70,6 +70,9 @@ const (
 	OTPDeliveryWorkerInterval = 10 * time.Second
 	OTPRetryWorkerInterval    = 30 * time.Second
 
+	// Zalo refresh token worker interval
+	ZaloRefreshTokenWorkerInterval = 4 * time.Hour
+
 	// Dev bypass OTP constants
 	DevBypassOTPFetchTimeout = 10 * time.Second // how long we wait for the fresh OTP to appear in cache
 	DevBypassOTPPollInterval = 200 * time.Millisecond

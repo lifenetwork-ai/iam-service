@@ -30,19 +30,20 @@ type RootAccountConfiguration struct {
 }
 
 type Configuration struct {
-	Database       DatabaseConfiguration    `mapstructure:",squash"`
-	Redis          RedisConfiguration       `mapstructure:",squash"`
-	RootAccount    RootAccountConfiguration `mapstructure:",squash"`
-	AppName        string                   `mapstructure:"APP_NAME"`
-	AppPort        uint32                   `mapstructure:"APP_PORT"`
-	Env            string                   `mapstructure:"ENV"`
-	LogLevel       string                   `mapstructure:"LOG_LEVEL"`
-	CacheType      string                   `mapstructure:"CACHE_TYPE"`
-	MockWebhookURL string                   `mapstructure:"MOCK_WEBHOOK_URL"`
-	KratosConfig   KratosConfiguration      `mapstructure:",squash"`
-	Keto           KetoConfiguration        `mapstructure:",squash"`
-	Sms            SmsConfiguration         `mapstructure:",squash"`
-	DevReviewer    DevReviewerConfiguration `mapstructure:",squash"`
+	Database        DatabaseConfiguration    `mapstructure:",squash"`
+	Redis           RedisConfiguration       `mapstructure:",squash"`
+	RootAccount     RootAccountConfiguration `mapstructure:",squash"`
+	AppName         string                   `mapstructure:"APP_NAME"`
+	AppPort         uint32                   `mapstructure:"APP_PORT"`
+	Env             string                   `mapstructure:"ENV"`
+	LogLevel        string                   `mapstructure:"LOG_LEVEL"`
+	CacheType       string                   `mapstructure:"CACHE_TYPE"`
+	MockWebhookURL  string                   `mapstructure:"MOCK_WEBHOOK_URL"`
+	DbEncryptionKey string                   `mapstructure:"DB_ENCRYPTION_KEY"`
+	KratosConfig    KratosConfiguration      `mapstructure:",squash"`
+	Keto            KetoConfiguration        `mapstructure:",squash"`
+	Sms             SmsConfiguration         `mapstructure:",squash"`
+	DevReviewer     DevReviewerConfiguration `mapstructure:",squash"`
 }
 
 type TwilioConfiguration struct {
@@ -64,9 +65,19 @@ type DevReviewerConfiguration struct {
 	DevReviewerIdentifier string `mapstructure:"DEV_REVIEWER_IDENTIFIER"`
 }
 
+type ZaloConfiguration struct {
+	ZaloBaseURL      string `mapstructure:"ZALO_BASE_URL"`
+	ZaloSecretKey    string `mapstructure:"ZALO_SECRET_KEY"`
+	ZaloAppID        string `mapstructure:"ZALO_APP_ID"`
+	ZaloTemplateID   int    `mapstructure:"ZALO_TEMPLATE_ID"`
+	ZaloAccessToken  string `mapstructure:"ZALO_ACCESS_TOKEN"`
+	ZaloRefreshToken string `mapstructure:"ZALO_REFRESH_TOKEN"`
+}
+
 type SmsConfiguration struct {
 	Twilio   TwilioConfiguration   `mapstructure:",squash"`
 	Whatsapp WhatsappConfiguration `mapstructure:",squash"`
+	Zalo     ZaloConfiguration     `mapstructure:",squash"`
 }
 
 var configuration Configuration
@@ -88,6 +99,7 @@ var defaultConfigurations = map[string]any{
 	"DB_MAX_IDLE_CONNS":              "5",
 	"DB_MAX_OPEN_CONNS":              "15",
 	"DB_CONN_MAX_LIFETIME_IN_MINUTE": "60",
+	"DB_ENCRYPTION_KEY":              "",
 	"IAM_ROOT_USERNAME":              "",
 	"IAM_ROOT_PASSWORD":              "",
 	"KETO_DEFAULT_READ_URL":          "",
@@ -103,6 +115,12 @@ var defaultConfigurations = map[string]any{
 	"DEV_REVIEWER_BYPASS":            "false",
 	"DEV_REVIEWER_MAGIC_OTP":         "123456",
 	"DEV_REVIEWER_IDENTIFIER":        "",
+	"ZALO_ACCESS_TOKEN":              "",
+	"ZALO_BASE_URL":                  "https://business.openapi.zalo.me",
+	"ZALO_TEMPLATE_ID":               "",
+	"ZALO_REFRESH_TOKEN":             "",
+	"ZALO_SECRET_KEY":                "",
+	"ZALO_APP_ID":                    "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations

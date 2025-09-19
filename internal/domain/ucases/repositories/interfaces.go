@@ -62,3 +62,8 @@ type UserIdentityRepository interface {
 	GetByGlobalUserIDAndTenantID(ctx context.Context, tx *gorm.DB, globalUserID, tenantID string) ([]*domain.UserIdentity, error)
 	Delete(tx *gorm.DB, identityID string) error
 }
+
+type ZaloTokenRepository interface {
+	Get(ctx context.Context) (*domain.ZaloToken, error)
+	Save(ctx context.Context, token *domain.ZaloToken) error
+}

@@ -1,6 +1,7 @@
-package sms
+package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -87,4 +88,8 @@ func (c *WhatsAppClient) SendMessage(tenantName, to, message string) (*MessageRe
 	}
 
 	return &messageResp, nil
+}
+
+func (c *WhatsAppClient) RefreshAccessToken(ctx context.Context) error {
+	return nil
 }

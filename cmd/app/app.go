@@ -68,6 +68,10 @@ func RunApp(config *conf.Configuration) {
 		instances.OTPQueueRepositoryInstance(ctx),
 	).Start(ctx, constants.OTPRetryWorkerInterval)
 
+	go workers.NewZaloRefreshTokenWorker(
+		instances.SMSServiceInstance(repos.ZaloTokenRepo),
+	).Start(ctx, constants.ZaloRefreshTokenWorkerInterval)
+
 	// Handle shutdown signals
 	waitForShutdownSignal(cancel)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/lifenetwork-ai/iam-service/constants"
 	cachingtypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	otpqueue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
+	smscommon "github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	services "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
@@ -96,7 +97,7 @@ func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) 
 		)
 	}
 
-	otp := extractOTPFromBody(body)
+	otp := smscommon.ExtractOTPFromMessage(body)
 	if otp == "" {
 		return domainerrors.NewValidationError(
 			"MSG_INVALID_OTP",
@@ -128,6 +129,7 @@ func (u *courierUseCase) ReceiveOTP(ctx context.Context, receiver, body string) 
 	return nil
 }
 
+// https://geneticavietnam.slack.com/archives/C09DUSTLF1V/p1757998590863439?thread_ts=1757998451.351149&cid=C09DUSTLF1V
 func (u *courierUseCase) GetAvailableChannels(ctx context.Context, tenantName, receiver string) []string {
 	var channels []string
 
@@ -135,10 +137,13 @@ func (u *courierUseCase) GetAvailableChannels(ctx context.Context, tenantName, r
 	channels = append(channels, constants.ChannelSMS, constants.ChannelWhatsApp)
 
 	// If the receiver is a Vietnamese number and the tenant supports Zalo, add Zalo
-	if strings.HasPrefix(receiver, "+84") && strings.ToLower(tenantName) == constants.TenantGenetica {
-		channels = append(channels, constants.ChannelZalo)
+	if strings.ToLower(tenantName) == constants.TenantGenetica {
+		if strings.HasPrefix(receiver, "+84") {
+			channels = []string{constants.ChannelZalo, constants.ChannelSMS}
+		} else {
+			channels = []string{constants.ChannelSMS}
+		}
 	}
-
 	return channels
 }
 
@@ -169,6 +174,7 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver st
 
 	// Attempt to send OTP
 	if err := u.smsProvider.SendOTP(ctx, tenantName, receiver, channel.Channel, item.Message, u.defaultTTL); err != nil {
+		logger.GetLogger().Errorf("Failed to deliver OTP to %s via %s: %v", receiver, channel.Channel, err)
 		// Prepare retry task
 		retryTask := otpqueue.RetryTask{
 			Receiver:   receiver,
