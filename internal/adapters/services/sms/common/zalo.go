@@ -29,6 +29,7 @@ func (c *ZaloTokenCrypto) Encrypt(ctx context.Context, token *domain.ZaloToken) 
 		return nil, err
 	}
 	return &domain.ZaloToken{
+		ID:           token.ID,
 		AccessToken:  encryptedAccess,
 		RefreshToken: encryptedRefresh,
 		UpdatedAt:    token.UpdatedAt,

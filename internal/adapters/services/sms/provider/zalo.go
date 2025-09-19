@@ -158,22 +158,20 @@ func (z *ZaloProvider) GetChannelType() string {
 
 // getOrCreateToken gets the Zalo token from the repository or creates a new one if it doesn't exist
 func (z *ZaloProvider) getOrCreateToken(ctx context.Context) (*domain.ZaloToken, error) {
-	token, err := z.getTokenFromDB(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Zalo token from DB: %w", err)
-	}
+	token, _ := z.getTokenFromDB(ctx)
 
 	if token != nil {
 		return token, nil
 	}
 
+	// If no token is found, use the default tokens from the config to seed the database
 	return z.createInitialToken(ctx)
 }
 
 // createInitialToken creates a new Zalo token, used when no token is found in the repository
 func (z *ZaloProvider) createInitialToken(ctx context.Context) (*domain.ZaloToken, error) {
 	if z.config.ZaloAccessToken == "" || z.config.ZaloRefreshToken == "" {
-		return nil, fmt.Errorf("no Zalo tokens found in DB or config")
+		return nil, fmt.Errorf("no Zalo tokens found in config")
 	}
 
 	token := &domain.ZaloToken{
