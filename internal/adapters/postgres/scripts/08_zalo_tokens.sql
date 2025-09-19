@@ -1,4 +1,4 @@
-CREATE TABLE zalo_tokens (
+CREATE TABLE IF NOT EXISTS zalo_tokens (
     id SERIAL PRIMARY KEY,
     access_token TEXT NOT NULL,
     refresh_token TEXT NOT NULL,
