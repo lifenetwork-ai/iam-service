@@ -224,6 +224,21 @@ func (z *ZaloProvider) handleAPIResponse(ctx context.Context, resp *client.ZaloS
 // refreshAndSaveToken refreshes tokens via the client and persists them.
 // Caller MUST hold z.mu.
 func (z *ZaloProvider) refreshAndSaveToken(ctx context.Context, refreshToken string) error {
+	// Ensure client exists before attempting refresh
+	if z.client == nil {
+		cli, err := client.NewZaloClient(
+			ctx,
+			z.config.ZaloBaseURL,
+			z.config.ZaloSecretKey,
+			z.config.ZaloAppID,
+			"", // no access token needed for refresh
+			refreshToken,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to bootstrap Zalo client for refresh: %w", err)
+		}
+		z.client = cli
+	}
 	resp, err := z.client.RefreshAccessToken(ctx, refreshToken)
 	if err != nil {
 		return fmt.Errorf("failed to refresh access token: %w", err)
