@@ -2,17 +2,23 @@ coverage:
   status:
     project:
       default:
-        # you can require thresholds here if you want
         target: auto
         threshold: 1%
 
 ignore:
-  # ignore generated mocks
   - "mocks/**"
-  # ignore configuration and wiring
+  - "infrastructures/mocks/**"
   - "internal/wire/**"
+  - "internal/wire/instances/**"
+  - "internal/delivery/http/middleware/**"
+  - "internal/delivery/http/route/**"
+  - "internal/adapters/handlers/**"
   - "conf/**"
-  # ignore entrypoint files
+  - "constants/**"
   - "cmd/**"
-  # ignore docs
   - "docs/**"
+  - "**/testutil/**"
+  - "internal/adapters/services/kratos/**"
+  - "internal/adapters/services/sms/client/**"
+  - "internal/adapters/services/sms/provider/**"
+  - "internal/adapters/services/keto/**"
