@@ -22,3 +22,4 @@ ignore:
   - "internal/adapters/services/sms/client/**"
   - "internal/adapters/services/sms/provider/**"
   - "internal/adapters/services/keto/**"
+  - "packages/**"
