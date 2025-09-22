@@ -116,12 +116,12 @@ jobs:
       - name: Merge coverage files
         run: |
           head -n 1 ./coverage-unit/coverage-unit.out > coverage-merged.out
-          tail -n +2 ./coverage-unit/coverage-unit.out >> coverage-merged.out
-          tail -n +2 ./coverage-integration/coverage-integration.out >> coverage-merged.out
+          tail -n +2 ./coverage-unit/coverage-unit.out | sed "s|$(pwd)/||g" >> coverage-merged.out
+          tail -n +2 ./coverage-integration/coverage-integration.out | sed "s|$(pwd)/||g" >> coverage-merged.out
       - name: Upload merged coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: coverage-merged.out
+          files: ./coverage-merged.out
           name: CI
           flags: combined
-          token: ${{ secrets.CODECOV_TOKEN }}   # uncomment if repo is private
+          token: ${{ secrets.CODECOV_TOKEN }}
