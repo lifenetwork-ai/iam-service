@@ -107,21 +107,21 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage-unit
-          path: .
+          path: ./coverage-unit
       - name: Download integration coverage artifact
         uses: actions/download-artifact@v4
         with:
           name: coverage-integration
-          path: .
+          path: ./coverage-integration
       - name: Merge coverage files
         run: |
-          head -n 1 coverage-unit.out > coverage-merged.out
-          tail -n +2 coverage-unit.out >> coverage-merged.out
-          tail -n +2 coverage-integration.out >> coverage-merged.out
+          head -n 1 ./coverage-unit/coverage-unit.out > coverage-merged.out
+          tail -n +2 ./coverage-unit/coverage-unit.out >> coverage-merged.out
+          tail -n +2 ./coverage-integration/coverage-integration.out >> coverage-merged.out
       - name: Upload merged coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage-merged.out
           name: CI
           flags: combined
+          # token: ${{ secrets.CODECOV_TOKEN }}   # uncomment if repo is private
