@@ -892,7 +892,7 @@ paths:
         required: true
         type: string
       - description: 'Channel and receiver. `channel` must be one of: `sms`, `whatsapp`,
-          `zalo`.'
+          `zalo`. `receiver` must be a valid phone number.'
         in: body
         name: payload
         required: true
