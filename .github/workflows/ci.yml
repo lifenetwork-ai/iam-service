@@ -120,8 +120,10 @@ jobs:
           tail -n +2 ./coverage-integration/coverage-integration.out | sed "s|$(pwd)/||g" >> coverage-merged.out
       - name: Upload merged coverage to Codecov
         uses: codecov/codecov-action@v5
+
         with:
           files: ./coverage-merged.out
+          disable_search: true   # <--- prevents auto-detecting coverage-unit.out & coverage-integration.out
           name: CI
           flags: combined
           token: ${{ secrets.CODECOV_TOKEN }}
