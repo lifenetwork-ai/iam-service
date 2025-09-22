@@ -1,0 +1,18 @@
+coverage:
+  status:
+    project:
+      default:
+        # you can require thresholds here if you want
+        target: auto
+        threshold: 1%
+
+ignore:
+  # ignore generated mocks
+  - "mocks/**"
+  # ignore configuration and wiring
+  - "internal/wire/**"
+  - "conf/**"
+  # ignore entrypoint files
+  - "cmd/**"
+  # ignore docs
+  - "docs/**"
