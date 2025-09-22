@@ -891,7 +891,8 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: Channel and receiver
+      - description: 'Channel and receiver. `channel` must be one of: `sms`, `whatsapp`,
+          `zalo`.'
         in: body
         name: payload
         required: true
