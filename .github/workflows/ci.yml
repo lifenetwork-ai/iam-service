@@ -9,119 +9,45 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    env:
-      GOMODCACHE: ${{ github.workspace }}/.gomodcache
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.22
-          cache: false
-      - name: Cache Go build cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-gobuild-${{ hashFiles('**/go.sum') }}
-      - name: Cache Go modules (project-local)
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.GOMODCACHE }}
-          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
-      - name: Install golangci-lint
-        run: |
+      - run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.8
-      - name: Run golangci-lint
-        run: golangci-lint run ./...
+      - run: golangci-lint run ./...
 
   test-unit:
     runs-on: ubuntu-latest
-    env:
-      GOMODCACHE: ${{ github.workspace }}/.gomodcache
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.22
-          cache: false
-      - name: Cache Go build cache
-        uses: actions/cache@v3
+      - run: go mod tidy
+      - run: go test ./... -v -coverprofile=coverage-unit.out -covermode=atomic
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-gobuild-${{ hashFiles('**/go.sum') }}
-      - name: Cache Go modules (project-local)
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.GOMODCACHE }}
-          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        run: go mod tidy
-      - name: Run unit tests with coverage
-        run: go test ./... -v -coverprofile=coverage-unit.out -covermode=atomic
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-unit
-          path: coverage-unit.out
+          files: coverage-unit.out
+          flags: unit
+          name: CI
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   test-integration:
     runs-on: ubuntu-latest
-    env:
-      GOMODCACHE: ${{ github.workspace }}/.gomodcache
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.22
-          cache: false
-      - name: Cache Go build cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-gobuild-${{ hashFiles('**/go.sum') }}
-      - name: Cache Go modules (project-local)
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.GOMODCACHE }}
-          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        run: go mod tidy
-      - name: Run integration tests with coverage
-        run: go test ./... -v -tags=integration -coverprofile=coverage-integration.out -covermode=atomic
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-integration
-          path: coverage-integration.out
-
-  merge-upload:
-    needs: [test-unit, test-integration]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download unit coverage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-unit
-          path: .
-      - name: Download integration coverage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-integration
-          path: .
-      - name: Merge coverage files
-        run: |
-          head -n 1 coverage-unit.out > coverage-merged.out
-          tail -n +2 coverage-unit.out >> coverage-merged.out
-          tail -n +2 coverage-integration.out >> coverage-merged.out
-      - name: Upload merged coverage to Codecov
+      - run: go mod tidy
+      - run: go test ./... -v -tags=integration -coverprofile=coverage-integration.out -covermode=atomic
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage-merged.out
+          files: coverage-integration.out
+          flags: integration
           name: CI
-          flags: combined
+          token: ${{ secrets.CODECOV_TOKEN }}
