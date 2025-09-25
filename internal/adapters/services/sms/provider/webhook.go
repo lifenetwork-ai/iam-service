@@ -58,7 +58,7 @@ func (w *WebhookProvider) SendOTP(ctx context.Context, tenantName, receiver, otp
 	}
 	req.Header.Set(constants.HeaderKeyContentType, constants.HeaderContentTypeJson)
 
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{Timeout: constants.WebhookTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send webhook request: %w", err)

@@ -19,7 +19,7 @@ const (
 )
 
 // Webhook constants
-const WebhookTimeout = 5 * time.Second
+const WebhookTimeout = 15 * time.Second
 
 // Concurrency
 const MaxConcurrency = 10
