@@ -135,7 +135,7 @@ func (u *courierUseCase) GetAvailableChannels(ctx context.Context, tenantName, r
 
 	switch {
 	case strings.EqualFold(tn, strings.ToLower(constants.TenantGenetica)):
-		return []string{constants.ChannelSMS, constants.ChannelZalo}
+		return []string{constants.ChannelSMS, constants.ChannelZalo, constants.ChannelWhatsApp}
 
 	case strings.EqualFold(tn, strings.ToLower(constants.TenantLifeAI)):
 		return []string{constants.ChannelSMS, constants.ChannelWhatsApp}
