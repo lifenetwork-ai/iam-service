@@ -11,5 +11,5 @@ type CourierGetAvailableChannelsRequestDTO struct {
 
 type CourierChooseChannelRequestDTO struct {
 	Channel  string `json:"channel" binding:"required" description:"The channel to send OTP to the receiver, can be sms, whatsapp or zalo"`
-	Receiver string `json:"receiver" binding:"required"`
+	Receiver string `json:"receiver" binding:"required" description:"The phone number to send OTP to the receiver"`
 }
