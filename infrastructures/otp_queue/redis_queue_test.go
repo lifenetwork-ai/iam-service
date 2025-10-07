@@ -178,7 +178,7 @@ func (s *RedisOTPQueueTestSuite) Test_ListReceivers() {
 	require.ElementsMatch(s.T(), []string{"c@example.com"}, receivers)
 }
 
-func (s *RedisOTPQueueTestSuite) Test_PerformanceUnderLoad() {
+func (s *RedisOTPQueueTestSuite) Benchmark_UnderLoad() {
 	const totalOps = 25000
 	const tenant = "perfTenant"
 	start := time.Now()
@@ -209,7 +209,7 @@ func (s *RedisOTPQueueTestSuite) Test_PerformanceUnderLoad() {
 	s.T().Logf("[PERF] Retrieved %d items in %v (avg: %v/op)", totalOps, getDuration, getDuration/time.Duration(totalOps))
 }
 
-func (s *RedisOTPQueueTestSuite) Test_Performance_RetryTasks() {
+func (s *RedisOTPQueueTestSuite) Benchmark_RetryTasks() {
 	const totalTasks = 25000
 	const tenant = "retryPerfTenant"
 	ctx := s.ctx

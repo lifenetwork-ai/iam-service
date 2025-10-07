@@ -20,6 +20,7 @@ import (
 	services "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/services"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
 )
 
 type courierUseCase struct {
@@ -44,6 +45,24 @@ func NewCourierUseCase(
 
 // ChooseChannel chooses the channel to send OTP to the receiver
 func (u *courierUseCase) ChooseChannel(ctx context.Context, tenantName, receiver, channel string) *domainerrors.DomainError {
+	// Validate receiver type: only phone number is supported for choosing channel
+	if !utils.IsPhoneE164(receiver) {
+		return domainerrors.NewValidationError(
+			"MSG_INVALID_RECEIVER",
+			"Invalid phone number",
+			[]any{
+				map[string]string{"receiver": receiver, "channel": channel},
+			},
+		)
+	}
+
+	// Validate channel
+	if channel == "" {
+		return domainerrors.NewValidationError("MSG_INVALID_CHANNEL", "Channel is required", []any{
+			map[string]string{"channel": channel},
+		})
+	}
+
 	key := &cachingtypes.Keyer{
 		Raw: fmt.Sprintf("channel:%s:%s", tenantName, receiver),
 	}
