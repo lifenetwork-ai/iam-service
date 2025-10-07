@@ -30,17 +30,20 @@ jobs:
           go-version: 1.22
       - run: go mod tidy
 
-      # Run unit tests
-      - run: go test ./... -v -coverprofile=coverage-unit.out -covermode=atomic
+      # Unit tests
+      - name: Run unit tests
+        run: go test ./... -v -coverprofile=coverage-unit.out -covermode=atomic
 
-      # Run integration tests
-      - run: go test ./... -v -tags=integration -coverprofile=coverage-integration.out -covermode=atomic
+      # Integration tests
+      - name: Run integration tests
+        run: go test ./... -v -tags=integration -coverprofile=coverage-integration.out -covermode=atomic
 
       # Merge coverprofiles
-      - run: |
+      - name: Merge coverage reports
+        run: |
           echo "mode: atomic" > coverage.txt
-          tail -n +2 coverage-unit.out >> coverage.txt
-          tail -n +2 coverage-integration.out >> coverage.txt
+          tail -n +2 coverage-unit.out >> coverage.txt || true
+          tail -n +2 coverage-integration.out >> coverage.txt || true
 
       # Upload merged coverage to Codecov
       - name: Upload coverage to Codecov
@@ -49,4 +52,5 @@ jobs:
           files: coverage.txt
           flags: combined
           name: CI
+          fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
