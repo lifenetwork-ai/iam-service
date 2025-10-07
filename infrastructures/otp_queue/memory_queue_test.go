@@ -210,7 +210,7 @@ func TestMemoryOTPQueue_ListReceivers(t *testing.T) {
 	}
 }
 
-func TestMemoryOTPQueue_PerformanceUnderLoad(t *testing.T) {
+func BenchmarkMemoryOTPQueue_Performance_UnderLoad(t *testing.B) {
 	const totalOps = 25000
 	const tenant = "perfTenant"
 	ctx := context.Background()
@@ -244,7 +244,7 @@ func TestMemoryOTPQueue_PerformanceUnderLoad(t *testing.T) {
 	t.Logf("[PERF] Retrieved %d items in %v (avg: %v/op)", totalOps, getDuration, getDuration/time.Duration(getDuration.Nanoseconds()/int64(totalOps)))
 }
 
-func TestMemoryOTPQueue_Performance_RetryTasks(t *testing.T) {
+func BenchmarkMemoryOTPQueue_Performance_RetryTasks(t *testing.B) {
 	const totalTasks = 25000
 	const tenant = "retryPerfTenant"
 	ctx := context.Background()
