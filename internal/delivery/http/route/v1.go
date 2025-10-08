@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/handlers"
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	"github.com/lifenetwork-ai/iam-service/internal/wire"
@@ -87,11 +88,23 @@ func RegisterRoutes(
 	userHandler := handlers.NewIdentityUserHandler(ucases.IdentityUserUCase)
 	userRouter.POST(
 		"/challenge-with-phone",
+		middleware.IPRateLimitMiddleware(middleware.RateLimitConfig{
+			RateLimiter: instances.RateLimiterInstance(),
+			Action:      constants.LoginWithPhoneAction,
+			Limit:       constants.MaxAttemptsPerWindow,
+			Window:      constants.RateLimitWindow,
+		}),
 		userHandler.ChallengeWithPhone,
 	)
 
 	userRouter.POST(
 		"/challenge-with-email",
+		middleware.IPRateLimitMiddleware(middleware.RateLimitConfig{
+			RateLimiter: instances.RateLimiterInstance(),
+			Action:      constants.LoginWithEmailAction,
+			Limit:       constants.MaxAttemptsPerWindow,
+			Window:      constants.RateLimitWindow,
+		}),
 		userHandler.ChallengeWithEmail,
 	)
 
