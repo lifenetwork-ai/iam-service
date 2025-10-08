@@ -32,7 +32,7 @@ func IPRateLimitMiddleware(cfg RateLimitConfig) gin.HandlerFunc {
 			clientIP = "unknown"
 		}
 
-		logger.GetLogger().Debugf("IP Rate Limiting: action=%s, limit=%d, window=%s, client_ip=%s",
+		logger.GetLogger().Infof("IP Rate Limiting: action=%s, limit=%d, window=%s, client_ip=%s",
 			cfg.Action, cfg.Limit, cfg.Window.String(), clientIP)
 
 		tenant, _ := GetTenantFromContext(ctx)
