@@ -19,7 +19,7 @@ func TestNormalizePhoneE164_require(t *testing.T) {
 	tests := []tc{
 		// --- Vietnam ---
 		{
-			name:          "VN redundant 0 -> E164",
+			name:          "VN redundant 0 after country code -> E164",
 			in:            "+840344381024",
 			defaultRegion: "VN",
 			wantE164:      "+84344381024",
@@ -56,13 +56,19 @@ func TestNormalizePhoneE164_require(t *testing.T) {
 			wantRegion:    "TH",
 		},
 
-		// --- Indonesia (fallback to allowedRegions) ---
+		// --- Indonesia ---
 		{
-			name:          "ID national without '+' falls back",
+			name:          "ID national without '+' using defaultRegion ID",
 			in:            "081234567890",
-			defaultRegion: "VN", // VN fails; allowedRegions contain ID
+			defaultRegion: "ID",
 			wantE164:      "+6281234567890",
 			wantRegion:    "ID",
+		},
+		{
+			name:          "ID national without '+' but wrong defaultRegion -> invalid",
+			in:            "081234567890",
+			defaultRegion: "VN",
+			wantErr:       errInvalidPhone,
 		},
 
 		// --- Korea ---
@@ -83,7 +89,16 @@ func TestNormalizePhoneE164_require(t *testing.T) {
 			wantRegion:    "CN",
 		},
 
-		// --- Invalid / Not allowed ---
+		// --- US (now allowed because no allowlist) ---
+		{
+			name:          "US number with '+' -> allowed",
+			in:            "+14155552671",
+			defaultRegion: "VN",
+			wantE164:      "+14155552671",
+			wantRegion:    "US",
+		},
+
+		// --- Invalid / Global service ---
 		{
 			name:          "Invalid country code +80",
 			in:            "+801234",
@@ -96,16 +111,9 @@ func TestNormalizePhoneE164_require(t *testing.T) {
 			defaultRegion: "VN",
 			wantErr:       errInvalidPhone,
 		},
-		{
-			name:          "US number not in allowedRegions -> not allowed",
-			in:            "+14155552671",
-			defaultRegion: "VN",
-			wantErr:       errPhoneNotAllowed,
-		},
 	}
 
 	for _, tt := range tests {
-		// capture
 		t.Run(tt.name, func(t *testing.T) {
 			gotE164, gotRegion, err := NormalizePhoneE164(tt.in, tt.defaultRegion)
 
