@@ -42,3 +42,7 @@ func DevReviewerIdentifier() string {
 func GetMockWebhookURL() string {
 	return configuration.MockWebhookURL
 }
+
+func GetCourierAPIKey() string {
+	return configuration.COURIER_API_KEY
+}
