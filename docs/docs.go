@@ -712,7 +712,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Channel and receiver",
+                        "description": "Channel and receiver. ` + "`" + `channel` + "`" + ` must be one of: ` + "`" + `sms` + "`" + `, ` + "`" + `whatsapp` + "`" + `, ` + "`" + `zalo` + "`" + `. ` + "`" + `receiver` + "`" + ` must be a valid phone number.",
                         "name": "payload",
                         "in": "body",
                         "required": true,

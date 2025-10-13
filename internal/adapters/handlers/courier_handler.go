@@ -96,7 +96,7 @@ func (h *courierHandler) GetAvailableChannelsHandler(ctx *gin.Context) {
 // @Tags courier
 // @Accept json
 // @Produce json
-// @Param payload body dto.CourierChooseChannelRequestDTO true "Channel and receiver"
+// @Param payload body dto.CourierChooseChannelRequestDTO true "Channel and receiver. `channel` must be one of: `sms`, `whatsapp`, `zalo`. `receiver` must be a valid phone number."
 // @Success 200 {object} response.SuccessResponse "Channel chosen successfully"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"

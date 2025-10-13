@@ -88,7 +88,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	// Check rate limit for phone challenges
 	key := fmt.Sprintf("challenge:phone:tenant:%s:%s", phone, tenantID.String())
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+		return nil, domainerrors.NewRateLimitError("MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded", err)
 	}
 
 	// Check if the identifier exists in the database
@@ -170,7 +170,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	// Check rate limit for email challenges
 	key := fmt.Sprintf("challenge:email:tenant:%s:%s", email, tenantID.String())
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+		return nil, domainerrors.NewRateLimitError("MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded", err)
 	}
 
 	// Check if the identifier exists in the database
@@ -221,7 +221,7 @@ func (u *userUseCase) VerifyRegister(
 	// Check rate limit for verification attempts
 	key := "verify:register:" + flowID
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+		return nil, domainerrors.NewRateLimitError("MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded", err)
 	}
 
 	sessionValue, err := u.challengeSessionRepo.GetChallenge(ctx, flowID)
@@ -479,7 +479,7 @@ func (u *userUseCase) VerifyLogin(
 	// Check rate limit for verification attempts
 	key := "verify:login:" + flowID
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+		return nil, domainerrors.NewRateLimitError("MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded", err)
 	}
 
 	// Get the login flow
@@ -601,7 +601,7 @@ func (u *userUseCase) Register(
 		key = fmt.Sprintf("register:email:tenant:%s:%s", email, tenantID.String())
 	}
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+		return nil, domainerrors.NewRateLimitError("MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded", err)
 	}
 
 	// Check if identifier (email/phone) already exists in IAM
@@ -887,7 +887,7 @@ func (u *userUseCase) AddNewIdentifier(
 	// 4. Rate limit
 	key := fmt.Sprintf("challenge:add:tenant:%s:%s", identifier, tenantID.String())
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+		return nil, domainerrors.NewRateLimitError("MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded", err)
 	}
 
 	// 5. Init Kratos Registration Flow
@@ -1061,7 +1061,7 @@ func (u *userUseCase) ChangeIdentifier(
 	// 4. Rate limit
 	key := fmt.Sprintf("challenge:change:%s:%s", newIdentifierType, newIdentifier)
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+		return nil, domainerrors.NewRateLimitError("MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded", err)
 	}
 
 	// 5. Initialize a registration flow
@@ -1132,7 +1132,7 @@ func (u *userUseCase) ChallengeVerification(
 	// 2. Rate limit
 	key := fmt.Sprintf("challenge:verification:%s:%s:%s", idType, identifier, tenantID.String())
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+		return nil, domainerrors.NewRateLimitError("MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded", err)
 	}
 
 	// 3. Init verification flow
@@ -1178,7 +1178,7 @@ func (u *userUseCase) VerifyIdentifier(
 	// 1. Rate limit
 	key := "verify:identifier:" + flowID
 	if err := utils.CheckRateLimitDomain(u.rateLimiter, key, constants.MaxAttemptsPerWindow, constants.RateLimitWindow); err != nil {
-		return nil, domainerrors.WrapInternal(err, "MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+		return nil, domainerrors.NewRateLimitError("MSG_RATE_LIMIT_EXCEEDED", "Rate limit exceeded", err)
 	}
 
 	// 2. Load session

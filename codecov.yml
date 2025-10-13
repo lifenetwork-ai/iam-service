@@ -1,0 +1,25 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+
+ignore:
+  - "mocks/**"
+  - "infrastructures/mocks/**"
+  - "internal/wire/**"
+  - "internal/wire/instances/**"
+  - "internal/delivery/http/middleware/**"
+  - "internal/delivery/http/route/**"
+  - "internal/adapters/handlers/**"
+  - "conf/**"
+  - "constants/**"
+  - "cmd/**"
+  - "docs/**"
+  - "**/testutil/**"
+  - "internal/adapters/services/kratos/**"
+  - "internal/adapters/services/sms/client/**"
+  - "internal/adapters/services/sms/provider/**"
+  - "internal/adapters/services/keto/**"
+  - "packages/**"

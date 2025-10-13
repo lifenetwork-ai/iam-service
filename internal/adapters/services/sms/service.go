@@ -31,6 +31,7 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 
 	// Initialize WhatsApp provider
 	if config.Whatsapp.WhatsappAccessToken != "" {
+		logger.GetLogger().Infof("Initializing WhatsApp provider")
 		factory.providers[constants.ChannelWhatsApp] = provider.NewWhatsAppProvider(config.Whatsapp)
 	}
 
