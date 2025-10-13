@@ -916,12 +916,17 @@ paths:
       summary: Choose a channel for a receiver
       tags:
       - courier
-  /api/v1/courier/messages:
+  /api/v1/courier/messages/{api_key}:
     post:
       consumes:
       - application/json
       description: Receive courier content and enqueue it for delivery
       parameters:
+      - description: API key
+        in: path
+        name: api_key
+        required: true
+        type: string
       - description: Courier message payload
         in: body
         name: payload
@@ -937,6 +942,10 @@ paths:
             $ref: '#/definitions/response.SuccessResponse'
         "400":
           description: Invalid payload
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/response.ErrorResponse'
         "500":
