@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	"github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
@@ -22,18 +23,25 @@ func NewCourierHandler(ucase interfaces.CourierUseCase) *courierHandler {
 	}
 }
 
-// ReceiveCourierMessageHandler receives a raw courier message and stores it in the courier queue.
 // @Summary Receive courier message (from webhook or sender)
 // @Description Receive courier content and enqueue it for delivery
 // @Tags courier
 // @Accept json
 // @Produce json
+// @Param api_key path string true "API key"
 // @Param payload body dto.CourierWebhookRequestDTO true "Courier message payload"
 // @Success 200 {object} response.SuccessResponse "Courier message enqueued successfully"
 // @Failure 400 {object} response.ErrorResponse "Invalid payload"
+// @Failure 401 {object} response.ErrorResponse "Unauthorized"
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
-// @Router /api/v1/courier/messages [post]
+// @Router /api/v1/courier/messages/{api_key} [post]
 func (h *courierHandler) ReceiveCourierMessageHandler(ctx *gin.Context) {
+	apiKey := ctx.Param("api_key")
+	if apiKey == "" || apiKey != conf.GetCourierAPIKey() {
+		httpresponse.Error(ctx, http.StatusUnauthorized, "INVALID_API_KEY", "Invalid or missing API key", nil)
+		return
+	}
+
 	var req dto.CourierWebhookRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		httpresponse.Error(ctx, http.StatusBadRequest, "MSG_INVALID_PAYLOAD", "Invalid request payload", err)

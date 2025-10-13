@@ -743,7 +743,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/courier/messages": {
+        "/api/v1/courier/messages/{api_key}": {
             "post": {
                 "description": "Receive courier content and enqueue it for delivery",
                 "consumes": [
@@ -757,6 +757,13 @@ const docTemplate = `{
                 ],
                 "summary": "Receive courier message (from webhook or sender)",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API key",
+                        "name": "api_key",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "Courier message payload",
                         "name": "payload",
@@ -776,6 +783,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }

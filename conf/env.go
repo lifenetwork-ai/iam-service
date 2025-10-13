@@ -40,6 +40,7 @@ type Configuration struct {
 	CacheType       string                   `mapstructure:"CACHE_TYPE"`
 	MockWebhookURL  string                   `mapstructure:"MOCK_WEBHOOK_URL"`
 	DbEncryptionKey string                   `mapstructure:"DB_ENCRYPTION_KEY"`
+	COURIER_API_KEY string                   `mapstructure:"COURIER_API_KEY"`
 	KratosConfig    KratosConfiguration      `mapstructure:",squash"`
 	Keto            KetoConfiguration        `mapstructure:",squash"`
 	Sms             SmsConfiguration         `mapstructure:",squash"`
@@ -121,6 +122,7 @@ var defaultConfigurations = map[string]any{
 	"ZALO_REFRESH_TOKEN":             "",
 	"ZALO_SECRET_KEY":                "",
 	"ZALO_APP_ID":                    "",
+	"COURIER_API_KEY":                "",
 }
 
 // loadDefaultConfigs sets default values for critical configurations
