@@ -122,7 +122,7 @@ func (c *SpeedSMSClient) SendSingleSMS(phone, content string, smsType int, sende
 }
 
 // SendOTP sends OTP message using default brandname
-func (c *SpeedSMSClient) SendOTP(phone, otp string) (*SpeedSMSResponse, error) {
+func (c *SpeedSMSClient) SendOTP(phone, otp, sender string) (*SpeedSMSResponse, error) {
 	content := fmt.Sprintf("Your OTP code is: %s", otp)
 	return c.SendSingleSMS(phone, content, SMSTypeDefault, "")
 }
