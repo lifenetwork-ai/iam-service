@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms"
 	common "github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/provider"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -285,6 +286,199 @@ func TestRefreshZaloToken_GetTokenError_ReturnsInternal(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/sms/zalo/token/refresh", bytes.NewBufferString(`{"refresh_token":"rt"}`))
 	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestGetZaloToken_Success_ReturnsOK(t *testing.T) {
+	gintMode := gin.Mode()
+	defer gin.SetMode(gintMode)
+	gin.SetMode(gin.TestMode)
+
+	// Fake usecase returns a token
+	uc := &fakeSmsTokenUseCase{
+		getTokenFunc: func(ctx context.Context) (*domain.ZaloToken, error) {
+			return &domain.ZaloToken{
+				AccessToken:  "tok-access",
+				RefreshToken: "tok-refresh",
+				UpdatedAt:    time.Now(),
+				ExpiresAt:    time.Now().Add(10 * time.Minute),
+			}, nil
+		},
+	}
+	h := NewSmsTokenHandler(uc, nil, nil)
+	r := gin.New()
+	r.GET("/api/v1/admin/sms/zalo/token", h.GetZaloToken)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/sms/zalo/token", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Status int `json:"status"`
+		Data   struct {
+			AccessToken  string `json:"access_token"`
+			RefreshToken string `json:"refresh_token"`
+			ExpiresAt    string `json:"expires_at"`
+			UpdatedAt    string `json:"updated_at"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp.Data.AccessToken != "tok-access" || resp.Data.RefreshToken != "tok-refresh" {
+		t.Fatalf("unexpected token data: %+v", resp.Data)
+	}
+	if _, err := time.Parse(time.RFC3339, resp.Data.ExpiresAt); err != nil {
+		t.Fatalf("expires_at not RFC3339: %v", err)
+	}
+	if _, err := time.Parse(time.RFC3339, resp.Data.UpdatedAt); err != nil {
+		t.Fatalf("updated_at not RFC3339: %v", err)
+	}
+}
+
+func TestGetZaloToken_UsecaseError_ReturnsInternal(t *testing.T) {
+	gintMode := gin.Mode()
+	defer gin.SetMode(gintMode)
+	gin.SetMode(gin.TestMode)
+
+	uc := &fakeSmsTokenUseCase{
+		getTokenFunc: func(ctx context.Context) (*domain.ZaloToken, error) { return nil, fmt.Errorf("fail") },
+	}
+	h := NewSmsTokenHandler(uc, nil, nil)
+	r := gin.New()
+	r.GET("/api/v1/admin/sms/zalo/token", h.GetZaloToken)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/sms/zalo/token", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestGetZaloHealth_ProviderNotFound_ReturnsInternal(t *testing.T) {
+	gintMode := gin.Mode()
+	defer gin.SetMode(gintMode)
+	gin.SetMode(gin.TestMode)
+
+	cfg := conf.GetConfiguration()
+	// Ensure Zalo is not configured so provider lookup fails
+	cfg.Sms.Zalo.ZaloAppID = ""
+	cfg.Sms.Zalo.ZaloAccessToken = ""
+	cfg.Sms.Zalo.ZaloRefreshToken = ""
+
+	svc, _ := sms.NewSMSService(&cfg.Sms, nil)
+	h := NewSmsTokenHandler(&fakeSmsTokenUseCase{}, svc, nil)
+
+	r := gin.New()
+	r.GET("/api/v1/admin/sms/zalo/health", h.GetZaloHealth)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/sms/zalo/health", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestGetZaloHealth_Healthy_ReturnsOK(t *testing.T) {
+	gintMode := gin.Mode()
+	defer gin.SetMode(gintMode)
+	gin.SetMode(gin.TestMode)
+
+	// Configure Zalo to initialize provider
+	cfg := conf.GetConfiguration()
+	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
+	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
+	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	cfg.Sms.Zalo.ZaloAccessToken = "seed-access"
+	cfg.Sms.Zalo.ZaloRefreshToken = "seed-refresh"
+
+	// Mock template list endpoint
+	origTransport := http.DefaultTransport
+	defer func() { http.DefaultTransport = origTransport }()
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.URL.Host == "business.openapi.zalo.me" && req.URL.Path == "/template/all" && req.Method == http.MethodGet {
+			body := map[string]any{"error": 0, "message": "", "data": []any{}, "metadata": map[string]any{"total": 0}}
+			b, _ := json.Marshal(body)
+			resp := &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(b))}
+			resp.Header.Set("Content-Type", "application/json")
+			return resp, nil
+		}
+		return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.String())
+	})
+
+	repo := &inMemoryZaloTokenRepo{}
+	svc, _ := sms.NewSMSService(&cfg.Sms, repo)
+	h := NewSmsTokenHandler(&fakeSmsTokenUseCase{}, svc, repo)
+
+	r := gin.New()
+	r.GET("/api/v1/admin/sms/zalo/health", h.GetZaloHealth)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/sms/zalo/health", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Status int               `json:"status"`
+		Data   map[string]string `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp.Data["status"] != "healthy" {
+		t.Fatalf("expected healthy status, got: %+v", resp.Data)
+	}
+}
+
+func TestGetZaloHealth_UpstreamError_ReturnsInternal(t *testing.T) {
+	gintMode := gin.Mode()
+	defer gin.SetMode(gintMode)
+	gin.SetMode(gin.TestMode)
+
+	// Configure Zalo to initialize provider
+	cfg := conf.GetConfiguration()
+	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
+	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
+	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	cfg.Sms.Zalo.ZaloAccessToken = "seed-access"
+	cfg.Sms.Zalo.ZaloRefreshToken = "seed-refresh"
+
+	// Mock template list endpoint with upstream error
+	origTransport := http.DefaultTransport
+	defer func() { http.DefaultTransport = origTransport }()
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.URL.Host == "business.openapi.zalo.me" && req.URL.Path == "/template/all" && req.Method == http.MethodGet {
+			body := map[string]any{"error": 1, "message": "upstream error", "data": []any{}, "metadata": map[string]any{"total": 0}}
+			b, _ := json.Marshal(body)
+			resp := &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(b))}
+			resp.Header.Set("Content-Type", "application/json")
+			return resp, nil
+		}
+		return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.String())
+	})
+
+	repo := &inMemoryZaloTokenRepo{}
+	svc, _ := sms.NewSMSService(&cfg.Sms, repo)
+	h := NewSmsTokenHandler(&fakeSmsTokenUseCase{}, svc, repo)
+
+	r := gin.New()
+	r.GET("/api/v1/admin/sms/zalo/health", h.GetZaloHealth)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/sms/zalo/health", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
