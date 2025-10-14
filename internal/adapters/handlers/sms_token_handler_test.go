@@ -1,0 +1,294 @@
+package handlers
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/lifenetwork-ai/iam-service/conf"
+	common "github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/provider"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
+	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
+)
+
+type inMemoryZaloTokenRepo struct {
+	token *domain.ZaloToken
+}
+
+func (r *inMemoryZaloTokenRepo) Get(ctx context.Context) (*domain.ZaloToken, error) {
+	if r.token == nil {
+		return nil, fmt.Errorf("no token")
+	}
+	// return a copy to avoid external mutation
+	t := *r.token
+	return &t, nil
+}
+
+func (r *inMemoryZaloTokenRepo) Save(ctx context.Context, token *domain.ZaloToken) error {
+	// save a copy
+	t := *token
+	r.token = &t
+	return nil
+}
+
+// roundTripFunc allows stubbing http.DefaultTransport
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+
+func TestAdminRefreshZaloToken_WithInvalidDBToken_RefreshesViaAdminEndpoint(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	// Configure Zalo with no seed tokens to ensure normal provider bootstrap cannot use config
+	cfg := conf.GetConfiguration()
+	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
+	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
+	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	cfg.Sms.Zalo.ZaloAccessToken = ""
+	cfg.Sms.Zalo.ZaloRefreshToken = ""
+
+	// Seed repo with an invalid, undecryptable token (invalid base64 strings)
+	repo := &inMemoryZaloTokenRepo{token: &domain.ZaloToken{ID: 1, AccessToken: "!!!", RefreshToken: "!!!", UpdatedAt: time.Now(), ExpiresAt: time.Now()}}
+
+	// Assert that normal provider cannot bootstrap/refresh due to invalid DB token and empty config
+	if _, err := provider.NewZaloProvider(context.Background(), cfg.Sms.Zalo, repo); err == nil {
+		t.Fatalf("expected NewZaloProvider to fail when DB token invalid and config has no tokens")
+	}
+
+	// Stub OAuth refresh endpoint to return a successful token refresh
+	origTransport := http.DefaultTransport
+	defer func() { http.DefaultTransport = origTransport }()
+	http.DefaultTransport = mockZaloTokenRefresh()
+
+	// Build handler with usecase and repo
+	usecase := ucases.NewSmsTokenUseCase(repo)
+	h := NewSmsTokenHandler(usecase, nil, repo)
+
+	r := gin.New()
+	r.POST("/api/v1/admin/sms/zalo/token/refresh", h.RefreshZaloToken)
+
+	// Before refresh, getting token should fail to decrypt
+	if tok, derr := usecase.GetZaloToken(context.Background()); derr == nil || tok != nil {
+		t.Fatalf("expected GetZaloToken to fail before refresh due to invalid ciphertext")
+	}
+
+	// Call admin refresh endpoint
+	reqBody := bytes.NewBufferString(`{"refresh_token":"admin-provided-rt"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/sms/zalo/token/refresh", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d, body: %s", w.Code, w.Body.String())
+	}
+
+	// Ensure token updated and decryptable
+	tok, derr := usecase.GetZaloToken(context.Background())
+	if derr != nil {
+		t.Fatalf("expected token decryptable after refresh, got error: %v", derr)
+	}
+	if tok.AccessToken != "new-access" || tok.RefreshToken != "new-refresh" {
+		t.Fatalf("unexpected tokens after refresh: %+v", tok)
+	}
+}
+
+func mockZaloTokenRefresh() http.RoundTripper {
+	return roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.URL.Host == "oauth.zaloapp.com" && req.URL.Path == "/v4/oa/access_token" && req.Method == http.MethodPost {
+			body := map[string]any{
+				"access_token":  "new-access",
+				"refresh_token": "new-refresh",
+				"expires_in":    "3600",
+				"error":         0,
+				"message":       "",
+			}
+			b, _ := json.Marshal(body)
+			resp := &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     make(http.Header),
+				Body:       io.NopCloser(bytes.NewReader(b)),
+			}
+			resp.Header.Set("Content-Type", "application/json")
+			return resp, nil
+		}
+		return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.String())
+	})
+}
+
+func TestAdminRefreshZaloToken_WithExpiredDBToken_RefreshesViaAdminEndpoint(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	// Ensure a deterministic encryption key for test
+	cfg := conf.GetConfiguration()
+	cfg.DbEncryptionKey = "test-key"
+	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
+	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
+	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	cfg.Sms.Zalo.ZaloAccessToken = ""
+	cfg.Sms.Zalo.ZaloRefreshToken = ""
+
+	// Seed repo with a decryptable but expired token
+	crypto := common.NewZaloTokenCrypto(cfg.DbEncryptionKey)
+	expiredPlain := &domain.ZaloToken{ID: 1, AccessToken: "expired-access", RefreshToken: "expired-refresh", UpdatedAt: time.Now(), ExpiresAt: time.Now().Add(-1 * time.Hour)}
+	encrypted, err := crypto.Encrypt(context.Background(), expiredPlain)
+	if err != nil {
+		t.Fatalf("failed to encrypt seed token: %v", err)
+	}
+	repo := &inMemoryZaloTokenRepo{token: encrypted}
+
+	// Stub OAuth: fail when using expired-refresh; succeed when using admin-provided-rt
+	origTransport := http.DefaultTransport
+	defer func() { http.DefaultTransport = origTransport }()
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.URL.Host == "oauth.zaloapp.com" && req.URL.Path == "/v4/oa/access_token" && req.Method == http.MethodPost {
+			b, _ := io.ReadAll(req.Body)
+			_ = req.Body.Close()
+			vals, _ := url.ParseQuery(string(b))
+			refresh := vals.Get("refresh_token")
+			if refresh == "admin-provided-rt" {
+				ok := map[string]any{"access_token": "new-access", "refresh_token": "new-refresh", "expires_in": "3600", "error": 0, "message": ""}
+				jb, _ := json.Marshal(ok)
+				resp := &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(jb))}
+				resp.Header.Set("Content-Type", "application/json")
+				return resp, nil
+			}
+			// simulate failure for expired-refresh
+			errBody := map[string]any{"error": 1, "message": "invalid refresh token"}
+			jb, _ := json.Marshal(errBody)
+			resp := &http.Response{StatusCode: http.StatusBadRequest, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(jb))}
+			resp.Header.Set("Content-Type", "application/json")
+			return resp, nil
+		}
+		return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL.String())
+	})
+
+	// Normal provider bootstrap should fail because token is expired and refresh with expired-refresh fails
+	if _, err := provider.NewZaloProvider(context.Background(), cfg.Sms.Zalo, repo); err == nil {
+		t.Fatalf("expected NewZaloProvider to fail when token expired and refresh fails")
+	}
+
+	// Now call admin refresh endpoint with a valid admin-provided refresh token
+	usecase := ucases.NewSmsTokenUseCase(repo)
+	h := NewSmsTokenHandler(usecase, nil, repo)
+	r := gin.New()
+	r.POST("/api/v1/admin/sms/zalo/token/refresh", h.RefreshZaloToken)
+
+	reqBody := bytes.NewBufferString(`{"refresh_token":"admin-provided-rt"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/sms/zalo/token/refresh", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d, body: %s", w.Code, w.Body.String())
+	}
+
+	// Verify token was updated and decryptable
+	newTok, derr := usecase.GetZaloToken(context.Background())
+	if derr != nil {
+		t.Fatalf("expected token decryptable after admin refresh, got error: %v", derr)
+	}
+	if newTok.AccessToken != "new-access" || newTok.RefreshToken != "new-refresh" {
+		t.Fatalf("unexpected tokens after admin refresh: %+v", newTok)
+	}
+}
+
+// fakeSmsTokenUseCase allows injecting errors for handler negative tests
+type fakeSmsTokenUseCase struct {
+	getTokenFunc func(ctx context.Context) (*domain.ZaloToken, error)
+	refreshErr   error
+}
+
+func (f *fakeSmsTokenUseCase) GetZaloToken(ctx context.Context) (*domain.ZaloToken, *domainerrors.DomainError) {
+	if f.getTokenFunc != nil {
+		tok, err := f.getTokenFunc(ctx)
+		if err != nil {
+			return nil, domainerrors.NewInternalError("X", err.Error())
+		}
+		return tok, nil
+	}
+	return &domain.ZaloToken{}, nil
+}
+
+func (f *fakeSmsTokenUseCase) SetZaloToken(ctx context.Context, accessToken, refreshToken string) *domainerrors.DomainError {
+	return nil
+}
+
+func (f *fakeSmsTokenUseCase) RefreshZaloToken(ctx context.Context, refreshToken string) *domainerrors.DomainError {
+	if f.refreshErr != nil {
+		return domainerrors.NewInternalError("MSG_REFRESH_TOKEN_FAILED", f.refreshErr.Error())
+	}
+	return nil
+}
+
+func TestRefreshZaloToken_InvalidBody_ReturnsBadRequest(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	h := NewSmsTokenHandler(&fakeSmsTokenUseCase{}, nil, nil)
+	r := gin.New()
+	r.POST("/api/v1/admin/sms/zalo/token/refresh", h.RefreshZaloToken)
+
+	// Missing refresh_token field
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/sms/zalo/token/refresh", bytes.NewBufferString(`{"foo":"bar"}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestRefreshZaloToken_UseCaseRefreshError_ReturnsInternal(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	uc := &fakeSmsTokenUseCase{refreshErr: fmt.Errorf("boom")}
+	h := NewSmsTokenHandler(uc, nil, nil)
+	r := gin.New()
+	r.POST("/api/v1/admin/sms/zalo/token/refresh", h.RefreshZaloToken)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/sms/zalo/token/refresh", bytes.NewBufferString(`{"refresh_token":"rt"}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestRefreshZaloToken_GetTokenError_ReturnsInternal(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	uc := &fakeSmsTokenUseCase{
+		getTokenFunc: func(ctx context.Context) (*domain.ZaloToken, error) { return nil, fmt.Errorf("cannot get token") },
+	}
+	h := NewSmsTokenHandler(uc, nil, nil)
+	r := gin.New()
+	r.POST("/api/v1/admin/sms/zalo/token/refresh", h.RefreshZaloToken)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/sms/zalo/token/refresh", bytes.NewBufferString(`{"refresh_token":"rt"}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
+	}
+}

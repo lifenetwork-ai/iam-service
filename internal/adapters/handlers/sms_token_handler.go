@@ -5,10 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/provider"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
 	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
@@ -93,25 +91,17 @@ func (h *SmsTokenHandler) RefreshZaloToken(c *gin.Context) {
 		return
 	}
 
-	provider, err := provider.NewZaloProviderWithRefresh(c.Request.Context(), conf.GetConfiguration().Sms.Zalo, h.zaloTokenRepo, req.RefreshToken)
-	if err != nil {
-		httpresponse.Error(c, http.StatusInternalServerError, "MSG_PROVIDER_BOOTSTRAP_FAIL", err.Error(), nil)
-		return
-	}
-	// Refresh the token using the provider
-	if err := provider.RefreshToken(c.Request.Context(), req.RefreshToken); err != nil {
-		httpresponse.Error(c, http.StatusInternalServerError, "MSG_REFRESH_TOKEN_FAILED", "Failed to refresh Zalo token", nil)
+	if derr := h.uc.RefreshZaloToken(c.Request.Context(), req.RefreshToken); derr != nil {
+		httpresponse.Error(c, http.StatusInternalServerError, derr.Code, derr.Message, nil)
 		return
 	}
 
-	// Get the updated token from the use case
 	token, derr := h.uc.GetZaloToken(c.Request.Context())
 	if derr != nil {
 		httpresponse.Error(c, http.StatusInternalServerError, derr.Code, derr.Message, nil)
 		return
 	}
 
-	// Return the refreshed token
 	resp := dto.ZaloTokenResponseDTO{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
