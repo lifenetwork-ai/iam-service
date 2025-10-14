@@ -409,7 +409,6 @@ func (z *ZaloProvider) createClientForRefresh(ctx context.Context, refreshToken 
 		"", // no access token needed to refresh
 		refreshToken,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to bootstrap client for refresh: %w", err)
 	}
