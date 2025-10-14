@@ -5,20 +5,24 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/provider"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 )
 
 type SmsTokenHandler struct {
-	uc         interfaces.SmsTokenUseCase
-	smsService *sms.SMSService
+	uc            interfaces.SmsTokenUseCase
+	smsService    *sms.SMSService
+	zaloTokenRepo domainrepo.ZaloTokenRepository
 }
 
-func NewSmsTokenHandler(uc interfaces.SmsTokenUseCase, smsService *sms.SMSService) *SmsTokenHandler {
-	return &SmsTokenHandler{uc: uc, smsService: smsService}
+func NewSmsTokenHandler(uc interfaces.SmsTokenUseCase, smsService *sms.SMSService, zaloTokenRepo domainrepo.ZaloTokenRepository) *SmsTokenHandler {
+	return &SmsTokenHandler{uc: uc, smsService: smsService, zaloTokenRepo: zaloTokenRepo}
 }
 
 // @Summary Get Zalo token
@@ -89,13 +93,11 @@ func (h *SmsTokenHandler) RefreshZaloToken(c *gin.Context) {
 		return
 	}
 
-	// Get the Zalo provider from SMS service
-	provider, err := h.smsService.GetProvider(constants.ChannelZalo)
+	provider, err := provider.NewZaloProviderWithRefresh(c.Request.Context(), conf.GetConfiguration().Sms.Zalo, h.zaloTokenRepo, req.RefreshToken)
 	if err != nil {
-		httpresponse.Error(c, http.StatusInternalServerError, "MSG_PROVIDER_NOT_FOUND", "Zalo provider not available", nil)
+		httpresponse.Error(c, http.StatusInternalServerError, "MSG_PROVIDER_BOOTSTRAP_FAIL", err.Error(), nil)
 		return
 	}
-
 	// Refresh the token using the provider
 	if err := provider.RefreshToken(c.Request.Context(), req.RefreshToken); err != nil {
 		httpresponse.Error(c, http.StatusInternalServerError, "MSG_REFRESH_TOKEN_FAILED", "Failed to refresh Zalo token", nil)
