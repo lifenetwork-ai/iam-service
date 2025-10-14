@@ -10,6 +10,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gtank/cryptopasta v0.0.0-20170601214702-1f550f6f2f69
 	github.com/jackc/pgx/v5 v5.5.5
+	github.com/joho/godotenv v1.5.1
 	github.com/nyaruka/phonenumbers v1.6.5
 	github.com/ory/keto-client-go v0.11.0-alpha.0
 	github.com/ory/kratos-client-go v1.2.1
