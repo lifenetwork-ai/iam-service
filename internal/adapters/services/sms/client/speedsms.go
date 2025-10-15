@@ -5,6 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/lifenetwork-ai/iam-service/constants"
+	"github.com/lifenetwork-ai/iam-service/packages/utils"
+)
+
+type SpeedSMSBrandname string
+
+const (
+	GeneticaBrandname SpeedSMSBrandname = "GENETICA"
+	LifeBrandname     SpeedSMSBrandname = "LIFE AI"
 )
 
 // SpeedSMSResponse represents the API response structure
@@ -83,7 +93,7 @@ func (c *SpeedSMSClient) GetUserInfo() (*UserInfoResponse, error) {
 }
 
 // SendSMS sends SMS to multiple phone numbers
-func (c *SpeedSMSClient) SendSMS(phones []string, content string, smsType int, sender string) (*SpeedSMSResponse, error) {
+func (c *SpeedSMSClient) SendSMS(phones []string, content string, smsType int, sender SpeedSMSBrandname) (*SpeedSMSResponse, error) {
 	endpoint := fmt.Sprintf("%s/index.php/sms/send", c.BaseURL)
 
 	req, err := http.NewRequest("GET", endpoint, nil)
@@ -98,7 +108,7 @@ func (c *SpeedSMSClient) SendSMS(phones []string, content string, smsType int, s
 	q.Add("content", content)
 	q.Add("type", fmt.Sprintf("%d", smsType))
 	if sender != "" {
-		q.Add("sender", sender)
+		q.Add("sender", string(sender))
 	}
 	req.URL.RawQuery = q.Encode()
 
@@ -117,23 +127,17 @@ func (c *SpeedSMSClient) SendSMS(phones []string, content string, smsType int, s
 }
 
 // SendSingleSMS sends SMS to a single phone number
-func (c *SpeedSMSClient) SendSingleSMS(phone, content string, smsType int, sender string) (*SpeedSMSResponse, error) {
+func (c *SpeedSMSClient) SendSingleSMS(phone, content string, smsType int, sender SpeedSMSBrandname) (*SpeedSMSResponse, error) {
+	// Normalize phone number
+	phone, _, err := utils.NormalizePhoneE164(phone, constants.DefaultRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to normalize phone number: %w", err)
+	}
 	return c.SendSMS([]string{phone}, content, smsType, sender)
 }
 
-// SendOTP sends OTP message using default brandname
-func (c *SpeedSMSClient) SendOTP(phone, otp, sender string) (*SpeedSMSResponse, error) {
-	content := fmt.Sprintf("Your OTP code is: %s", otp)
-	return c.SendSingleSMS(phone, content, SMSTypeDefault, "")
-}
-
-// SendVerificationSMS sends verification message with custom content
-func (c *SpeedSMSClient) SendVerificationSMS(phone, content, brandname string) (*SpeedSMSResponse, error) {
-	var smsType int
-	if brandname == "" {
-		smsType = SMSTypeDefault
-	} else {
-		smsType = SMSTypeBrandname
-	}
-	return c.SendSingleSMS(phone, content, smsType, brandname)
+// SendOTP sends OTP message with custom content
+func (c *SpeedSMSClient) SendOTP(phone, otp string, brandname SpeedSMSBrandname) (*SpeedSMSResponse, error) {
+	content := fmt.Sprintf("%s la ma OTP cua ban tai %s", otp, brandname)
+	return c.SendSingleSMS(phone, content, SMSTypeBrandname, brandname)
 }

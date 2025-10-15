@@ -44,6 +44,7 @@ func NewCourierUseCase(
 }
 
 // ChooseChannel chooses the channel to send OTP to the receiver
+// For Vietnamese users choosing SMS channel, it will be routed to SpeedSMS
 func (u *courierUseCase) ChooseChannel(ctx context.Context, tenantName, receiver, channel string) *domainerrors.DomainError {
 	// Validate receiver type: only phone number is supported for choosing channel
 	if !utils.IsPhoneE164(receiver) {
@@ -75,12 +76,25 @@ func (u *courierUseCase) ChooseChannel(ctx context.Context, tenantName, receiver
 		})
 	}
 
-	err := u.channelCache.SaveItem(key, channel, u.defaultTTL)
+	// Route Vietnamese users from SMS to SpeedSMS
+	actualChannel := channel
+	if channel == constants.ChannelSMS && isVietnamesePhone(receiver) {
+		actualChannel = constants.ChannelSpeedSMS
+		logger.GetLogger().Infof("Routing Vietnamese user %s from SMS to SpeedSMS channel", receiver)
+	}
+
+	err := u.channelCache.SaveItem(key, actualChannel, u.defaultTTL)
 	if err != nil {
 		return domainerrors.NewInternalError("MSG_CHOOSE_CHANNEL_FAILED", "Failed to choose channel to send OTP").WithCause(err)
 	}
 
 	return nil
+}
+
+// isVietnamesePhone checks if a phone number is Vietnamese (starts with +84)
+func isVietnamesePhone(phone string) bool {
+	phone = strings.TrimSpace(phone)
+	return strings.HasPrefix(phone, "+84")
 }
 
 func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver string) (types.ChooseChannelResponse, *domainerrors.DomainError) {

@@ -12,26 +12,40 @@ import (
 )
 
 type SpeedSMSProvider struct {
-	client *client.SpeedSMSClient
+	geneticaClient *client.SpeedSMSClient
+	lifeClient     *client.SpeedSMSClient
 }
 
 func NewSpeedSMSProvider(conf conf.SpeedSMSConfiguration) SMSProvider {
 	return &SpeedSMSProvider{
-		client: client.NewSpeedSMSClient(conf.SpeedSMSAccessToken),
+		geneticaClient: client.NewSpeedSMSClient(conf.GeneticaSpeedSMSAccessToken),
+		lifeClient:     client.NewSpeedSMSClient(conf.LifeSpeedSMSAccessToken),
 	}
 }
 
 func (s *SpeedSMSProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error {
-	resp, err := s.client.SendVerificationSMS(receiver, otp, "LIFE AI")
-	if err != nil {
-		return fmt.Errorf("failed to send SMS: %w", err)
+	var brandname client.SpeedSMSBrandname
+	var smsClient *client.SpeedSMSClient
+
+	// Select client and brandname based on tenant
+	if tenantName == constants.TenantLifeAI {
+		brandname = client.LifeBrandname
+		smsClient = s.lifeClient
+	} else {
+		brandname = client.GeneticaBrandname
+		smsClient = s.geneticaClient
 	}
-	logger.GetLogger().Infof("SMS sent successfully via SpeedSMS: %+v", resp)
+
+	resp, err := smsClient.SendOTP(receiver, otp, brandname)
+	if err != nil {
+		return fmt.Errorf("failed to send SMS via SpeedSMS for tenant %s: %w", tenantName, err)
+	}
+	logger.GetLogger().Infof("SMS sent successfully via SpeedSMS for tenant %s: %+v", tenantName, resp)
 	return nil
 }
 
 func (s *SpeedSMSProvider) GetChannelType() string {
-	return constants.ChannelSMS
+	return constants.ChannelSpeedSMS
 }
 
 func (s *SpeedSMSProvider) HealthCheck(ctx context.Context) error {
