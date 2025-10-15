@@ -18,6 +18,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
 	adaptersrepo "github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
@@ -175,8 +176,11 @@ func startPostgresAndBuildAdminUCase(t *testing.T, ctx context.Context, ctrl *go
 			"POSTGRES_USER":     "postgres",
 			"POSTGRES_DB":       "testdb",
 		},
-		WaitingFor: wait.ForListeningPort("5432/tcp"),
+		WaitingFor: wait.ForSQL("5432/tcp", "postgres", func(host string, port nat.Port) string {
+			return fmt.Sprintf("host=%s port=%s user=postgres password=postgres dbname=testdb sslmode=disable", host, port.Port())
+		}).WithStartupTimeout(45 * time.Second),
 	}
+
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: req, Started: true})
 	require.NoError(t, err)
 
