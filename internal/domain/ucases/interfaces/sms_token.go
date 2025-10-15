@@ -16,4 +16,7 @@ type SmsTokenUseCase interface {
 
 	// RefreshZaloToken refreshes tokens via admin-provided refresh token
 	RefreshZaloToken(ctx context.Context, refreshToken string) *domainerrors.DomainError
+
+	// Zalo health check
+	ZaloHealthCheck(ctx context.Context) *domainerrors.DomainError
 }

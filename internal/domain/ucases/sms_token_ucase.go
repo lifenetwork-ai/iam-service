@@ -18,6 +18,7 @@ import (
 type smsTokenUseCase struct {
 	zaloRepository  domainrepo.ZaloTokenRepository
 	zaloTokenCrypto *common.ZaloTokenCrypto
+	zaloClient      *client.ZaloClient
 }
 
 func NewSmsTokenUseCase(zaloRepository domainrepo.ZaloTokenRepository) interfaces.SmsTokenUseCase {
@@ -98,6 +99,24 @@ func (u *smsTokenUseCase) RefreshZaloToken(ctx context.Context, refreshToken str
 	}
 	if saveErr := u.zaloRepository.Save(ctx, encrypted); saveErr != nil {
 		return domainerrors.WrapInternal(saveErr, "MSG_SET_TOKEN_FAILED", "Failed to save refreshed token")
+	}
+
+	return nil
+}
+
+// Zalo health check
+func (u *smsTokenUseCase) ZaloHealthCheck(ctx context.Context) *domainerrors.DomainError {
+	cfg := conf.GetConfiguration().Sms.Zalo
+	cli, err := client.NewZaloClient(ctx, cfg.ZaloBaseURL, cfg.ZaloSecretKey, cfg.ZaloAppID, "", "")
+	if err != nil {
+		return domainerrors.WrapInternal(err, "MSG_CREATE_ZALO_CLIENT_FAILED", "Failed to create Zalo client")
+	}
+	resp, err := cli.GetAllTemplates(ctx)
+	if err != nil {
+		return domainerrors.WrapInternal(err, "MSG_GET_ALL_TEMPLATES_FAILED", "Failed to get all templates")
+	}
+	if resp.Error != 0 {
+		return domainerrors.NewInternalError("MSG_GET_ALL_TEMPLATES_FAILED", "Failed to get all templates")
 	}
 
 	return nil

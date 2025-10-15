@@ -221,6 +221,9 @@ func (f *fakeSmsTokenUseCase) RefreshZaloToken(ctx context.Context, refreshToken
 	}
 	return nil
 }
+func (f *fakeSmsTokenUseCase) ZaloHealthCheck(ctx context.Context) *domainerrors.DomainError {
+	return nil
+}
 
 func TestRefreshZaloToken_InvalidBody_ReturnsBadRequest(t *testing.T) {
 	t.Parallel()
