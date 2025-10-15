@@ -102,3 +102,39 @@ func (u *smsTokenUseCase) RefreshZaloToken(ctx context.Context, refreshToken str
 
 	return nil
 }
+
+// Zalo health check
+func (u *smsTokenUseCase) ZaloHealthCheck(ctx context.Context) *domainerrors.DomainError {
+	// Get token from repository
+	token, derr := u.GetZaloToken(ctx)
+	if derr != nil {
+		return derr
+	}
+
+	cfg := conf.GetConfiguration().Sms.Zalo
+	cli, err := client.NewZaloClient(ctx, cfg.ZaloBaseURL, cfg.ZaloSecretKey, cfg.ZaloAppID, token.AccessToken, token.RefreshToken)
+	if err != nil {
+		return domainerrors.WrapInternal(err, "MSG_CREATE_ZALO_CLIENT_FAILED", "Failed to create Zalo client")
+	}
+	resp, err := cli.GetAllTemplates(ctx)
+	if err != nil {
+		return domainerrors.WrapInternal(err, "MSG_GET_ALL_TEMPLATES_FAILED", "Failed to get all templates")
+	}
+
+	// Check if error is non-zero - handle both int and float64 from JSON unmarshaling
+	var errorCode float64
+	switch v := resp.Error.(type) {
+	case float64:
+		errorCode = v
+	case int:
+		errorCode = float64(v)
+	default:
+		return domainerrors.NewInternalError("MSG_GET_ALL_TEMPLATES_FAILED", "Failed to parse error code from response")
+	}
+
+	if errorCode != 0 {
+		return domainerrors.NewInternalError("MSG_GET_ALL_TEMPLATES_FAILED", "Failed to get all templates")
+	}
+
+	return nil
+}

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
@@ -59,13 +58,7 @@ func (h *SmsTokenHandler) GetZaloToken(c *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/admin/sms/zalo/health [get]
 func (h *SmsTokenHandler) GetZaloHealth(c *gin.Context) {
-	provider, err := h.smsService.GetProvider(constants.ChannelZalo)
-	if err != nil {
-		httpresponse.Error(c, http.StatusInternalServerError, "MSG_PROVIDER_NOT_FOUND", "Zalo provider not available", nil)
-		return
-	}
-
-	if err := provider.HealthCheck(c.Request.Context()); err != nil {
+	if err := h.uc.ZaloHealthCheck(c.Request.Context()); err != nil {
 		httpresponse.Error(c, http.StatusInternalServerError, "MSG_ZALO_HEALTH_FAIL", err.Error(), nil)
 		return
 	}
