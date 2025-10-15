@@ -164,7 +164,7 @@ func RegisterRoutes(
 	courierHandler := handlers.NewCourierHandler(ucases.CourierUCase)
 	courierRouter := v1.Group("courier")
 
-	courierRouter.POST("/messages", courierHandler.ReceiveCourierMessageHandler)
+	courierRouter.POST("/messages/:api_key", courierHandler.ReceiveCourierMessageHandler)
 
 	courierRouter.GET(
 		"/available-channels",
