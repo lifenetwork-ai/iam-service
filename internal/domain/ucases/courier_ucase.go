@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	cachingtypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	otpqueue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
@@ -76,9 +77,9 @@ func (u *courierUseCase) ChooseChannel(ctx context.Context, tenantName, receiver
 		})
 	}
 
-	// Route Vietnamese users from SMS to SpeedSMS
+	// Route Vietnamese users from SMS to SpeedSMS only in Staging or Production environments
 	actualChannel := channel
-	if channel == constants.ChannelSMS && isVietnamesePhone(receiver) {
+	if channel == constants.ChannelSMS && isVietnamesePhone(receiver) && shouldRouteToSpeedSMS() {
 		actualChannel = constants.ChannelSpeedSMS
 		logger.GetLogger().Infof("Routing Vietnamese user %s from SMS to SpeedSMS channel", receiver)
 	}
@@ -95,6 +96,17 @@ func (u *courierUseCase) ChooseChannel(ctx context.Context, tenantName, receiver
 func isVietnamesePhone(phone string) bool {
 	phone = strings.TrimSpace(phone)
 	return strings.HasPrefix(phone, "+84")
+}
+
+// shouldRouteToSpeedSMS checks if the current environment allows routing to SpeedSMS
+// Only routes in Staging or Production environments
+func shouldRouteToSpeedSMS() bool {
+	config := conf.GetConfiguration()
+	if config == nil {
+		return false
+	}
+	env := strings.ToUpper(strings.TrimSpace(config.Env))
+	return env == "STAGING" || env == "PRODUCTION" || env == "PROD"
 }
 
 func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver string) (types.ChooseChannelResponse, *domainerrors.DomainError) {
