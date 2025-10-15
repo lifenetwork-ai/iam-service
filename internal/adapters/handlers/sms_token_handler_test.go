@@ -196,8 +196,9 @@ func TestAdminRefreshZaloToken_WithExpiredDBToken_RefreshesViaAdminEndpoint(t *t
 
 // fakeSmsTokenUseCase allows injecting errors for handler negative tests
 type fakeSmsTokenUseCase struct {
-	getTokenFunc func(ctx context.Context) (*domain.ZaloToken, error)
-	refreshErr   error
+	getTokenFunc  func(ctx context.Context) (*domain.ZaloToken, error)
+	refreshErr    error
+	healthCheckErr *domainerrors.DomainError
 }
 
 func (f *fakeSmsTokenUseCase) GetZaloToken(ctx context.Context) (*domain.ZaloToken, *domainerrors.DomainError) {
@@ -222,7 +223,7 @@ func (f *fakeSmsTokenUseCase) RefreshZaloToken(ctx context.Context, refreshToken
 	return nil
 }
 func (f *fakeSmsTokenUseCase) ZaloHealthCheck(ctx context.Context) *domainerrors.DomainError {
-	return nil
+	return f.healthCheckErr
 }
 
 func TestRefreshZaloToken_InvalidBody_ReturnsBadRequest(t *testing.T) {
@@ -353,7 +354,11 @@ func TestGetZaloHealth_ProviderNotFound_ReturnsInternal(t *testing.T) {
 	cfg.Sms.Zalo.ZaloRefreshToken = ""
 
 	svc, _ := sms.NewSMSService(&cfg.Sms, nil)
-	h := NewSmsTokenHandler(&fakeSmsTokenUseCase{}, svc, nil)
+	// Inject health check error to simulate token not found
+	fakeUC := &fakeSmsTokenUseCase{
+		healthCheckErr: domainerrors.NewInternalError("MSG_GET_TOKEN_FAILED", "Failed to get token"),
+	}
+	h := NewSmsTokenHandler(fakeUC, svc, nil)
 
 	r := gin.New()
 	r.GET("/api/v1/admin/sms/zalo/health", h.GetZaloHealth)
@@ -442,7 +447,11 @@ func TestGetZaloHealth_UpstreamError_ReturnsInternal(t *testing.T) {
 
 	repo := &inMemoryZaloTokenRepo{}
 	svc, _ := sms.NewSMSService(&cfg.Sms, repo)
-	h := NewSmsTokenHandler(&fakeSmsTokenUseCase{}, svc, repo)
+	// Inject health check error to simulate upstream API error
+	fakeUC := &fakeSmsTokenUseCase{
+		healthCheckErr: domainerrors.NewInternalError("MSG_GET_ALL_TEMPLATES_FAILED", "Failed to get all templates"),
+	}
+	h := NewSmsTokenHandler(fakeUC, svc, repo)
 
 	r := gin.New()
 	r.GET("/api/v1/admin/sms/zalo/health", h.GetZaloHealth)
