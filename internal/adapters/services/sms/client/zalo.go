@@ -82,6 +82,8 @@ type ZaloTokenRefreshResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    string `json:"expires_in"`
+	Message      string `json:"message"`
+	Error        int    `json:"error"`
 }
 
 func NewZaloClient(ctx context.Context, baseURL, secretKey, appID, accessToken, refreshToken string) (*ZaloClient, error) {
@@ -92,6 +94,12 @@ func NewZaloClient(ctx context.Context, baseURL, secretKey, appID, accessToken, 
 func NewZaloClientWithHTTP(ctx context.Context, baseURL, secretKey, appID, accessToken, refreshToken string, httpClient *http.Client, oauthBaseURL string) (*ZaloClient, error) {
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 30 * time.Second}
+	}
+	// Capture the current default transport to avoid cross-test interference when
+	// other tests mutate http.DefaultTransport in parallel. If a custom client is
+	// provided without a Transport, mirror the default at construction time.
+	if httpClient.Transport == nil {
+		httpClient.Transport = http.DefaultTransport
 	}
 	if oauthBaseURL == "" {
 		oauthBaseURL = "https://oauth.zaloapp.com"
@@ -169,7 +177,7 @@ func (c *ZaloClient) SendOTP(ctx context.Context, phone, otp string, templateID 
 	return c.SendTemplateMessage(ctx, phone, templateID, templateData)
 }
 
-// Update RefreshAccessToken to persist new tokens in DB
+// Update RefreshAccessToken to retrieve new tokens from Zalo OA API
 func (c *ZaloClient) RefreshAccessToken(ctx context.Context, refreshToken string) (*ZaloTokenRefreshResponse, error) {
 	if refreshToken == "" {
 		return nil, fmt.Errorf("refresh token is required")
@@ -200,6 +208,9 @@ func (c *ZaloClient) RefreshAccessToken(ctx context.Context, refreshToken string
 
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("HTTP error during token refresh: %s", resp.Status)
+	}
+	if tokenResp.Error != 0 {
+		return nil, fmt.Errorf("failed to refresh token: %s", tokenResp.Message)
 	}
 
 	return &tokenResp, nil

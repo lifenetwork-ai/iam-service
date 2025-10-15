@@ -5,20 +5,21 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms"
 	dto "github.com/lifenetwork-ai/iam-service/internal/delivery/dto"
 	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/interfaces"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	httpresponse "github.com/lifenetwork-ai/iam-service/packages/http/response"
 )
 
 type SmsTokenHandler struct {
-	uc         interfaces.SmsTokenUseCase
-	smsService *sms.SMSService
+	uc            interfaces.SmsTokenUseCase
+	smsService    *sms.SMSService
+	zaloTokenRepo domainrepo.ZaloTokenRepository
 }
 
-func NewSmsTokenHandler(uc interfaces.SmsTokenUseCase, smsService *sms.SMSService) *SmsTokenHandler {
-	return &SmsTokenHandler{uc: uc, smsService: smsService}
+func NewSmsTokenHandler(uc interfaces.SmsTokenUseCase, smsService *sms.SMSService, zaloTokenRepo domainrepo.ZaloTokenRepository) *SmsTokenHandler {
+	return &SmsTokenHandler{uc: uc, smsService: smsService, zaloTokenRepo: zaloTokenRepo}
 }
 
 // @Summary Get Zalo token
@@ -57,13 +58,7 @@ func (h *SmsTokenHandler) GetZaloToken(c *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal server error"
 // @Router /api/v1/admin/sms/zalo/health [get]
 func (h *SmsTokenHandler) GetZaloHealth(c *gin.Context) {
-	provider, err := h.smsService.GetProvider(constants.ChannelZalo)
-	if err != nil {
-		httpresponse.Error(c, http.StatusInternalServerError, "MSG_PROVIDER_NOT_FOUND", "Zalo provider not available", nil)
-		return
-	}
-
-	if err := provider.HealthCheck(c.Request.Context()); err != nil {
+	if err := h.uc.ZaloHealthCheck(c.Request.Context()); err != nil {
 		httpresponse.Error(c, http.StatusInternalServerError, "MSG_ZALO_HEALTH_FAIL", err.Error(), nil)
 		return
 	}
@@ -89,27 +84,17 @@ func (h *SmsTokenHandler) RefreshZaloToken(c *gin.Context) {
 		return
 	}
 
-	// Get the Zalo provider from SMS service
-	provider, err := h.smsService.GetProvider(constants.ChannelZalo)
-	if err != nil {
-		httpresponse.Error(c, http.StatusInternalServerError, "MSG_PROVIDER_NOT_FOUND", "Zalo provider not available", nil)
+	if derr := h.uc.RefreshZaloToken(c.Request.Context(), req.RefreshToken); derr != nil {
+		httpresponse.Error(c, http.StatusInternalServerError, derr.Code, derr.Message, nil)
 		return
 	}
 
-	// Refresh the token using the provider
-	if err := provider.RefreshToken(c.Request.Context(), req.RefreshToken); err != nil {
-		httpresponse.Error(c, http.StatusInternalServerError, "MSG_REFRESH_TOKEN_FAILED", "Failed to refresh Zalo token", nil)
-		return
-	}
-
-	// Get the updated token from the use case
 	token, derr := h.uc.GetZaloToken(c.Request.Context())
 	if derr != nil {
 		httpresponse.Error(c, http.StatusInternalServerError, derr.Code, derr.Message, nil)
 		return
 	}
 
-	// Return the refreshed token
 	resp := dto.ZaloTokenResponseDTO{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,

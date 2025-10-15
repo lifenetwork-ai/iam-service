@@ -36,7 +36,7 @@ func RegisterRoutes(
 	}
 
 	// Admin SMS/Zalo token management
-	smsTokenHandler := handlers.NewSmsTokenHandler(ucases.SmsTokenUCase, instances.SMSServiceInstance(repos.ZaloTokenRepo))
+	smsTokenHandler := handlers.NewSmsTokenHandler(ucases.SmsTokenUCase, instances.SMSServiceInstance(repos.ZaloTokenRepo), repos.ZaloTokenRepo)
 	smsRouter := adminRouter.Group("sms")
 	{
 		smsRouter.Use(middleware.RootAuthMiddleware())
