@@ -61,6 +61,34 @@ func NewZaloProvider(ctx context.Context, config conf.ZaloConfiguration, tokenRe
 	return provider, nil
 }
 
+func NewZaloProviderWithRefresh(
+	ctx context.Context,
+	config conf.ZaloConfiguration,
+	tokenRepo domainrepo.ZaloTokenRepository,
+	refreshToken string,
+) (*ZaloProvider, error) {
+	if refreshToken == "" {
+		return nil, fmt.Errorf("refresh token required for bootstrap")
+	}
+
+	if err := validateZaloConfig(config); err != nil {
+		return nil, fmt.Errorf("invalid Zalo configuration: %w", err)
+	}
+
+	zaloTokenCryptoService := common.NewZaloTokenCrypto(conf.GetConfiguration().DbEncryptionKey)
+	provider := &ZaloProvider{
+		config:                 config,
+		tokenRepo:              tokenRepo,
+		zaloTokenCryptoService: zaloTokenCryptoService,
+	}
+
+	// no need to get token from DB — bootstrap a client that can call RefreshAccessToken
+	if err := provider.createClientForRefresh(ctx, refreshToken); err != nil {
+		return nil, err
+	}
+	return provider, nil
+}
+
 func validateZaloConfig(config conf.ZaloConfiguration) error {
 	if config.ZaloBaseURL == "" {
 		return fmt.Errorf("ZaloBaseURL is required")
@@ -369,5 +397,21 @@ func (z *ZaloProvider) createClient(ctx context.Context) error {
 		return fmt.Errorf("failed to create Zalo client: %w", err)
 	}
 
+	return nil
+}
+
+func (z *ZaloProvider) createClientForRefresh(ctx context.Context, refreshToken string) error {
+	client, err := client.NewZaloClient(
+		ctx,
+		z.config.ZaloBaseURL,
+		z.config.ZaloSecretKey,
+		z.config.ZaloAppID,
+		"", // no access token needed to refresh
+		refreshToken,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to bootstrap client for refresh: %w", err)
+	}
+	z.client = client
 	return nil
 }

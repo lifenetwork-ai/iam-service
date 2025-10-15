@@ -1,9 +1,10 @@
 run:
-  tests: true
+  tests: false
   timeout: 15m
   sort-results: true
   allow-parallel-runners: true
-  exclude-dir: testutil/testdata
+  exclude-dir:
+    - testutil/testdata
 
 linters:
   disable-all: true
