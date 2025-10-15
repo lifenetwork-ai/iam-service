@@ -13,4 +13,7 @@ type SmsTokenUseCase interface {
 
 	// SetToken sets the token in the repository
 	SetZaloToken(ctx context.Context, accessToken, refreshToken string) *domainerrors.DomainError
+
+	// RefreshZaloToken refreshes tokens via admin-provided refresh token
+	RefreshZaloToken(ctx context.Context, refreshToken string) *domainerrors.DomainError
 }
