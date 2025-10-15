@@ -20,6 +20,7 @@ import (
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	ucases "github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
+	"github.com/stretchr/testify/require"
 )
 
 type inMemoryZaloTokenRepo struct {
@@ -63,9 +64,8 @@ func TestAdminRefreshZaloToken_WithInvalidDBToken_RefreshesViaAdminEndpoint(t *t
 	repo := &inMemoryZaloTokenRepo{token: &domain.ZaloToken{ID: 1, AccessToken: "!!!", RefreshToken: "!!!", UpdatedAt: time.Now(), ExpiresAt: time.Now()}}
 
 	// Assert that normal provider cannot bootstrap/refresh due to invalid DB token and empty config
-	if _, err := provider.NewZaloProvider(context.Background(), cfg.Sms.Zalo, repo); err == nil {
-		t.Fatalf("expected NewZaloProvider to fail when DB token invalid and config has no tokens")
-	}
+	_, err := provider.NewZaloProvider(context.Background(), cfg.Sms.Zalo, repo)
+	require.Error(t, err, "expected NewZaloProvider to fail when DB token invalid and config has no tokens")
 
 	// Stub OAuth refresh endpoint to return a successful token refresh
 	origTransport := http.DefaultTransport
@@ -80,9 +80,9 @@ func TestAdminRefreshZaloToken_WithInvalidDBToken_RefreshesViaAdminEndpoint(t *t
 	r.POST("/api/v1/admin/sms/zalo/token/refresh", h.RefreshZaloToken)
 
 	// Before refresh, getting token should fail to decrypt
-	if tok, derr := usecase.GetZaloToken(context.Background()); derr == nil || tok != nil {
-		t.Fatalf("expected GetZaloToken to fail before refresh due to invalid ciphertext")
-	}
+	tok, derr := usecase.GetZaloToken(context.Background())
+	require.Nil(t, tok)
+	require.NotNil(t, derr, "expected GetZaloToken to fail before refresh due to invalid ciphertext")
 
 	// Call admin refresh endpoint
 	reqBody := bytes.NewBufferString(`{"refresh_token":"admin-provided-rt"}`)
@@ -91,18 +91,13 @@ func TestAdminRefreshZaloToken_WithInvalidDBToken_RefreshesViaAdminEndpoint(t *t
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
 
 	// Ensure token updated and decryptable
-	tok, derr := usecase.GetZaloToken(context.Background())
-	if derr != nil {
-		t.Fatalf("expected token decryptable after refresh, got error: %v", derr)
-	}
-	if tok.AccessToken != "new-access" || tok.RefreshToken != "new-refresh" {
-		t.Fatalf("unexpected tokens after refresh: %+v", tok)
-	}
+	tok, derr = usecase.GetZaloToken(context.Background())
+	require.Nilf(t, derr, "expected token decryptable after refresh, got error: %v", derr)
+	require.Equal(t, "new-access", tok.AccessToken)
+	require.Equal(t, "new-refresh", tok.RefreshToken)
 }
 
 func mockZaloTokenRefresh() http.RoundTripper {
@@ -145,9 +140,7 @@ func TestAdminRefreshZaloToken_WithExpiredDBToken_RefreshesViaAdminEndpoint(t *t
 	crypto := common.NewZaloTokenCrypto(cfg.DbEncryptionKey)
 	expiredPlain := &domain.ZaloToken{ID: 1, AccessToken: "expired-access", RefreshToken: "expired-refresh", UpdatedAt: time.Now(), ExpiresAt: time.Now().Add(-1 * time.Hour)}
 	encrypted, err := crypto.Encrypt(context.Background(), expiredPlain)
-	if err != nil {
-		t.Fatalf("failed to encrypt seed token: %v", err)
-	}
+	require.NoError(t, err, "failed to encrypt seed token")
 	repo := &inMemoryZaloTokenRepo{token: encrypted}
 
 	// Stub OAuth: fail when using expired-refresh; succeed when using admin-provided-rt
@@ -177,9 +170,8 @@ func TestAdminRefreshZaloToken_WithExpiredDBToken_RefreshesViaAdminEndpoint(t *t
 	})
 
 	// Normal provider bootstrap should fail because token is expired and refresh with expired-refresh fails
-	if _, err := provider.NewZaloProvider(context.Background(), cfg.Sms.Zalo, repo); err == nil {
-		t.Fatalf("expected NewZaloProvider to fail when token expired and refresh fails")
-	}
+	_, err = provider.NewZaloProvider(context.Background(), cfg.Sms.Zalo, repo)
+	require.Error(t, err, "expected NewZaloProvider to fail when token expired and refresh fails")
 
 	// Now call admin refresh endpoint with a valid admin-provided refresh token
 	usecase := ucases.NewSmsTokenUseCase(repo)
@@ -193,18 +185,13 @@ func TestAdminRefreshZaloToken_WithExpiredDBToken_RefreshesViaAdminEndpoint(t *t
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
 
 	// Verify token was updated and decryptable
 	newTok, derr := usecase.GetZaloToken(context.Background())
-	if derr != nil {
-		t.Fatalf("expected token decryptable after admin refresh, got error: %v", derr)
-	}
-	if newTok.AccessToken != "new-access" || newTok.RefreshToken != "new-refresh" {
-		t.Fatalf("unexpected tokens after admin refresh: %+v", newTok)
-	}
+	require.Nilf(t, derr, "expected token decryptable after admin refresh, got error: %v", derr)
+	require.Equal(t, "new-access", newTok.AccessToken)
+	require.Equal(t, "new-refresh", newTok.RefreshToken)
 }
 
 // fakeSmsTokenUseCase allows injecting errors for handler negative tests
@@ -249,9 +236,7 @@ func TestRefreshZaloToken_InvalidBody_ReturnsBadRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusBadRequest, w.Code, "body: %s", w.Body.String())
 }
 
 func TestRefreshZaloToken_UseCaseRefreshError_ReturnsInternal(t *testing.T) {
@@ -268,9 +253,7 @@ func TestRefreshZaloToken_UseCaseRefreshError_ReturnsInternal(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusInternalServerError, w.Code, "body: %s", w.Body.String())
 }
 
 func TestRefreshZaloToken_GetTokenError_ReturnsInternal(t *testing.T) {
@@ -289,9 +272,7 @@ func TestRefreshZaloToken_GetTokenError_ReturnsInternal(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusInternalServerError, w.Code, "body: %s", w.Body.String())
 }
 
 func TestGetZaloToken_Success_ReturnsOK(t *testing.T) {
@@ -318,9 +299,7 @@ func TestGetZaloToken_Success_ReturnsOK(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
 	var resp struct {
 		Status int `json:"status"`
 		Data   struct {
@@ -330,18 +309,14 @@ func TestGetZaloToken_Success_ReturnsOK(t *testing.T) {
 			UpdatedAt    string `json:"updated_at"`
 		} `json:"data"`
 	}
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("failed to unmarshal response: %v", err)
-	}
-	if resp.Data.AccessToken != "tok-access" || resp.Data.RefreshToken != "tok-refresh" {
-		t.Fatalf("unexpected token data: %+v", resp.Data)
-	}
-	if _, err := time.Parse(time.RFC3339, resp.Data.ExpiresAt); err != nil {
-		t.Fatalf("expires_at not RFC3339: %v", err)
-	}
-	if _, err := time.Parse(time.RFC3339, resp.Data.UpdatedAt); err != nil {
-		t.Fatalf("updated_at not RFC3339: %v", err)
-	}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err, "failed to unmarshal response")
+	require.Equal(t, "tok-access", resp.Data.AccessToken)
+	require.Equal(t, "tok-refresh", resp.Data.RefreshToken)
+	_, err = time.Parse(time.RFC3339, resp.Data.ExpiresAt)
+	require.NoError(t, err, "expires_at not RFC3339")
+	_, err = time.Parse(time.RFC3339, resp.Data.UpdatedAt)
+	require.NoError(t, err, "updated_at not RFC3339")
 }
 
 func TestGetZaloToken_UsecaseError_ReturnsInternal(t *testing.T) {
@@ -360,9 +335,7 @@ func TestGetZaloToken_UsecaseError_ReturnsInternal(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusInternalServerError, w.Code, "body: %s", w.Body.String())
 }
 
 func TestGetZaloHealth_ProviderNotFound_ReturnsInternal(t *testing.T) {
@@ -386,9 +359,7 @@ func TestGetZaloHealth_ProviderNotFound_ReturnsInternal(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusInternalServerError, w.Code, "body: %s", w.Body.String())
 }
 
 func TestGetZaloHealth_Healthy_ReturnsOK(t *testing.T) {
@@ -429,19 +400,14 @@ func TestGetZaloHealth_Healthy_ReturnsOK(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusOK, w.Code, "body: %s", w.Body.String())
 	var resp struct {
 		Status int               `json:"status"`
 		Data   map[string]string `json:"data"`
 	}
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("failed to unmarshal response: %v", err)
-	}
-	if resp.Data["status"] != "healthy" {
-		t.Fatalf("expected healthy status, got: %+v", resp.Data)
-	}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err, "failed to unmarshal response")
+	require.Equal(t, "healthy", resp.Data["status"])
 }
 
 func TestGetZaloHealth_UpstreamError_ReturnsInternal(t *testing.T) {
@@ -482,7 +448,5 @@ func TestGetZaloHealth_UpstreamError_ReturnsInternal(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Fatalf("expected 500, got %d, body: %s", w.Code, w.Body.String())
-	}
+	require.Equalf(t, http.StatusInternalServerError, w.Code, "body: %s", w.Body.String())
 }

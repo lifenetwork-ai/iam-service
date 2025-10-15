@@ -95,6 +95,12 @@ func NewZaloClientWithHTTP(ctx context.Context, baseURL, secretKey, appID, acces
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 30 * time.Second}
 	}
+	// Capture the current default transport to avoid cross-test interference when
+	// other tests mutate http.DefaultTransport in parallel. If a custom client is
+	// provided without a Transport, mirror the default at construction time.
+	if httpClient.Transport == nil {
+		httpClient.Transport = http.DefaultTransport
+	}
 	if oauthBaseURL == "" {
 		oauthBaseURL = "https://oauth.zaloapp.com"
 	}
