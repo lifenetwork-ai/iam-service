@@ -225,8 +225,9 @@ func TestCourierUseCase_GetChannel_CacheMiss_EnvironmentBehavior(t *testing.T) {
 	}
 
 	testCases := []testCase{
-		{name: "DEV non-VN -> SMS", environment: "DEV", receiver: "+12025551234", expectedChannel: constants.ChannelSMS},
-		{name: "DEV VN -> SMS (no routing)", environment: "DEV", receiver: "+84987654321", expectedChannel: constants.ChannelSMS},
+		{name: "DEV non-VN -> webhook", environment: "DEV", receiver: "+12025551234", expectedChannel: constants.DefaultSMSChannel},
+		{name: "DEV VN -> webhook", environment: "DEV", receiver: "+84987654321", expectedChannel: constants.DefaultSMSChannel},
+		{name: "NIGHTLY VN -> webhook", environment: "NIGHTLY", receiver: "+84344381024", expectedChannel: constants.DefaultSMSChannel},
 		{name: "STAGING non-VN -> SMS", environment: "STAGING", receiver: "+12025551234", expectedChannel: constants.ChannelSMS},
 		{name: "STAGING VN -> SpeedSMS", environment: "STAGING", receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
 		{name: "PRODUCTION VN -> SpeedSMS", environment: "PRODUCTION", receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},

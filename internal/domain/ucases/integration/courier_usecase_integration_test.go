@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
 	"github.com/lifenetwork-ai/iam-service/internal/domain/ucases"
@@ -328,6 +329,11 @@ func TestCourierUseCase_GetChannel_CacheMiss_Integration(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	// Ensure environment is STAGING to avoid webhook default in DEV/NIGHTLY
+	originalEnv := conf.GetEnvironment()
+	defer func() { conf.SetEnvironmentForTesting(originalEnv) }()
+	conf.SetEnvironmentForTesting("STAGING")
 
 	// Setup test dependencies
 	mockQueue := mock_otpqueue.NewMockOTPQueueRepository(ctrl)
