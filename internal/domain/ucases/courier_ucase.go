@@ -109,6 +109,17 @@ func shouldRouteToSpeedSMS() bool {
 	return env == "STAGING" || env == "PRODUCTION" || env == "PROD"
 }
 
+// shouldDefaultToWebhook returns true when we should use webhook as the default
+// channel on cache miss (e.g., DEV or NIGHTLY environments).
+func shouldDefaultToWebhook() bool {
+	config := conf.GetConfiguration()
+	if config == nil {
+		return false
+	}
+	env := strings.ToUpper(strings.TrimSpace(config.Env))
+	return env == "DEV" || env == "DEVELOPMENT" || env == "NIGHTLY"
+}
+
 func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver string) (types.ChooseChannelResponse, *domainerrors.DomainError) {
 	key := &cachingtypes.Keyer{
 		Raw: fmt.Sprintf("channel:%s:%s", tenantName, receiver),
@@ -118,11 +129,18 @@ func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver st
 
 	err := u.channelCache.RetrieveItem(key, &response)
 	if err != nil {
-		// fallback to webhooks channel if cache miss
+		// fallback to SMS routing if cache miss
 		if errors.Is(err, cachingtypes.ErrCacheMiss) {
-			return types.ChooseChannelResponse{
-				Channel: constants.DefaultSMSChannel,
-			}, nil
+			// In DEV/NIGHTLY, keep using webhook by default
+			if shouldDefaultToWebhook() {
+				return types.ChooseChannelResponse{Channel: constants.DefaultSMSChannel}, nil
+			}
+
+			defaultChannel := constants.ChannelSMS
+			if isVietnamesePhone(receiver) && shouldRouteToSpeedSMS() {
+				defaultChannel = constants.ChannelSpeedSMS
+			}
+			return types.ChooseChannelResponse{Channel: defaultChannel}, nil
 		}
 		return types.ChooseChannelResponse{}, domainerrors.NewInternalError("MSG_GET_CHANNEL_FAILED", "Failed to get channel from cache").WithCause(err)
 	}
