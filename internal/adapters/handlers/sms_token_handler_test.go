@@ -49,7 +49,9 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
 
 func TestAdminRefreshZaloToken_WithInvalidDBToken_RefreshesViaAdminEndpoint(t *testing.T) {
-	t.Parallel()
+	// Note: t.Parallel() is NOT used here because this test modifies http.DefaultTransport,
+	// which is global state. Running this test in parallel with other tests that also modify
+	// http.DefaultTransport would cause race conditions.
 	gin.SetMode(gin.TestMode)
 
 	// Configure Zalo with no seed tokens to ensure normal provider bootstrap cannot use config
@@ -124,7 +126,9 @@ func mockZaloTokenRefresh() http.RoundTripper {
 }
 
 func TestAdminRefreshZaloToken_WithExpiredDBToken_RefreshesViaAdminEndpoint(t *testing.T) {
-	t.Parallel()
+	// Note: t.Parallel() is NOT used here because this test modifies http.DefaultTransport,
+	// which is global state. Running this test in parallel with other tests that also modify
+	// http.DefaultTransport would cause race conditions.
 	gin.SetMode(gin.TestMode)
 
 	// Ensure a deterministic encryption key for test

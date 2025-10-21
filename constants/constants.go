@@ -60,6 +60,7 @@ const (
 	ChannelSMS      = "sms"
 	ChannelWhatsApp = "whatsapp"
 	ChannelZalo     = "zalo"
+	ChannelSpeedSMS = "speedsms"
 
 	// Retry related constants
 	MaxOTPRetryCount   = 5

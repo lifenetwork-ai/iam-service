@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/google/uuid"
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	cachingtypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	otpqueue "github.com/lifenetwork-ai/iam-service/infrastructures/otp_queue/types"
@@ -44,6 +45,7 @@ func NewCourierUseCase(
 }
 
 // ChooseChannel chooses the channel to send OTP to the receiver
+// For Vietnamese users choosing SMS channel, it will be routed to SpeedSMS
 func (u *courierUseCase) ChooseChannel(ctx context.Context, tenantName, receiver, channel string) *domainerrors.DomainError {
 	// Validate receiver type: only phone number is supported for choosing channel
 	if !utils.IsPhoneE164(receiver) {
@@ -75,12 +77,47 @@ func (u *courierUseCase) ChooseChannel(ctx context.Context, tenantName, receiver
 		})
 	}
 
-	err := u.channelCache.SaveItem(key, channel, u.defaultTTL)
+	// Route Vietnamese users from SMS to SpeedSMS only in Staging or Production environments
+	actualChannel := channel
+	if channel == constants.ChannelSMS && isVietnamesePhone(receiver) && shouldRouteToSpeedSMS() {
+		actualChannel = constants.ChannelSpeedSMS
+		logger.GetLogger().Infof("Routing Vietnamese user %s from SMS to SpeedSMS channel", receiver)
+	}
+
+	err := u.channelCache.SaveItem(key, actualChannel, u.defaultTTL)
 	if err != nil {
 		return domainerrors.NewInternalError("MSG_CHOOSE_CHANNEL_FAILED", "Failed to choose channel to send OTP").WithCause(err)
 	}
 
 	return nil
+}
+
+// isVietnamesePhone checks if a phone number is Vietnamese (starts with +84)
+func isVietnamesePhone(phone string) bool {
+	phone = strings.TrimSpace(phone)
+	return strings.HasPrefix(phone, "+84")
+}
+
+// shouldRouteToSpeedSMS checks if the current environment allows routing to SpeedSMS
+// Only routes in Staging or Production environments
+func shouldRouteToSpeedSMS() bool {
+	config := conf.GetConfiguration()
+	if config == nil {
+		return false
+	}
+	env := strings.ToUpper(strings.TrimSpace(config.Env))
+	return env == "STAGING" || env == "PRODUCTION" || env == "PROD"
+}
+
+// shouldDefaultToWebhook returns true when we should use webhook as the default
+// channel on cache miss (e.g., DEV or NIGHTLY environments).
+func shouldDefaultToWebhook() bool {
+	config := conf.GetConfiguration()
+	if config == nil {
+		return false
+	}
+	env := strings.ToUpper(strings.TrimSpace(config.Env))
+	return env == "DEV" || env == "DEVELOPMENT" || env == "NIGHTLY"
 }
 
 func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver string) (types.ChooseChannelResponse, *domainerrors.DomainError) {
@@ -91,12 +128,20 @@ func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver st
 	var response string
 
 	err := u.channelCache.RetrieveItem(key, &response)
+	// nolint: nestif
 	if err != nil {
-		// fallback to webhooks channel if cache miss
+		// fallback to SMS routing if cache miss
 		if errors.Is(err, cachingtypes.ErrCacheMiss) {
-			return types.ChooseChannelResponse{
-				Channel: constants.DefaultSMSChannel,
-			}, nil
+			// In DEV/NIGHTLY, keep using webhook by default
+			if shouldDefaultToWebhook() {
+				return types.ChooseChannelResponse{Channel: constants.DefaultSMSChannel}, nil
+			}
+
+			defaultChannel := constants.ChannelSMS
+			if isVietnamesePhone(receiver) && shouldRouteToSpeedSMS() {
+				defaultChannel = constants.ChannelSpeedSMS
+			}
+			return types.ChooseChannelResponse{Channel: defaultChannel}, nil
 		}
 		return types.ChooseChannelResponse{}, domainerrors.NewInternalError("MSG_GET_CHANNEL_FAILED", "Failed to get channel from cache").WithCause(err)
 	}

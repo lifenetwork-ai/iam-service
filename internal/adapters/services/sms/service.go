@@ -29,6 +29,12 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 		factory.providers[constants.ChannelSMS] = provider.NewTwilioProvider(config.Twilio)
 	}
 
+	// Initialize SpeedSMS provider (if at least one tenant token is configured)
+	if config.SpeedSMS.GeneticaSpeedSMSAccessToken != "" || config.SpeedSMS.LifeSpeedSMSAccessToken != "" {
+		logger.GetLogger().Infof("Initializing SpeedSMS provider")
+		factory.providers[constants.ChannelSpeedSMS] = provider.NewSpeedSMSProvider(config.SpeedSMS)
+	}
+
 	// Initialize WhatsApp provider
 	if config.Whatsapp.WhatsappAccessToken != "" {
 		logger.GetLogger().Infof("Initializing WhatsApp provider")
