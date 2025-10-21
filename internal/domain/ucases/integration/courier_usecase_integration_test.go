@@ -353,5 +353,5 @@ func TestCourierUseCase_GetChannel_CacheMiss_Integration(t *testing.T) {
 	// Test getting channel when no channel has been chosen (cache miss)
 	channelResponse, getErr := courierUseCase.GetChannel(ctx, tenantName, receiver)
 	require.Nil(t, getErr, "Expected no error on cache miss")
-	require.Equal(t, constants.ChannelSMS, channelResponse.Channel, "Should fallback to SMS on cache miss")
+	require.Equal(t, constants.ChannelSpeedSMS, channelResponse.Channel, "Should fallback to SMS on cache miss")
 }

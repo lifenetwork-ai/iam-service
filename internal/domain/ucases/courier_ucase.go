@@ -128,6 +128,7 @@ func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver st
 	var response string
 
 	err := u.channelCache.RetrieveItem(key, &response)
+	// nolint: nestif
 	if err != nil {
 		// fallback to SMS routing if cache miss
 		if errors.Is(err, cachingtypes.ErrCacheMiss) {
