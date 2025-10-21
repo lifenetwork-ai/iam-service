@@ -46,3 +46,14 @@ func GetMockWebhookURL() string {
 func GetCourierAPIKey() string {
 	return configuration.COURIER_API_KEY
 }
+
+// SetEnvironmentForTesting sets the environment for testing purposes
+// WARNING: This should only be used in tests!
+func SetEnvironmentForTesting(env string) {
+	configuration.Env = env
+}
+
+// GetEnvironment returns the current environment
+func GetEnvironment() string {
+	return configuration.Env
+}

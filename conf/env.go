@@ -75,10 +75,17 @@ type ZaloConfiguration struct {
 	ZaloRefreshToken string `mapstructure:"ZALO_REFRESH_TOKEN"`
 }
 
+type SpeedSMSConfiguration struct {
+	GeneticaSpeedSMSAccessToken string `mapstructure:"GENETICA_SPEEDSMS_ACCESS_TOKEN"`
+	LifeSpeedSMSAccessToken     string `mapstructure:"LIFE_SPEEDSMS_ACCESS_TOKEN"`
+	SpeedSMSBaseURL             string `mapstructure:"SPEEDSMS_BASE_URL"`
+}
+
 type SmsConfiguration struct {
 	Twilio   TwilioConfiguration   `mapstructure:",squash"`
 	Whatsapp WhatsappConfiguration `mapstructure:",squash"`
 	Zalo     ZaloConfiguration     `mapstructure:",squash"`
+	SpeedSMS SpeedSMSConfiguration `mapstructure:",squash"`
 }
 
 var configuration Configuration
@@ -122,6 +129,9 @@ var defaultConfigurations = map[string]any{
 	"ZALO_REFRESH_TOKEN":             "",
 	"ZALO_SECRET_KEY":                "",
 	"ZALO_APP_ID":                    "",
+	"GENETICA_SPEEDSMS_ACCESS_TOKEN": "",
+	"LIFE_SPEEDSMS_ACCESS_TOKEN":     "",
+	"SPEEDSMS_BASE_URL":              "https://api.speedsms.vn/index.php",
 	"COURIER_API_KEY":                "",
 }
 
