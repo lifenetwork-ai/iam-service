@@ -1,6 +1,6 @@
 # Choose Delivery Channel
 
-This document describes how a client can explicitly choose the OTP delivery channel for a receiver. If no channel is chosen, the default delivery channel is `webhook`.
+This document describes how a client can explicitly choose the OTP delivery channel for a receiver. If no channel is chosen, the default delivery channel is `sms`.
 
 ## Sequence Diagram
 
@@ -17,7 +17,7 @@ sequenceDiagram
     Courier-->>API: Channel saved
     API-->>Client: 200 OK {"Channel chosen successfully"}
 
-    Note over Client,Courier: If not called, default channel = webhook
+    Note over Client,Courier: If not called, default channel = sms
 ```
 
 ## Endpoint
@@ -43,7 +43,7 @@ sequenceDiagram
     ```
 
   - Notes:
-    - If this endpoint is not called, the default delivery channel for OTP is `webhook`.
+    - If this endpoint is not called, the default delivery channel for OTP is `sms`.
     - `receiver` must be a valid phone number in E.164 format.
     - `channel` must be one of: `sms`, `whatsapp`, `zalo`.
 
