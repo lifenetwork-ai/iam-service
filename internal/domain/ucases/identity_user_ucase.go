@@ -620,10 +620,10 @@ func (u *userUseCase) Register(
 		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
 	}
 	if exists {
-		// Orphan resolution: if IAM row exists but Kratos identity is gone, soft-delete IAM and proceed
+		// Orphan resolution: if IAM row exists but Kratos identity is gone, hard-delete IAM record and proceed
 		if existingIdentity, getErr := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), identifierType, identifierValue); getErr == nil && existingIdentity != nil {
 			if _, kerr := u.kratosService.GetIdentity(ctx, tenantID, uuid.MustParse(existingIdentity.KratosUserID)); kerr != nil {
-				// Kratos missing → treat as orphan; best-effort soft delete and continue
+				// Kratos missing → treat as orphan; best-effort hard delete and continue
 				_ = u.userIdentityRepo.Delete(nil, existingIdentity.ID)
 				exists = false
 			}
