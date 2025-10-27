@@ -74,7 +74,10 @@ func (r *userIdentityRepository) InsertOnceByKratosUserAndType(
 	}
 
 	res := db.WithContext(ctx).
-		Clauses(clause.OnConflict{DoNothing: true}).
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "global_user_id"}, {Name: "type"}},
+			DoNothing: true,
+		}).
 		Create(rec)
 
 	if res.Error != nil {
@@ -140,14 +143,14 @@ func (r *userIdentityRepository) ListByTenantAndKratosUserID(
 	var identities []*domain.UserIdentity
 	err := db.WithContext(ctx).
 		Where(`
-            tenant_id = ?
-            AND global_user_id = (
-                SELECT global_user_id
-                FROM user_identities
-                WHERE tenant_id = ? AND kratos_user_id = ?
-                LIMIT 1
-            )
-        `, tenantID, tenantID, kratosUserID).
+			tenant_id = ? 
+			AND global_user_id = (
+				SELECT global_user_id 
+				FROM user_identities 
+				WHERE tenant_id = ? AND kratos_user_id = ? 
+				LIMIT 1
+			)
+		`, tenantID, tenantID, kratosUserID).
 		Find(&identities).Error
 	if err != nil {
 		return nil, err
@@ -191,6 +194,5 @@ func (r *userIdentityRepository) Delete(tx *gorm.DB, identityID string) error {
 	if tx != nil {
 		db = tx
 	}
-	// Hard delete: remove row permanently (ignore gorm soft-delete)
-	return db.Unscoped().Delete(&domain.UserIdentity{ID: identityID}).Error
+	return db.Delete(&domain.UserIdentity{ID: identityID}).Error
 }
