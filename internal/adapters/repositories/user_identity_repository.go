@@ -44,7 +44,7 @@ func (r *userIdentityRepository) GetByTypeAndValue(
 		db = tx
 	}
 	if err := db.WithContext(ctx).
-		Where("tenant_id = ? AND type = ? AND value = ? AND deleted_at IS NULL", tenantID, identityType, value).
+		Where("tenant_id = ? AND type = ? AND value = ?", tenantID, identityType, value).
 		First(&identity).Error; err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (r *userIdentityRepository) ExistsWithinTenant(
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&domain.UserIdentity{}).
-		Where("tenant_id = ? AND type = ? AND value = ? AND deleted_at IS NULL", tenantID, identityType, value).
+		Where("tenant_id = ? AND type = ? AND value = ?", tenantID, identityType, value).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -117,7 +117,7 @@ func (r *userIdentityRepository) GetByTenantAndKratosUserID(
 
 	var identity *domain.UserIdentity
 	err := db.WithContext(ctx).
-		Where("tenant_id = ? AND kratos_user_id = ? AND deleted_at IS NULL", tenantID, kratosUserID).
+		Where("tenant_id = ? AND kratos_user_id = ?", tenantID, kratosUserID).
 		First(&identity).Error
 	if err != nil {
 		return nil, err
@@ -141,11 +141,10 @@ func (r *userIdentityRepository) ListByTenantAndKratosUserID(
 	err := db.WithContext(ctx).
 		Where(`
             tenant_id = ?
-            AND deleted_at IS NULL
             AND global_user_id = (
                 SELECT global_user_id
                 FROM user_identities
-                WHERE tenant_id = ? AND kratos_user_id = ? AND deleted_at IS NULL
+                WHERE tenant_id = ? AND kratos_user_id = ?
                 LIMIT 1
             )
         `, tenantID, tenantID, kratosUserID).
@@ -165,7 +164,7 @@ func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&domain.UserIdentity{}).
-		Where("tenant_id = ? AND global_user_id = ? AND type = ? AND deleted_at IS NULL", tenantID, globalUserID, identityType).
+		Where("tenant_id = ? AND global_user_id = ? AND type = ?", tenantID, globalUserID, identityType).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -179,7 +178,7 @@ func (r *userIdentityRepository) GetByGlobalUserIDAndTenantID(ctx context.Contex
 
 	var identities []*domain.UserIdentity
 	err := db.WithContext(ctx).
-		Where("global_user_id = ? AND tenant_id = ? AND deleted_at IS NULL", globalUserID, tenantID).
+		Where("global_user_id = ? AND tenant_id = ?", globalUserID, tenantID).
 		Find(&identities).Error
 	if err != nil {
 		return nil, err

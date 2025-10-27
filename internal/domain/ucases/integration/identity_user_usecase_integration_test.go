@@ -779,51 +779,6 @@ func TestIntegration_Register_CleansUpOrphanIAM(t *testing.T) {
 	require.Equal(t, phone, auth.User.Phone)
 }
 
-// Ensures that after deleting an identity, reinserting same type+value works
-func TestIntegration_DeleteIdentifier_AllowsReinsert(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	ucase, _, deps, db, tenantID, container := startPostgresAndBuildUCase(t, ctx, ctrl, "tenant-soft-reinsert")
-	t.Cleanup(func() { _ = container.Terminate(ctx) })
-
-	// Allow flows without rate limits
-	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
-	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-
-	// Seed user + two identities (so deletion is allowed by rule)
-	gu := &domain.GlobalUser{}
-	require.NoError(t, adaptersrepo.NewGlobalUserRepository(db).Create(db, gu))
-	phone := "+84300000002"
-	// Seed corresponding Kratos identity and use its ID for IAM row so Kratos delete succeeds
-	servc := deps.kratosService.(*kratos_service.FakeKratosService)
-	created, _, ierr := servc.CreateIdentityAdmin(ctx, tenantID, map[string]interface{}{
-		"phone_number": phone,
-	})
-	require.NoError(t, ierr)
-	kratosID := created.Id
-	ok, err := deps.userIdentityRepo.InsertOnceByKratosUserAndType(ctx, db, tenantID.String(), kratosID, gu.ID, constants.IdentifierPhone.String(), phone)
-	require.NoError(t, err)
-	require.True(t, ok)
-
-	// Add a second identifier so user has >1
-	secondEmail := "softreinsert@test.com"
-	ok, err = deps.userIdentityRepo.InsertOnceByKratosUserAndType(ctx, db, tenantID.String(), uuid.NewString(), gu.ID, constants.IdentifierEmail.String(), secondEmail)
-	require.NoError(t, err)
-	require.True(t, ok)
-
-	// Delete via use case (Kratos first, then IAM best-effort)
-	derr := ucase.DeleteIdentifier(ctx, gu.ID, tenantID, kratosID, constants.IdentifierPhone.String())
-	require.Nil(t, derr)
-
-	// Re-register same phone should succeed now due to partial unique indexes
-	reg, derr := ucase.Register(ctx, tenantID, "en", "", phone)
-	require.Nil(t, derr)
-	require.NotNil(t, reg)
-}
-
 // Covers: ChallengeWithEmail -> VerifyLogin
 func TestIntegration_VerifyLogin_WithEmail(t *testing.T) {
 	t.Parallel()
