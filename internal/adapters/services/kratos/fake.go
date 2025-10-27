@@ -17,15 +17,14 @@ import (
 
 // Fault flags
 type Faults struct {
-	FailRegistration       bool
-	FailLogin              bool
-	FailVerification       bool
-	FailUpdate             bool
-	FailDelete             bool
-	NetworkError           bool
-	SimulateDuplicateError bool
-	ExpireFlowsAfter       time.Duration
-	RejectOTP              bool
+	FailRegistration bool
+	FailLogin        bool
+	FailVerification bool
+	FailUpdate       bool
+	FailDelete       bool
+	NetworkError     bool
+	ExpireFlowsAfter time.Duration
+	RejectOTP        bool
 }
 
 // FakeKratosService with fault injection.
@@ -99,11 +98,6 @@ func (f *FakeKratosService) SubmitRegistrationFlow(
 	for k, v := range traits {
 		if k == constants.IdentifierEmail.String() || k == constants.IdentifierPhone.String() {
 			val := v.(string)
-			if f.faults.SimulateDuplicateError {
-				if _, exists := f.identities[tenantID][val]; exists {
-					return nil, fmt.Errorf("duplicate identifier: %s", val)
-				}
-			}
 			f.identities[tenantID][val] = identity
 		}
 	}
@@ -347,21 +341,6 @@ func (f *FakeKratosService) SubmitRegistrationFlowWithCode(ctx context.Context, 
 
 	f.mu.Lock()
 	defer f.mu.Unlock()
-
-	// Simulate Kratos duplicate identifier error on code submission as well
-	// to better reflect real behavior where conflicts can surface at this step.
-	if f.faults.SimulateDuplicateError {
-		if f.identities[tenantID] == nil {
-			f.identities[tenantID] = make(map[string]*kratos.Identity)
-		}
-		for k, v := range rec.traits {
-			if k == constants.IdentifierEmail.String() || k == constants.IdentifierPhone.String() {
-				if _, exists := f.identities[tenantID][v.(string)]; exists {
-					return nil, fmt.Errorf("duplicate identifier: %s", v.(string))
-				}
-			}
-		}
-	}
 
 	id := uuid.NewString()
 	identity := &kratos.Identity{Id: id, Traits: rec.traits}
