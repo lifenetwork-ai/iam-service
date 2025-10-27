@@ -1,3 +1,58 @@
+### DeleteIdentifier and Register flows (soft delete + orphan cleanup)
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant UseCase as IdentityUserUseCase
+    participant Kratos
+    participant IAMDB as IAM DB
+
+    rect rgb(245,245,245)
+    Note over Client,UseCase: DeleteIdentifier
+    Client->>UseCase: DeleteIdentifier(globalUserID, tenantID, kratosUserID, type)
+    UseCase->>Kratos: DeleteIdentity(kratosUserID)
+    alt Kratos delete fails
+        Kratos-->>UseCase: error
+        UseCase-->>Client: error (abort)
+    else Kratos delete succeeds
+        Kratos-->>UseCase: OK
+        UseCase->>IAMDB: Soft delete identity (best-effort)
+        alt DB delete fails
+            IAMDB-->>UseCase: error
+            UseCase->>UseCase: Log error
+            UseCase-->>Client: success
+        else DB delete succeeds
+            IAMDB-->>UseCase: OK
+            UseCase-->>Client: success
+        end
+    end
+    end
+
+    rect rgb(245,245,245)
+    Note over Client,UseCase: Register(identifier)
+    Client->>UseCase: Register(email/phone)
+    UseCase->>IAMDB: Check existence (deleted_at IS NULL)
+    alt Exists
+        UseCase->>IAMDB: Load existing identity
+        UseCase->>Kratos: GetIdentity(kratos_user_id)
+        alt Kratos missing
+            UseCase->>IAMDB: Soft delete orphan
+            UseCase->>Kratos: SubmitRegistrationFlow
+            Kratos-->>UseCase: OK
+            UseCase->>IAMDB: Insert new identity
+            UseCase-->>Client: VerificationNeeded
+        else Kratos present
+            UseCase-->>Client: Conflict (already registered)
+        end
+    else Not exists
+        UseCase->>Kratos: SubmitRegistrationFlow
+        Kratos-->>UseCase: OK
+        UseCase->>IAMDB: Insert new identity
+        UseCase-->>Client: VerificationNeeded
+    end
+    end
+```
+
 # Delete Identifier Flow Documentation
 
 ---

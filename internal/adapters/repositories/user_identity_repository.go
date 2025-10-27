@@ -44,7 +44,7 @@ func (r *userIdentityRepository) GetByTypeAndValue(
 		db = tx
 	}
 	if err := db.WithContext(ctx).
-		Where("tenant_id = ? AND type = ? AND value = ?", tenantID, identityType, value).
+		Where("tenant_id = ? AND type = ? AND value = ? AND deleted_at IS NULL", tenantID, identityType, value).
 		First(&identity).Error; err != nil {
 		return nil, err
 	}
@@ -74,10 +74,7 @@ func (r *userIdentityRepository) InsertOnceByKratosUserAndType(
 	}
 
 	res := db.WithContext(ctx).
-		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "global_user_id"}, {Name: "type"}},
-			DoNothing: true,
-		}).
+		Clauses(clause.OnConflict{DoNothing: true}).
 		Create(rec)
 
 	if res.Error != nil {
@@ -102,7 +99,7 @@ func (r *userIdentityRepository) ExistsWithinTenant(
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&domain.UserIdentity{}).
-		Where("tenant_id = ? AND type = ? AND value = ?", tenantID, identityType, value).
+		Where("tenant_id = ? AND type = ? AND value = ? AND deleted_at IS NULL", tenantID, identityType, value).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -120,7 +117,7 @@ func (r *userIdentityRepository) GetByTenantAndKratosUserID(
 
 	var identity *domain.UserIdentity
 	err := db.WithContext(ctx).
-		Where("tenant_id = ? AND kratos_user_id = ?", tenantID, kratosUserID).
+		Where("tenant_id = ? AND kratos_user_id = ? AND deleted_at IS NULL", tenantID, kratosUserID).
 		First(&identity).Error
 	if err != nil {
 		return nil, err
@@ -143,14 +140,15 @@ func (r *userIdentityRepository) ListByTenantAndKratosUserID(
 	var identities []*domain.UserIdentity
 	err := db.WithContext(ctx).
 		Where(`
-			tenant_id = ? 
-			AND global_user_id = (
-				SELECT global_user_id 
-				FROM user_identities 
-				WHERE tenant_id = ? AND kratos_user_id = ? 
-				LIMIT 1
-			)
-		`, tenantID, tenantID, kratosUserID).
+            tenant_id = ?
+            AND deleted_at IS NULL
+            AND global_user_id = (
+                SELECT global_user_id
+                FROM user_identities
+                WHERE tenant_id = ? AND kratos_user_id = ? AND deleted_at IS NULL
+                LIMIT 1
+            )
+        `, tenantID, tenantID, kratosUserID).
 		Find(&identities).Error
 	if err != nil {
 		return nil, err
@@ -167,7 +165,7 @@ func (r *userIdentityRepository) ExistsByTenantGlobalUserIDAndType(
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&domain.UserIdentity{}).
-		Where("tenant_id = ? AND global_user_id = ? AND type = ?", tenantID, globalUserID, identityType).
+		Where("tenant_id = ? AND global_user_id = ? AND type = ? AND deleted_at IS NULL", tenantID, globalUserID, identityType).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -181,7 +179,7 @@ func (r *userIdentityRepository) GetByGlobalUserIDAndTenantID(ctx context.Contex
 
 	var identities []*domain.UserIdentity
 	err := db.WithContext(ctx).
-		Where("global_user_id = ? AND tenant_id = ?", globalUserID, tenantID).
+		Where("global_user_id = ? AND tenant_id = ? AND deleted_at IS NULL", globalUserID, tenantID).
 		Find(&identities).Error
 	if err != nil {
 		return nil, err
@@ -194,5 +192,6 @@ func (r *userIdentityRepository) Delete(tx *gorm.DB, identityID string) error {
 	if tx != nil {
 		db = tx
 	}
-	return db.Delete(&domain.UserIdentity{ID: identityID}).Error
+	// Hard delete: remove row permanently (ignore gorm soft-delete)
+	return db.Unscoped().Delete(&domain.UserIdentity{ID: identityID}).Error
 }
