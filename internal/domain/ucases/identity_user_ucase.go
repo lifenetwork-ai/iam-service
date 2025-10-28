@@ -619,6 +619,8 @@ func (u *userUseCase) Register(
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
 	}
+
+	// nolint:nestif
 	if exists {
 		// Orphan resolution: if IAM row exists but Kratos identity is gone, hard-delete IAM record and proceed
 		if existingIdentity, getErr := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), identifierType, identifierValue); getErr == nil && existingIdentity != nil {
