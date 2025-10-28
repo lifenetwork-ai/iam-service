@@ -920,3 +920,89 @@ func TestIntegration_Register_WithPhone_PersistsInIAMAndKratos(t *testing.T) {
 	ids, _ := servc.GetIdentities(ctx, tenantID)
 	assertKratosHasIdentity(t, ids, constants.IdentifierPhone.String(), phone, true)
 }
+
+// Full chained flow regression guard:
+// 1) Register with phone -> verify OTP
+// 2) Add email identifier -> verify
+// 3) Delete phone identifier (leaving email)
+// 4) Re-register the same phone -> verify OTP
+// 5) Login by email -> should succeed
+func TestIntegration_DeletePhone_ReRegisterSamePhone_Then_EmailLogin_Succeeds(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ucase, _, deps, _, tenantID, container := startPostgresAndBuildUCase(t, ctx, ctrl, "tenant-del-rereg-email-login")
+	t.Cleanup(func() { _ = container.Terminate(ctx) })
+
+	// Allow flows without rate limits
+	deps.rateLimiter.EXPECT().IsLimited(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
+	deps.rateLimiter.EXPECT().RegisterAttempt(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	phone := "+84384381623"
+	email := "hong.vu+2409-i1@genefriendway.com"
+
+	// 1) Register with phone and verify OTP
+	reg, derr := ucase.Register(ctx, tenantID, "en", "", phone)
+	require.Nil(t, derr)
+	require.NotNil(t, reg)
+	ver, derr := ucase.VerifyRegister(ctx, tenantID, reg.VerificationFlow.FlowID, "000000")
+	require.Nil(t, derr)
+	require.NotNil(t, ver)
+	globalUserID := ver.User.GlobalUserID
+
+	// 2) Add email and verify
+	add, derr := ucase.AddNewIdentifier(ctx, tenantID, globalUserID, email, constants.IdentifierEmail.String())
+	require.Nil(t, derr)
+	require.NotNil(t, add)
+	_, derr = ucase.VerifyRegister(ctx, tenantID, add.FlowID, "000000")
+	require.Nil(t, derr)
+
+	// 3) Delete phone identifier (get the correct Kratos ID for phone)
+	ids, err := deps.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, globalUserID, tenantID.String())
+	require.Nil(t, err)
+	var phoneKratosID string
+	for _, id := range ids {
+		if id.Type == constants.IdentifierPhone.String() {
+			phoneKratosID = id.KratosUserID
+			break
+		}
+	}
+	require.NotEmpty(t, phoneKratosID)
+
+	derr = ucase.DeleteIdentifier(ctx, globalUserID, tenantID, phoneKratosID, constants.IdentifierPhone.String())
+	require.Nil(t, derr)
+
+	// Ensure IAM now only has the email
+	idsAfter, err := deps.userIdentityRepo.GetByGlobalUserIDAndTenantID(ctx, nil, globalUserID, tenantID.String())
+	require.Nil(t, err)
+	var hasPhone, hasEmail bool
+	for _, id := range idsAfter {
+		if id.Type == constants.IdentifierPhone.String() {
+			hasPhone = true
+		}
+		if id.Type == constants.IdentifierEmail.String() && id.Value == email {
+			hasEmail = true
+		}
+	}
+	require.False(t, hasPhone)
+	require.True(t, hasEmail)
+
+	// 4) Re-register the same phone and verify OTP
+	reg2, derr := ucase.Register(ctx, tenantID, "en", "", phone)
+	require.Nil(t, derr)
+	require.NotNil(t, reg2)
+	_, derr = ucase.VerifyRegister(ctx, tenantID, reg2.VerificationFlow.FlowID, "000000")
+	require.Nil(t, derr)
+
+	// 5) Login by email still succeeds (OTP flow)
+	chall, derr := ucase.ChallengeWithEmail(ctx, tenantID, email)
+	require.Nil(t, derr)
+	require.NotNil(t, chall)
+	auth, derr := ucase.VerifyLogin(ctx, tenantID, chall.FlowID, "000000")
+	require.Nil(t, derr)
+	require.NotNil(t, auth)
+	require.True(t, auth.Active)
+	require.Equal(t, email, auth.User.Email)
+}
