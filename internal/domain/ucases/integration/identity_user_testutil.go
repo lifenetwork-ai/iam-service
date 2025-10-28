@@ -234,3 +234,85 @@ func startPostgresAndBuildAdminUCase(t *testing.T, ctx context.Context, ctrl *go
 
 	return adminUcase, deps, db, tenantID, container
 }
+
+func startPostgresAndBuildUCaseWithKratos(t *testing.T, ctx context.Context, ctrl *gomock.Controller, seedTenantName string, kratosSvc domainservice.KratosService) (interfaces.IdentityUserUseCase, interfaces.AdminUseCase, testDeps, *gorm.DB, uuid.UUID, testcontainers.Container) {
+	containerSem <- struct{}{}
+	t.Cleanup(func() { <-containerSem })
+
+	req := testcontainers.ContainerRequest{
+		Image:        "postgres:15-alpine",
+		ExposedPorts: []string{"5432/tcp"},
+		Env: map[string]string{
+			"POSTGRES_PASSWORD": "postgres",
+			"POSTGRES_USER":     "postgres",
+			"POSTGRES_DB":       "testdb",
+		},
+		WaitingFor: wait.ForSQL("5432/tcp", "postgres", func(host string, port nat.Port) string {
+			return fmt.Sprintf("host=%s port=%s user=postgres password=postgres dbname=testdb sslmode=disable", host, port.Port())
+		}).WithStartupTimeout(45 * time.Second),
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: req, Started: true})
+	require.NoError(t, err)
+
+	host, err := container.Host(ctx)
+	require.NoError(t, err)
+	port, err := container.MappedPort(ctx, "5432/tcp")
+	require.NoError(t, err)
+	dsn := fmt.Sprintf("host=%s user=postgres password=postgres dbname=testdb port=%s sslmode=disable TimeZone=UTC", host, port.Port())
+
+	var db *gorm.DB
+	for i := 0; i < 20; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			if sqlDB, derr := db.DB(); derr == nil {
+				if pingErr := sqlDB.Ping(); pingErr == nil {
+					break
+				}
+			}
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	require.NoError(t, err)
+
+	_ = db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";").Error
+	_ = db.Exec("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\";").Error
+	applyPostgresScriptsFromTestFile(t, db)
+
+	inMemCache := caching.NewCachingRepository(context.Background(), caching.NewGoCacheClient(cache.New(5*time.Minute, 10*time.Minute)))
+
+	deps := testDeps{}
+	deps.cacheRepo = mock_cache_types.NewMockCacheRepository(ctrl)
+	deps.tenantRepo = adaptersrepo.NewTenantRepository(db)
+	deps.globalUserRepo = adaptersrepo.NewGlobalUserRepository(db)
+	deps.userIdentityRepo = adaptersrepo.NewUserIdentityRepository(db)
+	deps.userIdentifierMappingRepo = adaptersrepo.NewUserIdentifierMappingRepository(db)
+	deps.challengeSessionRepo = adaptersrepo.NewChallengeSessionRepository(inMemCache)
+	deps.kratosService = kratosSvc
+	deps.rateLimiter = mock_rl_types.NewMockRateLimiter(ctrl)
+
+	ucase := ucases.NewIdentityUserUseCase(
+		db,
+		deps.cacheRepo,
+		deps.rateLimiter,
+		deps.challengeSessionRepo,
+		deps.tenantRepo,
+		deps.globalUserRepo,
+		deps.userIdentityRepo,
+		deps.userIdentifierMappingRepo,
+		deps.kratosService,
+	)
+
+	adminUcase := ucases.NewAdminUseCase(
+		deps.tenantRepo,
+		adaptersrepo.NewAdminAccountRepository(db),
+		deps.userIdentityRepo,
+		deps.userIdentifierMappingRepo,
+		deps.kratosService,
+	)
+
+	tenantID := uuid.New()
+	require.NoError(t, db.Create(&domain.Tenant{ID: tenantID, Name: seedTenantName}).Error)
+
+	return ucase, adminUcase, deps, db, tenantID, container
+}
