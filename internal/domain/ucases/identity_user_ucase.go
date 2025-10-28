@@ -623,8 +623,11 @@ func (u *userUseCase) Register(
 		// Orphan resolution: if IAM row exists but Kratos identity is gone, hard-delete IAM record and proceed
 		if existingIdentity, getErr := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), identifierType, identifierValue); getErr == nil && existingIdentity != nil {
 			if _, kerr := u.kratosService.GetIdentity(ctx, tenantID, uuid.MustParse(existingIdentity.KratosUserID)); kerr != nil {
-				// Kratos missing → treat as orphan; best-effort hard delete and continue
-				_ = u.userIdentityRepo.Delete(nil, existingIdentity.ID)
+				// Kratos missing → treat as orphan; hard delete IAM record before continuing
+				if err := u.userIdentityRepo.Delete(nil, existingIdentity.ID); err != nil {
+					logger.GetLogger().Errorf("Failed to delete orphan IAM identity: %v (identity_id=%s)", err, existingIdentity.ID)
+					return nil, domainerrors.WrapInternal(err, "MSG_DELETE_IDENTIFIER_FAILED", "Failed to delete orphan IAM identity")
+				}
 				exists = false
 			}
 		}
