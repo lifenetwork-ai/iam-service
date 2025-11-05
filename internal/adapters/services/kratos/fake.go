@@ -17,15 +17,14 @@ import (
 
 // Fault flags
 type Faults struct {
-	FailRegistration       bool
-	FailLogin              bool
-	FailVerification       bool
-	FailUpdate             bool
-	FailDelete             bool
-	NetworkError           bool
-	SimulateDuplicateError bool
-	ExpireFlowsAfter       time.Duration
-	RejectOTP              bool
+	FailRegistration bool
+	FailLogin        bool
+	FailVerification bool
+	FailUpdate       bool
+	FailDelete       bool
+	NetworkError     bool
+	ExpireFlowsAfter time.Duration
+	RejectOTP        bool
 }
 
 // FakeKratosService with fault injection.
@@ -99,11 +98,6 @@ func (f *FakeKratosService) SubmitRegistrationFlow(
 	for k, v := range traits {
 		if k == constants.IdentifierEmail.String() || k == constants.IdentifierPhone.String() {
 			val := v.(string)
-			if f.faults.SimulateDuplicateError {
-				if _, exists := f.identities[tenantID][val]; exists {
-					return nil, fmt.Errorf("duplicate identifier: %s", val)
-				}
-			}
 			f.identities[tenantID][val] = identity
 		}
 	}
