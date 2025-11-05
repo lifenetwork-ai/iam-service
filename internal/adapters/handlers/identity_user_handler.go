@@ -17,12 +17,14 @@ import (
 )
 
 type userHandler struct {
-	ucase interfaces.IdentityUserUseCase
+	ucase          interfaces.IdentityUserUseCase
+	courierUseCase interfaces.CourierUseCase
 }
 
-func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase) *userHandler {
+func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase, courierUseCase interfaces.CourierUseCase) *userHandler {
 	return &userHandler{
-		ucase: ucase,
+		ucase:          ucase,
+		courierUseCase: courierUseCase,
 	}
 }
 
@@ -74,6 +76,27 @@ func (h *userHandler) ChallengeWithPhone(ctx *gin.Context) {
 			nil,
 		)
 		return
+	}
+
+	// Optional: persist chosen channel when provided to guide OTP delivery
+	if strings.TrimSpace(reqPayload.Channel) != "" {
+		normalizedPhone, _, nerr := utils.NormalizePhoneE164(reqPayload.Phone, constants.DefaultRegion)
+		if nerr != nil {
+			httpresponse.Error(
+				ctx,
+				http.StatusBadRequest,
+				"MSG_INVALID_PHONE_NUMBER",
+				"Invalid phone number",
+				nil,
+			)
+			return
+		}
+
+		usecaseErr := h.courierUseCase.ChooseChannel(ctx, tenant.Name, normalizedPhone, strings.ToLower(strings.TrimSpace(reqPayload.Channel)))
+		if usecaseErr != nil {
+			handleDomainError(ctx, usecaseErr)
+			return
+		}
 	}
 
 	challenge, usecaseErr := h.ucase.ChallengeWithPhone(ctx, tenant.ID, reqPayload.Phone)
@@ -304,7 +327,7 @@ func (h *userHandler) Logout(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param register body dto.IdentityUserRegisterDTO true "Only `email` or `phone` must be provided, if both are provided then error will be returned. `lang` is required, supported values are `en` and `vi`."
+// @Param register body dto.IdentityUserRegisterDTO true "Only `email` or `phone` must be provided (not both). `lang` is required (`en`|`vi`). Optional `channel` (sms|whatsapp|zalo) can be provided when registering with `phone` to send OTP immediately via that channel."
 // @Success 200 {object} response.SuccessResponse{data=types.IdentityUserAuthResponse} "Successful user registration with verification flow"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 409 {object} response.ErrorResponse "Email or phone number already exists"
@@ -346,6 +369,28 @@ func (h *userHandler) Register(ctx *gin.Context) {
 			errResponse.Details,
 		)
 		return
+	}
+
+	// Optional: if registering with phone and a channel is provided, persist the chosen channel before triggering OTP
+	if strings.TrimSpace(reqPayload.Phone) != "" && strings.TrimSpace(reqPayload.Channel) != "" {
+		// Normalize phone to E.164 for channel cache key consistency
+		normalizedPhone, _, nerr := utils.NormalizePhoneE164(reqPayload.Phone, constants.DefaultRegion)
+		if nerr != nil {
+			httpresponse.Error(
+				ctx,
+				http.StatusBadRequest,
+				"MSG_INVALID_PHONE_NUMBER",
+				"Invalid phone number",
+				nil,
+			)
+			return
+		}
+
+		usecaseErr := h.courierUseCase.ChooseChannel(ctx, tenant.Name, normalizedPhone, strings.ToLower(strings.TrimSpace(reqPayload.Channel)))
+		if usecaseErr != nil {
+			handleDomainError(ctx, usecaseErr)
+			return
+		}
 	}
 
 	auth, usecaseErr := h.ucase.Register(ctx.Request.Context(), tenant.ID, reqPayload.Lang, reqPayload.Email, reqPayload.Phone)
@@ -589,6 +634,15 @@ func (h *userHandler) ChallengeVerification(ctx *gin.Context) {
 			nil,
 		)
 		return
+	}
+
+	// Optional: if identifier is phone and channel is provided, persist chosen channel before triggering OTP
+	if identifierType == constants.IdentifierPhone.String() && strings.TrimSpace(req.Channel) != "" {
+		usecaseErr := h.courierUseCase.ChooseChannel(ctx, tenant.Name, req.Identifier, strings.ToLower(strings.TrimSpace(req.Channel)))
+		if usecaseErr != nil {
+			handleDomainError(ctx, usecaseErr)
+			return
+		}
 	}
 
 	result, usecaseErr := h.ucase.ChallengeVerification(ctx.Request.Context(), tenant.ID, req.Identifier)

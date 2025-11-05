@@ -1704,7 +1704,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Only ` + "`" + `email` + "`" + ` or ` + "`" + `phone` + "`" + ` must be provided, if both are provided then error will be returned. ` + "`" + `lang` + "`" + ` is required, supported values are ` + "`" + `en` + "`" + ` and ` + "`" + `vi` + "`" + `.",
+                        "description": "Only ` + "`" + `email` + "`" + ` or ` + "`" + `phone` + "`" + ` must be provided (not both). ` + "`" + `lang` + "`" + ` is required (` + "`" + `en` + "`" + `|` + "`" + `vi` + "`" + `). Optional ` + "`" + `channel` + "`" + ` (sms|whatsapp|zalo) can be provided when registering with ` + "`" + `phone` + "`" + ` to send OTP immediately via that channel.",
                         "name": "register",
                         "in": "body",
                         "required": true,
@@ -2127,6 +2127,14 @@ const docTemplate = `{
         "dto.IdentityChallengeWithPhoneDTO": {
             "type": "object",
             "properties": {
+                "channel": {
+                    "type": "string",
+                    "enum": [
+                        "sms",
+                        "whatsapp",
+                        "zalo"
+                    ]
+                },
                 "phone": {
                     "type": "string"
                 }
@@ -2176,6 +2184,14 @@ const docTemplate = `{
                 "lang"
             ],
             "properties": {
+                "channel": {
+                    "type": "string",
+                    "enum": [
+                        "sms",
+                        "whatsapp",
+                        "zalo"
+                    ]
+                },
                 "email": {
                     "type": "string"
                 },
@@ -2208,6 +2224,14 @@ const docTemplate = `{
                 "identifier"
             ],
             "properties": {
+                "channel": {
+                    "type": "string",
+                    "enum": [
+                        "sms",
+                        "whatsapp",
+                        "zalo"
+                    ]
+                },
                 "identifier": {
                     "type": "string"
                 }
