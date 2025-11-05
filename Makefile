@@ -32,8 +32,7 @@ test:
 # Run only integration tests under ucases/integration
 .PHONY: test-integration
 test-integration:
-
-	go test -v -tags=integration ./...
+	go test -v -tags=integration ./internal/domain/...
 
 .PHONY: test-unit
 # Run all unit tests (exclude integration-tagged tests)

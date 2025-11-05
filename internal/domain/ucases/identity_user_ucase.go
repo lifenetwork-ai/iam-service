@@ -619,6 +619,21 @@ func (u *userUseCase) Register(
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_IAM_LOOKUP_FAILED", "Failed to check existing identifier")
 	}
+
+	// nolint:nestif
+	if exists {
+		// Orphan resolution: if IAM row exists but Kratos identity is gone, hard-delete IAM record and proceed
+		if existingIdentity, getErr := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), identifierType, identifierValue); getErr == nil && existingIdentity != nil {
+			if _, kerr := u.kratosService.GetIdentity(ctx, tenantID, uuid.MustParse(existingIdentity.KratosUserID)); kerr != nil {
+				// Kratos missing → treat as orphan; hard delete IAM record before continuing
+				if err := u.userIdentityRepo.Delete(nil, existingIdentity.ID); err != nil {
+					logger.GetLogger().Errorf("Failed to delete orphan IAM identity: %v (identity_id=%s)", err, existingIdentity.ID)
+					return nil, domainerrors.WrapInternal(err, "MSG_DELETE_IDENTIFIER_FAILED", "Failed to delete orphan IAM identity")
+				}
+				exists = false
+			}
+		}
+	}
 	if exists {
 		return nil, domainerrors.NewConflictError("MSG_IDENTIFIER_ALREADY_EXISTS", "Identifier has already been registered", nil)
 	}
@@ -989,15 +1004,16 @@ func (u *userUseCase) DeleteIdentifier(
 		return domainerrors.NewConflictError("MSG_CANNOT_DELETE_ONLY_IDENTIFIER", "Cannot delete the only identifier", nil)
 	}
 
-	// 5. Delete the identifier from the database
-	if err := u.userIdentityRepo.Delete(nil, identifierToDelete.ID); err != nil {
-		return domainerrors.WrapInternal(err, "MSG_DELETE_IDENTIFIER_FAILED", "Failed to delete identifier")
+	// 5. Delete the identifier from Kratos FIRST; abort IAM deletion on failure
+	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenantID, uuid.MustParse(kratosUserID)); err != nil {
+		return domainerrors.WrapInternal(err, "MSG_DELETE_IDENTIFIER_FAILED", "Failed to delete identifier from Kratos")
 	}
 
-	// 6. Delete the identifier from Kratos
-	if err := u.kratosService.DeleteIdentifierAdmin(ctx, tenantID, uuid.MustParse(kratosUserID)); err != nil {
-		// Log the error but don't fail the operation since we've already deleted from our database
-		logger.GetLogger().Errorf("Failed to delete identifier from Kratos: %v", err)
+	// 6. Delete the identifier from the database only after Kratos succeeds
+	if err := u.userIdentityRepo.Delete(nil, identifierToDelete.ID); err != nil {
+		logger.GetLogger().Errorf("IAM delete after Kratos success failed: %v (identity_id=%s)", err, identifierToDelete.ID)
+		// Consider operation successful since Kratos is the source of truth for auth surface
+		return nil
 	}
 
 	return nil
