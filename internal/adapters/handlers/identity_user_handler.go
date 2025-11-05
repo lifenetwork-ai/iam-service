@@ -35,7 +35,7 @@ func NewIdentityUserHandler(ucase interfaces.IdentityUserUseCase, courierUseCase
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param challenge body dto.IdentityChallengeWithPhoneDTO true "challenge payload"
+// @Param challenge body dto.IdentityChallengeWithPhoneDTO true "Phone to challenge, channel is optional, can be sms, whatsapp, zalo"
 // @Success 200 {object} response.SuccessResponse "Successful make a challenge with Phone and OTP"
 // @Failure 400 {object} response.ErrorResponse "Invalid request payload"
 // @Failure 429 {object} response.ErrorResponse "Too many attempts, rate limit exceeded"

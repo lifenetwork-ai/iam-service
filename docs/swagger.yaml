@@ -1217,7 +1217,8 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: challenge payload
+      - description: Phone to challenge, channel is optional, can be sms, whatsapp,
+          zalo
         in: body
         name: challenge
         required: true

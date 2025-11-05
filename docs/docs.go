@@ -1170,7 +1170,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "challenge payload",
+                        "description": "Phone to challenge, channel is optional, can be sms, whatsapp, zalo",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
