@@ -186,6 +186,12 @@ definitions:
     type: object
   dto.IdentityChallengeWithPhoneDTO:
     properties:
+      channel:
+        enum:
+        - sms
+        - whatsapp
+        - zalo
+        type: string
       phone:
         type: string
     type: object
@@ -216,6 +222,12 @@ definitions:
     type: object
   dto.IdentityUserRegisterDTO:
     properties:
+      channel:
+        enum:
+        - sms
+        - whatsapp
+        - zalo
+        type: string
       email:
         type: string
       lang:
@@ -237,6 +249,12 @@ definitions:
     type: object
   dto.IdentityVerificationChallengeDTO:
     properties:
+      channel:
+        enum:
+        - sms
+        - whatsapp
+        - zalo
+        type: string
       identifier:
         type: string
     required:
@@ -1542,9 +1560,9 @@ paths:
         name: X-Tenant-Id
         required: true
         type: string
-      - description: Only `email` or `phone` must be provided, if both are provided
-          then error will be returned. `lang` is required, supported values are `en`
-          and `vi`.
+      - description: Only `email` or `phone` must be provided (not both). `lang` is
+          required (`en`|`vi`). Optional `channel` (sms|whatsapp|zalo) can be provided
+          when registering with `phone` to send OTP immediately via that channel.
         in: body
         name: register
         required: true
