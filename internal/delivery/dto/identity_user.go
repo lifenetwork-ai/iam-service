@@ -18,10 +18,10 @@ type IdentityChallengeVerifyDTO struct {
 }
 
 type IdentityUserRegisterDTO struct {
-	Lang  string `json:"lang" binding:"required,oneof=en vi" description:"The language for the user registration"`
-	Email string `json:"email" binding:"omitempty,email"`
-	Phone string `json:"phone" binding:"omitempty"`
-    Channel string `json:"channel" binding:"omitempty,oneof=sms whatsapp zalo" description:"Optional delivery channel for OTP when registering with phone; one of sms, whatsapp, zalo"`
+	Lang    string `json:"lang" binding:"required,oneof=en vi" description:"The language for the user registration"`
+	Email   string `json:"email" binding:"omitempty,email"`
+	Phone   string `json:"phone" binding:"omitempty"`
+	Channel string `json:"channel" binding:"omitempty,oneof=sms whatsapp zalo" description:"Optional delivery channel for OTP when registering with phone; one of sms, whatsapp, zalo"`
 }
 
 // IdentityUserLoginDTO represents the request for a user login.

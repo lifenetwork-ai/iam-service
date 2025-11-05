@@ -85,7 +85,7 @@ func RegisterRoutes(
 	userRouter.Use(
 		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
 	)
-    userHandler := handlers.NewIdentityUserHandler(ucases.IdentityUserUCase, ucases.CourierUCase)
+	userHandler := handlers.NewIdentityUserHandler(ucases.IdentityUserUCase, ucases.CourierUCase)
 	userRouter.POST(
 		"/challenge-with-phone",
 		middleware.IPRateLimitMiddleware(middleware.RateLimitConfig{
