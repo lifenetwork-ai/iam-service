@@ -2,7 +2,8 @@ package dto
 
 // IdentityChallengeWithPhoneDTO represents the request for a phone challenge.
 type IdentityChallengeWithPhoneDTO struct {
-	Phone string `json:"phone"`
+	Phone   string `json:"phone"`
+	Channel string `json:"channel" binding:"omitempty,oneof=sms whatsapp zalo" description:"Optional delivery channel for OTP; one of sms, whatsapp, zalo"`
 }
 
 // IdentityChallengeWithEmailDTO represents the request for a email challenge.
@@ -20,6 +21,7 @@ type IdentityUserRegisterDTO struct {
 	Lang  string `json:"lang" binding:"required,oneof=en vi" description:"The language for the user registration"`
 	Email string `json:"email" binding:"omitempty,email"`
 	Phone string `json:"phone" binding:"omitempty"`
+    Channel string `json:"channel" binding:"omitempty,oneof=sms whatsapp zalo" description:"Optional delivery channel for OTP when registering with phone; one of sms, whatsapp, zalo"`
 }
 
 // IdentityUserLoginDTO represents the request for a user login.
@@ -46,6 +48,7 @@ type IdentityUserDeleteIdentifierDTO struct {
 // IdentityVerificationChallengeDTO represents the request for initiating a verification challenge.
 type IdentityVerificationChallengeDTO struct {
 	Identifier string `json:"identifier" binding:"required" description:"Email or phone number to verify"`
+	Channel    string `json:"channel" binding:"omitempty,oneof=sms whatsapp zalo" description:"Optional delivery channel for OTP when identifier is a phone; one of sms, whatsapp, zalo"`
 }
 
 // IdentityUserUpdateLangDTO represents the request for updating user's language preference.
