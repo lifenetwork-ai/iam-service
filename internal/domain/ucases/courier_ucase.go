@@ -145,7 +145,9 @@ func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver st
 		}
 		return types.ChooseChannelResponse{}, domainerrors.NewInternalError("MSG_GET_CHANNEL_FAILED", "Failed to get channel from cache").WithCause(err)
 	}
-
+	if response == constants.ChannelSMS && shouldDefaultToWebhook() {
+		return types.ChooseChannelResponse{Channel: constants.DefaultSMSChannel}, nil
+	}
 	return types.ChooseChannelResponse{
 		Channel: response,
 	}, nil

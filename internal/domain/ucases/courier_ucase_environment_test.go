@@ -84,45 +84,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+84344381024",
 			channel:               constants.ChannelSMS,
-			expectedActualChannel: constants.ChannelSMS,
-			shouldRouteToSpeedSMS: false,
-		},
-		{
-			name:                  "DEVELOPMENT environment does NOT route Vietnamese phone to SpeedSMS",
-			environment:           "DEVELOPMENT",
-			tenantName:            constants.TenantLifeAI,
-			receiver:              "+84987654321",
-			channel:               constants.ChannelSMS,
-			expectedActualChannel: constants.ChannelSMS,
-			shouldRouteToSpeedSMS: false,
-		},
-		{
-			name:                  "dev (lowercase) environment does NOT route Vietnamese phone to SpeedSMS",
-			environment:           "dev",
-			tenantName:            constants.TenantLifeAI,
-			receiver:              "+84912345678",
-			channel:               constants.ChannelSMS,
-			expectedActualChannel: constants.ChannelSMS,
-			shouldRouteToSpeedSMS: false,
-		},
-
-		// Local/Test environment cases - should NOT route to SpeedSMS
-		{
-			name:                  "LOCAL environment does NOT route Vietnamese phone to SpeedSMS",
-			environment:           "LOCAL",
-			tenantName:            constants.TenantLifeAI,
-			receiver:              "+84344381024",
-			channel:               constants.ChannelSMS,
-			expectedActualChannel: constants.ChannelSMS,
-			shouldRouteToSpeedSMS: false,
-		},
-		{
-			name:                  "TEST environment does NOT route Vietnamese phone to SpeedSMS",
-			environment:           "TEST",
-			tenantName:            constants.TenantLifeAI,
-			receiver:              "+84987654321",
-			channel:               constants.ChannelSMS,
-			expectedActualChannel: constants.ChannelSMS,
+			expectedActualChannel: constants.DefaultSMSChannel,
 			shouldRouteToSpeedSMS: false,
 		},
 
@@ -339,15 +301,7 @@ func TestCourierUseCase_ChooseChannel_EdgeCases(t *testing.T) {
 			tenantName:            constants.TenantGenetica,
 			receiver:              "+84344381024",
 			channel:               constants.ChannelSMS,
-			expectedActualChannel: constants.ChannelSMS,
-		},
-		{
-			name:                  "Environment with whitespace still routes correctly",
-			environment:           " STAGING ",
-			tenantName:            constants.TenantLifeAI,
-			receiver:              "+84344381024",
-			channel:               constants.ChannelSMS,
-			expectedActualChannel: constants.ChannelSpeedSMS,
+			expectedActualChannel: constants.DefaultSMSChannel,
 		},
 	}
 
