@@ -61,6 +61,7 @@ const (
 	ChannelWhatsApp = "whatsapp"
 	ChannelZalo     = "zalo"
 	ChannelSpeedSMS = "speedsms"
+	ChannelWebhook  = "webhook"
 
 	// Retry related constants
 	MaxOTPRetryCount   = 5
@@ -91,5 +92,12 @@ const (
 )
 
 const (
+	// for nightly, sms is default to webhook
 	DefaultSMSChannel = "webhook"
+)
+
+const (
+	NightlyEnvironment    = "NIGHTLY"
+	StagingEnvironment    = "STAGING"
+	ProductionEnvironment = "PRODUCTION"
 )

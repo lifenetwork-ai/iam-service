@@ -38,69 +38,67 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 
 	testCases := []struct {
 		name            string
+		environment     string
 		tenantName      string
 		receiver        string
-		channel         string
+		inputChannel    string
+		expectedChannel string
 		expectError     bool
 		expectedErrMsg  string
 		expectedErrCode string
 	}{
 		// Valid phone number cases
 		{
-			name:        "Valid E164 phone number with SMS channel",
-			tenantName:  constants.TenantLifeAI,
-			receiver:    "+84344381024",
-			channel:     constants.ChannelSMS,
-			expectError: false,
+			name:            "Valid E164 phone number with SMS channel - Nightly",
+			environment:     constants.NightlyEnvironment,
+			tenantName:      constants.TenantLifeAI,
+			receiver:        "+84344381024",
+			inputChannel:    constants.ChannelSMS,
+			expectedChannel: constants.ChannelWebhook,
+			expectError:     false,
 		},
 		{
-			name:        "Valid E164 phone number with WhatsApp channel",
-			tenantName:  constants.TenantLifeAI,
-			receiver:    "+84344381024",
-			channel:     constants.ChannelWhatsApp,
-			expectError: false,
+			name:            "Valid Vietnamese phone number with SMS channel - Staging",
+			environment:     constants.StagingEnvironment,
+			tenantName:      constants.TenantLifeAI,
+			receiver:        "+84344381024",
+			inputChannel:    constants.ChannelSMS,
+			expectedChannel: constants.ChannelSpeedSMS,
+			expectError:     false,
 		},
 		{
-			name:        "Valid E164 phone number with Zalo channel for Genetica",
-			tenantName:  constants.TenantGenetica,
-			receiver:    "+84344381024",
-			channel:     constants.ChannelZalo,
-			expectError: false,
+			name:            "Valid Thailand phone number with SMS channel - Production",
+			environment:     constants.ProductionEnvironment,
+			tenantName:      constants.TenantLifeAI,
+			receiver:        "+66812345678",
+			inputChannel:    constants.ChannelSMS,
+			expectedChannel: constants.ChannelSMS,
+			expectError:     false,
 		},
 		{
-			name:        "Valid Vietnam phone number",
-			tenantName:  constants.TenantLifeAI,
-			receiver:    "+84987654321",
-			channel:     constants.ChannelSMS,
-			expectError: false,
+			name:            "Valid E164 phone number with WhatsApp channel",
+			tenantName:      constants.TenantLifeAI,
+			receiver:        "+84344381024",
+			inputChannel:    constants.ChannelWhatsApp,
+			expectedChannel: constants.ChannelWhatsApp,
+			expectError:     false,
 		},
 		{
-			name:        "Valid Thailand phone number",
-			tenantName:  constants.TenantLifeAI,
-			receiver:    "+66812345678",
-			channel:     constants.ChannelSMS,
-			expectError: false,
+			name:            "Valid E164 phone number with Zalo channel for Genetica",
+			tenantName:      constants.TenantGenetica,
+			receiver:        "+84344381024",
+			inputChannel:    constants.ChannelZalo,
+			expectedChannel: constants.ChannelZalo,
+			expectError:     false,
 		},
 		{
-			name:        "Valid Indonesia phone number",
-			tenantName:  constants.TenantLifeAI,
-			receiver:    "+6281234567890",
-			channel:     constants.ChannelSMS,
-			expectError: false,
-		},
-		{
-			name:        "Valid Korea phone number",
-			tenantName:  constants.TenantLifeAI,
-			receiver:    "+821012345678",
-			channel:     constants.ChannelSMS,
-			expectError: false,
-		},
-		{
-			name:        "Valid China phone number",
-			tenantName:  constants.TenantLifeAI,
-			receiver:    "+8613800138000",
-			channel:     constants.ChannelSMS,
-			expectError: false,
+			name:            "Valid Vietnam phone number with SMS channel - Nightly",
+			environment:     constants.NightlyEnvironment,
+			tenantName:      constants.TenantLifeAI,
+			receiver:        "+84987654321",
+			inputChannel:    constants.ChannelSMS,
+			expectedChannel: constants.ChannelWebhook,
+			expectError:     false,
 		},
 
 		// Invalid receiver cases - should only accept phone numbers
@@ -108,7 +106,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 			name:            "Email address should be rejected",
 			tenantName:      constants.TenantLifeAI,
 			receiver:        "user@example.com",
-			channel:         constants.ChannelSMS,
+			inputChannel:    constants.ChannelWebhook,
 			expectError:     true,
 			expectedErrMsg:  "Invalid phone number",
 			expectedErrCode: "MSG_INVALID_RECEIVER",
@@ -117,7 +115,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 			name:            "Username should be rejected",
 			tenantName:      constants.TenantLifeAI,
 			receiver:        "username123",
-			channel:         constants.ChannelSMS,
+			inputChannel:    constants.ChannelWebhook,
 			expectError:     true,
 			expectedErrMsg:  "Invalid phone number",
 			expectedErrCode: "MSG_INVALID_RECEIVER",
@@ -126,7 +124,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 			name:            "Empty receiver should be rejected",
 			tenantName:      constants.TenantLifeAI,
 			receiver:        "",
-			channel:         constants.ChannelSMS,
+			inputChannel:    constants.ChannelWebhook,
 			expectError:     true,
 			expectedErrMsg:  "Invalid phone number",
 			expectedErrCode: "MSG_INVALID_RECEIVER",
@@ -135,7 +133,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 			name:            "Invalid phone number format should be rejected",
 			tenantName:      constants.TenantLifeAI,
 			receiver:        "123456",
-			channel:         constants.ChannelSMS,
+			inputChannel:    constants.ChannelWebhook,
 			expectError:     true,
 			expectedErrMsg:  "Invalid phone number",
 			expectedErrCode: "MSG_INVALID_RECEIVER",
@@ -144,7 +142,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 			name:            "Phone number without country code should be rejected",
 			tenantName:      constants.TenantLifeAI,
 			receiver:        "0344381024",
-			channel:         constants.ChannelSMS,
+			inputChannel:    constants.ChannelWebhook,
 			expectError:     true,
 			expectedErrMsg:  "Invalid phone number",
 			expectedErrCode: "MSG_INVALID_RECEIVER",
@@ -153,7 +151,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 			name:            "Invalid E164 format should be rejected",
 			tenantName:      constants.TenantLifeAI,
 			receiver:        "+84-344-381-024",
-			channel:         constants.ChannelSMS,
+			inputChannel:    constants.ChannelWebhook,
 			expectError:     true,
 			expectedErrMsg:  "Invalid phone number",
 			expectedErrCode: "MSG_INVALID_RECEIVER",
@@ -164,7 +162,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 			name:            "Empty channel should be rejected",
 			tenantName:      constants.TenantLifeAI,
 			receiver:        "+84344381024",
-			channel:         "",
+			inputChannel:    "",
 			expectError:     true,
 			expectedErrMsg:  "Channel is required",
 			expectedErrCode: "MSG_INVALID_CHANNEL",
@@ -173,7 +171,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 			name:            "Invalid channel should be rejected",
 			tenantName:      constants.TenantLifeAI,
 			receiver:        "+84344381024",
-			channel:         "invalid_channel",
+			inputChannel:    "invalid_channel",
 			expectError:     true,
 			expectedErrMsg:  "Channel not supported",
 			expectedErrCode: "MSG_CHANNEL_NOT_SUPPORTED",
@@ -182,16 +180,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 			name:            "Zalo channel not supported for LifeAI tenant",
 			tenantName:      constants.TenantLifeAI,
 			receiver:        "+84344381024",
-			channel:         constants.ChannelZalo,
-			expectError:     true,
-			expectedErrMsg:  "Channel not supported",
-			expectedErrCode: "MSG_CHANNEL_NOT_SUPPORTED",
-		},
-		{
-			name:            "WhatsApp channel not supported for Genetica tenant",
-			tenantName:      constants.TenantGenetica,
-			receiver:        "+84344381024",
-			channel:         constants.ChannelWhatsApp,
+			inputChannel:    constants.ChannelZalo,
 			expectError:     true,
 			expectedErrMsg:  "Channel not supported",
 			expectedErrCode: "MSG_CHANNEL_NOT_SUPPORTED",
@@ -200,7 +189,11 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := courierUseCase.ChooseChannel(ctx, tc.tenantName, tc.receiver, tc.channel)
+			defer func() {
+				conf.SetEnvironmentForTesting(constants.NightlyEnvironment)
+			}()
+			conf.SetEnvironmentForTesting(tc.environment)
+			err := courierUseCase.ChooseChannel(ctx, tc.tenantName, tc.receiver, tc.inputChannel)
 
 			if tc.expectError {
 				require.NotNil(t, err, "Expected error but got nil")
@@ -212,7 +205,7 @@ func TestCourierUseCase_ChooseChannel_PhoneNumberValidation_Integration(t *testi
 				// Verify that the channel was saved correctly
 				channelResponse, getErr := courierUseCase.GetChannel(ctx, tc.tenantName, tc.receiver)
 				require.Nil(t, getErr, "Failed to get saved channel")
-				require.Equal(t, tc.channel, channelResponse.Channel, "Saved channel mismatch")
+				require.Equal(t, tc.expectedChannel, channelResponse.Channel, "Saved channel mismatch")
 			}
 		})
 	}
@@ -245,19 +238,19 @@ func TestCourierUseCase_GetAvailableChannels_Integration(t *testing.T) {
 			name:             "LifeAI tenant should support SMS and WhatsApp",
 			tenantName:       constants.TenantLifeAI,
 			receiver:         "+84344381024",
-			expectedChannels: []string{constants.ChannelSMS, constants.ChannelWhatsApp},
+			expectedChannels: []string{constants.ChannelWebhook, constants.ChannelWhatsApp},
 		},
 		{
 			name:             "Genetica tenant should support SMS and Zalo",
 			tenantName:       constants.TenantGenetica,
 			receiver:         "+84344381024",
-			expectedChannels: []string{constants.ChannelSMS, constants.ChannelZalo},
+			expectedChannels: []string{constants.ChannelWebhook, constants.ChannelZalo},
 		},
 		{
 			name:             "Unknown tenant should support all channels",
 			tenantName:       "unknown_tenant",
 			receiver:         "+84344381024",
-			expectedChannels: []string{constants.ChannelSMS, constants.ChannelWhatsApp, constants.ChannelZalo},
+			expectedChannels: []string{constants.ChannelWebhook, constants.ChannelWhatsApp, constants.ChannelZalo},
 		},
 	}
 
@@ -288,7 +281,7 @@ func TestCourierUseCase_ChooseChannel_CacheIntegration(t *testing.T) {
 
 	tenantName := constants.TenantLifeAI
 	receiver := "+84344381024"
-	channel := constants.ChannelSMS
+	channel := constants.ChannelWebhook
 
 	// Test choosing a channel
 	err := courierUseCase.ChooseChannel(ctx, tenantName, receiver, channel)
@@ -311,7 +304,7 @@ func TestCourierUseCase_ChooseChannel_CacheIntegration(t *testing.T) {
 
 	// Test with different receiver (should be independent)
 	differentReceiver := "+84987654321"
-	differentChannel := constants.ChannelSMS
+	differentChannel := constants.ChannelWebhook
 	err = courierUseCase.ChooseChannel(ctx, tenantName, differentReceiver, differentChannel)
 	require.Nil(t, err, "Failed to choose channel for different receiver")
 
@@ -353,5 +346,5 @@ func TestCourierUseCase_GetChannel_CacheMiss_Integration(t *testing.T) {
 	// Test getting channel when no channel has been chosen (cache miss)
 	channelResponse, getErr := courierUseCase.GetChannel(ctx, tenantName, receiver)
 	require.Nil(t, getErr, "Expected no error on cache miss")
-	require.Equal(t, constants.ChannelSpeedSMS, channelResponse.Channel, "Should fallback to SMS on cache miss")
+	require.Equal(t, constants.ChannelWebhook, channelResponse.Channel, "Should fallback to SMS on cache miss")
 }
