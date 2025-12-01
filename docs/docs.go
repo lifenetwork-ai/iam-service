@@ -9,15 +9,28 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "support@lifenetwork.ai"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/groups": {
-            "get": {
-                "description": "Get groups",
+        "/api/v1/admin/accounts": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Create a new admin account (requires root account configured via ROOT_USERNAME and ROOT_PASSWORD env vars)",
                 "consumes": [
                     "application/json"
                 ],
@@ -25,58 +38,369 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "groups"
+                    "admin"
                 ],
-                "summary": "Retrieve groups",
+                "summary": "Create a new admin account",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Keyword",
-                        "name": "keyword",
-                        "in": "query"
+                        "description": "Admin account details",
+                        "name": "admin",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateAdminAccountPayloadDTO"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Successful retrieval of groups",
+                    "201": {
+                        "description": "Successful creation of admin account",
                         "schema": {
-                            "$ref": "#/definitions/dto.PaginationDTOResponse"
+                            "$ref": "#/definitions/dto.AdminAccountDTO"
                         }
                     },
                     "400": {
-                        "description": "Invalid page number or size",
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Not the root account",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/identifiers/add": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Infer types from values. existing_identifier resolves the user; new_identifier must be a different type (email vs phone). Creates a new Kratos identity and maps it to the same global user. No OTP is triggered.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "identifiers"
+                ],
+                "summary": "Add a new identifier for a user (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload with existing_identifier and new_identifier",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminAddIdentifierPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminAddIdentifierResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/identifiers/check": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Return true if the given identifier (email/phone) already exists in this tenant.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "identifiers"
+                ],
+                "summary": "Check if an identifier is registered in this tenant",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifier payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminCheckIdentifierPayloadDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.CheckIdentifierResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/sms/zalo/health": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Perform a health check against the Zalo API using current token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sms"
+                ],
+                "summary": "Zalo provider health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/sms/zalo/token": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Get Zalo token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sms"
+                ],
+                "summary": "Get Zalo token",
+                "responses": {
+                    "200": {
+                        "description": "Zalo token",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ZaloTokenResponseDTO"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/sms/zalo/token/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Refresh the Zalo access token using the refresh token and return the new token details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sms"
+                ],
+                "summary": "Refresh Zalo token",
+                "parameters": [
+                    {
+                        "description": "Refresh Zalo token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshZaloTokenRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Refreshed Zalo token",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshZaloTokenResponseDTO"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/tenants": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Get a paginated list of tenants with optional search",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tenants"
+                ],
+                "summary": "List all tenants",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default: 10)",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TenantPaginationDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -84,7 +408,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new group",
+                "description": "Create a new tenant with the provided details",
                 "consumes": [
                     "application/json"
                 ],
@@ -92,49 +416,41 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "groups"
+                    "tenants"
                 ],
-                "summary": "Create a new group",
+                "summary": "Create a new tenant",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "group payload",
-                        "name": "group",
+                        "description": "Tenant details",
+                        "name": "tenant",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateIdentityGroupPayloadDTO"
+                            "$ref": "#/definitions/dto.CreateTenantPayloadDTO"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "Successful creation of group",
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityGroupDTO"
+                            "$ref": "#/definitions/dto.TenantDTO"
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
-                    "500": {
-                        "description": "Internal server error",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -142,9 +458,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/groups/{group_id}": {
+        "/api/v1/admin/tenants/{id}": {
             "get": {
-                "description": "Get group by ID",
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Get detailed information about a tenant",
                 "consumes": [
                     "application/json"
                 ],
@@ -152,53 +473,39 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "groups"
+                    "tenants"
                 ],
-                "summary": "Retrieve group by ID",
+                "summary": "Get a tenant by ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "group ID",
-                        "name": "group_id",
+                        "description": "Tenant ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful retrieval of group",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityGroupDTO"
+                            "$ref": "#/definitions/dto.TenantDTO"
                         }
                     },
                     "400": {
-                        "description": "Invalid request ID",
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "group not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -206,7 +513,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update an existing group",
+                "description": "Update a tenant's details",
                 "consumes": [
                     "application/json"
                 ],
@@ -214,62 +521,54 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "groups"
+                    "tenants"
                 ],
-                "summary": "Update an existing group",
+                "summary": "Update a tenant",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "group ID",
-                        "name": "group_id",
+                        "description": "Tenant ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "group payload",
-                        "name": "group",
+                        "description": "Tenant details",
+                        "name": "tenant",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateIdentityGroupPayloadDTO"
+                            "$ref": "#/definitions/dto.UpdateTenantPayloadDTO"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful update of group",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityGroupDTO"
+                            "$ref": "#/definitions/dto.TenantDTO"
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "group not found",
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
-                    "500": {
-                        "description": "Internal server error",
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -277,7 +576,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete an existing group",
+                "description": "Delete a tenant and all associated data",
                 "consumes": [
                     "application/json"
                 ],
@@ -285,50 +584,39 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "groups"
+                    "tenants"
                 ],
-                "summary": "Delete an existing group",
+                "summary": "Delete a tenant",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "group ID",
-                        "name": "group_id",
+                        "description": "Tenant ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Successful deletion of group"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TenantDTO"
+                        }
                     },
                     "400": {
-                        "description": "Invalid request ID",
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "group not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -336,9 +624,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/organizations": {
+        "/api/v1/courier/available-channels": {
             "get": {
-                "description": "Get organizations",
+                "description": "Returns available delivery channels (SMS, WhatsApp, Zalo) based on receiver and tenant",
                 "consumes": [
                     "application/json"
                 ],
@@ -346,66 +634,65 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "organizations"
+                    "courier"
                 ],
-                "summary": "Retrieve organizations",
+                "summary": "Get available delivery channels",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
+                        "description": "Receiver identifier",
+                        "name": "receiver",
+                        "in": "query",
                         "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Keyword",
-                        "name": "keyword",
-                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful retrieval of organizations",
+                        "description": "List of available channels",
                         "schema": {
-                            "$ref": "#/definitions/dto.PaginationDTOResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "Invalid page number or size",
+                        "description": "Invalid receiver",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
-                    "500": {
-                        "description": "Internal server error",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
-            },
+            }
+        },
+        "/api/v1/courier/choose-channel": {
             "post": {
-                "description": "Create a new organization",
+                "description": "Chooses a channel for a receiver (SMS, WhatsApp, Zalo)",
                 "consumes": [
                     "application/json"
                 ],
@@ -413,39 +700,32 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "organizations"
+                    "courier"
                 ],
-                "summary": "Create a new organization",
+                "summary": "Choose a channel for a receiver",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "organization payload",
-                        "name": "organization",
+                        "description": "Channel and receiver. ` + "`" + `channel` + "`" + ` must be one of: ` + "`" + `sms` + "`" + `, ` + "`" + `whatsapp` + "`" + `, ` + "`" + `zalo` + "`" + `. ` + "`" + `receiver` + "`" + ` must be a valid phone number.",
+                        "name": "payload",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateIdentityOrganizationPayloadDTO"
+                            "$ref": "#/definitions/dto.CourierChooseChannelRequestDTO"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Successful creation of organization",
+                    "200": {
+                        "description": "Channel chosen successfully",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityOrganizationDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
@@ -463,9 +743,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/organizations/{organization_id}": {
-            "get": {
-                "description": "Get organization by ID",
+        "/api/v1/courier/messages/{api_key}": {
+            "post": {
+                "description": "Receive courier content and enqueue it for delivery",
                 "consumes": [
                     "application/json"
                 ],
@@ -473,156 +753,42 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "organizations"
+                    "courier"
                 ],
-                "summary": "Retrieve organization by ID",
+                "summary": "Receive courier message (from webhook or sender)",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
+                        "description": "API key",
+                        "name": "api_key",
+                        "in": "path",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of organization",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityOrganizationDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "organization not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Update an existing organization",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "organizations"
-                ],
-                "summary": "Update an existing organization",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "organization payload",
-                        "name": "organization",
+                        "description": "Courier message payload",
+                        "name": "payload",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateIdentityOrganizationPayloadDTO"
+                            "$ref": "#/definitions/dto.CourierWebhookRequestDTO"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful update of organization",
+                        "description": "Courier message enqueued successfully",
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityOrganizationDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Invalid payload",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
-                    "404": {
-                        "description": "organization not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete an existing organization",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "organizations"
-                ],
-                "summary": "Delete an existing organization",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Successful deletion of organization"
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "organization not found",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -636,9 +802,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/permissions": {
-            "get": {
-                "description": "Get permissions",
+        "/api/v1/permissions/check": {
+            "post": {
+                "description": "Check if a subject has permission to perform an action on an object",
                 "consumes": [
                     "application/json"
                 ],
@@ -648,50 +814,34 @@ const docTemplate = `{
                 "tags": [
                     "permissions"
                 ],
-                "summary": "Retrieve permissions",
+                "summary": "Check permission",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Keyword",
-                        "name": "keyword",
-                        "in": "query"
+                        "description": "Permission check request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CheckPermissionRequestDTO"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful retrieval of permissions",
+                        "description": "Permission check result",
                         "schema": {
-                            "$ref": "#/definitions/dto.PaginationDTOResponse"
+                            "$ref": "#/definitions/dto.CheckPermissionResponseDTO"
                         }
                     },
                     "400": {
-                        "description": "Invalid page number or size",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -703,9 +853,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/api/v1/permissions/delegate": {
             "post": {
-                "description": "Create a new permission",
+                "description": "Delegate access to a resource",
                 "consumes": [
                     "application/json"
                 ],
@@ -715,41 +867,42 @@ const docTemplate = `{
                 "tags": [
                     "permissions"
                 ],
-                "summary": "Create a new permission",
+                "summary": "Delegate access",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Bearer Token",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
                     },
                     {
-                        "description": "permission payload",
-                        "name": "permission",
+                        "description": "Delegate access request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateAccessPermissionPayloadDTO"
+                            "$ref": "#/definitions/dto.DelegateAccessRequestDTO"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Successful creation of permission",
+                    "200": {
+                        "description": "Access delegated successfully",
                         "schema": {
-                            "$ref": "#/definitions/dto.AccessPermissionDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -763,9 +916,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/permissions/{permission_id}": {
-            "get": {
-                "description": "Get permission by ID",
+        "/api/v1/permissions/relation-tuples": {
+            "post": {
+                "description": "Create a relation tuple for a tenant member",
                 "consumes": [
                     "application/json"
                 ],
@@ -775,45 +928,42 @@ const docTemplate = `{
                 "tags": [
                     "permissions"
                 ],
-                "summary": "Retrieve permission by ID",
+                "summary": "Create relation tuple",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Bearer Token",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "permission ID",
-                        "name": "permission_id",
-                        "in": "path",
-                        "required": true
+                        "description": "Relation tuple creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateRelationTupleRequestDTO"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful retrieval of permission",
+                        "description": "Relation tuple created successfully",
                         "schema": {
-                            "$ref": "#/definitions/dto.AccessPermissionDTO"
+                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "permission not found",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -825,9 +975,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "put": {
-                "description": "Update an existing permission",
+            }
+        },
+        "/api/v1/permissions/self-check": {
+            "post": {
+                "description": "Check if a subject has permission to perform an action on an object",
                 "consumes": [
                     "application/json"
                 ],
@@ -837,1268 +989,34 @@ const docTemplate = `{
                 "tags": [
                     "permissions"
                 ],
-                "summary": "Update an existing permission",
+                "summary": "User-facing permission check",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "permission ID",
-                        "name": "permission_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "permission payload",
-                        "name": "permission",
+                        "description": "Permission check request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateAccessPermissionPayloadDTO"
+                            "$ref": "#/definitions/dto.SelfCheckPermissionRequestDTO"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful update of permission",
+                        "description": "Permission check result",
                         "schema": {
-                            "$ref": "#/definitions/dto.AccessPermissionDTO"
+                            "$ref": "#/definitions/dto.CheckPermissionResponseDTO"
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "permission not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete an existing permission",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "permissions"
-                ],
-                "summary": "Delete an existing permission",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "permission ID",
-                        "name": "permission_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Successful deletion of permission"
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "permission not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/policies": {
-            "get": {
-                "description": "Get policies",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "policies"
-                ],
-                "summary": "Retrieve policies",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Keyword",
-                        "name": "keyword",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of policies",
-                        "schema": {
-                            "$ref": "#/definitions/dto.PaginationDTOResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid page number or size",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Create a new policy",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "policies"
-                ],
-                "summary": "Create a new policy",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "policy payload",
-                        "name": "policy",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.CreateAccessPolicyPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Successful creation of policy",
-                        "schema": {
-                            "$ref": "#/definitions/dto.AccessPolicyDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/policies/{policy_id}": {
-            "get": {
-                "description": "Get policy by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "policies"
-                ],
-                "summary": "Retrieve policy by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "policy ID",
-                        "name": "policy_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of policy",
-                        "schema": {
-                            "$ref": "#/definitions/dto.AccessPolicyDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "policy not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Update an existing policy",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "policies"
-                ],
-                "summary": "Update an existing policy",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "policy ID",
-                        "name": "policy_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "policy payload",
-                        "name": "policy",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateAccessPolicyPayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful update of policy",
-                        "schema": {
-                            "$ref": "#/definitions/dto.AccessPolicyDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "policy not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete an existing policy",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "policies"
-                ],
-                "summary": "Delete an existing policy",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "policy ID",
-                        "name": "policy_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Successful deletion of policy"
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "policy not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/roles": {
-            "get": {
-                "description": "Get roles",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "roles"
-                ],
-                "summary": "Retrieve roles",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Keyword",
-                        "name": "keyword",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of roles",
-                        "schema": {
-                            "$ref": "#/definitions/dto.PaginationDTOResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid page number or size",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Create a new role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "roles"
-                ],
-                "summary": "Create a new role",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "role payload",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.CreateIdentityRolePayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Successful creation of role",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityRoleDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/roles/{role_id}": {
-            "get": {
-                "description": "Get role by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "roles"
-                ],
-                "summary": "Retrieve role by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "role ID",
-                        "name": "role_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of role",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityRoleDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "role not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Update an existing role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "roles"
-                ],
-                "summary": "Update an existing role",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "role ID",
-                        "name": "role_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "role payload",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateIdentityRolePayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful update of role",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityRoleDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "role not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete an existing role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "roles"
-                ],
-                "summary": "Delete an existing role",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "role ID",
-                        "name": "role_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Successful deletion of role"
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "role not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/services": {
-            "get": {
-                "description": "Get services",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "services"
-                ],
-                "summary": "Retrieve services",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Keyword",
-                        "name": "keyword",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of services",
-                        "schema": {
-                            "$ref": "#/definitions/dto.PaginationDTOResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid page number or size",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Create a new service",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "services"
-                ],
-                "summary": "Create a new service",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "service payload",
-                        "name": "service",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.CreateIdentityServicePayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Successful creation of service",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityServiceDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/services/{service_id}": {
-            "get": {
-                "description": "Get service by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "services"
-                ],
-                "summary": "Retrieve service by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "service ID",
-                        "name": "service_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of service",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityServiceDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "service not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Update an existing service",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "services"
-                ],
-                "summary": "Update an existing service",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Service ID",
-                        "name": "service_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "service payload",
-                        "name": "service",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateIdentityServicePayloadDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful update of service",
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityServiceDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "service not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete an existing service",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "services"
-                ],
-                "summary": "Delete an existing service",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Service ID",
-                        "name": "service_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Successful deletion of service"
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "service not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/sessions": {
-            "get": {
-                "description": "Get sessions",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sessions"
-                ],
-                "summary": "Retrieve sessions",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Keyword",
-                        "name": "keyword",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of sessions",
-                        "schema": {
-                            "$ref": "#/definitions/dto.PaginationDTOResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid page number or size",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/sessions/{session_id}": {
-            "get": {
-                "description": "Get session by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sessions"
-                ],
-                "summary": "Retrieve session by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "session ID",
-                        "name": "session_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval of session",
-                        "schema": {
-                            "$ref": "#/definitions/dto.AccessSessionDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "session not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete an existing session",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sessions"
-                ],
-                "summary": "Delete an existing session",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "session ID",
-                        "name": "session_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Successful deletion of session"
-                    },
-                    "400": {
-                        "description": "Invalid request ID",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "session not found",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -2114,7 +1032,7 @@ const docTemplate = `{
         },
         "/api/v1/users/challenge-verify": {
             "post": {
-                "description": "Verify the challenge",
+                "description": "Verify either a login challenge, registration or verification flow\nVerify a one-time code sent to user for either login, registration or verification challenge.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2124,17 +1042,17 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Verify the challenge",
+                "summary": "Verify login, registration or verification challenge",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
-                        "description": "challenge payload",
+                        "description": "Verification payload. ` + "`" + `type` + "`" + ` must be one of: ` + "`" + `register` + "`" + `, ` + "`" + `login` + "`" + `, ` + "`" + `verify` + "`" + `.",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
@@ -2145,13 +1063,19 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful verify the challenge",
+                        "description": "Verification successful",
                         "schema": {
                             "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Invalid request payload or code",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -2181,8 +1105,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
@@ -2205,6 +1129,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -2234,13 +1164,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
-                        "description": "challenge payload",
+                        "description": "Phone to challenge, channel is optional, can be sms, whatsapp, zalo",
                         "name": "challenge",
                         "in": "body",
                         "required": true,
@@ -2262,171 +1192,10 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
-                    "500": {
-                        "description": "Internal server error",
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/login": {
-            "post": {
-                "description": "Authenticate user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "login payload",
-                        "name": "login",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.IdentityUserLoginDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/login-with-apple": {
-            "post": {
-                "description": "Authenticate user with Apple",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user with Apple",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user with Apple",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/login-with-facebook": {
-            "post": {
-                "description": "Authenticate user with Facebook",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user with Facebook",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user with Facebook",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/login-with-google": {
-            "post": {
-                "description": "Authenticate user with Google",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticate user with Google",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful authenticate user with Google",
-                        "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
                         }
                     },
                     "500": {
@@ -2454,24 +1223,68 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Bearer Token",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "Empty request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Successful de-authenticate user",
                         "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {}
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing token",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Invalid or missing token",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
@@ -2499,14 +1312,15 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Bearer Token",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -2528,9 +1342,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/refresh-token": {
+        "/api/v1/users/me/add-identifier": {
             "post": {
-                "description": "Refresh token",
+                "description": "Add a verified identifier (email or phone) to current user",
                 "consumes": [
                     "application/json"
                 ],
@@ -2540,41 +1354,489 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Refresh token",
+                "summary": "Add new identifier (email or phone)",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-Id",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
                         "in": "header",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Bearer Token",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
                     },
                     {
-                        "description": "refresh token payload",
-                        "name": "refresh_token",
+                        "description": "Identifier info",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.IdentityRefreshTokenDTO"
+                            "$ref": "#/definitions/dto.IdentityUserAddIdentifierDTO"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful refresh token",
+                        "description": "OTP sent for verification",
                         "schema": {
-                            "$ref": "#/definitions/response.SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.IdentityUserChallengeResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Identifier or type already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me/delete-identifier": {
+            "delete": {
+                "description": "Delete a user's identifier (email or phone)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete user identifier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifier info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserDeleteIdentifierDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Identifier deleted successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Identifier or type already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me/update-identifier": {
+            "post": {
+                "description": "Update a user's identifier (email or phone)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update user identifier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifier info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserChangeIdentifierDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent for verification",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.IdentityUserChallengeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Identifier or type already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me/update-lang": {
+            "patch": {
+                "description": "Update current user's preferred language (traits.lang).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update user language",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Language payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserUpdateLangDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Language updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/register": {
+            "post": {
+                "description": "Register a new user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Only ` + "`" + `email` + "`" + ` or ` + "`" + `phone` + "`" + ` must be provided (not both). ` + "`" + `lang` + "`" + ` is required (` + "`" + `en` + "`" + `|` + "`" + `vi` + "`" + `). Optional ` + "`" + `channel` + "`" + ` (sms|whatsapp|zalo) can be provided when registering with ` + "`" + `phone` + "`" + ` to send OTP immediately via that channel.",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityUserRegisterDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful user registration with verification flow",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.IdentityUserAuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Email or phone number already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/verification/challenge": {
+            "post": {
+                "description": "Trigger verification flow to send OTP to an identifier (email or phone).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Send verification code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003ctoken\u003e",
+                        "description": "Bearer Token (Bearer ory...)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Identifier to verify",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdentityVerificationChallengeDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.IdentityUserChallengeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Identifier does not belong to the authenticated user",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Identifier not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -2590,172 +1852,267 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.AccessPermissionDTO": {
+        "dto.AdminAccountDTO": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
-                }
-            }
-        },
-        "dto.AccessPolicyDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.AccessSessionDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.CreateAccessPermissionPayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "parent_id": {
+                "role": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }
         },
-        "dto.CreateAccessPolicyPayloadDTO": {
+        "dto.AdminAddIdentifierPayloadDTO": {
             "type": "object",
             "required": [
-                "code",
-                "name"
+                "existing_identifier",
+                "new_identifier"
             ],
             "properties": {
-                "code": {
+                "existing_identifier": {
                     "type": "string"
                 },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
+                "new_identifier": {
                     "type": "string"
                 }
             }
         },
-        "dto.CreateIdentityGroupPayloadDTO": {
+        "dto.AdminAddIdentifierResponse": {
             "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
             "properties": {
-                "code": {
+                "global_user_id": {
                     "type": "string"
                 },
-                "description": {
+                "kratos_user_id": {
                     "type": "string"
                 },
-                "name": {
+                "lang": {
                     "type": "string"
                 },
-                "parent_id": {
+                "new_identifier": {
                     "type": "string"
                 }
             }
         },
-        "dto.CreateIdentityOrganizationPayloadDTO": {
+        "dto.AdminCheckIdentifierPayloadDTO": {
             "type": "object",
             "required": [
-                "authenticate_url",
-                "code",
-                "name",
-                "self_authenticate"
+                "identifier"
             ],
             "properties": {
-                "authenticate_url": {
+                "identifier": {
                     "type": "string"
-                },
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                },
-                "self_authenticate": {
+                }
+            }
+        },
+        "dto.CheckIdentifierResponse": {
+            "type": "object",
+            "properties": {
+                "registered": {
                     "type": "boolean"
                 }
             }
         },
-        "dto.CreateIdentityRolePayloadDTO": {
+        "dto.CheckPermissionRequestDTO": {
             "type": "object",
             "required": [
-                "code",
-                "name"
+                "namespace",
+                "object",
+                "relation",
+                "tenant_member"
             ],
             "properties": {
-                "code": {
+                "namespace": {
                     "type": "string"
                 },
-                "description": {
+                "object": {
                     "type": "string"
                 },
-                "name": {
+                "relation": {
                     "type": "string"
                 },
-                "parent_id": {
+                "tenant_member": {
+                    "description": "SubjectSet defines the subject that is being checked permission for",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.TenantMemberDTO"
+                        }
+                    ]
+                }
+            }
+        },
+        "dto.CheckPermissionResponseDTO": {
+            "type": "object",
+            "properties": {
+                "allowed": {
+                    "description": "Whether the action is allowed",
+                    "type": "boolean"
+                },
+                "reason": {
+                    "description": "Optional explanation for why permission was denied",
                     "type": "string"
                 }
             }
         },
-        "dto.CreateIdentityServicePayloadDTO": {
+        "dto.CourierChooseChannelRequestDTO": {
             "type": "object",
             "required": [
-                "code",
-                "name"
+                "channel",
+                "receiver"
             ],
             "properties": {
-                "code": {
+                "channel": {
                     "type": "string"
                 },
-                "description": {
+                "receiver": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CourierWebhookRequestDTO": {
+            "type": "object",
+            "required": [
+                "Body",
+                "To"
+            ],
+            "properties": {
+                "Body": {
+                    "type": "string"
+                },
+                "To": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateAdminAccountPayloadDTO": {
+            "type": "object",
+            "required": [
+                "password",
+                "role",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "admin"
+                    ]
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateRelationTupleRequestDTO": {
+            "type": "object",
+            "required": [
+                "identifier",
+                "namespace",
+                "object",
+                "relation"
+            ],
+            "properties": {
+                "identifier": {
+                    "type": "string"
+                },
+                "namespace": {
+                    "type": "string"
+                },
+                "object": {
+                    "type": "string"
+                },
+                "relation": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateTenantPayloadDTO": {
+            "type": "object",
+            "required": [
+                "admin_url",
+                "name",
+                "public_url"
+            ],
+            "properties": {
+                "admin_url": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "parent_id": {
+                "public_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DelegateAccessRequestDTO": {
+            "type": "object",
+            "required": [
+                "identifier",
+                "permission",
+                "resource_id",
+                "resource_type",
+                "tenant_id"
+            ],
+            "properties": {
+                "identifier": {
+                    "type": "string"
+                },
+                "permission": {
+                    "type": "string"
+                },
+                "resource_id": {
+                    "type": "string"
+                },
+                "resource_type": {
+                    "type": "string"
+                },
+                "tenant_id": {
                     "type": "string"
                 }
             }
         },
         "dto.IdentityChallengeVerifyDTO": {
             "type": "object",
+            "required": [
+                "code",
+                "flow_id",
+                "type"
+            ],
             "properties": {
                 "code": {
                     "type": "string"
                 },
-                "session_id": {
+                "flow_id": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "register",
+                        "login",
+                        "verify"
+                    ]
                 }
             }
         },
@@ -2770,32 +2127,173 @@ const docTemplate = `{
         "dto.IdentityChallengeWithPhoneDTO": {
             "type": "object",
             "properties": {
+                "channel": {
+                    "type": "string",
+                    "enum": [
+                        "sms",
+                        "whatsapp",
+                        "zalo"
+                    ]
+                },
                 "phone": {
                     "type": "string"
                 }
             }
         },
-        "dto.IdentityGroupDTO": {
+        "dto.IdentityUserAddIdentifierDTO": {
             "type": "object",
+            "required": [
+                "new_identifier"
+            ],
             "properties": {
-                "id": {
+                "new_identifier": {
+                    "description": "email address or phone number",
                     "type": "string"
                 }
             }
         },
-        "dto.IdentityOrganizationDTO": {
+        "dto.IdentityUserChangeIdentifierDTO": {
             "type": "object",
+            "required": [
+                "new_identifier"
+            ],
             "properties": {
-                "authenticate_url": {
+                "new_identifier": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityUserDeleteIdentifierDTO": {
+            "type": "object",
+            "required": [
+                "identifier_type"
+            ],
+            "properties": {
+                "identifier_type": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "phone_number"
+                    ]
+                }
+            }
+        },
+        "dto.IdentityUserRegisterDTO": {
+            "type": "object",
+            "required": [
+                "lang"
+            ],
+            "properties": {
+                "channel": {
+                    "type": "string",
+                    "enum": [
+                        "sms",
+                        "whatsapp",
+                        "zalo"
+                    ]
+                },
+                "email": {
                     "type": "string"
                 },
-                "code": {
+                "lang": {
+                    "type": "string",
+                    "enum": [
+                        "en",
+                        "vi"
+                    ]
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityUserUpdateLangDTO": {
+            "type": "object",
+            "required": [
+                "lang"
+            ],
+            "properties": {
+                "lang": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IdentityVerificationChallengeDTO": {
+            "type": "object",
+            "required": [
+                "identifier"
+            ],
+            "properties": {
+                "channel": {
+                    "type": "string",
+                    "enum": [
+                        "sms",
+                        "whatsapp",
+                        "zalo"
+                    ]
+                },
+                "identifier": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RefreshZaloTokenRequestDTO": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RefreshZaloTokenResponseDTO": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SelfCheckPermissionRequestDTO": {
+            "type": "object",
+            "required": [
+                "namespace",
+                "object",
+                "relation"
+            ],
+            "properties": {
+                "namespace": {
+                    "description": "Name of the resource's group (e.g., \"document\", \"user\")",
+                    "type": "string"
+                },
+                "object": {
+                    "description": "The specific resource (e.g., \"document:123\")",
+                    "type": "string"
+                },
+                "relation": {
+                    "description": "The relation between the subject and the object (e.g., \"read\", \"write\", \"delete\")",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TenantDTO": {
+            "type": "object",
+            "properties": {
+                "admin_url": {
                     "type": "string"
                 },
                 "created_at": {
-                    "type": "string"
-                },
-                "description": {
                     "type": "string"
                 },
                 "id": {
@@ -2804,55 +2302,38 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "self_authenticate": {
-                    "type": "boolean"
+                "public_url": {
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "dto.IdentityRefreshTokenDTO": {
+        "dto.TenantMemberDTO": {
             "type": "object",
+            "required": [
+                "identifier",
+                "tenant_id"
+            ],
             "properties": {
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.IdentityRoleDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.IdentityServiceDTO": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.IdentityUserLoginDTO": {
-            "type": "object",
-            "properties": {
-                "password": {
+                "identifier": {
+                    "description": "Identifier is the identifier of the tenant member (can be email or phone number)",
                     "type": "string"
                 },
-                "user_name": {
+                "tenant_id": {
                     "type": "string"
                 }
             }
         },
-        "dto.PaginationDTOResponse": {
+        "dto.TenantPaginationDTOResponse": {
             "type": "object",
             "properties": {
-                "data": {
+                "items": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                        "$ref": "#/definitions/dto.TenantDTO"
+                    }
                 },
                 "next_page": {
                     "type": "integer"
@@ -2860,144 +2341,41 @@ const docTemplate = `{
                 "page": {
                     "type": "integer"
                 },
-                "size": {
+                "page_size": {
                     "type": "integer"
                 },
-                "total": {
+                "total_count": {
                     "type": "integer"
                 }
             }
         },
-        "dto.UpdateAccessPermissionPayloadDTO": {
+        "dto.UpdateTenantPayloadDTO": {
             "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
             "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
+                "admin_url": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "parent_id": {
+                "public_url": {
                     "type": "string"
                 }
             }
         },
-        "dto.UpdateAccessPolicyPayloadDTO": {
+        "dto.ZaloTokenResponseDTO": {
             "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
             "properties": {
-                "code": {
+                "access_token": {
                     "type": "string"
                 },
-                "description": {
+                "expires_at": {
                     "type": "string"
                 },
-                "name": {
+                "refresh_token": {
                     "type": "string"
                 },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateIdentityGroupPayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateIdentityOrganizationPayloadDTO": {
-            "type": "object",
-            "required": [
-                "authenticate_url",
-                "code",
-                "name",
-                "self_authenticate"
-            ],
-            "properties": {
-                "authenticate_url": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                },
-                "self_authenticate": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "dto.UpdateIdentityRolePayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UpdateIdentityServicePayloadDTO": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent_id": {
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -3040,18 +2418,134 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        },
+        "types.IdentityUserAuthResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "authenticated_at": {
+                    "type": "string"
+                },
+                "authentication_methods": {
+                    "description": "Optional session metadata",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "issued_at": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "description": "Core session fields from Kratos",
+                    "type": "string"
+                },
+                "session_token": {
+                    "description": "Token used for authenticating subsequent requests",
+                    "type": "string"
+                },
+                "user": {
+                    "description": "User information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.IdentityUserResponse"
+                        }
+                    ]
+                },
+                "verification_flow": {
+                    "$ref": "#/definitions/types.IdentityUserChallengeResponse"
+                },
+                "verification_needed": {
+                    "description": "Verification flow (for incomplete registrations)",
+                    "type": "boolean"
+                }
+            }
+        },
+        "types.IdentityUserChallengeResponse": {
+            "type": "object",
+            "properties": {
+                "challenge_at": {
+                    "type": "integer"
+                },
+                "flow_id": {
+                    "type": "string"
+                },
+                "receiver": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.IdentityUserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "global_user_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lang": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "seed": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "boolean"
+                },
+                "tenant": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BasicAuth": {
+            "type": "basic"
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "IAM Service API",
+	Description:      "Identity and Access Management Service",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

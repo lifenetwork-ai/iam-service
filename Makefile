@@ -6,11 +6,6 @@ human-network-iam-service:
 clean:
 	rm -i -f human-network-iam-service
 
-run-test:
-	go test -v ./internal/infrastructures/caching/test
-	go test -v ./internal/util/test
-	go test -v ./test
-
 restart: stop clean build start
 	@echo "human-network-iam-service restarted!"
 
@@ -29,13 +24,28 @@ stop:
 	@echo "Stopped human-network-iam-service"
 
 lint:
-	golangci-lint run --fix
+	docker run --rm -v $(PWD):/app -w /app golangci/golangci-lint:v1.64.8 golangci-lint run --fix
+
+test:
+	go test -v ./...
+
+# Run only integration tests under ucases/integration
+.PHONY: test-integration
+test-integration:
+	go test -v -tags=integration ./internal/domain/...
+
+.PHONY: test-unit
+# Run all unit tests (exclude integration-tagged tests)
+test-unit:
+	go test -v -tags "" $(shell go list ./... | grep -v "/internal/domain/ucases/integration")
+
+.PHONY: cover-ucases-integration
+# Coverage for ucases when running integration tests only
+cover-ucases-integration:
+	go test -v -tags=integration -coverpkg=github.com/lifenetwork-ai/iam-service/internal/domain/ucases -coverprofile=ucases_integration_coverage.out ./internal/domain/ucases/integration
 
 swagger:
-	swag init -g cmd/main.go
-
-wiring: 
-	wire ./wire
+	swag init -g ./cmd/main.go -d ./ -o ./docs
 
 migrate:
 	go run cmd/migration/main.go
@@ -59,3 +69,21 @@ docker-db-up:
 docker-db-down:
 	docker stop secure-genom-db
 	docker rm secure-genom-db
+
+.PHONY: mocks
+mocks: clean-mocks
+	@echo "Generating mocks..."
+	@find . -name "*.go" -not -path "./mocks/*" -not -path "./vendor/*" -exec grep -l "type.*interface" {} \; | \
+	while read file; do \
+		rel_path=$$(echo $$file | sed 's/\.\///'); \
+		dir_path=$$(dirname $$rel_path | sed 's/internal\///'); \
+		pkg_name=$$(basename $$dir_path); \
+		mock_dir="mocks/$$dir_path"; \
+		mkdir -p $$mock_dir; \
+		echo "Processing $$file -> $$mock_dir"; \
+		mockgen -source="$$file" -package="mock_$$pkg_name" -destination="$$mock_dir/mock_$$(basename $$file)"; \
+	done
+	@echo "Done generating mocks"
+
+clean-mocks:
+	rm -rf mocks/

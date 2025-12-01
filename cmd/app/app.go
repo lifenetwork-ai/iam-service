@@ -10,10 +10,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/constants"
+	_ "github.com/lifenetwork-ai/iam-service/docs" // Import generated docs
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
 	routev1 "github.com/lifenetwork-ai/iam-service/internal/delivery/http/route"
 	"github.com/lifenetwork-ai/iam-service/internal/wire"
 	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
+	"github.com/lifenetwork-ai/iam-service/internal/workers"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 	swaggerfiles "github.com/swaggo/files"
 	ginswagger "github.com/swaggo/gin-swagger"
@@ -35,21 +38,39 @@ func RunApp(config *conf.Configuration) {
 	// Initialize the cache repository
 	cacheRepository := instances.CacheRepositoryInstance(ctx)
 
+	// Init repositories
+	repos := wire.InitializeRepos(db, cacheRepository)
+
 	// Initialize use cases
-	ucases := wire.InitializeUseCases(db, cacheRepository)
+	ucases := wire.InitializeUseCases(db, repos, cacheRepository)
 
 	// Register routes
 	routev1.RegisterRoutes(
 		ctx,
 		r,
 		config,
-		db,
-		ucases.IdentityOrganizationUCase,
-		ucases.IdentityUserUCase,
+		ucases,
+		repos,
 	)
 
 	// Start server
 	startServer(r, config)
+
+	// Start workers
+	go workers.NewOTPDeliveryWorker(
+		ucases.CourierUCase,
+		ucases.TenantUCase,
+		instances.OTPQueueRepositoryInstance(ctx),
+	).Start(ctx, constants.OTPDeliveryWorkerInterval)
+
+	go workers.NewOTPRetryWorker(
+		ucases.CourierUCase,
+		instances.OTPQueueRepositoryInstance(ctx),
+	).Start(ctx, constants.OTPRetryWorkerInterval)
+
+	go workers.NewZaloRefreshTokenWorker(
+		instances.SMSServiceInstance(repos.ZaloTokenRepo),
+	).Start(ctx, constants.ZaloRefreshTokenWorkerInterval)
 
 	// Handle shutdown signals
 	waitForShutdownSignal(cancel)
@@ -98,7 +119,6 @@ func initializeRouter() *gin.Engine {
 	r.Use(middleware.DefaultPagination())
 	r.Use(middleware.RequestLoggerMiddleware())
 	r.Use(middleware.RequestDataGuardMiddleware())
-	r.Use(middleware.XHeaderValidationMiddleware())
 	r.Use(gin.Recovery())
 	return r
 }

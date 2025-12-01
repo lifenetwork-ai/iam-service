@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/lifenetwork-ai/iam-service/conf"
-	"github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/database/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
@@ -19,7 +19,7 @@ type postgreSQL struct {
 }
 
 // NewPostgreSQLClient creates a new sql client instance
-func NewPostgreSQLClient(config *conf.DatabaseConfiguration) interfaces.SQLClient {
+func NewPostgreSQLClient(config *conf.DatabaseConfiguration) types.SQLClient {
 	return &postgreSQL{
 		config: config,
 	}

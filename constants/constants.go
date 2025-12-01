@@ -19,10 +19,10 @@ const (
 )
 
 // Webhook constants
-const (
-	MaxWebhookWorkers = 10
-	WebhookTimeout    = 5 * time.Second
-)
+const WebhookTimeout = 15 * time.Second
+
+// Concurrency
+const MaxConcurrency = 10
 
 // Order direction
 type OrderDirection string
@@ -36,119 +36,68 @@ const (
 	Desc OrderDirection = "DESC"
 )
 
-// Account role
-type AccountRole string
+// DefaultChallengeDuration is the default duration for a challenge session
+const DefaultChallengeDuration = 5 * time.Minute
 
-func (t AccountRole) String() string {
-	return string(t)
-}
-
+// Challenge Types
 const (
-	User         AccountRole = "USER"
-	DataOwner    AccountRole = "DATA_OWNER"
-	DataUtilizer AccountRole = "DATA_UTILIZER"
-	Validator    AccountRole = "VALIDATOR"
-	Admin        AccountRole = "ADMIN"
+	ChallengeTypeLogin            = "login"
+	ChallengeTypeRegister         = "register"
+	ChallengeTypeChangeIdentifier = "change_identifier"
+	ChallengeTypeAddIdentifier    = "add_identifier"
+	ChallengeTypeVerifyIdentifier = "verify_identifier"
 )
 
-// IsValid checks if the AccountRole is one of the predefined roles.
-func (r AccountRole) IsValid() bool {
-	switch r {
-	case DataOwner, DataUtilizer, Validator:
-		return true
-	default:
-		return false
-	}
-}
-
-// Token expiry
+// HTTP Headers
 const (
-	AccessTokenExpiry  = 24 * time.Hour     // 15 minutes
-	RefreshTokenExpiry = 7 * 24 * time.Hour // 7 days
+	HeaderContentTypeJson = "application/json" // Value for the header
+	HeaderKeyContentType  = "Content-Type"     // Header name
 )
 
-// IdentifierType represents the types of identifiers used for login
-type IdentifierType string
-
-func (t IdentifierType) String() string {
-	return string(t)
-}
-
+// Courier constants
 const (
-	IdentifierEmail    IdentifierType = "email"
-	IdentifierUsername IdentifierType = "username"
-	IdentifierPhone    IdentifierType = "phone"
+	// Supported channels
+	ChannelSMS      = "sms"
+	ChannelWhatsApp = "whatsapp"
+	ChannelZalo     = "zalo"
+	ChannelSpeedSMS = "speedsms"
+	ChannelWebhook  = "webhook"
+
+	// Retry related constants
+	MaxOTPRetryCount   = 5
+	RetryDelayDuration = 30 * time.Second
+	BaseRetryDuration  = 3 * time.Second // Base duration for exponential backoff
+
+	// OTP worker interval
+	OTPDeliveryWorkerInterval = 1 * time.Second
+	OTPRetryWorkerInterval    = 5 * time.Second
+
+	OTPSendMaxReceiverConcurrency = 10
+
+	// Zalo refresh token worker interval
+	ZaloRefreshTokenWorkerInterval = 4 * time.Hour
+
+	// Dev bypass OTP constants
+	DevBypassOTPFetchTimeout = 10 * time.Second // how long we wait for the fresh OTP to appear in cache
+	DevBypassOTPPollInterval = 200 * time.Millisecond
 )
 
-// Refresh token renewal threshold
-const RefreshTokenRenewalThreshold = 24 * time.Hour
-
-// DataAccessRequestStatus represents the status of a data access request
-type DataAccessRequestStatus string
-
-func (t DataAccessRequestStatus) String() string {
-	return string(t)
-}
-
 const (
-	DataAccessRequestPending  DataAccessRequestStatus = "PENDING"
-	DataAccessRequestApproved DataAccessRequestStatus = "APPROVED"
-	DataAccessRequestRejected DataAccessRequestStatus = "REJECTED"
+	EnglishLanguage    = "en"
+	VietnameseLanguage = "vi"
 )
 
-// DataAccessRequestStatus represents the status of a data access request
-type RequesterRequestStatus string
-
-func (t RequesterRequestStatus) String() string {
-	return string(t)
-}
-
 const (
-	RequestValidationPending RequesterRequestStatus = "PENDING"
-	RequestValidationValid   RequesterRequestStatus = "VALID"
-	RequestValidationInvalid RequesterRequestStatus = "INVALID"
+	DefaultRegion = "VN"
 )
 
-// IAMResource represents a type for resource constants
-type IAMResource string
-
-func (t IAMResource) String() string {
-	return string(t)
-}
-
 const (
-	ResourceAccounts     IAMResource = "accounts"
-	ResourceValidators   IAMResource = "validators"
-	ResourceDataRequests IAMResource = "data_requests"
+	// for nightly, sms is default to webhook
+	DefaultSMSChannel = "webhook"
 )
 
-// IAMAction represents a type for action constants
-type IAMAction string
-
-func (t IAMAction) String() string {
-	return string(t)
-}
-
 const (
-	ActionRead    IAMAction = "read"
-	ActionWrite   IAMAction = "write"
-	ActionUpdate  IAMAction = "update"
-	ActionDelete  IAMAction = "delete"
-	ActionApprove IAMAction = "approve"
-	ActionReject  IAMAction = "reject"
-)
-
-// IAMRolePolicy represents a type for IAM role policies
-type IAMRolePolicy string
-
-func (t IAMRolePolicy) String() string {
-	return string(t)
-}
-
-const (
-	AdminPolicy        IAMRolePolicy = "Admin Policy"
-	UserPolicy         IAMRolePolicy = "User Policy"
-	ValidatorPolicy    IAMRolePolicy = "Validator Policy"
-	DataOwnerPolicy    IAMRolePolicy = "Data Owner Policy"
-	DataUtilizerPolicy IAMRolePolicy = "Data Utilizer Policy"
+	NightlyEnvironment    = "NIGHTLY"
+	StagingEnvironment    = "STAGING"
+	ProductionEnvironment = "PRODUCTION"
 )

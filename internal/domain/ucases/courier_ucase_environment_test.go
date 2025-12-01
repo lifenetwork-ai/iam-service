@@ -1,0 +1,329 @@
+package ucases
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+
+	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/constants"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
+	mock_services "github.com/lifenetwork-ai/iam-service/mocks/domain/ucases/services"
+	mock_otpqueue "github.com/lifenetwork-ai/iam-service/mocks/infrastructures/otp_queue/types"
+	"github.com/patrickmn/go-cache"
+)
+
+// TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting tests that SMS routing to SpeedSMS
+// only happens in Staging or Production environments
+func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		environment           string
+		tenantName            string
+		receiver              string
+		channel               string
+		expectedActualChannel string
+		shouldRouteToSpeedSMS bool
+	}{
+		// Production environment cases
+		{
+			name:                  "PROD environment routes Vietnamese phone to SpeedSMS",
+			environment:           constants.ProductionEnvironment,
+			tenantName:            constants.TenantLifeAI,
+			receiver:              "+84344381024",
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.ChannelSpeedSMS,
+			shouldRouteToSpeedSMS: true,
+		},
+		{
+			name:                  "PRODUCTION environment routes Vietnamese phone to SpeedSMS",
+			environment:           constants.ProductionEnvironment,
+			tenantName:            constants.TenantLifeAI,
+			receiver:              "+84987654321",
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.ChannelSpeedSMS,
+			shouldRouteToSpeedSMS: true,
+		},
+		{
+			name:                  "production (lowercase) environment routes Vietnamese phone to SpeedSMS",
+			environment:           constants.ProductionEnvironment,
+			tenantName:            constants.TenantLifeAI,
+			receiver:              "+84912345678",
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.ChannelSpeedSMS,
+			shouldRouteToSpeedSMS: true,
+		},
+
+		// Staging environment cases
+		{
+			name:                  "STAGING environment routes Vietnamese phone to SpeedSMS",
+			environment:           constants.StagingEnvironment,
+			tenantName:            constants.TenantLifeAI,
+			receiver:              "+84344381024",
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.ChannelSpeedSMS,
+			shouldRouteToSpeedSMS: true,
+		},
+		{
+			name:                  "staging (lowercase) environment routes Vietnamese phone to SpeedSMS",
+			environment:           constants.StagingEnvironment,
+			tenantName:            constants.TenantLifeAI,
+			receiver:              "+84987654321",
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.ChannelSpeedSMS,
+			shouldRouteToSpeedSMS: true,
+		},
+
+		// Development environment cases - should NOT route to SpeedSMS
+		{
+			name:                  "DEV environment does NOT route Vietnamese phone to SpeedSMS",
+			environment:           constants.NightlyEnvironment,
+			tenantName:            constants.TenantLifeAI,
+			receiver:              "+84344381024",
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.DefaultSMSChannel,
+			shouldRouteToSpeedSMS: false,
+		},
+
+		// Non-Vietnamese phone numbers should never route to SpeedSMS regardless of environment
+		{
+			name:                  "PROD environment does NOT route non-Vietnamese phone to SpeedSMS",
+			environment:           constants.ProductionEnvironment,
+			tenantName:            constants.TenantLifeAI,
+			receiver:              "+66812345678", // Thailand
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.ChannelSMS,
+			shouldRouteToSpeedSMS: false,
+		},
+		{
+			name:                  "STAGING environment does NOT route US phone to SpeedSMS",
+			environment:           constants.StagingEnvironment,
+			tenantName:            constants.TenantLifeAI,
+			receiver:              "+12025551234", // US
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.ChannelSMS,
+			shouldRouteToSpeedSMS: false,
+		},
+
+		// Non-SMS channels should never route to SpeedSMS
+		{
+			name:                  "PROD environment does NOT route WhatsApp to SpeedSMS",
+			environment:           constants.ProductionEnvironment,
+			tenantName:            constants.TenantLifeAI,
+			receiver:              "+84344381024",
+			channel:               constants.ChannelWhatsApp,
+			expectedActualChannel: constants.ChannelWhatsApp,
+			shouldRouteToSpeedSMS: false,
+		},
+		{
+			name:                  "STAGING environment does NOT route Zalo to SpeedSMS",
+			environment:           constants.StagingEnvironment,
+			tenantName:            constants.TenantGenetica, // Genetica supports Zalo
+			receiver:              "+84987654321",
+			channel:               constants.ChannelZalo,
+			expectedActualChannel: constants.ChannelZalo,
+			shouldRouteToSpeedSMS: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup: Set environment for testing
+			originalEnv := conf.GetEnvironment()
+			defer func() {
+				// Cleanup: Restore original environment
+				conf.SetEnvironmentForTesting(originalEnv)
+			}()
+
+			// Set the test environment
+			conf.SetEnvironmentForTesting(tc.environment)
+
+			// Create test dependencies
+			ctx := context.Background()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockQueue := mock_otpqueue.NewMockOTPQueueRepository(ctrl)
+			mockSMSProvider := mock_services.NewMockSMSProvider(ctrl)
+
+			inMemCache := caching.NewCachingRepository(
+				context.Background(),
+				caching.NewGoCacheClient(cache.New(5*time.Minute, 10*time.Minute)),
+			)
+
+			courierUseCase := NewCourierUseCase(mockQueue, mockSMSProvider, inMemCache)
+
+			// Use tenant from test case if specified, otherwise default to LifeAI
+			tenantName := tc.tenantName
+			if tenantName == "" {
+				tenantName = constants.TenantLifeAI
+			}
+
+			// Execute: Choose channel
+			err := courierUseCase.ChooseChannel(ctx, tenantName, tc.receiver, tc.channel)
+			require.Nil(t, err, "Failed to choose channel")
+
+			// Verify: Check that the correct channel was saved
+			channelResponse, getErr := courierUseCase.GetChannel(ctx, tenantName, tc.receiver)
+			require.Nil(t, getErr, "Failed to get channel")
+			require.Equal(t, tc.expectedActualChannel, channelResponse.Channel,
+				"Environment: %s, Expected channel: %s, Got: %s",
+				tc.environment, tc.expectedActualChannel, channelResponse.Channel)
+		})
+	}
+}
+
+// TestCourierUseCase_GetChannel_CacheMiss_EnvironmentBehavior ensures cache-miss defaults
+// to SMS in non-routing environments and SpeedSMS for Vietnamese numbers in routing environments
+func TestCourierUseCase_GetChannel_CacheMiss_EnvironmentBehavior(t *testing.T) {
+	type testCase struct {
+		name            string
+		environment     string
+		receiver        string
+		expectedChannel string
+	}
+
+	testCases := []testCase{
+		{name: "DEV non-VN -> webhook", environment: constants.NightlyEnvironment, receiver: "+12025551234", expectedChannel: constants.DefaultSMSChannel},
+		{name: "DEV VN -> webhook", environment: constants.NightlyEnvironment, receiver: "+84987654321", expectedChannel: constants.DefaultSMSChannel},
+		{name: "NIGHTLY VN -> webhook", environment: constants.NightlyEnvironment, receiver: "+84344381024", expectedChannel: constants.DefaultSMSChannel},
+		{name: "STAGING non-VN -> SMS", environment: constants.StagingEnvironment, receiver: "+12025551234", expectedChannel: constants.ChannelSMS},
+		{name: "STAGING VN -> SpeedSMS", environment: constants.StagingEnvironment, receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
+		{name: "PRODUCTION VN -> SpeedSMS", environment: constants.ProductionEnvironment, receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
+		{name: "PROD VN -> SpeedSMS", environment: constants.ProductionEnvironment, receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			originalEnv := conf.GetEnvironment()
+			defer func() { conf.SetEnvironmentForTesting(originalEnv) }()
+			conf.SetEnvironmentForTesting(tc.environment)
+
+			ctx := context.Background()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockQueue := mock_otpqueue.NewMockOTPQueueRepository(ctrl)
+			mockSMSProvider := mock_services.NewMockSMSProvider(ctrl)
+
+			inMemCache := caching.NewCachingRepository(
+				context.Background(),
+				caching.NewGoCacheClient(cache.New(5*time.Minute, 10*time.Minute)),
+			)
+
+			u := NewCourierUseCase(mockQueue, mockSMSProvider, inMemCache)
+
+			// Not choosing any channel beforehand to force cache miss
+			resp, derr := u.GetChannel(ctx, constants.TenantLifeAI, tc.receiver)
+			require.Nil(t, derr)
+			require.Equal(t, tc.expectedChannel, resp.Channel)
+		})
+	}
+}
+
+// TestShouldRouteToSpeedSMS_EnvironmentCheck tests the shouldRouteToSpeedSMS helper function
+func TestShouldRouteToSpeedSMS_EnvironmentCheck(t *testing.T) {
+	testCases := []struct {
+		name        string
+		environment string
+		shouldRoute bool
+	}{
+		// Should route in producti	on environments
+		{"PROD should route", constants.ProductionEnvironment, true},
+
+		// Should route in staging environments
+
+		// Should NOT route in other environments
+		{"DEV should not route", constants.NightlyEnvironment, false},
+		{"DEVELOPMENT should not route", constants.NightlyEnvironment, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup: Set environment for testing
+			originalEnv := conf.GetEnvironment()
+			defer func() {
+				// Cleanup: Restore original environment
+				conf.SetEnvironmentForTesting(originalEnv)
+			}()
+
+			// Set the test environment
+			conf.SetEnvironmentForTesting(tc.environment)
+
+			// Execute and verify
+			result := shouldRouteToSpeedSMS()
+			require.Equal(t, tc.shouldRoute, result,
+				"Environment: %s, Expected shouldRoute: %v, Got: %v",
+				tc.environment, tc.shouldRoute, result)
+		})
+	}
+}
+
+// TestCourierUseCase_ChooseChannel_EdgeCases tests edge cases for environment-based routing
+func TestCourierUseCase_ChooseChannel_EdgeCases(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		environment           string
+		tenantName            string
+		receiver              string
+		channel               string
+		expectedActualChannel string
+	}{
+		{
+			name:                  "Genetica tenant in PROD routes Vietnamese to SpeedSMS",
+			environment:           constants.ProductionEnvironment,
+			tenantName:            constants.TenantGenetica,
+			receiver:              "+84344381024",
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.ChannelSpeedSMS,
+		},
+		{
+			name:                  "Genetica tenant in DEV does NOT route Vietnamese to SpeedSMS",
+			environment:           "DEV",
+			tenantName:            constants.TenantGenetica,
+			receiver:              "+84344381024",
+			channel:               constants.ChannelSMS,
+			expectedActualChannel: constants.DefaultSMSChannel,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup
+			originalEnv := conf.GetEnvironment()
+			defer func() {
+				conf.SetEnvironmentForTesting(originalEnv)
+			}()
+
+			conf.SetEnvironmentForTesting(tc.environment)
+
+			ctx := context.Background()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockQueue := mock_otpqueue.NewMockOTPQueueRepository(ctrl)
+			mockSMSProvider := mock_services.NewMockSMSProvider(ctrl)
+
+			inMemCache := caching.NewCachingRepository(
+				context.Background(),
+				caching.NewGoCacheClient(cache.New(5*time.Minute, 10*time.Minute)),
+			)
+
+			courierUseCase := NewCourierUseCase(mockQueue, mockSMSProvider, inMemCache)
+
+			// Execute
+			err := courierUseCase.ChooseChannel(ctx, tc.tenantName, tc.receiver, tc.channel)
+			require.Nil(t, err, "Failed to choose channel")
+
+			// Verify
+			channelResponse, getErr := courierUseCase.GetChannel(ctx, tc.tenantName, tc.receiver)
+			require.Nil(t, getErr, "Failed to get channel")
+			require.Equal(t, tc.expectedActualChannel, channelResponse.Channel,
+				"Environment: %s, Tenant: %s, Expected: %s, Got: %s",
+				tc.environment, tc.tenantName, tc.expectedActualChannel, channelResponse.Channel)
+		})
+	}
+}

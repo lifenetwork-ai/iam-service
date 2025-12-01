@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [ dev, staging ]
+  pull_request:
+    branches: [ dev, staging ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.22
+      - run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+            | sh -s -- -b $(go env GOPATH)/bin v1.64.8
+      - run: golangci-lint run ./...
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.22
+      - run: go mod tidy
+
+      # Unit tests
+      - name: Run unit tests
+        run: go test ./... -v -coverpkg=./... -coverprofile=coverage-unit.out -covermode=atomic
+
+      # Integration tests
+      - name: Run integration tests
+        run: go test ./... -v -tags=integration -coverpkg=./... -coverprofile=coverage-integration.out -covermode=atomic
+
+      # Upload unit coverage to Codecov (server-side merge by Codecov)
+      - name: Upload unit coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage-unit.out
+          flags: unit
+          name: unit
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      # Upload integration coverage to Codecov (server-side merge by Codecov)
+      - name: Upload integration coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage-integration.out
+          flags: integration
+          name: integration
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}

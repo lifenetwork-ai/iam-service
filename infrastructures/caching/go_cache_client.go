@@ -2,12 +2,10 @@ package caching
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/lifenetwork-ai/iam-service/constants"
-	"github.com/lifenetwork-ai/iam-service/infrastructures/interfaces"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -16,9 +14,9 @@ type goCacheClient struct {
 }
 
 // NewGoCacheClient initializes a new cache client with default expiration and cleanup interval
-func NewGoCacheClient() interfaces.CacheClient {
+func NewGoCacheClient(client *cache.Cache) types.CacheClient {
 	return &goCacheClient{
-		cache: cache.New(constants.DefaultExpiration, constants.CleanupInterval),
+		cache: client,
 	}
 }
 
@@ -30,27 +28,49 @@ func (c *goCacheClient) Set(ctx context.Context, key string, value interface{}, 
 	return nil
 }
 
-// Get retrieves an item from the cache and assigns it to the destination using reflection
 func (c *goCacheClient) Get(ctx context.Context, key string, dest interface{}) error {
 	cachedValue, found := c.cache.Get(key)
 	if !found {
-		return fmt.Errorf("item not found in cache")
+		return types.ErrCacheMiss
 	}
 
-	// Use reflection to set the value to the destination
 	destVal := reflect.ValueOf(dest)
 	if destVal.Kind() != reflect.Ptr || destVal.IsNil() {
-		return fmt.Errorf("destination must be a non-nil pointer")
+		return types.ErrInvalidDestination
 	}
 
 	cachedVal := reflect.ValueOf(cachedValue)
+	destType := destVal.Elem().Type()
 
-	if cachedVal.Type().AssignableTo(destVal.Elem().Type()) {
+	// Case 1: Direct assignment (same types)
+	if cachedVal.Type().AssignableTo(destType) {
 		destVal.Elem().Set(cachedVal)
 		return nil
 	}
 
-	return fmt.Errorf("cached value type (%v) does not match destination type (%v)", cachedVal.Type(), destVal.Elem().Type())
+	// Case 2: Cached is pointer, dest is value (*T -> T)
+	if cachedVal.Kind() == reflect.Ptr && !cachedVal.IsNil() && cachedVal.Elem().Type().AssignableTo(destType) {
+		destVal.Elem().Set(cachedVal.Elem())
+		return nil
+	}
+
+	// Case 3: Cached is value, dest is pointer (T -> *T)
+	if destType.Kind() == reflect.Ptr && cachedVal.Type().AssignableTo(destType.Elem()) {
+		newPtr := reflect.New(destType.Elem())
+		newPtr.Elem().Set(cachedVal)
+		destVal.Elem().Set(newPtr)
+		return nil
+	}
+
+	// Case 4: Both are pointers but different levels (*T -> **T or **T -> *T)
+	if cachedVal.Kind() == reflect.Ptr && destType.Kind() == reflect.Ptr {
+		if !cachedVal.IsNil() && cachedVal.Elem().Type().AssignableTo(destType.Elem()) {
+			destVal.Elem().Set(cachedVal)
+			return nil
+		}
+	}
+
+	return types.ErrTypeMismatch
 }
 
 // Del deletes an item from the cache

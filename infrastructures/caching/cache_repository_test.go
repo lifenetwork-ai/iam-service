@@ -1,12 +1,15 @@
-package caching
+package caching_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"go.uber.org/mock/gomock"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/infrastructures/caching"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/mocks"
 	"github.com/stretchr/testify/require"
 )
@@ -18,15 +21,20 @@ func TestSaveItem(t *testing.T) {
 
 		mockCacheClient := mocks.NewMockCacheClient(ctrl)
 		ctx := context.Background()
-		repo := NewCachingRepository(ctx, mockCacheClient)
+		repo := caching.NewCachingRepository(ctx, mockCacheClient)
 
-		key := mocks.NewMockStringer(ctrl).EXPECT().String().Return("testKey").AnyTimes()
+		// Create the mock Stringer properly
+		mockKey := mocks.NewMockStringer(ctrl)
+		mockKey.EXPECT().String().Return("testKey").AnyTimes()
+
 		value := "testValue"
 		expire := 5 * time.Minute
 
-		mockCacheClient.EXPECT().Set(ctx, key.String(), value, expire).Return(nil)
+		// Account for the prefixed key that the repository creates
+		expectedKey := fmt.Sprintf("%s_testKey", conf.GetAppName())
+		mockCacheClient.EXPECT().Set(ctx, expectedKey, value, expire).Return(nil)
 
-		err := repo.SaveItem(key, value, expire)
+		err := repo.SaveItem(mockKey, value, expire)
 		require.NoError(t, err)
 	})
 }
@@ -38,14 +46,19 @@ func TestRetrieveItem(t *testing.T) {
 
 		mockClient := mocks.NewMockCacheClient(ctrl)
 		ctx := context.Background()
-		repo := NewCachingRepository(ctx, mockClient)
+		repo := caching.NewCachingRepository(ctx, mockClient)
 
-		key := mocks.NewMockStringer(ctrl).EXPECT().String().Return("testKey").AnyTimes()
+		// Create the mock Stringer properly
+		mockKey := mocks.NewMockStringer(ctrl)
+		mockKey.EXPECT().String().Return("testKey").AnyTimes()
+
 		var value string
 
-		mockClient.EXPECT().Get(ctx, key.String(), &value).Return(nil)
+		// Account for the prefixed key that the repository creates
+		expectedKey := fmt.Sprintf("%s_testKey", conf.GetAppName())
+		mockClient.EXPECT().Get(ctx, expectedKey, &value).Return(nil)
 
-		err := repo.RetrieveItem(key, &value)
+		err := repo.RetrieveItem(mockKey, &value)
 		require.NoError(t, err)
 	})
 }
@@ -57,13 +70,17 @@ func TestRemoveItem(t *testing.T) {
 
 		mockClient := mocks.NewMockCacheClient(ctrl)
 		ctx := context.Background()
-		repo := NewCachingRepository(ctx, mockClient)
+		repo := caching.NewCachingRepository(ctx, mockClient)
 
-		key := mocks.NewMockStringer(ctrl).EXPECT().String().Return("testKey").AnyTimes()
+		// Create the mock Stringer properly
+		mockKey := mocks.NewMockStringer(ctrl)
+		mockKey.EXPECT().String().Return("testKey").AnyTimes()
 
-		mockClient.EXPECT().Del(ctx, key.String()).Return(nil)
+		// Account for the prefixed key that the repository creates
+		expectedKey := fmt.Sprintf("%s_testKey", conf.GetAppName())
+		mockClient.EXPECT().Del(ctx, expectedKey).Return(nil)
 
-		err := repo.RemoveItem(key)
+		err := repo.RemoveItem(mockKey)
 		require.NoError(t, err)
 	})
 }

@@ -1,5 +1,7 @@
 package conf
 
+import "github.com/lifenetwork-ai/iam-service/constants"
+
 func GetConfiguration() *Configuration {
 	return &configuration
 }
@@ -12,18 +14,48 @@ func GetCacheType() string {
 	return configuration.CacheType
 }
 
-func GetLifeAIConfiguration() *LifeAIConfiguration {
-	return &configuration.LifeAIConfig
-}
-
 func GetAppName() string {
 	return configuration.AppName
 }
 
-func GetJwtConfig() *JwtConfiguration {
-	return &configuration.JwtConfig
+func GetSmsConfiguration() *SmsConfiguration {
+	return &configuration.Sms
 }
 
 func IsDebugMode() bool {
-	return configuration.Env == "DEV"
+	return configuration.Env == constants.NightlyEnvironment
+}
+
+func IsDevReviewerBypassEnabled() bool {
+	return configuration.DevReviewer.DevReviewerByPass
+}
+
+func DevReviewerMagicOTP() string {
+	if v := configuration.DevReviewer.DevReviewerMagicOTP; v != "" {
+		return v
+	}
+	return "123456"
+}
+
+func DevReviewerIdentifier() string {
+	return configuration.DevReviewer.DevReviewerIdentifier
+}
+
+func GetMockWebhookURL() string {
+	return configuration.MockWebhookURL
+}
+
+func GetCourierAPIKey() string {
+	return configuration.COURIER_API_KEY
+}
+
+// SetEnvironmentForTesting sets the environment for testing purposes
+// WARNING: This should only be used in tests!
+func SetEnvironmentForTesting(env string) {
+	configuration.Env = env
+}
+
+// GetEnvironment returns the current environment
+func GetEnvironment() string {
+	return configuration.Env
 }

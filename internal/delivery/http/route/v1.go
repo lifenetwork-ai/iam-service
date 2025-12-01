@@ -3,69 +3,108 @@ package route
 import (
 	"context"
 
-	"gorm.io/gorm"
-
 	"github.com/gin-gonic/gin"
 	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/handlers"
 	middleware "github.com/lifenetwork-ai/iam-service/internal/delivery/http/middleware"
-	interfaces "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/types"
+	"github.com/lifenetwork-ai/iam-service/internal/wire"
+	"github.com/lifenetwork-ai/iam-service/internal/wire/instances"
 )
 
 func RegisterRoutes(
 	ctx context.Context,
 	r *gin.Engine,
 	config *conf.Configuration,
-	db *gorm.DB,
-	organizationUCase interfaces.IdentityOrganizationUseCase,
-	userUCase interfaces.IdentityUserUseCase,
+	ucases *wire.UseCases,
+	repos *wire.Repos,
 ) {
+	authMiddleware := middleware.NewAuthMiddleware(ucases.IdentityUserUCase)
 	v1 := r.Group("/api/v1")
 
-	// SECTION: organizations
-	organizationRouter := v1.Group("organizations")
-	organizationHandler := handlers.NewIdentityOrganizationHandler(organizationUCase)
-	organizationRouter.GET(
-		"/",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:read"),
-		organizationHandler.GetOrganizations,
-	)
-	organizationRouter.GET(
-		"/:organization_id",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:read"),
-		organizationHandler.GetDetail,
-	)
-	organizationRouter.POST(
-		"/",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:create"),
-		organizationHandler.CreateOrganization,
-	)
-	organizationRouter.PUT(
-		"/:organization_id",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:update"),
-		organizationHandler.UpdateOrganization,
-	)
-	organizationRouter.DELETE(
-		"/:organization_id",
-		middleware.RequestAuthenticationMiddleware(),
-		middleware.RequestAuthorizationMiddleware("iam:identity_organization:delete"),
-		organizationHandler.DeleteOrganization,
-	)
+	// SECTION: Admin routes
+	adminRouter := v1.Group("admin")
 
-	// SECTION: organizations
+	// Admin Tenant Management subgroup
+	adminHandler := handlers.NewAdminHandler(ucases.AdminUCase)
+	accountRouter := adminRouter.Group("accounts")
+	{
+		accountRouter.Use(
+			middleware.RootAuthMiddleware(),
+		)
+		accountRouter.POST("/", adminHandler.CreateAdminAccount)
+	}
+
+	// Admin SMS/Zalo token management
+	smsTokenHandler := handlers.NewSmsTokenHandler(ucases.SmsTokenUCase, instances.SMSServiceInstance(repos.ZaloTokenRepo), repos.ZaloTokenRepo)
+	smsRouter := adminRouter.Group("sms")
+	{
+		smsRouter.Use(middleware.RootAuthMiddleware())
+		smsRouter.GET("/zalo/health", smsTokenHandler.GetZaloHealth)
+		smsRouter.GET("/zalo/token", smsTokenHandler.GetZaloToken)
+		smsRouter.POST("/zalo/token/refresh", smsTokenHandler.RefreshZaloToken)
+	}
+
+	// Admin Identifier Management subgroup
+	identifierGroup := adminRouter.Group("identifiers")
+	{
+		identifierGroup.Use(
+			middleware.AdminAuthMiddleware(repos.AdminAccountRepo),
+		)
+		identifierGroup.Use(
+			middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
+		)
+		identifierGroup.POST("/check", adminHandler.CheckIdentifierAdmin)
+		identifierGroup.POST("/add", adminHandler.AddIdentifierAdmin)
+	}
+
+	// Admin Tenant Management subgroup
+	tenantRouter := adminRouter.Group("tenants")
+	{
+		tenantRouter.Use(middleware.AdminAuthMiddleware(repos.AdminAccountRepo))
+		tenantRouter.GET("/", adminHandler.ListTenants)
+		tenantRouter.GET("/:id", adminHandler.GetTenant)
+		tenantRouter.POST("/", adminHandler.CreateTenant)
+		tenantRouter.PUT("/:id", adminHandler.UpdateTenant)
+		tenantRouter.DELETE("/:id", adminHandler.DeleteTenant)
+	}
+
+	// SECTION: Permission routes
+	permissionHandler := handlers.NewPermissionHandler(ucases.PermissionUCase)
+	permissionRouter := v1.Group("permissions")
+	permissionRouter.Use(middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware())
+	{
+		permissionRouter.POST("/self-check", authMiddleware.RequireAuth(), permissionHandler.SelfCheckPermission)
+		permissionRouter.POST("/check", permissionHandler.CheckPermission)
+		permissionRouter.POST("/relation-tuples", authMiddleware.RequireAuth(), permissionHandler.CreateRelationTuple)
+		permissionRouter.POST("/delegate", authMiddleware.RequireAuth(), permissionHandler.DelegateAccess)
+	}
+
+	// SECTION: users
 	userRouter := v1.Group("users")
-	userHandler := handlers.NewIdentityUserHandler(userUCase)
+	userRouter.Use(
+		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
+	)
+	userHandler := handlers.NewIdentityUserHandler(ucases.IdentityUserUCase, ucases.CourierUCase)
 	userRouter.POST(
 		"/challenge-with-phone",
+		middleware.IPRateLimitMiddleware(middleware.RateLimitConfig{
+			RateLimiter: instances.RateLimiterInstance(),
+			Action:      constants.LoginWithPhoneAction,
+			Limit:       constants.MaxAttemptsPerWindow,
+			Window:      constants.RateLimitWindow,
+		}),
 		userHandler.ChallengeWithPhone,
 	)
 
 	userRouter.POST(
 		"/challenge-with-email",
+		middleware.IPRateLimitMiddleware(middleware.RateLimitConfig{
+			RateLimiter: instances.RateLimiterInstance(),
+			Action:      constants.LoginWithEmailAction,
+			Limit:       constants.MaxAttemptsPerWindow,
+			Window:      constants.RateLimitWindow,
+		}),
 		userHandler.ChallengeWithEmail,
 	)
 
@@ -75,39 +114,67 @@ func RegisterRoutes(
 	)
 
 	userRouter.POST(
-		"/login-with-google",
-		userHandler.LoginWithGoogle,
+		"/register",
+		userHandler.Register,
 	)
 
-	userRouter.POST(
-		"/login-with-facebook",
-		userHandler.LoginWithFacebook,
-	)
-
-	userRouter.POST(
-		"/login-with-apple",
-		userHandler.LoginWithApple,
-	)
-
-	// userRouter.POST("/register", userHandler.Register)
-
-	userRouter.POST(
-		"/login",
-		userHandler.Login,
-	)
-
-	userRouter.POST(
-		"/refresh-token",
-		userHandler.RefreshToken,
-	)
 	userRouter.POST(
 		"/logout",
-		middleware.RequestAuthenticationMiddleware(),
+		authMiddleware.RequireAuth(),
 		userHandler.Logout,
 	)
+
 	userRouter.GET(
 		"/me",
-		middleware.RequestHybridAuthenticationMiddleware(),
+		authMiddleware.RequireAuth(),
 		userHandler.Me,
+	)
+
+	userRouter.POST(
+		"/me/add-identifier",
+		authMiddleware.RequireAuth(),
+		userHandler.AddIdentifier,
+	)
+
+	userRouter.POST(
+		"/me/update-identifier",
+		authMiddleware.RequireAuth(),
+		userHandler.ChangeIdentifier,
+	)
+
+	userRouter.DELETE(
+		"/me/delete-identifier",
+		authMiddleware.RequireAuth(),
+		userHandler.DeleteIdentifier,
+	)
+
+	userRouter.PATCH(
+		"/me/update-lang",
+		authMiddleware.RequireAuth(),
+		userHandler.UpdateLang,
+	)
+
+	userRouter.POST(
+		"/verification/challenge",
+		authMiddleware.RequireAuth(),
+		userHandler.ChallengeVerification,
+	)
+
+	// SECTION: Courier (OTP delivery) routes
+	courierHandler := handlers.NewCourierHandler(ucases.CourierUCase)
+	courierRouter := v1.Group("courier")
+
+	courierRouter.POST("/messages/:api_key", courierHandler.ReceiveCourierMessageHandler)
+
+	courierRouter.GET(
+		"/available-channels",
+		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
+		courierHandler.GetAvailableChannelsHandler,
+	)
+
+	courierRouter.POST(
+		"/choose-channel",
+		middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware(),
+		courierHandler.ChooseChannelHandler,
 	)
 }

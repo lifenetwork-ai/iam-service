@@ -1,58 +1,27 @@
 package dto
 
-// IdentityUserDTO represents an User.
-type IdentityUserDTO struct {
-	ID        string `json:"id"`
-	Seed      string `json:"seed"`
-	UserName  string `json:"user_name"`
-	Email     string `json:"email"`
-	Phone     string `json:"phone"`
-	Status    bool   `json:"status"`
-	Name      string `json:"name"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	FullName  string `json:"full_name"`
-	CreatedAt int64  `json:"created_at"`
-	UpdatedAt int64  `json:"updated_at"`
-}
-
-// IdentityUserChallengeDTO represents a challenge for identity verification.
-type IdentityUserChallengeDTO struct {
-	SessionID   string `json:"session_id"`
-	Receiver    string `json:"receiver"`
-	ChallengeAt int64  `json:"challenge_at"`
-}
-
-// IdentityUserAuthDTO represents the response for a successful login.
-type IdentityUserAuthDTO struct {
-	AccessToken      string          `json:"access_token"`
-	RefreshToken     string          `json:"refresh_token"`
-	AccessExpiresAt  int64           `json:"access_expires_at"`
-	RefreshExpiresAt int64           `json:"refresh_expires_at"`
-	LastLoginAt      int64           `json:"last_login_at"`
-	User             IdentityUserDTO `json:"user"`
-}
-
 // IdentityChallengeWithPhoneDTO represents the request for a phone challenge.
 type IdentityChallengeWithPhoneDTO struct {
-	Phone string `json:"phone"`
+	Phone   string `json:"phone"`
+	Channel string `json:"channel" binding:"omitempty,oneof=sms whatsapp zalo" description:"Optional delivery channel for OTP; one of sms, whatsapp, zalo"`
 }
 
-// IdentityChallengeWithEmailDTO represents the request for a phone challenge.
+// IdentityChallengeWithEmailDTO represents the request for a email challenge.
 type IdentityChallengeWithEmailDTO struct {
 	Email string `json:"email"`
 }
 
 type IdentityChallengeVerifyDTO struct {
-	SessionID string `json:"session_id"`
-	Code      string `json:"code"`
+	FlowID string `json:"flow_id" binding:"required" description:"The flow ID of the challenge"`
+	Code   string `json:"code" binding:"required" description:"The code of the challenge"`
+	Type   string `json:"type" binding:"required,oneof=register login verify" description:"The type of the challenge, can be register, login or verify"`
 }
 
 type IdentityUserRegisterDTO struct {
-	UserName string `json:"user_name"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Password string `json:"password"`
+	Lang    string `json:"lang" binding:"required,oneof=en vi" description:"The language for the user registration"`
+	Email   string `json:"email" binding:"omitempty,email"`
+	Phone   string `json:"phone" binding:"omitempty"`
+	Channel string `json:"channel" binding:"omitempty,oneof=sms whatsapp zalo" description:"Optional delivery channel for OTP when registering with phone; one of sms, whatsapp, zalo"`
 }
 
 // IdentityUserLoginDTO represents the request for a user login.
@@ -61,7 +30,28 @@ type IdentityUserLoginDTO struct {
 	Password string `json:"password"`
 }
 
-// IdentityRefreshTokenDTO represents the request for a refresh token.
-type IdentityRefreshTokenDTO struct {
-	RefreshToken string `json:"refresh_token"`
+// IdentityUserAddIdentifierDTO represents the request for adding a new identifier.
+type IdentityUserAddIdentifierDTO struct {
+	NewIdentifier string `json:"new_identifier" binding:"required"` // email address or phone number
+}
+
+// IdentityUserChangeIdentifierDTO represents the request for changing an identifier.
+type IdentityUserChangeIdentifierDTO struct {
+	NewIdentifier string `json:"new_identifier" binding:"required"`
+}
+
+// IdentityUserDeleteIdentifierDTO represents the request for deleting an identifier.
+type IdentityUserDeleteIdentifierDTO struct {
+	IdentifierType string `json:"identifier_type" binding:"required,oneof=email phone_number" description:"The type of the identifier, can be email or phone_number"`
+}
+
+// IdentityVerificationChallengeDTO represents the request for initiating a verification challenge.
+type IdentityVerificationChallengeDTO struct {
+	Identifier string `json:"identifier" binding:"required" description:"Email or phone number to verify"`
+	Channel    string `json:"channel" binding:"omitempty,oneof=sms whatsapp zalo" description:"Optional delivery channel for OTP when identifier is a phone; one of sms, whatsapp, zalo"`
+}
+
+// IdentityUserUpdateLangDTO represents the request for updating user's language preference.
+type IdentityUserUpdateLangDTO struct {
+	Lang string `json:"lang" binding:"required"`
 }

@@ -9,6 +9,7 @@
 .vscode/extensions.json
 *.code-workspace
 .idea/*
+.cursor/*
 
 # Local History for Visual Studio Code
 .history/
@@ -60,6 +61,8 @@ yarn-error.log*
 # Testing
 coverage
 coverage.json
+coverage.out
+coverage.html
 
 # Typechain
 typechain
@@ -69,3 +72,6 @@ typechain-types
 cache
 
 cmd/__*
+
+# AI-assissted
+.claude
