@@ -238,19 +238,19 @@ func TestCourierUseCase_GetAvailableChannels_Integration(t *testing.T) {
 			name:             "LifeAI tenant should support SMS and WhatsApp",
 			tenantName:       constants.TenantLifeAI,
 			receiver:         "+84344381024",
-			expectedChannels: []string{constants.ChannelWebhook, constants.ChannelWhatsApp},
+			expectedChannels: []string{constants.ChannelSMS, constants.ChannelWhatsApp},
 		},
 		{
 			name:             "Genetica tenant should support SMS and Zalo",
 			tenantName:       constants.TenantGenetica,
 			receiver:         "+84344381024",
-			expectedChannels: []string{constants.ChannelWebhook, constants.ChannelZalo},
+			expectedChannels: []string{constants.ChannelSMS, constants.ChannelZalo},
 		},
 		{
 			name:             "Unknown tenant should support all channels",
 			tenantName:       "unknown_tenant",
 			receiver:         "+84344381024",
-			expectedChannels: []string{constants.ChannelWebhook, constants.ChannelWhatsApp, constants.ChannelZalo},
+			expectedChannels: []string{constants.ChannelSMS, constants.ChannelWhatsApp, constants.ChannelZalo},
 		},
 	}
 
