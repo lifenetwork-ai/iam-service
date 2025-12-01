@@ -106,7 +106,7 @@ func shouldRouteToSpeedSMS() bool {
 		return false
 	}
 	env := strings.ToUpper(strings.TrimSpace(config.Env))
-	return env == "STAGING" || env == "PRODUCTION" || env == "PROD"
+	return env == constants.StagingEnvironment || env == constants.ProductionEnvironment
 }
 
 // shouldDefaultToWebhook returns true when we should use webhook as the default
@@ -117,7 +117,7 @@ func shouldDefaultToWebhook() bool {
 		return false
 	}
 	env := strings.ToUpper(strings.TrimSpace(config.Env))
-	return env == "DEV" || env == "DEVELOPMENT" || env == "NIGHTLY"
+	return env == "DEV" || env == "DEVELOPMENT" || env == constants.NightlyEnvironment
 }
 
 func (u *courierUseCase) GetChannel(ctx context.Context, tenantName, receiver string) (types.ChooseChannelResponse, *domainerrors.DomainError) {
