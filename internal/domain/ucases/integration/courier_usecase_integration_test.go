@@ -323,11 +323,6 @@ func TestCourierUseCase_GetChannel_CacheMiss_Integration(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	// Ensure environment is STAGING to avoid webhook default in DEV/NIGHTLY
-	originalEnv := conf.GetEnvironment()
-	defer func() { conf.SetEnvironmentForTesting(originalEnv) }()
-	conf.SetEnvironmentForTesting("STAGING")
-
 	// Setup test dependencies
 	mockQueue := mock_otpqueue.NewMockOTPQueueRepository(ctrl)
 	mockSMSProvider := mock_services.NewMockSMSProvider(ctrl)
