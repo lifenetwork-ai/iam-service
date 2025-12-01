@@ -1,5 +1,7 @@
 package conf
 
+import "github.com/lifenetwork-ai/iam-service/constants"
+
 func GetConfiguration() *Configuration {
 	return &configuration
 }
@@ -21,7 +23,7 @@ func GetSmsConfiguration() *SmsConfiguration {
 }
 
 func IsDebugMode() bool {
-	return configuration.Env == "DEV"
+	return configuration.Env == constants.NightlyEnvironment
 }
 
 func IsDevReviewerBypassEnabled() bool {

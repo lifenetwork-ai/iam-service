@@ -106,7 +106,12 @@ func shouldRouteToSpeedSMS() bool {
 		return false
 	}
 	env := strings.ToUpper(strings.TrimSpace(config.Env))
-	return env == constants.StagingEnvironment || env == constants.ProductionEnvironment
+	switch env {
+	case constants.StagingEnvironment, constants.ProductionEnvironment:
+		return true
+	default:
+		return false
+	}
 }
 
 // shouldDefaultToWebhook returns true when we should use webhook as the default
