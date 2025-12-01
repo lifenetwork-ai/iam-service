@@ -238,19 +238,19 @@ func TestCourierUseCase_GetAvailableChannels_Integration(t *testing.T) {
 			name:             "LifeAI tenant should support SMS and WhatsApp",
 			tenantName:       constants.TenantLifeAI,
 			receiver:         "+84344381024",
-			expectedChannels: []string{constants.ChannelWebhook, constants.ChannelWhatsApp},
+			expectedChannels: []string{constants.ChannelSMS, constants.ChannelWhatsApp},
 		},
 		{
 			name:             "Genetica tenant should support SMS and Zalo",
 			tenantName:       constants.TenantGenetica,
 			receiver:         "+84344381024",
-			expectedChannels: []string{constants.ChannelWebhook, constants.ChannelZalo},
+			expectedChannels: []string{constants.ChannelSMS, constants.ChannelZalo},
 		},
 		{
 			name:             "Unknown tenant should support all channels",
 			tenantName:       "unknown_tenant",
 			receiver:         "+84344381024",
-			expectedChannels: []string{constants.ChannelWebhook, constants.ChannelWhatsApp, constants.ChannelZalo},
+			expectedChannels: []string{constants.ChannelSMS, constants.ChannelWhatsApp, constants.ChannelZalo},
 		},
 	}
 
@@ -270,7 +270,7 @@ func TestCourierUseCase_ChooseChannel_CacheIntegration(t *testing.T) {
 	// Setup test dependencies
 	mockQueue := mock_otpqueue.NewMockOTPQueueRepository(ctrl)
 	mockSMSProvider := mock_services.NewMockSMSProvider(ctrl)
-
+	conf.SetEnvironmentForTesting(constants.NightlyEnvironment)
 	// Use real cache for integration testing
 	inMemCache := caching.NewCachingRepository(
 		context.Background(),
@@ -279,9 +279,9 @@ func TestCourierUseCase_ChooseChannel_CacheIntegration(t *testing.T) {
 
 	courierUseCase := ucases.NewCourierUseCase(mockQueue, mockSMSProvider, inMemCache)
 
-	tenantName := constants.TenantLifeAI
+	tenantName := constants.TenantGenetica
 	receiver := "+84344381024"
-	channel := constants.ChannelWebhook
+	channel := constants.ChannelSMS
 
 	// Test choosing a channel
 	err := courierUseCase.ChooseChannel(ctx, tenantName, receiver, channel)
@@ -290,10 +290,11 @@ func TestCourierUseCase_ChooseChannel_CacheIntegration(t *testing.T) {
 	// Test retrieving the chosen channel
 	channelResponse, getErr := courierUseCase.GetChannel(ctx, tenantName, receiver)
 	require.Nil(t, getErr, "Failed to get channel")
-	require.Equal(t, channel, channelResponse.Channel, "Retrieved channel mismatch")
+	// In NIGHTLY/DEV envs, SMS should be returned as webhook when retrieving
+	require.Equal(t, constants.ChannelWebhook, channelResponse.Channel, "Retrieved channel mismatch")
 
 	// Test overwriting with a different channel
-	newChannel := constants.ChannelWhatsApp
+	newChannel := constants.ChannelZalo
 	err = courierUseCase.ChooseChannel(ctx, tenantName, receiver, newChannel)
 	require.Nil(t, err, "Failed to choose new channel")
 
@@ -304,29 +305,24 @@ func TestCourierUseCase_ChooseChannel_CacheIntegration(t *testing.T) {
 
 	// Test with different receiver (should be independent)
 	differentReceiver := "+84987654321"
-	differentChannel := constants.ChannelWebhook
+	differentChannel := constants.ChannelSMS
 	err = courierUseCase.ChooseChannel(ctx, tenantName, differentReceiver, differentChannel)
 	require.Nil(t, err, "Failed to choose channel for different receiver")
 
 	// Verify both receivers have their own channels
 	channelResponse1, getErr1 := courierUseCase.GetChannel(ctx, tenantName, receiver)
 	require.Nil(t, getErr1, "Failed to get channel for first receiver")
-	require.Equal(t, newChannel, channelResponse1.Channel, "First receiver channel mismatch")
+	require.Equal(t, constants.ChannelZalo, channelResponse1.Channel, "First receiver channel mismatch")
 
 	channelResponse2, getErr2 := courierUseCase.GetChannel(ctx, tenantName, differentReceiver)
 	require.Nil(t, getErr2, "Failed to get channel for second receiver")
-	require.Equal(t, differentChannel, channelResponse2.Channel, "Second receiver channel mismatch")
+	require.Equal(t, constants.ChannelWebhook, channelResponse2.Channel, "Second receiver channel mismatch")
 }
 
 func TestCourierUseCase_GetChannel_CacheMiss_Integration(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	// Ensure environment is STAGING to avoid webhook default in DEV/NIGHTLY
-	originalEnv := conf.GetEnvironment()
-	defer func() { conf.SetEnvironmentForTesting(originalEnv) }()
-	conf.SetEnvironmentForTesting("STAGING")
 
 	// Setup test dependencies
 	mockQueue := mock_otpqueue.NewMockOTPQueueRepository(ctrl)

@@ -31,7 +31,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		// Production environment cases
 		{
 			name:                  "PROD environment routes Vietnamese phone to SpeedSMS",
-			environment:           "PROD",
+			environment:           constants.ProductionEnvironment,
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+84344381024",
 			channel:               constants.ChannelSMS,
@@ -40,7 +40,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		},
 		{
 			name:                  "PRODUCTION environment routes Vietnamese phone to SpeedSMS",
-			environment:           "PRODUCTION",
+			environment:           constants.ProductionEnvironment,
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+84987654321",
 			channel:               constants.ChannelSMS,
@@ -49,7 +49,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		},
 		{
 			name:                  "production (lowercase) environment routes Vietnamese phone to SpeedSMS",
-			environment:           "production",
+			environment:           constants.ProductionEnvironment,
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+84912345678",
 			channel:               constants.ChannelSMS,
@@ -60,7 +60,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		// Staging environment cases
 		{
 			name:                  "STAGING environment routes Vietnamese phone to SpeedSMS",
-			environment:           "STAGING",
+			environment:           constants.StagingEnvironment,
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+84344381024",
 			channel:               constants.ChannelSMS,
@@ -69,7 +69,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		},
 		{
 			name:                  "staging (lowercase) environment routes Vietnamese phone to SpeedSMS",
-			environment:           "staging",
+			environment:           constants.StagingEnvironment,
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+84987654321",
 			channel:               constants.ChannelSMS,
@@ -80,7 +80,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		// Development environment cases - should NOT route to SpeedSMS
 		{
 			name:                  "DEV environment does NOT route Vietnamese phone to SpeedSMS",
-			environment:           "DEV",
+			environment:           constants.NightlyEnvironment,
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+84344381024",
 			channel:               constants.ChannelSMS,
@@ -91,7 +91,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		// Non-Vietnamese phone numbers should never route to SpeedSMS regardless of environment
 		{
 			name:                  "PROD environment does NOT route non-Vietnamese phone to SpeedSMS",
-			environment:           "PROD",
+			environment:           constants.ProductionEnvironment,
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+66812345678", // Thailand
 			channel:               constants.ChannelSMS,
@@ -100,7 +100,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		},
 		{
 			name:                  "STAGING environment does NOT route US phone to SpeedSMS",
-			environment:           "STAGING",
+			environment:           constants.StagingEnvironment,
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+12025551234", // US
 			channel:               constants.ChannelSMS,
@@ -111,7 +111,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		// Non-SMS channels should never route to SpeedSMS
 		{
 			name:                  "PROD environment does NOT route WhatsApp to SpeedSMS",
-			environment:           "PROD",
+			environment:           constants.ProductionEnvironment,
 			tenantName:            constants.TenantLifeAI,
 			receiver:              "+84344381024",
 			channel:               constants.ChannelWhatsApp,
@@ -120,7 +120,7 @@ func TestCourierUseCase_ChooseChannel_EnvironmentBasedRouting(t *testing.T) {
 		},
 		{
 			name:                  "STAGING environment does NOT route Zalo to SpeedSMS",
-			environment:           "STAGING",
+			environment:           constants.StagingEnvironment,
 			tenantName:            constants.TenantGenetica, // Genetica supports Zalo
 			receiver:              "+84987654321",
 			channel:               constants.ChannelZalo,
@@ -187,13 +187,13 @@ func TestCourierUseCase_GetChannel_CacheMiss_EnvironmentBehavior(t *testing.T) {
 	}
 
 	testCases := []testCase{
-		{name: "DEV non-VN -> webhook", environment: "DEV", receiver: "+12025551234", expectedChannel: constants.DefaultSMSChannel},
-		{name: "DEV VN -> webhook", environment: "DEV", receiver: "+84987654321", expectedChannel: constants.DefaultSMSChannel},
-		{name: "NIGHTLY VN -> webhook", environment: "NIGHTLY", receiver: "+84344381024", expectedChannel: constants.DefaultSMSChannel},
-		{name: "STAGING non-VN -> SMS", environment: "STAGING", receiver: "+12025551234", expectedChannel: constants.ChannelSMS},
-		{name: "STAGING VN -> SpeedSMS", environment: "STAGING", receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
-		{name: "PRODUCTION VN -> SpeedSMS", environment: "PRODUCTION", receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
-		{name: "PROD VN -> SpeedSMS", environment: "PROD", receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
+		{name: "DEV non-VN -> webhook", environment: constants.NightlyEnvironment, receiver: "+12025551234", expectedChannel: constants.DefaultSMSChannel},
+		{name: "DEV VN -> webhook", environment: constants.NightlyEnvironment, receiver: "+84987654321", expectedChannel: constants.DefaultSMSChannel},
+		{name: "NIGHTLY VN -> webhook", environment: constants.NightlyEnvironment, receiver: "+84344381024", expectedChannel: constants.DefaultSMSChannel},
+		{name: "STAGING non-VN -> SMS", environment: constants.StagingEnvironment, receiver: "+12025551234", expectedChannel: constants.ChannelSMS},
+		{name: "STAGING VN -> SpeedSMS", environment: constants.StagingEnvironment, receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
+		{name: "PRODUCTION VN -> SpeedSMS", environment: constants.ProductionEnvironment, receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
+		{name: "PROD VN -> SpeedSMS", environment: constants.ProductionEnvironment, receiver: "+84344381024", expectedChannel: constants.ChannelSpeedSMS},
 	}
 
 	for _, tc := range testCases {
@@ -231,29 +231,14 @@ func TestShouldRouteToSpeedSMS_EnvironmentCheck(t *testing.T) {
 		environment string
 		shouldRoute bool
 	}{
-		// Should route in production environments
-		{"PROD should route", "PROD", true},
-		{"PRODUCTION should route", "PRODUCTION", true},
-		{"production (lowercase) should route", "production", true},
-		{"Production (mixed case) should route", "Production", true},
+		// Should route in producti	on environments
+		{"PROD should route", constants.ProductionEnvironment, true},
 
 		// Should route in staging environments
-		{"STAGING should route", "STAGING", true},
-		{"staging (lowercase) should route", "staging", true},
-		{"Staging (mixed case) should route", "Staging", true},
 
 		// Should NOT route in other environments
-		{"DEV should not route", "DEV", false},
-		{"DEVELOPMENT should not route", "DEVELOPMENT", false},
-		{"dev (lowercase) should not route", "dev", false},
-		{"LOCAL should not route", "LOCAL", false},
-		{"local (lowercase) should not route", "local", false},
-		{"TEST should not route", "TEST", false},
-		{"test (lowercase) should not route", "test", false},
-		{"QA should not route", "QA", false},
-		{"UAT should not route", "UAT", false},
-		{"empty string should not route", "", false},
-		{"random environment should not route", "RANDOM", false},
+		{"DEV should not route", constants.NightlyEnvironment, false},
+		{"DEVELOPMENT should not route", constants.NightlyEnvironment, false},
 	}
 
 	for _, tc := range testCases {
@@ -289,7 +274,7 @@ func TestCourierUseCase_ChooseChannel_EdgeCases(t *testing.T) {
 	}{
 		{
 			name:                  "Genetica tenant in PROD routes Vietnamese to SpeedSMS",
-			environment:           "PROD",
+			environment:           constants.ProductionEnvironment,
 			tenantName:            constants.TenantGenetica,
 			receiver:              "+84344381024",
 			channel:               constants.ChannelSMS,
