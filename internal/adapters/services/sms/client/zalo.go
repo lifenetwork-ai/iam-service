@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/lifenetwork-ai/iam-service/constants"
 )
 
 const (
@@ -102,7 +104,7 @@ func NewZaloClientWithHTTP(ctx context.Context, baseURL, secretKey, appID, acces
 		httpClient.Transport = http.DefaultTransport
 	}
 	if oauthBaseURL == "" {
-		oauthBaseURL = "https://oauth.zaloapp.com"
+		oauthBaseURL = constants.ZaloBaseURL
 	}
 	return &ZaloClient{
 		client:       httpClient,

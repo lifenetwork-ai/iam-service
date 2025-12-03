@@ -113,8 +113,7 @@ func (w *zaloRefreshTokenWorker) refreshTokenForTenant(ctx context.Context, toke
 	}
 
 	// Use Zalo OAuth base URL
-	zaloOAuthBaseURL := constants.ZaloOAuthBaseURL
-	cli, err := client.NewZaloClient(ctx, zaloOAuthBaseURL, decrypted.SecretKey, decrypted.AppID, "", decrypted.RefreshToken)
+	cli, err := client.NewZaloClient(ctx, constants.ZaloBaseURL, decrypted.SecretKey, decrypted.AppID, "", decrypted.RefreshToken)
 	if err != nil {
 		return fmt.Errorf("failed to create Zalo client: %w", err)
 	}
@@ -133,13 +132,14 @@ func (w *zaloRefreshTokenWorker) refreshTokenForTenant(ctx context.Context, toke
 
 	// Update token with new values
 	updatedToken := &domain.ZaloToken{
-		ID:           token.ID,
-		TenantID:     token.TenantID,
-		AppID:        decrypted.AppID,
-		SecretKey:    decrypted.SecretKey,
-		AccessToken:  resp.AccessToken,
-		RefreshToken: resp.RefreshToken,
-		ExpiresAt:    time.Now().Add(time.Duration(expiresIn) * time.Second),
+		ID:            token.ID,
+		TenantID:      token.TenantID,
+		AppID:         decrypted.AppID,
+		SecretKey:     decrypted.SecretKey,
+		AccessToken:   resp.AccessToken,
+		RefreshToken:  resp.RefreshToken,
+		OtpTemplateID: decrypted.OtpTemplateID,
+		ExpiresAt:     time.Now().Add(time.Duration(expiresIn) * time.Second),
 	}
 
 	// Encrypt and save

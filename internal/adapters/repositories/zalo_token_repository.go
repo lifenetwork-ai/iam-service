@@ -41,12 +41,13 @@ func (r *zaloTokenRepository) Save(ctx context.Context, token *domain.ZaloToken)
 		Clauses(clause.OnConflict{
 			Columns: []clause.Column{{Name: "tenant_id"}},
 			DoUpdates: clause.Assignments(map[string]interface{}{
-				"app_id":        token.AppID,
-				"secret_key":    token.SecretKey,
-				"access_token":  token.AccessToken,
-				"refresh_token": token.RefreshToken,
-				"expires_at":    token.ExpiresAt,
-				"updated_at":    now,
+				"app_id":          token.AppID,
+				"secret_key":      token.SecretKey,
+				"access_token":    token.AccessToken,
+				"refresh_token":   token.RefreshToken,
+				"otp_template_id": token.OtpTemplateID,
+				"expires_at":      token.ExpiresAt,
+				"updated_at":      now,
 			}),
 		}).
 		Create(token).Error

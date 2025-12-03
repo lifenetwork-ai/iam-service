@@ -1,10 +1,11 @@
 package dto
 
 type CreateZaloTokenRequestDTO struct {
-	AppID        string `json:"app_id" binding:"required"`
-	SecretKey    string `json:"secret_key" binding:"required"`
-	RefreshToken string `json:"refresh_token" binding:"required"`
-	AccessToken  string `json:"access_token"` // Optional
+	AppID         string `json:"app_id" binding:"required"`
+	SecretKey     string `json:"secret_key" binding:"required"`
+	RefreshToken  string `json:"refresh_token" binding:"required"`
+	AccessToken   string `json:"access_token"` // Optional
+	OtpTemplateID string `json:"otp_template_id"`
 }
 
 type ZaloTokenResponseDTO struct {

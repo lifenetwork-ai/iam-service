@@ -17,7 +17,7 @@ type SmsTokenUseCase interface {
 
 	// CreateOrUpdateZaloToken creates/updates Zalo config for a tenant
 	// If accessToken is empty, automatically refreshes using refreshToken
-	CreateOrUpdateZaloToken(ctx context.Context, tenantID uuid.UUID, appID, secretKey, refreshToken, accessToken string) *domainerrors.DomainError
+	CreateOrUpdateZaloToken(ctx context.Context, tenantID uuid.UUID, appID, secretKey, refreshToken, accessToken, otpTemplateID string) *domainerrors.DomainError
 
 	// RefreshZaloToken manually refreshes a tenant's token
 	RefreshZaloToken(ctx context.Context, tenantID uuid.UUID, refreshToken string) *domainerrors.DomainError
