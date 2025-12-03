@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/google/uuid"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -28,13 +29,27 @@ func (r *zaloTokenRepository) Get(ctx context.Context, tenantID uuid.UUID) (*dom
 	return &token, nil
 }
 
-// Save creates or updates the token for a tenant
+// Save creates or updates the token for a tenant using an atomic upsert by tenant_id
 func (r *zaloTokenRepository) Save(ctx context.Context, token *domain.ZaloToken) error {
-	token.UpdatedAt = time.Now()
+	now := time.Now()
 	if token.CreatedAt.IsZero() {
-		token.CreatedAt = time.Now()
+		token.CreatedAt = now
 	}
-	return r.db.WithContext(ctx).Model(domain.ZaloToken{}).Where("tenant_id = ?", token.TenantID).Updates(token).Error
+	token.UpdatedAt = now
+
+	return r.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "tenant_id"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"app_id":        token.AppID,
+				"secret_key":    token.SecretKey,
+				"access_token":  token.AccessToken,
+				"refresh_token": token.RefreshToken,
+				"expires_at":    token.ExpiresAt,
+				"updated_at":    now,
+			}),
+		}).
+		Create(token).Error
 }
 
 // GetAll retrieves all tokens (for the refresh worker)

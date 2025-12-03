@@ -78,7 +78,7 @@ func (w *zaloRefreshTokenWorker) safeProcess(ctx context.Context) {
 }
 
 func (w *zaloRefreshTokenWorker) processZaloToken(ctx context.Context) {
-	// Get all tokens expiring within 24 hours
+	// Fetch all tokens and refresh only those expiring within the next 24 hours
 	tokens, err := w.zaloTokenRepo.GetAll(ctx)
 	if err != nil {
 		logger.GetLogger().Errorf("[%s] failed to fetch tokens for refresh: %v", w.Name(), err)
@@ -86,14 +86,16 @@ func (w *zaloRefreshTokenWorker) processZaloToken(ctx context.Context) {
 	}
 
 	if len(tokens) == 0 {
-		logger.GetLogger().Infof("[%s] no tokens to refresh", w.Name())
+		logger.GetLogger().Infof("[%s] no tokens to evaluate for refresh", w.Name())
 		return
 	}
 
-	logger.GetLogger().Infof("[%s] found %d token(s) to refresh, starting refresh", w.Name(), len(tokens))
+	// Refresh all tokens on each tick to ensure periodic rotation regardless of expiry
+	toRefresh := tokens
+	logger.GetLogger().Infof("[%s] refreshing %d token(s) this tick", w.Name(), len(toRefresh))
 
 	// Refresh each tenant's token
-	for _, token := range tokens {
+	for _, token := range toRefresh {
 		if err := w.refreshTokenForTenant(ctx, token); err != nil {
 			logger.GetLogger().Errorf("[%s] failed to refresh token for tenant %s: %v", w.Name(), token.TenantID, err)
 			// Continue with other tenants even if one fails
