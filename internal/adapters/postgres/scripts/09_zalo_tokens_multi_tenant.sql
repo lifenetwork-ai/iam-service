@@ -14,13 +14,12 @@ DELETE FROM zalo_tokens
 WHERE tenant_id IS NULL;
 
 -- 2. MAKE COLUMNS NOT NULL (Uncomment after confirming cleanup)
--- /*
--- ALTER TABLE zalo_tokens 
--- ALTER COLUMN app_id SET NOT NULL,
--- ALTER COLUMN secret_key SET NOT NULL,
--- ALTER COLUMN otp_template_id SET NOT NULL,
--- ALTER COLUMN tenant_id SET NOT NULL;
--- */
+ALTER TABLE zalo_tokens 
+ALTER COLUMN app_id SET NOT NULL,
+ALTER COLUMN secret_key SET NOT NULL,
+ALTER COLUMN otp_template_id SET NOT NULL,
+ALTER COLUMN tenant_id SET NOT NULL;
+
 
 -- 3. CREATE INDEXES
 CREATE UNIQUE INDEX IF NOT EXISTS idx_zalo_tokens_tenant_id 
