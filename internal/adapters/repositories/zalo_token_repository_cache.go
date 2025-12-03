@@ -87,8 +87,3 @@ func (c *zaloTokenRepositoryCache) Delete(ctx context.Context, tenantID uuid.UUI
 
 	return nil
 }
-
-// GetExpiringSoon retrieves tokens expiring within a duration (for worker) - no caching
-func (c *zaloTokenRepositoryCache) GetExpiringSoon(ctx context.Context, within time.Duration) ([]*domain.ZaloToken, error) {
-	return c.repo.GetExpiringSoon(ctx, within)
-}

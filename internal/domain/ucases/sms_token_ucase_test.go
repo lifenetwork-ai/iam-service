@@ -65,18 +65,6 @@ func (r *mockZaloRepository) Delete(ctx context.Context, tenantID uuid.UUID) err
 	return nil
 }
 
-func (r *mockZaloRepository) GetExpiringSoon(ctx context.Context, within time.Duration) ([]*domain.ZaloToken, error) {
-	var tokens []*domain.ZaloToken
-	threshold := time.Now().Add(within)
-	for _, token := range r.tokens {
-		if token.ExpiresAt.Before(threshold) {
-			t := *token
-			tokens = append(tokens, &t)
-		}
-	}
-	return tokens, nil
-}
-
 func TestZaloHealthCheck_Success(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we modify http.DefaultTransport
 

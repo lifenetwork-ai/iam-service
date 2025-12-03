@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/client"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -78,18 +79,18 @@ func (w *zaloRefreshTokenWorker) safeProcess(ctx context.Context) {
 
 func (w *zaloRefreshTokenWorker) processZaloToken(ctx context.Context) {
 	// Get all tokens expiring within 24 hours
-	tokens, err := w.zaloTokenRepo.GetExpiringSoon(ctx, 24*time.Hour)
+	tokens, err := w.zaloTokenRepo.GetAll(ctx)
 	if err != nil {
 		logger.GetLogger().Errorf("[%s] failed to fetch tokens for refresh: %v", w.Name(), err)
 		return
 	}
 
 	if len(tokens) == 0 {
-		logger.GetLogger().Infof("[%s] no tokens expiring soon", w.Name())
+		logger.GetLogger().Infof("[%s] no tokens to refresh", w.Name())
 		return
 	}
 
-	logger.GetLogger().Infof("[%s] found %d token(s) expiring soon, starting refresh", w.Name(), len(tokens))
+	logger.GetLogger().Infof("[%s] found %d token(s) to refresh, starting refresh", w.Name(), len(tokens))
 
 	// Refresh each tenant's token
 	for _, token := range tokens {
@@ -110,7 +111,7 @@ func (w *zaloRefreshTokenWorker) refreshTokenForTenant(ctx context.Context, toke
 	}
 
 	// Use Zalo OAuth base URL
-	zaloOAuthBaseURL := "https://oauth.zaloapp.com/v4"
+	zaloOAuthBaseURL := constants.ZaloOAuthBaseURL
 	cli, err := client.NewZaloClient(ctx, zaloOAuthBaseURL, decrypted.SecretKey, decrypted.AppID, "", decrypted.RefreshToken)
 	if err != nil {
 		return fmt.Errorf("failed to create Zalo client: %w", err)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/client"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -56,9 +57,7 @@ func (u *smsTokenUseCase) CreateOrUpdateZaloToken(ctx context.Context, tenantID 
 	if accessToken == "" {
 		logger.GetLogger().Info("Access token not provided, refreshing...")
 
-		// Use Zalo OAuth base URL (hardcoded as it's constant)
-		zaloOAuthBaseURL := "https://oauth.zaloapp.com/v4"
-		cli, err := client.NewZaloClient(ctx, zaloOAuthBaseURL, secretKey, appID, "", refreshToken)
+		cli, err := client.NewZaloClient(ctx, constants.ZaloOAuthBaseURL, secretKey, appID, "", refreshToken)
 		if err != nil {
 			return domainerrors.WrapInternal(err, "MSG_PROVIDER_BOOTSTRAP_FAIL", "Failed to bootstrap Zalo client")
 		}
@@ -124,9 +123,7 @@ func (u *smsTokenUseCase) RefreshZaloToken(ctx context.Context, tenantID uuid.UU
 		return domainerrors.WrapInternal(err, "MSG_DECRYPT_TOKEN_FAILED", "Failed to decrypt token")
 	}
 
-	// Use Zalo OAuth base URL
-	zaloOAuthBaseURL := "https://oauth.zaloapp.com/v4"
-	cli, err := client.NewZaloClient(ctx, zaloOAuthBaseURL, decrypted.SecretKey, decrypted.AppID, "", refreshToken)
+	cli, err := client.NewZaloClient(ctx, constants.ZaloOAuthBaseURL, decrypted.SecretKey, decrypted.AppID, "", refreshToken)
 	if err != nil {
 		return domainerrors.WrapInternal(err, "MSG_PROVIDER_BOOTSTRAP_FAIL", "Failed to bootstrap Zalo client")
 	}

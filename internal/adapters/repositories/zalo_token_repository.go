@@ -50,13 +50,3 @@ func (r *zaloTokenRepository) GetAll(ctx context.Context) ([]*domain.ZaloToken, 
 func (r *zaloTokenRepository) Delete(ctx context.Context, tenantID uuid.UUID) error {
 	return r.db.WithContext(ctx).Where("tenant_id = ?", tenantID).Delete(&domain.ZaloToken{}).Error
 }
-
-// GetExpiringSoon retrieves tokens expiring within a duration (for worker)
-func (r *zaloTokenRepository) GetExpiringSoon(ctx context.Context, within time.Duration) ([]*domain.ZaloToken, error) {
-	var tokens []*domain.ZaloToken
-	expiryThreshold := time.Now().Add(within)
-	if err := r.db.WithContext(ctx).Where("expires_at <= ?", expiryThreshold).Find(&tokens).Error; err != nil {
-		return nil, err
-	}
-	return tokens, nil
-}

@@ -75,7 +75,4 @@ type ZaloTokenRepository interface {
 
 	// Delete removes a tenant's Zalo token configuration
 	Delete(ctx context.Context, tenantID uuid.UUID) error
-
-	// GetExpiringSoon retrieves tokens expiring within a duration (for worker)
-	GetExpiringSoon(ctx context.Context, within time.Duration) ([]*domain.ZaloToken, error)
 }
