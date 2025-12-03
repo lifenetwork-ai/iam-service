@@ -121,7 +121,7 @@ func TestZaloTokenFlow_Retrieve_Refresh_Health_WorkerInterval(t *testing.T) {
 	tenantID := uuid.New()
 
 	// 1) Create without access token triggers refresh
-	derr := uc.CreateOrUpdateZaloToken(ctx, tenantID, "app-id", "secret", "seed-refresh", "")
+	derr := uc.CreateOrUpdateZaloToken(ctx, tenantID, "app-id", "secret", "seed-refresh", "", "")
 	require.Nil(t, derr, "Failed to create Zalo token")
 
 	encTok, derr := uc.GetEncryptedZaloToken(ctx, tenantID)

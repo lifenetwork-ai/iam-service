@@ -56,15 +56,16 @@ func (c *ZaloTokenCrypto) Encrypt(ctx context.Context, token *domain.ZaloToken) 
 	}
 
 	return &domain.ZaloToken{
-		ID:           token.ID,
-		AccessToken:  encryptedAccess,
-		RefreshToken: encryptedRefresh,
-		SecretKey:    encryptedSecret,
-		AppID:        token.AppID,
-		TenantID:     token.TenantID,
-		UpdatedAt:    token.UpdatedAt,
-		ExpiresAt:    token.ExpiresAt,
-		CreatedAt:    token.CreatedAt,
+		ID:            token.ID,
+		AccessToken:   encryptedAccess,
+		RefreshToken:  encryptedRefresh,
+		SecretKey:     encryptedSecret,
+		AppID:         token.AppID,
+		TenantID:      token.TenantID,
+		OtpTemplateID: token.OtpTemplateID,
+		UpdatedAt:     token.UpdatedAt,
+		ExpiresAt:     token.ExpiresAt,
+		CreatedAt:     token.CreatedAt,
 	}, nil
 }
 
@@ -93,14 +94,15 @@ func (c *ZaloTokenCrypto) Decrypt(ctx context.Context, token *domain.ZaloToken) 
 	}
 
 	return &domain.ZaloToken{
-		ID:           token.ID,
-		AccessToken:  decryptedAccess,
-		RefreshToken: decryptedRefresh,
-		SecretKey:    decryptedSecret,
-		AppID:        token.AppID,
-		TenantID:     token.TenantID,
-		UpdatedAt:    token.UpdatedAt,
-		ExpiresAt:    token.ExpiresAt,
-		CreatedAt:    token.CreatedAt,
+		ID:            token.ID,
+		AccessToken:   decryptedAccess,
+		RefreshToken:  decryptedRefresh,
+		SecretKey:     decryptedSecret,
+		AppID:         token.AppID,
+		TenantID:      token.TenantID,
+		OtpTemplateID: token.OtpTemplateID,
+		UpdatedAt:     token.UpdatedAt,
+		ExpiresAt:     token.ExpiresAt,
+		CreatedAt:     token.CreatedAt,
 	}, nil
 }

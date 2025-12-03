@@ -112,7 +112,7 @@ func (h *SmsTokenHandler) CreateOrUpdateZaloToken(c *gin.Context) {
 		return
 	}
 
-	if derr := h.uc.CreateOrUpdateZaloToken(c.Request.Context(), tenant.ID, req.AppID, req.SecretKey, req.RefreshToken, req.AccessToken); derr != nil {
+	if derr := h.uc.CreateOrUpdateZaloToken(c.Request.Context(), tenant.ID, req.AppID, req.SecretKey, req.RefreshToken, req.AccessToken, req.OtpTemplateID); derr != nil {
 		httpresponse.Error(c, http.StatusInternalServerError, derr.Code, derr.Message, nil)
 		return
 	}
