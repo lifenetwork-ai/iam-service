@@ -2,7 +2,10 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 
 	cachetypes "github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
@@ -27,22 +30,23 @@ func NewZaloTokenRepositoryCache(
 	}
 }
 
-func zaloTokenKey() *cachetypes.Keyer {
-	return &cachetypes.Keyer{Raw: "zalo:token"}
+func zaloTokenKey(tenantID uuid.UUID) *cachetypes.Keyer {
+	return &cachetypes.Keyer{Raw: fmt.Sprintf("zalo:token:%s", tenantID.String())}
 }
 
-func (c *zaloTokenRepositoryCache) Get(ctx context.Context) (*domain.ZaloToken, error) {
+// Get retrieves the Zalo token for a specific tenant
+func (c *zaloTokenRepositoryCache) Get(ctx context.Context, tenantID uuid.UUID) (*domain.ZaloToken, error) {
 	var token domain.ZaloToken
-	if err := c.cache.RetrieveItem(zaloTokenKey(), &token); err == nil {
+	if err := c.cache.RetrieveItem(zaloTokenKey(tenantID), &token); err == nil {
 		return &token, nil
 	}
 
-	tokenPtr, err := c.repo.Get(ctx)
+	tokenPtr, err := c.repo.Get(ctx, tenantID)
 	if err != nil || tokenPtr == nil {
 		return tokenPtr, err
 	}
 
-	err = c.cache.SaveItem(zaloTokenKey(), tokenPtr, zaloTokenCacheTTL)
+	err = c.cache.SaveItem(zaloTokenKey(tenantID), tokenPtr, zaloTokenCacheTTL)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to save zalo token to cache: %v", err)
 	}
@@ -50,15 +54,41 @@ func (c *zaloTokenRepositoryCache) Get(ctx context.Context) (*domain.ZaloToken, 
 	return tokenPtr, nil
 }
 
+// Save creates or updates the token for a tenant
 func (c *zaloTokenRepositoryCache) Save(ctx context.Context, token *domain.ZaloToken) error {
 	if err := c.repo.Save(ctx, token); err != nil {
 		return err
 	}
 
-	err := c.cache.SaveItem(zaloTokenKey(), token, zaloTokenCacheTTL)
+	err := c.cache.SaveItem(zaloTokenKey(token.TenantID), token, zaloTokenCacheTTL)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to save zalo token to cache: %v", err)
 	}
 
 	return nil
+}
+
+// GetAll retrieves all tokens (for the refresh worker) - no caching
+func (c *zaloTokenRepositoryCache) GetAll(ctx context.Context) ([]*domain.ZaloToken, error) {
+	return c.repo.GetAll(ctx)
+}
+
+// Delete removes a tenant's Zalo token configuration
+func (c *zaloTokenRepositoryCache) Delete(ctx context.Context, tenantID uuid.UUID) error {
+	if err := c.repo.Delete(ctx, tenantID); err != nil {
+		return err
+	}
+
+	// Invalidate cache
+	err := c.cache.RemoveItem(zaloTokenKey(tenantID))
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to delete zalo token from cache: %v", err)
+	}
+
+	return nil
+}
+
+// GetExpiringSoon retrieves tokens expiring within a duration (for worker) - no caching
+func (c *zaloTokenRepositoryCache) GetExpiringSoon(ctx context.Context, within time.Duration) ([]*domain.ZaloToken, error) {
+	return c.repo.GetExpiringSoon(ctx, within)
 }

@@ -64,6 +64,18 @@ type UserIdentityRepository interface {
 }
 
 type ZaloTokenRepository interface {
-	Get(ctx context.Context) (*domain.ZaloToken, error)
+	// Get retrieves the Zalo token for a specific tenant
+	Get(ctx context.Context, tenantID uuid.UUID) (*domain.ZaloToken, error)
+
+	// Save creates or updates the token for a tenant
 	Save(ctx context.Context, token *domain.ZaloToken) error
+
+	// GetAll retrieves all tokens (for the refresh worker)
+	GetAll(ctx context.Context) ([]*domain.ZaloToken, error)
+
+	// Delete removes a tenant's Zalo token configuration
+	Delete(ctx context.Context, tenantID uuid.UUID) error
+
+	// GetExpiringSoon retrieves tokens expiring within a duration (for worker)
+	GetExpiringSoon(ctx context.Context, within time.Duration) ([]*domain.ZaloToken, error)
 }

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lifenetwork-ai/iam-service/conf"
+	"github.com/google/uuid"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	"github.com/stretchr/testify/require"
@@ -23,41 +23,73 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { re
 
 // mockZaloRepository is a minimal in-memory repository for testing
 type mockZaloRepository struct {
-	token *domain.ZaloToken
-	err   error
+	tokens map[uuid.UUID]*domain.ZaloToken
+	err    error
 }
 
-func (r *mockZaloRepository) Get(ctx context.Context) (*domain.ZaloToken, error) {
+func newMockZaloRepository() *mockZaloRepository {
+	return &mockZaloRepository{
+		tokens: make(map[uuid.UUID]*domain.ZaloToken),
+	}
+}
+
+func (r *mockZaloRepository) Get(ctx context.Context, tenantID uuid.UUID) (*domain.ZaloToken, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
-	if r.token == nil {
-		return nil, fmt.Errorf("no token")
+	token, exists := r.tokens[tenantID]
+	if !exists {
+		return nil, fmt.Errorf("no token for tenant")
 	}
-	t := *r.token
+	t := *token
 	return &t, nil
 }
 
 func (r *mockZaloRepository) Save(ctx context.Context, token *domain.ZaloToken) error {
 	t := *token
-	r.token = &t
+	r.tokens[token.TenantID] = &t
 	return nil
+}
+
+func (r *mockZaloRepository) GetAll(ctx context.Context) ([]*domain.ZaloToken, error) {
+	var tokens []*domain.ZaloToken
+	for _, token := range r.tokens {
+		t := *token
+		tokens = append(tokens, &t)
+	}
+	return tokens, nil
+}
+
+func (r *mockZaloRepository) Delete(ctx context.Context, tenantID uuid.UUID) error {
+	delete(r.tokens, tenantID)
+	return nil
+}
+
+func (r *mockZaloRepository) GetExpiringSoon(ctx context.Context, within time.Duration) ([]*domain.ZaloToken, error) {
+	var tokens []*domain.ZaloToken
+	threshold := time.Now().Add(within)
+	for _, token := range r.tokens {
+		if token.ExpiresAt.Before(threshold) {
+			t := *token
+			tokens = append(tokens, &t)
+		}
+	}
+	return tokens, nil
 }
 
 func TestZaloHealthCheck_Success(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we modify http.DefaultTransport
 
-	// Configure Zalo and encryption
-	cfg := conf.GetConfiguration()
-	cfg.DbEncryptionKey = "test-key-123456"
-	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
-	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
-	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	tenantID := uuid.New()
+	dbEncryptionKey := "test-key-123456"
 
 	// Prepare encrypted token in repository
-	crypto := common.NewZaloTokenCrypto(cfg.DbEncryptionKey)
+	crypto := common.NewZaloTokenCrypto(dbEncryptionKey)
 	plainToken := &domain.ZaloToken{
 		ID:           1,
+		TenantID:     tenantID,
+		AppID:        "test-app",
+		SecretKey:    "test-secret",
 		AccessToken:  "test-access-token",
 		RefreshToken: "test-refresh-token",
 		ExpiresAt:    time.Now().Add(1 * time.Hour),
@@ -66,7 +98,8 @@ func TestZaloHealthCheck_Success(t *testing.T) {
 	encryptedToken, err := crypto.Encrypt(context.Background(), plainToken)
 	require.NoError(t, err)
 
-	repo := &mockZaloRepository{token: encryptedToken}
+	repo := newMockZaloRepository()
+	repo.tokens[tenantID] = encryptedToken
 
 	// Mock successful GetAllTemplates response
 	origTransport := http.DefaultTransport
@@ -103,10 +136,10 @@ func TestZaloHealthCheck_Success(t *testing.T) {
 	})
 
 	// Create use case
-	useCase := NewSmsTokenUseCase(repo)
+	useCase := NewSmsTokenUseCase(repo, dbEncryptionKey)
 
 	// Execute health check
-	derr := useCase.ZaloHealthCheck(context.Background())
+	derr := useCase.ZaloHealthCheck(context.Background(), tenantID)
 
 	// Assert success
 	require.Nil(t, derr, "expected health check to succeed")
@@ -115,21 +148,17 @@ func TestZaloHealthCheck_Success(t *testing.T) {
 func TestZaloHealthCheck_NoTokenInRepository(t *testing.T) {
 	t.Parallel()
 
-	// Configure Zalo
-	cfg := conf.GetConfiguration()
-	cfg.DbEncryptionKey = "test-key-123456"
-	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
-	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
-	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	tenantID := uuid.New()
+	dbEncryptionKey := "test-key-123456"
 
 	// Empty repository
-	repo := &mockZaloRepository{}
+	repo := newMockZaloRepository()
 
 	// Create use case
-	useCase := NewSmsTokenUseCase(repo)
+	useCase := NewSmsTokenUseCase(repo, dbEncryptionKey)
 
 	// Execute health check
-	derr := useCase.ZaloHealthCheck(context.Background())
+	derr := useCase.ZaloHealthCheck(context.Background(), tenantID)
 
 	// Assert failure - should fail to get token
 	require.NotNil(t, derr, "expected health check to fail when no token in repository")
@@ -139,21 +168,18 @@ func TestZaloHealthCheck_NoTokenInRepository(t *testing.T) {
 func TestZaloHealthCheck_RepositoryError(t *testing.T) {
 	t.Parallel()
 
-	// Configure Zalo
-	cfg := conf.GetConfiguration()
-	cfg.DbEncryptionKey = "test-key-123456"
-	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
-	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
-	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	tenantID := uuid.New()
+	dbEncryptionKey := "test-key-123456"
 
 	// Repository that returns error
-	repo := &mockZaloRepository{err: fmt.Errorf("database connection failed")}
+	repo := newMockZaloRepository()
+	repo.err = fmt.Errorf("database connection failed")
 
 	// Create use case
-	useCase := NewSmsTokenUseCase(repo)
+	useCase := NewSmsTokenUseCase(repo, dbEncryptionKey)
 
 	// Execute health check
-	derr := useCase.ZaloHealthCheck(context.Background())
+	derr := useCase.ZaloHealthCheck(context.Background(), tenantID)
 
 	// Assert failure
 	require.NotNil(t, derr, "expected health check to fail on repository error")
@@ -163,28 +189,28 @@ func TestZaloHealthCheck_RepositoryError(t *testing.T) {
 func TestZaloHealthCheck_InvalidEncryptedToken(t *testing.T) {
 	t.Parallel()
 
-	// Configure Zalo
-	cfg := conf.GetConfiguration()
-	cfg.DbEncryptionKey = "test-key-123456"
-	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
-	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
-	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	tenantID := uuid.New()
+	dbEncryptionKey := "test-key-123456"
 
 	// Repository with invalid encrypted token
 	invalidToken := &domain.ZaloToken{
 		ID:           1,
+		TenantID:     tenantID,
+		AppID:        "test-app",
+		SecretKey:    "test-secret",
 		AccessToken:  "invalid-base64!!!",
 		RefreshToken: "invalid-base64!!!",
 		ExpiresAt:    time.Now().Add(1 * time.Hour),
 		UpdatedAt:    time.Now(),
 	}
-	repo := &mockZaloRepository{token: invalidToken}
+	repo := newMockZaloRepository()
+	repo.tokens[tenantID] = invalidToken
 
 	// Create use case
-	useCase := NewSmsTokenUseCase(repo)
+	useCase := NewSmsTokenUseCase(repo, dbEncryptionKey)
 
 	// Execute health check
-	derr := useCase.ZaloHealthCheck(context.Background())
+	derr := useCase.ZaloHealthCheck(context.Background(), tenantID)
 
 	// Assert failure - should fail to decrypt token
 	require.NotNil(t, derr, "expected health check to fail when token decryption fails")
@@ -194,17 +220,16 @@ func TestZaloHealthCheck_InvalidEncryptedToken(t *testing.T) {
 func TestZaloHealthCheck_GetAllTemplatesHTTPError(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we modify http.DefaultTransport
 
-	// Configure Zalo
-	cfg := conf.GetConfiguration()
-	cfg.DbEncryptionKey = "test-key-123456"
-	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
-	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
-	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	tenantID := uuid.New()
+	dbEncryptionKey := "test-key-123456"
 
 	// Prepare encrypted token
-	crypto := common.NewZaloTokenCrypto(cfg.DbEncryptionKey)
+	crypto := common.NewZaloTokenCrypto(dbEncryptionKey)
 	plainToken := &domain.ZaloToken{
 		ID:           1,
+		TenantID:     tenantID,
+		AppID:        "test-app",
+		SecretKey:    "test-secret",
 		AccessToken:  "test-access-token",
 		RefreshToken: "test-refresh-token",
 		ExpiresAt:    time.Now().Add(1 * time.Hour),
@@ -213,7 +238,8 @@ func TestZaloHealthCheck_GetAllTemplatesHTTPError(t *testing.T) {
 	encryptedToken, err := crypto.Encrypt(context.Background(), plainToken)
 	require.NoError(t, err)
 
-	repo := &mockZaloRepository{token: encryptedToken}
+	repo := newMockZaloRepository()
+	repo.tokens[tenantID] = encryptedToken
 
 	// Mock HTTP error (network failure)
 	origTransport := http.DefaultTransport
@@ -226,10 +252,10 @@ func TestZaloHealthCheck_GetAllTemplatesHTTPError(t *testing.T) {
 	})
 
 	// Create use case
-	useCase := NewSmsTokenUseCase(repo)
+	useCase := NewSmsTokenUseCase(repo, dbEncryptionKey)
 
 	// Execute health check
-	derr := useCase.ZaloHealthCheck(context.Background())
+	derr := useCase.ZaloHealthCheck(context.Background(), tenantID)
 
 	// Assert failure
 	require.NotNil(t, derr, "expected health check to fail due to HTTP error")
@@ -240,17 +266,16 @@ func TestZaloHealthCheck_GetAllTemplatesHTTPError(t *testing.T) {
 func TestZaloHealthCheck_GetAllTemplatesAPIError(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we modify http.DefaultTransport
 
-	// Configure Zalo
-	cfg := conf.GetConfiguration()
-	cfg.DbEncryptionKey = "test-key-123456"
-	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
-	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
-	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	tenantID := uuid.New()
+	dbEncryptionKey := "test-key-123456"
 
 	// Prepare encrypted token
-	crypto := common.NewZaloTokenCrypto(cfg.DbEncryptionKey)
+	crypto := common.NewZaloTokenCrypto(dbEncryptionKey)
 	plainToken := &domain.ZaloToken{
 		ID:           1,
+		TenantID:     tenantID,
+		AppID:        "test-app",
+		SecretKey:    "test-secret",
 		AccessToken:  "test-access-token",
 		RefreshToken: "test-refresh-token",
 		ExpiresAt:    time.Now().Add(1 * time.Hour),
@@ -259,7 +284,8 @@ func TestZaloHealthCheck_GetAllTemplatesAPIError(t *testing.T) {
 	encryptedToken, err := crypto.Encrypt(context.Background(), plainToken)
 	require.NoError(t, err)
 
-	repo := &mockZaloRepository{token: encryptedToken}
+	repo := newMockZaloRepository()
+	repo.tokens[tenantID] = encryptedToken
 
 	// Mock API error response (error != 0)
 	origTransport := http.DefaultTransport
@@ -285,10 +311,10 @@ func TestZaloHealthCheck_GetAllTemplatesAPIError(t *testing.T) {
 	})
 
 	// Create use case
-	useCase := NewSmsTokenUseCase(repo)
+	useCase := NewSmsTokenUseCase(repo, dbEncryptionKey)
 
 	// Execute health check
-	derr := useCase.ZaloHealthCheck(context.Background())
+	derr := useCase.ZaloHealthCheck(context.Background(), tenantID)
 
 	// Assert failure due to API error
 	require.NotNil(t, derr, "expected health check to fail due to API error")
@@ -299,17 +325,16 @@ func TestZaloHealthCheck_GetAllTemplatesAPIError(t *testing.T) {
 func TestZaloHealthCheck_GetAllTemplatesInvalidJSON(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we modify http.DefaultTransport
 
-	// Configure Zalo
-	cfg := conf.GetConfiguration()
-	cfg.DbEncryptionKey = "test-key-123456"
-	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
-	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
-	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	tenantID := uuid.New()
+	dbEncryptionKey := "test-key-123456"
 
 	// Prepare encrypted token
-	crypto := common.NewZaloTokenCrypto(cfg.DbEncryptionKey)
+	crypto := common.NewZaloTokenCrypto(dbEncryptionKey)
 	plainToken := &domain.ZaloToken{
 		ID:           1,
+		TenantID:     tenantID,
+		AppID:        "test-app",
+		SecretKey:    "test-secret",
 		AccessToken:  "test-access-token",
 		RefreshToken: "test-refresh-token",
 		ExpiresAt:    time.Now().Add(1 * time.Hour),
@@ -318,7 +343,8 @@ func TestZaloHealthCheck_GetAllTemplatesInvalidJSON(t *testing.T) {
 	encryptedToken, err := crypto.Encrypt(context.Background(), plainToken)
 	require.NoError(t, err)
 
-	repo := &mockZaloRepository{token: encryptedToken}
+	repo := newMockZaloRepository()
+	repo.tokens[tenantID] = encryptedToken
 
 	// Mock invalid JSON response
 	origTransport := http.DefaultTransport
@@ -337,10 +363,10 @@ func TestZaloHealthCheck_GetAllTemplatesInvalidJSON(t *testing.T) {
 	})
 
 	// Create use case
-	useCase := NewSmsTokenUseCase(repo)
+	useCase := NewSmsTokenUseCase(repo, dbEncryptionKey)
 
 	// Execute health check
-	derr := useCase.ZaloHealthCheck(context.Background())
+	derr := useCase.ZaloHealthCheck(context.Background(), tenantID)
 
 	// Assert failure due to JSON parsing error
 	require.NotNil(t, derr, "expected health check to fail due to invalid JSON")
@@ -350,17 +376,16 @@ func TestZaloHealthCheck_GetAllTemplatesInvalidJSON(t *testing.T) {
 func TestZaloHealthCheck_EmptyTemplateList(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we modify http.DefaultTransport
 
-	// Configure Zalo
-	cfg := conf.GetConfiguration()
-	cfg.DbEncryptionKey = "test-key-123456"
-	cfg.Sms.Zalo.ZaloBaseURL = "https://business.openapi.zalo.me"
-	cfg.Sms.Zalo.ZaloSecretKey = "test-secret"
-	cfg.Sms.Zalo.ZaloAppID = "test-app"
+	tenantID := uuid.New()
+	dbEncryptionKey := "test-key-123456"
 
 	// Prepare encrypted token
-	crypto := common.NewZaloTokenCrypto(cfg.DbEncryptionKey)
+	crypto := common.NewZaloTokenCrypto(dbEncryptionKey)
 	plainToken := &domain.ZaloToken{
 		ID:           1,
+		TenantID:     tenantID,
+		AppID:        "test-app",
+		SecretKey:    "test-secret",
 		AccessToken:  "test-access-token",
 		RefreshToken: "test-refresh-token",
 		ExpiresAt:    time.Now().Add(1 * time.Hour),
@@ -369,7 +394,8 @@ func TestZaloHealthCheck_EmptyTemplateList(t *testing.T) {
 	encryptedToken, err := crypto.Encrypt(context.Background(), plainToken)
 	require.NoError(t, err)
 
-	repo := &mockZaloRepository{token: encryptedToken}
+	repo := newMockZaloRepository()
+	repo.tokens[tenantID] = encryptedToken
 
 	// Mock successful response with empty template list
 	origTransport := http.DefaultTransport
@@ -395,10 +421,10 @@ func TestZaloHealthCheck_EmptyTemplateList(t *testing.T) {
 	})
 
 	// Create use case
-	useCase := NewSmsTokenUseCase(repo)
+	useCase := NewSmsTokenUseCase(repo, dbEncryptionKey)
 
 	// Execute health check
-	derr := useCase.ZaloHealthCheck(context.Background())
+	derr := useCase.ZaloHealthCheck(context.Background(), tenantID)
 
 	// Assert success - empty template list is still a valid response
 	require.Nil(t, derr, "expected health check to succeed with empty template list")
