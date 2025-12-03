@@ -69,7 +69,8 @@ func RunApp(config *conf.Configuration) {
 	).Start(ctx, constants.OTPRetryWorkerInterval)
 
 	go workers.NewZaloRefreshTokenWorker(
-		instances.SMSServiceInstance(repos.ZaloTokenRepo),
+		repos.ZaloTokenRepo,
+		conf.GetConfiguration().DbEncryptionKey,
 	).Start(ctx, constants.ZaloRefreshTokenWorkerInterval)
 
 	// Handle shutdown signals

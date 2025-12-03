@@ -19,7 +19,7 @@ type SMSProviderFactory struct {
 
 // NewSMSProviderFactory creates a new factory with all configured providers
 // Don't return error because we want to continue initializing the service even if some providers are not configured
-func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloTokenRepository) (*SMSProviderFactory, error) {
+func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloTokenRepository, tenantRepo domainrepo.TenantRepository) (*SMSProviderFactory, error) {
 	factory := &SMSProviderFactory{
 		providers: make(map[string]provider.SMSProvider),
 	}
@@ -43,7 +43,7 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 
 	// Initialize Zalo provider
 	if config.Zalo.ZaloAppID != "" {
-		zaloProvider, err := provider.NewZaloProvider(context.Background(), config.Zalo, zaloTokenRepo)
+		zaloProvider, err := provider.NewZaloProvider(context.Background(), config.Zalo, zaloTokenRepo, tenantRepo)
 		if err != nil {
 			logger.GetLogger().Errorf("Failed to create Zalo provider: %v", err)
 		} else {
@@ -81,8 +81,8 @@ type SMSService struct {
 }
 
 // NewSMSService creates a new SMS service with the factory
-func NewSMSService(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloTokenRepository) (*SMSService, error) {
-	factory, _ := NewSMSProviderFactory(config, zaloTokenRepo)
+func NewSMSService(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloTokenRepository, tenantRepo domainrepo.TenantRepository) (*SMSService, error) {
+	factory, _ := NewSMSProviderFactory(config, zaloTokenRepo, tenantRepo)
 	return &SMSService{
 		factory: factory,
 	}, nil
