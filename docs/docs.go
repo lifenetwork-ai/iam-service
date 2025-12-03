@@ -239,7 +239,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Perform a health check against the Zalo API using current token",
+                "description": "Perform a health check against the Zalo API using tenant's token",
                 "consumes": [
                     "application/json"
                 ],
@@ -250,6 +250,15 @@ const docTemplate = `{
                     "sms"
                 ],
                 "summary": "Zalo provider health check",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -258,6 +267,12 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
@@ -276,7 +291,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Get Zalo token",
+                "description": "Get Zalo token for a specific tenant",
                 "consumes": [
                     "application/json"
                 ],
@@ -287,11 +302,135 @@ const docTemplate = `{
                     "sms"
                 ],
                 "summary": "Get Zalo token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Zalo token",
                         "schema": {
                             "$ref": "#/definitions/dto.ZaloTokenResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Create or update Zalo token configuration including app credentials",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sms"
+                ],
+                "summary": "Create or update Zalo token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Create Zalo token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateZaloTokenRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Delete Zalo token configuration for a specific tenant",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sms"
+                ],
+                "summary": "Delete Zalo token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
@@ -323,6 +462,13 @@ const docTemplate = `{
                 "summary": "Refresh Zalo token",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "Refresh Zalo token request",
                         "name": "request",
                         "in": "body",
@@ -337,6 +483,12 @@ const docTemplate = `{
                         "description": "Refreshed Zalo token",
                         "schema": {
                             "$ref": "#/definitions/dto.RefreshZaloTokenResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
@@ -2065,6 +2217,29 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CreateZaloTokenRequestDTO": {
+            "type": "object",
+            "required": [
+                "app_id",
+                "refresh_token",
+                "secret_key"
+            ],
+            "properties": {
+                "access_token": {
+                    "description": "Optional",
+                    "type": "string"
+                },
+                "app_id": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "secret_key": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.DelegateAccessRequestDTO": {
             "type": "object",
             "required": [
@@ -2367,6 +2542,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "access_token": {
+                    "type": "string"
+                },
+                "app_id": {
                     "type": "string"
                 },
                 "expires_at": {
