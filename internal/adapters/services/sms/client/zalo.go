@@ -104,7 +104,7 @@ func NewZaloClientWithHTTP(ctx context.Context, baseURL, secretKey, appID, acces
 		httpClient.Transport = http.DefaultTransport
 	}
 	if oauthBaseURL == "" {
-		oauthBaseURL = constants.ZaloBaseURL
+		oauthBaseURL = constants.ZaloOAuthBaseURL
 	}
 	return &ZaloClient{
 		client:       httpClient,

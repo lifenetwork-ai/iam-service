@@ -113,7 +113,7 @@ func (w *zaloRefreshTokenWorker) refreshTokenForTenant(ctx context.Context, toke
 	}
 
 	// Use Zalo OAuth base URL
-	cli, err := client.NewZaloClient(ctx, constants.ZaloBaseURL, decrypted.SecretKey, decrypted.AppID, "", decrypted.RefreshToken)
+	cli, err := client.NewZaloClient(ctx, constants.ZaloOAuthBaseURL, decrypted.SecretKey, decrypted.AppID, "", decrypted.RefreshToken)
 	if err != nil {
 		return fmt.Errorf("failed to create Zalo client: %w", err)
 	}
