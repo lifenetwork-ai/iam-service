@@ -88,8 +88,8 @@ type ZaloTokenRefreshResponse struct {
 	Error        int    `json:"error"`
 }
 
-func NewZaloClient(ctx context.Context, baseURL, secretKey, appID, accessToken, refreshToken string) (*ZaloClient, error) {
-	return NewZaloClientWithHTTP(ctx, baseURL, secretKey, appID, accessToken, refreshToken, nil, "")
+func NewZaloClient(ctx context.Context, _, secretKey, appID, accessToken, refreshToken string) (*ZaloClient, error) {
+	return NewZaloClientWithHTTP(ctx, constants.ZaloBaseURL, secretKey, appID, accessToken, refreshToken, nil, constants.ZaloOAuthBaseURL)
 }
 
 // NewZaloClientWithHTTP allows injecting http.Client and OAuth base URL for testing
@@ -104,7 +104,7 @@ func NewZaloClientWithHTTP(ctx context.Context, baseURL, secretKey, appID, acces
 		httpClient.Transport = http.DefaultTransport
 	}
 	if oauthBaseURL == "" {
-		oauthBaseURL = constants.ZaloBaseURL
+		oauthBaseURL = constants.ZaloOAuthBaseURL
 	}
 	return &ZaloClient{
 		client:       httpClient,

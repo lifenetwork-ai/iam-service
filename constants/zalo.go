@@ -1,6 +1,6 @@
 package constants
 
 const (
-	ZaloOAuthBaseURL = "https://oauth.zaloapp.com/v4"
+	ZaloOAuthBaseURL = "https://oauth.zaloapp.com"
 	ZaloBaseURL      = "https://business.openapi.zalo.me"
 )

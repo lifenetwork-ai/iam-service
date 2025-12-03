@@ -65,7 +65,7 @@ func (u *smsTokenUseCase) CreateOrUpdateZaloToken(ctx context.Context, tenantID 
 	if accessToken == "" {
 		logger.GetLogger().Info("Access token not provided, refreshing...")
 
-		cli, err := client.NewZaloClient(ctx, constants.ZaloBaseURL, secretKey, appID, "", refreshToken)
+		cli, err := client.NewZaloClient(ctx, constants.ZaloOAuthBaseURL, secretKey, appID, "", refreshToken)
 		if err != nil {
 			return domainerrors.WrapInternal(err, "MSG_PROVIDER_BOOTSTRAP_FAIL", "Failed to bootstrap Zalo client")
 		}
@@ -132,7 +132,7 @@ func (u *smsTokenUseCase) RefreshZaloToken(ctx context.Context, tenantID uuid.UU
 		return domainerrors.WrapInternal(err, "MSG_DECRYPT_TOKEN_FAILED", "Failed to decrypt token")
 	}
 
-	cli, err := client.NewZaloClient(ctx, constants.ZaloBaseURL, decrypted.SecretKey, decrypted.AppID, "", refreshToken)
+	cli, err := client.NewZaloClient(ctx, constants.ZaloOAuthBaseURL, decrypted.SecretKey, decrypted.AppID, "", refreshToken)
 	if err != nil {
 		return domainerrors.WrapInternal(err, "MSG_PROVIDER_BOOTSTRAP_FAIL", "Failed to bootstrap Zalo client")
 	}
