@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-
 	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
 	domainerrors "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/errors"
 )
