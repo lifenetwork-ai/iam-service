@@ -1,12 +1,20 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type ZaloToken struct {
-	ID           uint   `gorm:"primaryKey"`
-	AccessToken  string `gorm:"type:text;not null"`
-	RefreshToken string `gorm:"type:text;not null"`
-	ExpiresAt    time.Time
+	ID           uint      `gorm:"primaryKey"`
+	TenantID     uuid.UUID `gorm:"type:uuid;not null;uniqueIndex"`
+	AppID        string    `gorm:"type:varchar(255);not null"`
+	SecretKey    string    `gorm:"type:text;not null"`
+	AccessToken  string    `gorm:"type:text;not null"`
+	RefreshToken string    `gorm:"type:text;not null"`
+	ExpiresAt    time.Time `gorm:"not null"`
+	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
 

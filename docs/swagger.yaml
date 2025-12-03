@@ -143,6 +143,22 @@ definitions:
     - name
     - public_url
     type: object
+  dto.CreateZaloTokenRequestDTO:
+    properties:
+      access_token:
+        description: Optional
+        type: string
+      app_id:
+        type: string
+      refresh_token:
+        type: string
+      secret_key:
+        type: string
+    required:
+    - app_id
+    - refresh_token
+    - secret_key
+    type: object
   dto.DelegateAccessRequestDTO:
     properties:
       identifier:
@@ -349,6 +365,8 @@ definitions:
   dto.ZaloTokenResponseDTO:
     properties:
       access_token:
+        type: string
+      app_id:
         type: string
       expires_at:
         type: string
@@ -607,7 +625,13 @@ paths:
     get:
       consumes:
       - application/json
-      description: Perform a health check against the Zalo API using current token
+      description: Perform a health check against the Zalo API using tenant's token
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -617,6 +641,10 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -627,10 +655,48 @@ paths:
       tags:
       - sms
   /api/v1/admin/sms/zalo/token:
+    delete:
+      consumes:
+      - application/json
+      description: Delete Zalo token configuration for a specific tenant
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete Zalo token
+      tags:
+      - sms
     get:
       consumes:
       - application/json
-      description: Get Zalo token
+      description: Get Zalo token for a specific tenant
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -638,6 +704,10 @@ paths:
           description: Zalo token
           schema:
             $ref: '#/definitions/dto.ZaloTokenResponseDTO'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -647,6 +717,44 @@ paths:
       summary: Get Zalo token
       tags:
       - sms
+    post:
+      consumes:
+      - application/json
+      description: Create or update Zalo token configuration including app credentials
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
+      - description: Create Zalo token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateZaloTokenRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Create or update Zalo token
+      tags:
+      - sms
   /api/v1/admin/sms/zalo/token/refresh:
     post:
       consumes:
@@ -654,6 +762,11 @@ paths:
       description: Refresh the Zalo access token using the refresh token and return
         the new token details
       parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-Id
+        required: true
+        type: string
       - description: Refresh Zalo token request
         in: body
         name: request
@@ -667,6 +780,10 @@ paths:
           description: Refreshed Zalo token
           schema:
             $ref: '#/definitions/dto.RefreshZaloTokenResponseDTO'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -744,6 +861,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
       summary: Create a new tenant
       tags:
       - tenants
@@ -777,6 +896,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
       summary: Delete a tenant
       tags:
       - tenants
@@ -853,6 +974,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
       summary: Update a tenant
       tags:
       - tenants
