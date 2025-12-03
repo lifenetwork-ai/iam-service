@@ -12,6 +12,9 @@ type SmsTokenUseCase interface {
 	// GetZaloToken retrieves token for a specific tenant
 	GetZaloToken(ctx context.Context, tenantID uuid.UUID) (*domain.ZaloToken, *domainerrors.DomainError)
 
+	// GetEncryptedZaloToken retrieves token for a specific tenant
+	GetEncryptedZaloToken(ctx context.Context, tenantID uuid.UUID) (*domain.ZaloToken, *domainerrors.DomainError)
+
 	// CreateOrUpdateZaloToken creates/updates Zalo config for a tenant
 	// If accessToken is empty, automatically refreshes using refreshToken
 	CreateOrUpdateZaloToken(ctx context.Context, tenantID uuid.UUID, appID, secretKey, refreshToken, accessToken string) *domainerrors.DomainError

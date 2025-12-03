@@ -29,6 +29,15 @@ func NewSmsTokenUseCase(zaloRepository domainrepo.ZaloTokenRepository, dbEncrypt
 	}
 }
 
+// GetEncryptedZaloToken retrieves token for a specific tenant
+func (u *smsTokenUseCase) GetEncryptedZaloToken(ctx context.Context, tenantID uuid.UUID) (*domain.ZaloToken, *domainerrors.DomainError) {
+	token, err := u.zaloRepository.Get(ctx, tenantID)
+	if err != nil {
+		return nil, domainerrors.NewInternalError("MSG_GET_TOKEN_FAILED", "Failed to get token")
+	}
+	return token, nil
+}
+
 // GetZaloToken retrieves token for a specific tenant
 func (u *smsTokenUseCase) GetZaloToken(ctx context.Context, tenantID uuid.UUID) (*domain.ZaloToken, *domainerrors.DomainError) {
 	token, err := u.zaloRepository.Get(ctx, tenantID)
@@ -47,8 +56,8 @@ func (u *smsTokenUseCase) GetZaloToken(ctx context.Context, tenantID uuid.UUID) 
 // CreateOrUpdateZaloToken creates/updates Zalo config for a tenant
 // If accessToken is empty, automatically refreshes using refreshToken
 func (u *smsTokenUseCase) CreateOrUpdateZaloToken(ctx context.Context, tenantID uuid.UUID, appID, secretKey, refreshToken, accessToken string) *domainerrors.DomainError {
-	if appID == "" || secretKey == "" || refreshToken == "" {
-		return domainerrors.NewValidationError("MSG_INVALID_REQUEST", "app_id, secret_key, and refresh_token are required", nil)
+	if appID == "" || secretKey == "" || refreshToken == "" || tenantID == uuid.Nil {
+		return domainerrors.NewValidationError("MSG_INVALID_REQUEST", "app_id, secret_key, refresh_token, and tenant_id are required", nil)
 	}
 
 	// If access token not provided or empty, refresh to get a fresh one
@@ -76,8 +85,8 @@ func (u *smsTokenUseCase) CreateOrUpdateZaloToken(ctx context.Context, tenantID 
 		}
 		expiresAt = time.Now().Add(time.Duration(expiresIn) * time.Second)
 	} else {
-		// If access token provided, assume it expires in 90 days (Zalo default)
-		expiresAt = time.Now().Add(90 * 24 * time.Hour)
+		// If access token provided, assume it expires in 6 hours
+		expiresAt = time.Now().Add(6 * time.Hour)
 	}
 
 	// Create/update token

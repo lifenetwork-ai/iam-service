@@ -34,7 +34,7 @@ func (r *zaloTokenRepository) Save(ctx context.Context, token *domain.ZaloToken)
 	if token.CreatedAt.IsZero() {
 		token.CreatedAt = time.Now()
 	}
-	return r.db.WithContext(ctx).Save(token).Error
+	return r.db.WithContext(ctx).Model(domain.ZaloToken{}).Where("tenant_id = ?", token.TenantID).Updates(token).Error
 }
 
 // GetAll retrieves all tokens (for the refresh worker)

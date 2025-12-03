@@ -28,12 +28,20 @@ func (c *ZaloTokenCrypto) Encrypt(ctx context.Context, token *domain.ZaloToken) 
 	if err != nil {
 		return nil, err
 	}
+	encryptedSecret, err := utils.Encrypt(key, token.SecretKey)
+	if err != nil {
+		return nil, err
+	}
 	return &domain.ZaloToken{
 		ID:           token.ID,
 		AccessToken:  encryptedAccess,
 		RefreshToken: encryptedRefresh,
+		SecretKey:    encryptedSecret,
+		AppID:        token.AppID,
+		TenantID:     token.TenantID,
 		UpdatedAt:    token.UpdatedAt,
 		ExpiresAt:    token.ExpiresAt,
+		CreatedAt:    token.CreatedAt,
 	}, nil
 }
 
@@ -48,10 +56,17 @@ func (c *ZaloTokenCrypto) Decrypt(ctx context.Context, token *domain.ZaloToken) 
 	if err != nil {
 		return nil, err
 	}
+	decryptedSecret, err := utils.Decrypt(key, token.SecretKey)
+	if err != nil {
+		return nil, err
+	}
 	return &domain.ZaloToken{
 		ID:           token.ID,
 		AccessToken:  decryptedAccess,
 		RefreshToken: decryptedRefresh,
+		SecretKey:    decryptedSecret,
+		AppID:        token.AppID,
+		TenantID:     token.TenantID,
 		UpdatedAt:    token.UpdatedAt,
 		ExpiresAt:    token.ExpiresAt,
 	}, nil

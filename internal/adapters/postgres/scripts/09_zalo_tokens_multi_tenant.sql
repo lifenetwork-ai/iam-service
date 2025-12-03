@@ -1,50 +1,25 @@
 -- *** START: Add Tenant Support to Zalo Tokens *** --
 
--- 1. ADD NEW COLUMNS (Idempotent)
--- Add tenant_id column if it doesn't exist
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 
-        FROM information_schema.columns 
-        WHERE table_name = 'zalo_tokens' 
-        AND column_name = 'tenant_id'
-        AND table_schema = 'public'
-    ) THEN
-        ALTER TABLE zalo_tokens 
-        ADD COLUMN tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
-        RAISE NOTICE 'Added tenant_id column to zalo_tokens';
-    ELSE
-        RAISE NOTICE 'Column tenant_id already exists';
-    END IF;
-END $$;
+-- 1. ADD NEW COLUMNS (with IF NOT EXISTS checks)
+ALTER TABLE zalo_tokens 
+ADD COLUMN IF NOT EXISTS app_id VARCHAR(255),
+ADD COLUMN IF NOT EXISTS secret_key VARCHAR(255),
+ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP;
 
--- 2. MAKE TENANT_ID NOT NULL (After you manually set values)
--- Uncomment this block after you've set tenant_id for all existing records
+-- 2. MAKE COLUMNS NOT NULL (Uncomment after setting values for existing records)
 /*
-DO $$ 
-BEGIN
-    IF EXISTS (
-        SELECT 1 
-        FROM information_schema.columns 
-        WHERE table_name = 'zalo_tokens' 
-        AND column_name = 'tenant_id'
-        AND is_nullable = 'YES'
-        AND table_schema = 'public'
-    ) THEN
-        ALTER TABLE zalo_tokens 
-        ALTER COLUMN tenant_id SET NOT NULL;
-        RAISE NOTICE 'Set tenant_id to NOT NULL';
-    ELSE
-        RAISE NOTICE 'tenant_id is already NOT NULL';
-    END IF;
-END $$;
+ALTER TABLE zalo_tokens 
+ALTER COLUMN app_id SET NOT NULL,
+ALTER COLUMN secret_key SET NOT NULL,
+ALTER COLUMN tenant_id SET NOT NULL;
 */
 
-
--- 4. CREATE INDEXES (Idempotent)
+-- 3. CREATE INDEXES
 CREATE UNIQUE INDEX IF NOT EXISTS idx_zalo_tokens_tenant_id 
     ON zalo_tokens(tenant_id);
     
 CREATE INDEX IF NOT EXISTS idx_zalo_tokens_expires_at 
     ON zalo_tokens(expires_at);
+

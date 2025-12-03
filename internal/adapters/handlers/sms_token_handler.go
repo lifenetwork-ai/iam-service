@@ -41,14 +41,16 @@ func (h *SmsTokenHandler) GetZaloToken(c *gin.Context) {
 		return
 	}
 
-	token, derr := h.uc.GetZaloToken(c.Request.Context(), tenant.ID)
+	token, derr := h.uc.GetEncryptedZaloToken(c.Request.Context(), tenant.ID)
 	if derr != nil {
 		httpresponse.Error(c, http.StatusInternalServerError, derr.Code, derr.Message, nil)
 		return
 	}
 
 	resp := dto.ZaloTokenResponseDTO{
+		TenantID:     token.TenantID.String(),
 		AppID:        token.AppID,
+		SecretKey:    token.SecretKey,
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 		ExpiresAt:    token.ExpiresAt.Local().Format(time.RFC3339),
