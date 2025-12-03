@@ -560,6 +560,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Create a new tenant with the provided details",
                 "consumes": [
                     "application/json"
@@ -665,6 +670,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Update a tenant's details",
                 "consumes": [
                     "application/json"
@@ -728,6 +738,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Delete a tenant and all associated data",
                 "consumes": [
                     "application/json"

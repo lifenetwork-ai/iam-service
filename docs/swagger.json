@@ -553,6 +553,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Create a new tenant with the provided details",
                 "consumes": [
                     "application/json"
@@ -658,6 +663,11 @@
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Update a tenant's details",
                 "consumes": [
                     "application/json"
@@ -721,6 +731,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Delete a tenant and all associated data",
                 "consumes": [
                     "application/json"

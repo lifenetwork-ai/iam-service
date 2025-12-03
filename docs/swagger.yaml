@@ -861,6 +861,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
       summary: Create a new tenant
       tags:
       - tenants
@@ -894,6 +896,8 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
       summary: Delete a tenant
       tags:
       - tenants
@@ -970,6 +974,8 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BasicAuth: []
       summary: Update a tenant
       tags:
       - tenants
