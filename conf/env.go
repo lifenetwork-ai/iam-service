@@ -93,7 +93,7 @@ var configuration Configuration
 // NOTE: when adding a new env, you need to add it to the defaultConfigurations map
 // TODO: add a way remove this behavior
 var defaultConfigurations = map[string]any{
-	"REDIS_ADDRESS":                  "localhost:6379",
+	"REDIS_ADDRESS":                  "	localhost:6379",
 	"REDIS_TTL":                      "60",
 	"APP_PORT":                       "8080",
 	"ENV_FILE":                       ".env",
@@ -104,6 +104,7 @@ var defaultConfigurations = map[string]any{
 	"DB_HOST":                        "localhost",
 	"DB_PORT":                        "5432",
 	"DB_NAME":                        "human-network-iam",
+	"AUTO_MIGRATE":                   "false",
 	"DB_MAX_IDLE_CONNS":              "5",
 	"DB_MAX_OPEN_CONNS":              "15",
 	"DB_CONN_MAX_LIFETIME_IN_MINUTE": "60",
