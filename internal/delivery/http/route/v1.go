@@ -43,6 +43,7 @@ func RegisterRoutes(
 		smsRouter.Use(middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware())
 		smsRouter.POST("/zalo/token", smsTokenHandler.CreateOrUpdateZaloToken)
 		smsRouter.GET("/zalo/token", smsTokenHandler.GetZaloToken)
+		smsRouter.GET("/zalo/token-raw", smsTokenHandler.GetZaloRawToken)
 		smsRouter.POST("/zalo/token/refresh", smsTokenHandler.RefreshZaloToken)
 		smsRouter.DELETE("/zalo/token", smsTokenHandler.DeleteZaloToken)
 		smsRouter.GET("/zalo/health", smsTokenHandler.GetZaloHealth)
