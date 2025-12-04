@@ -23,6 +23,31 @@ func NewSmsTokenHandler(uc interfaces.SmsTokenUseCase, smsService *sms.SMSServic
 	return &SmsTokenHandler{uc: uc, smsService: smsService, zaloTokenRepo: zaloTokenRepo}
 }
 
+func (h *SmsTokenHandler) GetZaloRawToken(c *gin.Context) {
+	tenant, err := middleware.GetTenantFromContext(c)
+	if err != nil {
+		httpresponse.Error(c, http.StatusBadRequest, "MSG_TENANT_NOT_FOUND", "Tenant not found in context", nil)
+		return
+	}
+
+	token, derr := h.uc.GetZaloToken(c.Request.Context(), tenant.ID)
+	if derr != nil {
+		httpresponse.Error(c, http.StatusInternalServerError, derr.Code, derr.Message, nil)
+		return
+	}
+
+	resp := dto.ZaloTokenResponseDTO{
+		TenantID:     token.TenantID.String(),
+		AppID:        token.AppID,
+		SecretKey:    token.SecretKey,
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		ExpiresAt:    token.ExpiresAt.Local().Format(time.RFC3339),
+		UpdatedAt:    token.UpdatedAt.Local().Format(time.RFC3339),
+	}
+	httpresponse.Success(c, http.StatusOK, resp)
+}
+
 // @Summary Get Zalo token
 // @Description Get Zalo token for a specific tenant
 // @Security BasicAuth
@@ -48,13 +73,13 @@ func (h *SmsTokenHandler) GetZaloToken(c *gin.Context) {
 	}
 
 	resp := dto.ZaloTokenResponseDTO{
-		TenantID:     token.TenantID.String(),
-		AppID:        token.AppID,
-		SecretKey:    token.SecretKey,
-		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
-		ExpiresAt:    token.ExpiresAt.Local().Format(time.RFC3339),
-		UpdatedAt:    token.UpdatedAt.Local().Format(time.RFC3339),
+		TenantID:    token.TenantID.String(),
+		AppID:       token.AppID,
+		SecretKey:   token.SecretKey,
+		AccessToken: token.AccessToken,
+		// RefreshToken: token.RefreshToken,
+		ExpiresAt: token.ExpiresAt.Local().Format(time.RFC3339),
+		UpdatedAt: token.UpdatedAt.Local().Format(time.RFC3339),
 	}
 	httpresponse.Success(c, http.StatusOK, resp)
 }

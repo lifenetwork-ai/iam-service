@@ -2247,6 +2247,9 @@ const docTemplate = `{
                 "app_id": {
                     "type": "string"
                 },
+                "otp_template_id": {
+                    "type": "string"
+                },
                 "refresh_token": {
                     "type": "string"
                 },
@@ -2566,6 +2569,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "refresh_token": {
+                    "type": "string"
+                },
+                "secret_key": {
+                    "type": "string"
+                },
+                "tenant_id": {
                     "type": "string"
                 },
                 "updated_at": {
