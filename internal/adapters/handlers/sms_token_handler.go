@@ -48,13 +48,13 @@ func (h *SmsTokenHandler) GetZaloToken(c *gin.Context) {
 	}
 
 	resp := dto.ZaloTokenResponseDTO{
-		TenantID:     token.TenantID.String(),
-		AppID:        token.AppID,
-		SecretKey:    token.SecretKey,
-		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
-		ExpiresAt:    token.ExpiresAt.Local().Format(time.RFC3339),
-		UpdatedAt:    token.UpdatedAt.Local().Format(time.RFC3339),
+		TenantID:    token.TenantID.String(),
+		AppID:       token.AppID,
+		SecretKey:   token.SecretKey,
+		AccessToken: token.AccessToken,
+		// RefreshToken: token.RefreshToken,
+		ExpiresAt: token.ExpiresAt.Local().Format(time.RFC3339),
+		UpdatedAt: token.UpdatedAt.Local().Format(time.RFC3339),
 	}
 	httpresponse.Success(c, http.StatusOK, resp)
 }
