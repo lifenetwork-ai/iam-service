@@ -103,12 +103,52 @@ func (h *SmsTokenHandler) GetZaloHealth(c *gin.Context) {
 		return
 	}
 
+	// Fast mode: do not call external Zalo API; only report local token expiry status
+	if c.Query("fast") == "true" {
+		token, derr := h.uc.GetZaloToken(c.Request.Context(), tenant.ID)
+		if derr != nil {
+			httpresponse.Error(c, http.StatusInternalServerError, derr.Code, derr.Message, nil)
+			return
+		}
+		remaining := time.Until(token.ExpiresAt)
+		if remaining < 0 {
+			remaining = 0
+		}
+		status := "expired"
+		if remaining > 0 {
+			status = "healthy"
+		}
+		resp := map[string]string{
+			"status":     status,
+			"expires_in": remaining.Truncate(time.Second).String(),
+			"expires_at": token.ExpiresAt.Local().Format(time.RFC3339),
+		}
+		httpresponse.Success(c, http.StatusOK, resp)
+		return
+	}
+
+	// Full mode: call external Zalo API to verify token works
 	if derr := h.uc.ZaloHealthCheck(c.Request.Context(), tenant.ID); derr != nil {
 		httpresponse.Error(c, http.StatusInternalServerError, "MSG_ZALO_HEALTH_FAIL", derr.Error(), nil)
 		return
 	}
 
-	httpresponse.Success(c, http.StatusOK, map[string]string{"status": "healthy"})
+	// Include time until token expiry in response
+	token, derr := h.uc.GetZaloToken(c.Request.Context(), tenant.ID)
+	if derr != nil {
+		httpresponse.Error(c, http.StatusInternalServerError, derr.Code, derr.Message, nil)
+		return
+	}
+	remaining := time.Until(token.ExpiresAt)
+	if remaining < 0 {
+		remaining = 0
+	}
+	resp := map[string]string{
+		"status":     "healthy",
+		"expires_in": remaining.Truncate(time.Second).String(),
+		"expires_at": token.ExpiresAt.Local().Format(time.RFC3339),
+	}
+	httpresponse.Success(c, http.StatusOK, resp)
 }
 
 // CreateOrUpdateZaloToken creates or updates Zalo token configuration for a tenant
