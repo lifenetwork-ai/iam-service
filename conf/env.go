@@ -67,12 +67,8 @@ type DevReviewerConfiguration struct {
 }
 
 type ZaloConfiguration struct {
-	ZaloBaseURL      string `mapstructure:"ZALO_BASE_URL"`
-	ZaloSecretKey    string `mapstructure:"ZALO_SECRET_KEY"`
-	ZaloAppID        string `mapstructure:"ZALO_APP_ID"`
-	ZaloTemplateID   int    `mapstructure:"ZALO_TEMPLATE_ID"`
-	ZaloAccessToken  string `mapstructure:"ZALO_ACCESS_TOKEN"`
-	ZaloRefreshToken string `mapstructure:"ZALO_REFRESH_TOKEN"`
+	ZaloBaseURL       string `mapstructure:"ZALO_BASE_URL"`
+	ZaloRefreshWindow string `mapstructure:"ZALO_REFRESH_WINDOW"`
 }
 
 type SpeedSMSConfiguration struct {
@@ -93,7 +89,7 @@ var configuration Configuration
 // NOTE: when adding a new env, you need to add it to the defaultConfigurations map
 // TODO: add a way remove this behavior
 var defaultConfigurations = map[string]any{
-	"REDIS_ADDRESS":                  "	localhost:6379",
+	"REDIS_ADDRESS":                  "localhost:6379",
 	"REDIS_TTL":                      "60",
 	"APP_PORT":                       "8080",
 	"ENV_FILE":                       ".env",
@@ -124,12 +120,8 @@ var defaultConfigurations = map[string]any{
 	"DEV_REVIEWER_BYPASS":            "false",
 	"DEV_REVIEWER_MAGIC_OTP":         "123456",
 	"DEV_REVIEWER_IDENTIFIER":        "",
-	"ZALO_ACCESS_TOKEN":              "",
 	"ZALO_BASE_URL":                  "https://business.openapi.zalo.me",
-	"ZALO_TEMPLATE_ID":               "",
-	"ZALO_REFRESH_TOKEN":             "",
-	"ZALO_SECRET_KEY":                "",
-	"ZALO_APP_ID":                    "",
+	"ZALO_REFRESH_WINDOW":            "4h30m",
 	"GENETICA_SPEEDSMS_ACCESS_TOKEN": "",
 	"LIFE_SPEEDSMS_ACCESS_TOKEN":     "",
 	"SPEEDSMS_BASE_URL":              "https://api.speedsms.vn/index.php",

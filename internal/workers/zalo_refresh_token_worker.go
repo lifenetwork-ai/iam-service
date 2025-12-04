@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/client"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
@@ -40,9 +41,13 @@ func (w *zaloRefreshTokenWorker) Name() string {
 	return "zalo-refresh-token-worker"
 }
 
-// Start periodically retries failed OTP deliveries
+// Start periodically refresh Zalo tokens across tenants
 func (w *zaloRefreshTokenWorker) Start(ctx context.Context, interval time.Duration) {
 	logger.GetLogger().Infof("[%s] started with interval %s", w.Name(), interval.String())
+
+	// Run once immediately on start
+	go w.safeProcess(ctx)
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -90,9 +95,31 @@ func (w *zaloRefreshTokenWorker) processZaloToken(ctx context.Context) {
 		return
 	}
 
-	// Refresh all tokens on each tick to ensure periodic rotation regardless of expiry
-	toRefresh := tokens
-	logger.GetLogger().Infof("[%s] refreshing %d token(s) this tick", w.Name(), len(toRefresh))
+	// Only refresh tokens that are expired or will expire within the next 10 minutes
+	now := time.Now()
+	// Configurable refresh window, defaults to 10m if unset/invalid
+	window := 10 * time.Minute
+	if s := conf.GetConfiguration().Sms.Zalo.ZaloRefreshWindow; s != "" {
+		if d, err := time.ParseDuration(s); err == nil && d > 0 {
+			window = d
+		} else {
+			logger.GetLogger().Warnf("[%s] invalid ZALO_REFRESH_WINDOW=%q, using default %s", w.Name(), s, window.String())
+		}
+	}
+	cutoff := now.Add(window)
+	var toRefresh []*domain.ZaloToken
+	for _, t := range tokens {
+		if t.ExpiresAt.Before(cutoff) { // includes expired
+			toRefresh = append(toRefresh, t)
+		}
+	}
+
+	if len(toRefresh) == 0 {
+		logger.GetLogger().Infof("[%s] no tokens expiring within %s; skipping this tick", w.Name(), window.String())
+		return
+	}
+
+	logger.GetLogger().Infof("[%s] refreshing %d token(s) this tick (expiring before %s)", w.Name(), len(toRefresh), cutoff.Format(time.RFC3339))
 
 	// Refresh each tenant's token
 	for _, token := range toRefresh {
