@@ -52,12 +52,16 @@ func (f *fakeZaloTokenRepo) Delete(ctx context.Context, tenantID uuid.UUID) erro
 // fakeTenantRepo maps a name to a fixed tenant
 type fakeTenantRepo struct{ id uuid.UUID }
 
-func (f *fakeTenantRepo) Create(tenant *domain.Tenant) error                     { return nil }
-func (f *fakeTenantRepo) Update(tenant *domain.Tenant) error                     { return nil }
-func (f *fakeTenantRepo) Delete(id uuid.UUID) error                              { return nil }
-func (f *fakeTenantRepo) GetByID(id uuid.UUID) (*domain.Tenant, error)           { return &domain.Tenant{ID: id, Name: "tenant"}, nil }
-func (f *fakeTenantRepo) List() ([]*domain.Tenant, error)                        { return nil, nil }
-func (f *fakeTenantRepo) GetByName(name string) (*domain.Tenant, error)          { return &domain.Tenant{ID: f.id, Name: name}, nil }
+func (f *fakeTenantRepo) Create(tenant *domain.Tenant) error { return nil }
+func (f *fakeTenantRepo) Update(tenant *domain.Tenant) error { return nil }
+func (f *fakeTenantRepo) Delete(id uuid.UUID) error          { return nil }
+func (f *fakeTenantRepo) GetByID(id uuid.UUID) (*domain.Tenant, error) {
+	return &domain.Tenant{ID: id, Name: "tenant"}, nil
+}
+func (f *fakeTenantRepo) List() ([]*domain.Tenant, error) { return nil, nil }
+func (f *fakeTenantRepo) GetByName(name string) (*domain.Tenant, error) {
+	return &domain.Tenant{ID: f.id, Name: name}, nil
+}
 
 // stubTransport rewrites requests to the Zalo OAuth host to a test server
 type stubTransport struct {
@@ -160,25 +164,23 @@ func TestZaloProvider_RefreshOnSendOTP(t *testing.T) {
 	repo := &fakeZaloTokenRepo{}
 	crypto := common.NewZaloTokenCrypto(conf.GetConfiguration().DbEncryptionKey)
 	plaintext := &domain.ZaloToken{
-		ID:           1,
-		TenantID:     tenantID,
-		AppID:        "app-123",
-		SecretKey:    "sek-xyz",
-		AccessToken:  "oldAT",
-		RefreshToken: "oldRT",
-		ExpiresAt:    time.Now().Add(1 * time.Hour), // not near expiry to avoid proactive refresh
-		UpdatedAt:    time.Now(),
+		ID:            1,
+		TenantID:      tenantID,
+		AppID:         "app-123",
+		SecretKey:     "sek-xyz",
+		AccessToken:   "oldAT",
+		RefreshToken:  "oldRT",
+		OtpTemplateID: "123",
+		ExpiresAt:     time.Now().Add(1 * time.Hour), // not near expiry to avoid proactive refresh
+		UpdatedAt:     time.Now(),
 	}
 	encrypted, err := crypto.Encrypt(context.Background(), plaintext)
 	require.NoError(t, err)
 	repo.stored = encrypted
 
-	// Provider configuration; base URL points to our test server
+	// Provider configuration; only base URL is required
 	cfg := conf.ZaloConfiguration{
-		ZaloBaseURL:    baseSrv.URL,
-		ZaloSecretKey:  "dummy",
-		ZaloAppID:      "dummy",
-		ZaloTemplateID: 123,
+		ZaloBaseURL: baseSrv.URL,
 	}
 
 	prov, err := NewZaloProvider(context.Background(), cfg, repo, &fakeTenantRepo{id: tenantID})
@@ -205,4 +207,3 @@ func TestZaloProvider_RefreshOnSendOTP(t *testing.T) {
 	require.Equal(t, "newAT", decrypted.AccessToken)
 	require.Equal(t, "newRT", decrypted.RefreshToken)
 }
-

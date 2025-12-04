@@ -41,8 +41,8 @@ func NewSMSProviderFactory(config *conf.SmsConfiguration, zaloTokenRepo domainre
 		factory.providers[constants.ChannelWhatsApp] = provider.NewWhatsAppProvider(config.Whatsapp)
 	}
 
-	// Initialize Zalo provider
-	if config.Zalo.ZaloAppID != "" {
+	// Initialize Zalo provider if base URL configured; per-tenant credentials are in DB
+	if config.Zalo.ZaloBaseURL != "" {
 		zaloProvider, err := provider.NewZaloProvider(context.Background(), config.Zalo, zaloTokenRepo, tenantRepo)
 		if err != nil {
 			logger.GetLogger().Errorf("Failed to create Zalo provider: %v", err)
