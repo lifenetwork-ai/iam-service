@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/client"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
@@ -40,9 +41,13 @@ func (w *zaloRefreshTokenWorker) Name() string {
 	return "zalo-refresh-token-worker"
 }
 
-// Start periodically retries failed OTP deliveries
+// Start periodically refresh Zalo tokens across tenants
 func (w *zaloRefreshTokenWorker) Start(ctx context.Context, interval time.Duration) {
 	logger.GetLogger().Infof("[%s] started with interval %s", w.Name(), interval.String())
+
+	// Run once immediately on start
+	go w.safeProcess(ctx)
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -90,13 +95,21 @@ func (w *zaloRefreshTokenWorker) processZaloToken(ctx context.Context) {
 		return
 	}
 
-	// Only refresh tokens that are expired or will expire within the next 24 hours
+	// Only refresh tokens that are expired or will expire within the next 10 minutes
 	now := time.Now()
-	window := 24 * time.Hour
+	// Configurable refresh window, defaults to 10m if unset/invalid
+	window := 10 * time.Minute
+	if s := conf.GetConfiguration().Sms.Zalo.ZaloRefreshWindow; s != "" {
+		if d, err := time.ParseDuration(s); err == nil && d > 0 {
+			window = d
+		} else {
+			logger.GetLogger().Warnf("[%s] invalid ZALO_REFRESH_WINDOW=%q, using default %s", w.Name(), s, window.String())
+		}
+	}
 	cutoff := now.Add(window)
 	var toRefresh []*domain.ZaloToken
 	for _, t := range tokens {
-		if t.ExpiresAt.Before(cutoff) {
+		if t.ExpiresAt.Before(cutoff) { // includes expired
 			toRefresh = append(toRefresh, t)
 		}
 	}

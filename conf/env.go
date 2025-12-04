@@ -67,12 +67,13 @@ type DevReviewerConfiguration struct {
 }
 
 type ZaloConfiguration struct {
-	ZaloBaseURL      string `mapstructure:"ZALO_BASE_URL"`
-	ZaloSecretKey    string `mapstructure:"ZALO_SECRET_KEY"`
-	ZaloAppID        string `mapstructure:"ZALO_APP_ID"`
-	ZaloTemplateID   int    `mapstructure:"ZALO_TEMPLATE_ID"`
-	ZaloAccessToken  string `mapstructure:"ZALO_ACCESS_TOKEN"`
-	ZaloRefreshToken string `mapstructure:"ZALO_REFRESH_TOKEN"`
+	ZaloBaseURL       string `mapstructure:"ZALO_BASE_URL"`
+	ZaloSecretKey     string `mapstructure:"ZALO_SECRET_KEY"`
+	ZaloAppID         string `mapstructure:"ZALO_APP_ID"`
+	ZaloTemplateID    int    `mapstructure:"ZALO_TEMPLATE_ID"`
+	ZaloAccessToken   string `mapstructure:"ZALO_ACCESS_TOKEN"`
+	ZaloRefreshToken  string `mapstructure:"ZALO_REFRESH_TOKEN"`
+	ZaloRefreshWindow string `mapstructure:"ZALO_REFRESH_WINDOW"`
 }
 
 type SpeedSMSConfiguration struct {
@@ -130,6 +131,7 @@ var defaultConfigurations = map[string]any{
 	"ZALO_REFRESH_TOKEN":             "",
 	"ZALO_SECRET_KEY":                "",
 	"ZALO_APP_ID":                    "",
+	"ZALO_REFRESH_WINDOW":            "4h30m",
 	"GENETICA_SPEEDSMS_ACCESS_TOKEN": "",
 	"LIFE_SPEEDSMS_ACCESS_TOKEN":     "",
 	"SPEEDSMS_BASE_URL":              "https://api.speedsms.vn/index.php",
