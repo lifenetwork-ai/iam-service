@@ -121,7 +121,7 @@ func (z *ZaloProvider) SendOTP(ctx context.Context, tenantName, receiver, otp st
 	// Proactively refresh if near expiry
 	if time.Until(token.ExpiresAt) <= TokenRefreshGrace {
 		logger.GetLogger().Infof("Token near expiry, proactively refreshing for tenant %s", tenantName)
-		if err := z.refreshAndSaveToken(ctx, token.RefreshToken, tenantID); err != nil {
+		if _, err := z.refreshAndSaveToken(ctx, token.RefreshToken, tenantID); err != nil {
 			logger.GetLogger().Warnf("Failed to proactively refresh token: %v", err)
 			// Continue anyway, might still work
 		} else {
@@ -196,8 +196,13 @@ func (z *ZaloProvider) handleAPIResponse(ctx context.Context, cli *client.ZaloCl
 
 		// Get current refresh token
 		refreshToken := cli.GetRefreshToken(ctx)
-		if err := z.refreshAndSaveToken(ctx, refreshToken, tenantID); err != nil {
+		// Refresh tokens, persist to DB, and update in-memory client so immediate retry uses fresh tokens
+		newTokens, err := z.refreshAndSaveToken(ctx, refreshToken, tenantID)
+		if err != nil {
 			return err
+		}
+		if err := cli.UpdateTokens(ctx, newTokens); err != nil {
+			return fmt.Errorf("failed to update in-memory client tokens: %w", err)
 		}
 		return fmt.Errorf("access token was invalid and refreshed, retry needed")
 	default:
@@ -207,11 +212,11 @@ func (z *ZaloProvider) handleAPIResponse(ctx context.Context, cli *client.ZaloCl
 
 // refreshAndSaveToken refreshes tokens via the client and persists them.
 // Caller MUST hold z.mu.
-func (z *ZaloProvider) refreshAndSaveToken(ctx context.Context, refreshToken string, tenantID uuid.UUID) error {
+func (z *ZaloProvider) refreshAndSaveToken(ctx context.Context, refreshToken string, tenantID uuid.UUID) (*client.ZaloTokenRefreshResponse, error) {
 	// Get token details to get AppID and SecretKey
 	token, err := z.getTokenFromDB(ctx, tenantID)
 	if err != nil {
-		return fmt.Errorf("failed to get token details: %w", err)
+		return nil, fmt.Errorf("failed to get token details: %w", err)
 	}
 
 	// Create a temporary client for refresh
@@ -224,15 +229,18 @@ func (z *ZaloProvider) refreshAndSaveToken(ctx context.Context, refreshToken str
 		refreshToken,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create client for refresh: %w", err)
+		return nil, fmt.Errorf("failed to create client for refresh: %w", err)
 	}
 
 	resp, err := cli.RefreshAccessToken(ctx, refreshToken)
 	if err != nil {
-		return fmt.Errorf("failed to refresh access token: %w", err)
+		return nil, fmt.Errorf("failed to refresh access token: %w", err)
 	}
 
-	return z.saveTokenToDB(ctx, resp, tenantID)
+	if err := z.saveTokenToDB(ctx, resp, tenantID); err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // getTokenFromDB gets the Zalo token from the database and decrypts it
@@ -259,17 +267,21 @@ func (z *ZaloProvider) saveTokenToDB(ctx context.Context, resp *client.ZaloToken
 		return fmt.Errorf("failed to convert expiresIn to int: %w", err)
 	}
 
-	// First get existing token to preserve ID, AppID, SecretKey
-	existingToken, err := z.tokenRepo.Get(ctx, tenantID)
+	// First get and decrypt existing token to preserve ID and real AppID/SecretKey
+	existingEncrypted, err := z.tokenRepo.Get(ctx, tenantID)
 	if err != nil {
 		return fmt.Errorf("failed to get existing token: %w", err)
 	}
+	existingDecrypted, err := z.zaloTokenCryptoService.Decrypt(ctx, existingEncrypted)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt existing token: %w", err)
+	}
 
 	dbToken := &domain.ZaloToken{
-		ID:           existingToken.ID,
+		ID:           existingEncrypted.ID,
 		TenantID:     tenantID,
-		AppID:        existingToken.AppID,
-		SecretKey:    existingToken.SecretKey,
+		AppID:        existingDecrypted.AppID,
+		SecretKey:    existingDecrypted.SecretKey,
 		AccessToken:  resp.AccessToken,
 		RefreshToken: resp.RefreshToken,
 		ExpiresAt:    time.Now().Add(time.Duration(expiresIn) * time.Second),

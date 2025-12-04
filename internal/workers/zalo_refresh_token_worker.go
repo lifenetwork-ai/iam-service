@@ -90,9 +90,23 @@ func (w *zaloRefreshTokenWorker) processZaloToken(ctx context.Context) {
 		return
 	}
 
-	// Refresh all tokens on each tick to ensure periodic rotation regardless of expiry
-	toRefresh := tokens
-	logger.GetLogger().Infof("[%s] refreshing %d token(s) this tick", w.Name(), len(toRefresh))
+	// Only refresh tokens that are expired or will expire within the next 24 hours
+	now := time.Now()
+	window := 24 * time.Hour
+	cutoff := now.Add(window)
+	var toRefresh []*domain.ZaloToken
+	for _, t := range tokens {
+		if t.ExpiresAt.Before(cutoff) {
+			toRefresh = append(toRefresh, t)
+		}
+	}
+
+	if len(toRefresh) == 0 {
+		logger.GetLogger().Infof("[%s] no tokens expiring within %s; skipping this tick", w.Name(), window.String())
+		return
+	}
+
+	logger.GetLogger().Infof("[%s] refreshing %d token(s) this tick (expiring before %s)", w.Name(), len(toRefresh), cutoff.Format(time.RFC3339))
 
 	// Refresh each tenant's token
 	for _, token := range toRefresh {
