@@ -126,6 +126,7 @@ func (h *adminHandler) GetTenant(ctx *gin.Context) {
 
 // CreateTenant creates a new tenant
 // @Summary Create a new tenant
+// @Security BasicAuth
 // @Description Create a new tenant with the provided details
 // @Tags tenants
 // @Accept json
@@ -161,6 +162,7 @@ func (h *adminHandler) CreateTenant(ctx *gin.Context) {
 
 // UpdateTenant updates an existing tenant
 // @Summary Update a tenant
+// @Security BasicAuth
 // @Description Update a tenant's details
 // @Tags tenants
 // @Accept json
@@ -210,6 +212,7 @@ func (h *adminHandler) UpdateTenant(ctx *gin.Context) {
 
 // DeleteTenant deletes a tenant
 // @Summary Delete a tenant
+// @Security BasicAuth
 // @Description Delete a tenant and all associated data
 // @Tags tenants
 // @Accept json

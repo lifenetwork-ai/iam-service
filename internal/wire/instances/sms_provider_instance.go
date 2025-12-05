@@ -16,9 +16,9 @@ var (
 )
 
 // SMSServiceInstance returns a singleton instance of the SMS service
-func SMSServiceInstance(zaloTokenRepo domainrepo.ZaloTokenRepository) *sms.SMSService {
+func SMSServiceInstance(zaloTokenRepo domainrepo.ZaloTokenRepository, tenantRepo domainrepo.TenantRepository) *sms.SMSService {
 	smsServiceOnce.Do(func() {
-		service, err := sms.NewSMSService(conf.GetSmsConfiguration(), zaloTokenRepo)
+		service, err := sms.NewSMSService(conf.GetSmsConfiguration(), zaloTokenRepo, tenantRepo)
 		if err != nil {
 			logger.GetLogger().Errorf("Failed to create SMS service: %v", err)
 			smsServiceErr = err

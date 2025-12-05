@@ -5,6 +5,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/infrastructures/caching/types"
 	"github.com/lifenetwork-ai/iam-service/internal/adapters/repositories"
 	keto "github.com/lifenetwork-ai/iam-service/internal/adapters/services/keto"
@@ -77,7 +78,7 @@ func InitializeUseCases(db *gorm.DB, repos *Repos, cacheRepo types.CacheReposito
 		),
 		TenantUCase:     ucases.NewTenantUseCase(repos.TenantRepo),
 		PermissionUCase: ucases.NewPermissionUseCase(keto.NewKetoService(repos.TenantRepo), repos.UserIdentityRepo),
-		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background()), instances.SMSServiceInstance(repos.ZaloTokenRepo), repos.CacheRepo),
-		SmsTokenUCase:   ucases.NewSmsTokenUseCase(repos.ZaloTokenRepo),
+		CourierUCase:    ucases.NewCourierUseCase(instances.OTPQueueRepositoryInstance(context.Background()), instances.SMSServiceInstance(repos.ZaloTokenRepo, repos.TenantRepo), repos.CacheRepo),
+		SmsTokenUCase:   ucases.NewSmsTokenUseCase(repos.ZaloTokenRepo, conf.GetConfiguration().DbEncryptionKey),
 	}
 }

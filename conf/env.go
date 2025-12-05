@@ -67,12 +67,9 @@ type DevReviewerConfiguration struct {
 }
 
 type ZaloConfiguration struct {
-	ZaloBaseURL      string `mapstructure:"ZALO_BASE_URL"`
-	ZaloSecretKey    string `mapstructure:"ZALO_SECRET_KEY"`
-	ZaloAppID        string `mapstructure:"ZALO_APP_ID"`
-	ZaloTemplateID   int    `mapstructure:"ZALO_TEMPLATE_ID"`
-	ZaloAccessToken  string `mapstructure:"ZALO_ACCESS_TOKEN"`
-	ZaloRefreshToken string `mapstructure:"ZALO_REFRESH_TOKEN"`
+	ZaloBaseURL              string `mapstructure:"ZALO_BASE_URL"`
+	ZaloRefreshWindow        string `mapstructure:"ZALO_REFRESH_WINDOW"`
+	ZaloDisableRefreshWorker bool   `mapstructure:"ZALO_DISABLE_REFRESH_WORKER"`
 }
 
 type SpeedSMSConfiguration struct {
@@ -104,6 +101,7 @@ var defaultConfigurations = map[string]any{
 	"DB_HOST":                        "localhost",
 	"DB_PORT":                        "5432",
 	"DB_NAME":                        "human-network-iam",
+	"AUTO_MIGRATE":                   "false",
 	"DB_MAX_IDLE_CONNS":              "5",
 	"DB_MAX_OPEN_CONNS":              "15",
 	"DB_CONN_MAX_LIFETIME_IN_MINUTE": "60",
@@ -120,15 +118,12 @@ var defaultConfigurations = map[string]any{
 	"WHATSAPP_ACCESS_TOKEN":          "",
 	"TWILIO_BASE_URL":                "https://api.twilio.com/2010-04-01",
 	"WHATSAPP_BASE_URL":              "https://graph.facebook.com/v22.0",
-	"DEV_REVIEWER_BYPASS":            "false",
+	"DEV_REVIEWER_BYPASS":            false,
 	"DEV_REVIEWER_MAGIC_OTP":         "123456",
 	"DEV_REVIEWER_IDENTIFIER":        "",
-	"ZALO_ACCESS_TOKEN":              "",
 	"ZALO_BASE_URL":                  "https://business.openapi.zalo.me",
-	"ZALO_TEMPLATE_ID":               "",
-	"ZALO_REFRESH_TOKEN":             "",
-	"ZALO_SECRET_KEY":                "",
-	"ZALO_APP_ID":                    "",
+	"ZALO_REFRESH_WINDOW":            "4h30m",
+	"ZALO_DISABLE_REFRESH_WORKER":    false,
 	"GENETICA_SPEEDSMS_ACCESS_TOKEN": "",
 	"LIFE_SPEEDSMS_ACCESS_TOKEN":     "",
 	"SPEEDSMS_BASE_URL":              "https://api.speedsms.vn/index.php",
