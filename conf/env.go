@@ -67,8 +67,9 @@ type DevReviewerConfiguration struct {
 }
 
 type ZaloConfiguration struct {
-	ZaloBaseURL       string `mapstructure:"ZALO_BASE_URL"`
-	ZaloRefreshWindow string `mapstructure:"ZALO_REFRESH_WINDOW"`
+	ZaloBaseURL              string `mapstructure:"ZALO_BASE_URL"`
+	ZaloRefreshWindow        string `mapstructure:"ZALO_REFRESH_WINDOW"`
+	ZaloDisableRefreshWorker bool   `mapstructure:"ZALO_DISABLE_REFRESH_WORKER"`
 }
 
 type SpeedSMSConfiguration struct {
@@ -122,6 +123,7 @@ var defaultConfigurations = map[string]any{
 	"DEV_REVIEWER_IDENTIFIER":        "",
 	"ZALO_BASE_URL":                  "https://business.openapi.zalo.me",
 	"ZALO_REFRESH_WINDOW":            "4h30m",
+	"ZALO_DISABLE_REFRESH_WORKER":    "false",
 	"GENETICA_SPEEDSMS_ACCESS_TOKEN": "",
 	"LIFE_SPEEDSMS_ACCESS_TOKEN":     "",
 	"SPEEDSMS_BASE_URL":              "https://api.speedsms.vn/index.php",
