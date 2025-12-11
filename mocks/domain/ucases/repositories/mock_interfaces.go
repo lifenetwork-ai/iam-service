@@ -653,3 +653,85 @@ func (mr *MockUserIdentityRepositoryMockRecorder) Update(tx, identity any) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserIdentityRepository)(nil).Update), tx, identity)
 }
+
+// MockZaloTokenRepository is a mock of ZaloTokenRepository interface.
+type MockZaloTokenRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockZaloTokenRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockZaloTokenRepositoryMockRecorder is the mock recorder for MockZaloTokenRepository.
+type MockZaloTokenRepositoryMockRecorder struct {
+	mock *MockZaloTokenRepository
+}
+
+// NewMockZaloTokenRepository creates a new mock instance.
+func NewMockZaloTokenRepository(ctrl *gomock.Controller) *MockZaloTokenRepository {
+	mock := &MockZaloTokenRepository{ctrl: ctrl}
+	mock.recorder = &MockZaloTokenRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockZaloTokenRepository) EXPECT() *MockZaloTokenRepositoryMockRecorder {
+	return m.recorder
+}
+
+// Delete mocks base method.
+func (m *MockZaloTokenRepository) Delete(ctx context.Context, tenantID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, tenantID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockZaloTokenRepositoryMockRecorder) Delete(ctx, tenantID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockZaloTokenRepository)(nil).Delete), ctx, tenantID)
+}
+
+// Get mocks base method.
+func (m *MockZaloTokenRepository) Get(ctx context.Context, tenantID uuid.UUID) (*domain.ZaloToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, tenantID)
+	ret0, _ := ret[0].(*domain.ZaloToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockZaloTokenRepositoryMockRecorder) Get(ctx, tenantID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockZaloTokenRepository)(nil).Get), ctx, tenantID)
+}
+
+// GetAll mocks base method.
+func (m *MockZaloTokenRepository) GetAll(ctx context.Context) ([]*domain.ZaloToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAll", ctx)
+	ret0, _ := ret[0].([]*domain.ZaloToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAll indicates an expected call of GetAll.
+func (mr *MockZaloTokenRepositoryMockRecorder) GetAll(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockZaloTokenRepository)(nil).GetAll), ctx)
+}
+
+// Save mocks base method.
+func (m *MockZaloTokenRepository) Save(ctx context.Context, token *domain.ZaloToken) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Save", ctx, token)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Save indicates an expected call of Save.
+func (mr *MockZaloTokenRepositoryMockRecorder) Save(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockZaloTokenRepository)(nil).Save), ctx, token)
+}

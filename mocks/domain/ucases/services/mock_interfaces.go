@@ -450,15 +450,15 @@ func (m *MockSMSProvider) EXPECT() *MockSMSProviderMockRecorder {
 }
 
 // SendOTP mocks base method.
-func (m *MockSMSProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, message string, ttl time.Duration) error {
+func (m *MockSMSProvider) SendOTP(ctx context.Context, tenantName, receiver, channel, message string, ttl time.Duration, lang string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendOTP", ctx, tenantName, receiver, channel, message, ttl)
+	ret := m.ctrl.Call(m, "SendOTP", ctx, tenantName, receiver, channel, message, ttl, lang)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SendOTP indicates an expected call of SendOTP.
-func (mr *MockSMSProviderMockRecorder) SendOTP(ctx, tenantName, receiver, channel, message, ttl any) *gomock.Call {
+func (mr *MockSMSProviderMockRecorder) SendOTP(ctx, tenantName, receiver, channel, message, ttl, lang any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendOTP", reflect.TypeOf((*MockSMSProvider)(nil).SendOTP), ctx, tenantName, receiver, channel, message, ttl)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendOTP", reflect.TypeOf((*MockSMSProvider)(nil).SendOTP), ctx, tenantName, receiver, channel, message, ttl, lang)
 }

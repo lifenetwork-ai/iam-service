@@ -25,7 +25,7 @@ func NewWhatsAppProvider(config conf.WhatsappConfiguration) SMSProvider {
 	}
 }
 
-func (w *WhatsAppProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error {
+func (w *WhatsAppProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration, _ string) error {
 	logger.GetLogger().Infof("Sending OTP to %s via WhatsApp", receiver)
 
 	message := common.GetOTPMessage(tenantName, otp, ttl)

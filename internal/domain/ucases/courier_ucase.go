@@ -228,6 +228,17 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver st
 		})
 	}
 
+	lang, usecaseErr := u.GetChannel(ctx, tenantName, receiver)
+	if usecaseErr != nil {
+		return usecaseErr
+	}
+
+	if lang.Channel == "" {
+		return domainerrors.NewInternalError("MSG_CHANNEL_NOT_FOUND", "Channel not found").WithDetails([]any{
+			map[string]string{"channel": channel.Channel},
+		})
+	}
+
 	// Get OTP from queue
 	item, err := u.queue.Get(ctx, tenantName, receiver)
 	if err != nil {
@@ -242,7 +253,7 @@ func (u *courierUseCase) DeliverOTP(ctx context.Context, tenantName, receiver st
 	}()
 
 	// Attempt to send OTP
-	if err := u.smsProvider.SendOTP(ctx, tenantName, receiver, channel.Channel, item.Message, u.defaultTTL); err != nil {
+	if err := u.smsProvider.SendOTP(ctx, tenantName, receiver, channel.Channel, item.Message, u.defaultTTL, item.Lang); err != nil {
 		logger.GetLogger().Errorf("Failed to deliver OTP to %s via %s: %v", receiver, channel.Channel, err)
 		// Prepare retry task
 		retryTask := otpqueue.RetryTask{
@@ -281,7 +292,7 @@ func (u *courierUseCase) RetryFailedOTPs(ctx context.Context, now time.Time) (in
 			logger.GetLogger().Infof("Retrying OTP to %s | Retry #%d", currentTask.Receiver, currentTask.RetryCount)
 
 			// Try sending
-			err := u.smsProvider.SendOTP(ctx, currentTask.TenantName, currentTask.Receiver, currentTask.Channel, currentTask.Message, u.defaultTTL)
+			err := u.smsProvider.SendOTP(ctx, currentTask.TenantName, currentTask.Receiver, currentTask.Channel, currentTask.Message, u.defaultTTL, "")
 			if err != nil {
 				if currentTask.RetryCount < constants.MaxOTPRetryCount {
 					// Retry again - do NOT delete

@@ -23,7 +23,7 @@ func NewSpeedSMSProvider(conf conf.SpeedSMSConfiguration) SMSProvider {
 	}
 }
 
-func (s *SpeedSMSProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error {
+func (s *SpeedSMSProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration, lang string) error {
 	var brandname client.SpeedSMSBrandname
 	var smsClient *client.SpeedSMSClient
 
@@ -36,7 +36,7 @@ func (s *SpeedSMSProvider) SendOTP(ctx context.Context, tenantName, receiver, ot
 		smsClient = s.geneticaClient
 	}
 
-	resp, err := smsClient.SendOTP(receiver, otp, brandname)
+	resp, err := smsClient.SendOTP(receiver, otp, brandname, lang)
 	if err != nil {
 		return fmt.Errorf("failed to send SMS via SpeedSMS for tenant %s: %w", tenantName, err)
 	}

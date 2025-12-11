@@ -25,7 +25,7 @@ func NewTwilioProvider(config conf.TwilioConfiguration) SMSProvider {
 	}
 }
 
-func (t *TwilioProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error {
+func (t *TwilioProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration, _ string) error {
 	logger.GetLogger().Infof("Sending SMS to %s via Twilio", receiver)
 
 	message := common.GetOTPMessage(tenantName, otp, ttl)

@@ -89,14 +89,14 @@ func NewSMSService(config *conf.SmsConfiguration, zaloTokenRepo domainrepo.ZaloT
 }
 
 // SendOTP sends an OTP through the specified channel
-func (s *SMSService) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration) error {
+func (s *SMSService) SendOTP(ctx context.Context, tenantName, receiver, channel, otp string, ttl time.Duration, lang string) error {
 	logger.GetLogger().Infof("Sending OTP to %s via channel %s", receiver, channel)
 
 	provider, err := s.factory.GetProvider(channel)
 	if err != nil {
 		return fmt.Errorf("failed to get provider for channel %s: %w", channel, err)
 	}
-	return provider.SendOTP(ctx, tenantName, receiver, otp, ttl)
+	return provider.SendOTP(ctx, tenantName, receiver, otp, ttl, lang)
 }
 
 // GetSupportedChannels returns all supported channels

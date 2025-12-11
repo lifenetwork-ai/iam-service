@@ -137,8 +137,8 @@ func (c *SpeedSMSClient) SendSingleSMS(phone, content string, smsType int, sende
 }
 
 // SendOTP sends OTP message with custom content
-func (c *SpeedSMSClient) SendOTP(phone, otp string, brandname SpeedSMSBrandname) (*SpeedSMSResponse, error) {
-	content := otpContent(otp, brandname, "en")
+func (c *SpeedSMSClient) SendOTP(phone, otp string, brandname SpeedSMSBrandname, lang string) (*SpeedSMSResponse, error) {
+	content := otpContent(otp, brandname, lang)
 	return c.SendSingleSMS(phone, content, SMSTypeBrandname, brandname)
 }
 

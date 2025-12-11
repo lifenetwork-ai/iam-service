@@ -7,7 +7,7 @@ import (
 
 // SMSProvider defines the interface that all SMS providers must implement
 type SMSProvider interface {
-	SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error
+	SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration, lang string) error
 	RefreshToken(ctx context.Context, refreshToken string) error
 	GetChannelType() string
 	HealthCheck(ctx context.Context) error

@@ -93,7 +93,7 @@ func (z *ZaloProvider) getTenantIDFromName(_ context.Context, tenantName string)
 }
 
 // Core public methods
-func (z *ZaloProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error {
+func (z *ZaloProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration, _ string) error {
 	logger.GetLogger().Infof("Sending OTP to %s via Zalo for tenant %s", receiver, tenantName)
 
 	// Convert tenant name to ID

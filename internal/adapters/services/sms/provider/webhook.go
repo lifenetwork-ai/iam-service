@@ -22,7 +22,7 @@ func NewWebhookProvider() SMSProvider {
 	return &WebhookProvider{}
 }
 
-func (w *WebhookProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration) error {
+func (w *WebhookProvider) SendOTP(ctx context.Context, tenantName, receiver, otp string, ttl time.Duration, _ string) error {
 	logger.GetLogger().Infof("Sending OTP to %s via webhook", receiver)
 
 	url := conf.GetMockWebhookURL()

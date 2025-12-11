@@ -10,6 +10,7 @@ type OTPQueueItem struct {
 	Receiver   string    `json:"receiver"`
 	Message    string    `json:"message"`
 	TenantName string    `json:"tenant_name"`
+	Lang       string    `json:"lang"`
 	CreatedAt  time.Time `json:"created_at"`
 }
 
@@ -18,6 +19,7 @@ type RetryTask struct {
 	Message    string    `json:"message"`
 	Channel    string    `json:"channel"`
 	TenantName string    `json:"tenant_name"`
+	Lang       string    `json:"lang"`
 	RetryCount int       `json:"retry_count"`
 	ReadyAt    time.Time `json:"ready_at"` // used for memory impl
 }

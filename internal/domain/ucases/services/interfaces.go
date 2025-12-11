@@ -57,5 +57,5 @@ type KetoService interface {
 }
 
 type SMSProvider interface {
-	SendOTP(ctx context.Context, tenantName, receiver, channel, message string, ttl time.Duration) error
+	SendOTP(ctx context.Context, tenantName, receiver, channel, message string, ttl time.Duration, lang string) error
 }
