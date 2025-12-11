@@ -7,5 +7,4 @@ type ChallengeSession struct {
 	Identifier     string `json:"identifier"`
 	ChallengeType  string `json:"challenge_type"`
 	OTP            string `json:"otp"`
-	Lang           string `json:"lang"`
 }
