@@ -149,4 +149,7 @@ func otpContent(otp string, brandname SpeedSMSBrandname, lang string) string {
 	case constants.VietnameseLanguage:
 		return fmt.Sprintf("%s la ma OTP cua ban tai %s.", otp, brandname)
 	}
+
+	// Default to English
+	return fmt.Sprintf("Your OTP number at %s is %s.", brandname, otp)
 }
