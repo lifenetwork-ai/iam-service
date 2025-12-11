@@ -138,6 +138,15 @@ func (c *SpeedSMSClient) SendSingleSMS(phone, content string, smsType int, sende
 
 // SendOTP sends OTP message with custom content
 func (c *SpeedSMSClient) SendOTP(phone, otp string, brandname SpeedSMSBrandname) (*SpeedSMSResponse, error) {
-	content := fmt.Sprintf("%s la ma OTP cua ban tai %s", otp, brandname)
+	content := otpContent(otp, brandname, "en")
 	return c.SendSingleSMS(phone, content, SMSTypeBrandname, brandname)
+}
+
+func otpContent(otp string, brandname SpeedSMSBrandname, lang string) string {
+	switch lang {
+	case constants.EnglishLanguage:
+		return fmt.Sprintf("Your OTP number at %s is %s.", brandname, otp)
+	case constants.VietnameseLanguage:
+		return fmt.Sprintf("%s la ma OTP cua ban tai %s.", otp, brandname)
+	}
 }

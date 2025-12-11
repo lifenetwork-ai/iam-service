@@ -92,7 +92,8 @@ func (u *userUseCase) ChallengeWithPhone(
 	}
 
 	// Check if the identifier exists in the database
-	if _, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierPhone.String(), phone); err != nil {
+	identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierPhone.String(), phone)
+	if err != nil {
 		// Dev bypass logic
 		if conf.IsDevReviewerBypassEnabled() && phone == conf.DevReviewerIdentifier() {
 			// Create identity with traits
@@ -113,6 +114,12 @@ func (u *userUseCase) ChallengeWithPhone(
 		}
 	}
 
+	// get lang
+	identityLang, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, identity.GlobalUserID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to get identity")
+	}
+
 	// Initialize login flow with Kratos
 	flow, err := u.kratosService.InitializeLoginFlow(ctx, tenantID)
 	if err != nil {
@@ -128,6 +135,7 @@ func (u *userUseCase) ChallengeWithPhone(
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
 		IdentifierType: constants.IdentifierPhone.String(),
 		Identifier:     phone,
+		Lang:           identityLang.Lang,
 	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
@@ -174,13 +182,20 @@ func (u *userUseCase) ChallengeWithEmail(
 	}
 
 	// Check if the identifier exists in the database
-	if _, err = u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierEmail.String(), email); err != nil {
+	identity, err := u.userIdentityRepo.GetByTypeAndValue(ctx, nil, tenantID.String(), constants.IdentifierEmail.String(), email)
+	if err != nil {
 		return nil, domainerrors.NewNotFoundError("MSG_IDENTITY_NOT_FOUND", "Email not registered in the system").WithDetails([]interface{}{
 			map[string]string{
 				"field": "email",
 				"error": "Email not registered in the system",
 			},
 		})
+	}
+
+	// get lang
+	identityLang, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, identity.GlobalUserID)
+	if err != nil {
+		return nil, domainerrors.WrapInternal(err, "MSG_VERIFICATION_FLOW_FAILED", "Failed to get identity")
 	}
 
 	// Initialize login flow with Kratos
@@ -198,6 +213,7 @@ func (u *userUseCase) ChallengeWithEmail(
 	err = u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, &domain.ChallengeSession{
 		IdentifierType: constants.IdentifierEmail.String(),
 		Identifier:     email,
+		Lang:           identityLang.Lang,
 	}, constants.DefaultChallengeDuration)
 	if err != nil {
 		return nil, domainerrors.WrapInternal(err, "MSG_SAVING_SESSION_FAILED", "Saving challenge session failed")
@@ -675,6 +691,7 @@ func (u *userUseCase) Register(
 		ChallengeType:  constants.ChallengeTypeRegister,
 		Identifier:     identifierValue,
 		IdentifierType: identifierType,
+		Lang:           lang,
 	}
 
 	if err := u.challengeSessionRepo.SaveChallenge(ctx, flow.Id, session, constants.DefaultChallengeDuration); err != nil {
@@ -924,7 +941,8 @@ func (u *userUseCase) AddNewIdentifier(
 	traits[identifierType] = identifier
 
 	// Try to fetch lang from mapping (if available)
-	if mapping, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, globalUserID); err == nil && mapping != nil {
+	mapping, err := u.userIdentifierMappingRepo.GetByGlobalUserID(ctx, globalUserID)
+	if err == nil && mapping != nil {
 		if lang := strings.TrimSpace(mapping.Lang); lang != "" {
 			traits["lang"] = lang
 		}
