@@ -13,9 +13,9 @@ func GetOTPMessage(tenantName, otp string, _ time.Duration) string {
 	// Select client and brandname based on tenant
 	var normalizedTenantName string
 	if tenantName == constants.TenantLifeAI {
-		normalizedTenantName = constants.TenantLifeAI
+		normalizedTenantName = constants.LifeBrandname
 	} else {
-		normalizedTenantName = constants.TenantGenetica
+		normalizedTenantName = constants.GeneticaBrandname
 	}
 	buf := bytes.Buffer{}
 	err := SMSOTPTemplate.Execute(&buf, map[string]any{

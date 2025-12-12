@@ -29,10 +29,10 @@ func (s *SpeedSMSProvider) SendOTP(ctx context.Context, tenantName, receiver, ot
 
 	// Select client and brandname based on tenant
 	if tenantName == constants.TenantLifeAI {
-		brandname = client.LifeBrandname
+		brandname = constants.LifeBrandname
 		smsClient = s.lifeClient
 	} else {
-		brandname = client.GeneticaBrandname
+		brandname = constants.GeneticaBrandname
 		smsClient = s.geneticaClient
 	}
 
