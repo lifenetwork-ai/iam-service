@@ -5,13 +5,21 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 func GetOTPMessage(tenantName, otp string, _ time.Duration) string {
+	// Select client and brandname based on tenant
+	var normalizedTenantName string
+	if tenantName == constants.TenantLifeAI {
+		normalizedTenantName = constants.TenantLifeAI
+	} else {
+		normalizedTenantName = constants.TenantGenetica
+	}
 	buf := bytes.Buffer{}
 	err := SMSOTPTemplate.Execute(&buf, map[string]any{
-		"TenantName": tenantName,
+		"TenantName": normalizedTenantName,
 		"OTP":        otp,
 	})
 	if err != nil {
