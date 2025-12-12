@@ -12,11 +12,6 @@ import (
 
 type SpeedSMSBrandname string
 
-const (
-	GeneticaBrandname SpeedSMSBrandname = "GENETICA"
-	LifeBrandname     SpeedSMSBrandname = "LIFE AI"
-)
-
 // SpeedSMSResponse represents the API response structure
 type SpeedSMSResponse struct {
 	Status string `json:"status"`
