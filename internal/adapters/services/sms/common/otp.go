@@ -5,15 +5,22 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/constants"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
-func GetOTPMessage(tenantName, otp string, ttl time.Duration) string {
+func GetOTPMessage(tenantName, otp string, _ time.Duration) string {
+	// Select client and brandname based on tenant
+	var normalizedTenantName string
+	if tenantName == constants.TenantLifeAI {
+		normalizedTenantName = constants.LifeBrandname
+	} else {
+		normalizedTenantName = constants.GeneticaBrandname
+	}
 	buf := bytes.Buffer{}
-	err := OTPTemplate.Execute(&buf, map[string]any{
-		"TenantName": tenantName,
+	err := SMSOTPTemplate.Execute(&buf, map[string]any{
+		"TenantName": normalizedTenantName,
 		"OTP":        otp,
-		"TTL":        int64(ttl.Minutes()),
 	})
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to execute OTP template: %v", err)

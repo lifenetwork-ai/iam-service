@@ -36,13 +36,17 @@ func RegisterRoutes(
 	}
 
 	// Admin SMS/Zalo token management
-	smsTokenHandler := handlers.NewSmsTokenHandler(ucases.SmsTokenUCase, instances.SMSServiceInstance(repos.ZaloTokenRepo), repos.ZaloTokenRepo)
+	smsTokenHandler := handlers.NewSmsTokenHandler(ucases.SmsTokenUCase, instances.SMSServiceInstance(repos.ZaloTokenRepo, repos.TenantRepo), repos.ZaloTokenRepo)
 	smsRouter := adminRouter.Group("sms")
 	{
-		smsRouter.Use(middleware.RootAuthMiddleware())
-		smsRouter.GET("/zalo/health", smsTokenHandler.GetZaloHealth)
+		smsRouter.Use(middleware.AdminAuthMiddleware(repos.AdminAccountRepo))
+		smsRouter.Use(middleware.NewXHeaderValidationMiddleware(repos.TenantRepo).Middleware())
+		smsRouter.POST("/zalo/token", smsTokenHandler.CreateOrUpdateZaloToken)
 		smsRouter.GET("/zalo/token", smsTokenHandler.GetZaloToken)
+		smsRouter.GET("/zalo/token-raw", smsTokenHandler.GetZaloRawToken)
 		smsRouter.POST("/zalo/token/refresh", smsTokenHandler.RefreshZaloToken)
+		smsRouter.DELETE("/zalo/token", smsTokenHandler.DeleteZaloToken)
+		smsRouter.GET("/zalo/health", smsTokenHandler.GetZaloHealth)
 	}
 
 	// Admin Identifier Management subgroup

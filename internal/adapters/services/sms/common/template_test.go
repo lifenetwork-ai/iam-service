@@ -26,12 +26,8 @@ func TestOTPTemplate(t *testing.T) {
 				TTL:        1,
 			},
 			expected: []string{
-				"Dear Valued Customer",
 				"TestApp",
-				"*123456*",
-				"*1* minute.",
-				"Do not share this OTP",
-				"TestApp takes your account security",
+				"123456",
 			},
 		},
 		{
@@ -42,12 +38,8 @@ func TestOTPTemplate(t *testing.T) {
 				TTL:        5,
 			},
 			expected: []string{
-				"Dear Valued Customer",
 				"MyCompany",
-				"*789012*",
-				"*5* minutes.",
-				"Do not share this OTP",
-				"MyCompany takes your account security",
+				"789012",
 			},
 		},
 		{
@@ -59,8 +51,7 @@ func TestOTPTemplate(t *testing.T) {
 			},
 			expected: []string{
 				"ZeroApp",
-				"*000000*",
-				"*0* minutes.",
+				"000000",
 			},
 		},
 		{
@@ -72,8 +63,7 @@ func TestOTPTemplate(t *testing.T) {
 			},
 			expected: []string{
 				"LongApp",
-				"*999888*",
-				"*15* minutes.",
+				"999888",
 			},
 		},
 	}
@@ -81,7 +71,7 @@ func TestOTPTemplate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := OTPTemplate.Execute(&buf, tt.data)
+			err := SMSOTPTemplate.Execute(&buf, tt.data)
 			if err != nil {
 				t.Fatalf("Template execution failed: %v", err)
 			}

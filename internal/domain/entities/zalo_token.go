@@ -1,13 +1,25 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type ZaloToken struct {
-	ID           uint   `gorm:"primaryKey"`
-	AccessToken  string `gorm:"type:text;not null"`
-	RefreshToken string `gorm:"type:text;not null"`
-	ExpiresAt    time.Time
-	UpdatedAt    time.Time
+	ID       uint      `gorm:"primaryKey"`
+	TenantID uuid.UUID `gorm:"type:uuid;not null;uniqueIndex"`
+	AppID    string    `gorm:"type:varchar(255);not null"`
+	// Encrypted, must be decrypted for usage
+	SecretKey string `gorm:"type:text;not null"`
+	// Encrypted, must be decrypted for usage
+	AccessToken string `gorm:"type:text;not null"`
+	// Encrypted, must be decrypted for usage
+	RefreshToken  string    `gorm:"type:text;not null"`
+	OtpTemplateID string    `gorm:"type:varchar(255)"`
+	ExpiresAt     time.Time `gorm:"not null"`
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 func (ZaloToken) TableName() string {

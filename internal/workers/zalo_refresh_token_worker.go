@@ -2,17 +2,24 @@ package workers
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/lifenetwork-ai/iam-service/conf"
 	"github.com/lifenetwork-ai/iam-service/constants"
-	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/client"
+	"github.com/lifenetwork-ai/iam-service/internal/adapters/services/sms/common"
+	domain "github.com/lifenetwork-ai/iam-service/internal/domain/entities"
+	domainrepo "github.com/lifenetwork-ai/iam-service/internal/domain/ucases/repositories"
 	"github.com/lifenetwork-ai/iam-service/internal/workers/types"
 	"github.com/lifenetwork-ai/iam-service/packages/logger"
 )
 
 type zaloRefreshTokenWorker struct {
-	smsService *sms.SMSService
+	zaloTokenRepo   domainrepo.ZaloTokenRepository
+	zaloTokenCrypto *common.ZaloTokenCrypto
 
 	mu      sync.Mutex
 	running bool
@@ -20,10 +27,12 @@ type zaloRefreshTokenWorker struct {
 
 // NewZaloRefreshTokenWorker creates a new worker instance
 func NewZaloRefreshTokenWorker(
-	smsService *sms.SMSService,
+	zaloTokenRepo domainrepo.ZaloTokenRepository,
+	dbEncryptionKey string,
 ) types.Worker {
 	return &zaloRefreshTokenWorker{
-		smsService: smsService,
+		zaloTokenRepo:   zaloTokenRepo,
+		zaloTokenCrypto: common.NewZaloTokenCrypto(dbEncryptionKey),
 	}
 }
 
@@ -32,9 +41,13 @@ func (w *zaloRefreshTokenWorker) Name() string {
 	return "zalo-refresh-token-worker"
 }
 
-// Start periodically retries failed OTP deliveries
+// Start periodically refresh Zalo tokens across tenants
 func (w *zaloRefreshTokenWorker) Start(ctx context.Context, interval time.Duration) {
 	logger.GetLogger().Infof("[%s] started with interval %s", w.Name(), interval.String())
+
+	// Run once immediately on start
+	go w.safeProcess(ctx)
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -70,17 +83,101 @@ func (w *zaloRefreshTokenWorker) safeProcess(ctx context.Context) {
 }
 
 func (w *zaloRefreshTokenWorker) processZaloToken(ctx context.Context) {
-	provider, err := w.smsService.GetProvider(constants.ChannelZalo)
+	// Fetch all tokens and refresh only those expiring within the next 24 hours
+	tokens, err := w.zaloTokenRepo.GetAll(ctx)
 	if err != nil {
-		logger.GetLogger().Errorf("[%s] failed to get zalo provider: %v", w.Name(), err)
+		logger.GetLogger().Errorf("[%s] failed to fetch tokens for refresh: %v", w.Name(), err)
 		return
 	}
 
-	err = provider.RefreshToken(ctx, "")
-	if err != nil {
-		logger.GetLogger().Errorf("[%s] failed to refresh zalo token: %v", w.Name(), err)
+	if len(tokens) == 0 {
+		logger.GetLogger().Infof("[%s] no tokens to evaluate for refresh", w.Name())
 		return
 	}
 
-	logger.GetLogger().Infof("[%s] refreshed zalo token", w.Name())
+	// Only refresh tokens that are expired or will expire within the next 10 minutes
+	now := time.Now()
+	// Configurable refresh window, defaults to 10m if unset/invalid
+	window := 10 * time.Minute
+	if s := conf.GetConfiguration().Sms.Zalo.ZaloRefreshWindow; s != "" {
+		if d, err := time.ParseDuration(s); err == nil && d > 0 {
+			window = d
+		} else {
+			logger.GetLogger().Warnf("[%s] invalid ZALO_REFRESH_WINDOW=%q, using default %s", w.Name(), s, window.String())
+		}
+	}
+	cutoff := now.Add(window)
+	var toRefresh []*domain.ZaloToken
+	for _, t := range tokens {
+		if t.ExpiresAt.Before(cutoff) { // includes expired
+			toRefresh = append(toRefresh, t)
+		}
+	}
+
+	if len(toRefresh) == 0 {
+		logger.GetLogger().Infof("[%s] no tokens expiring within %s; skipping this tick", w.Name(), window.String())
+		return
+	}
+
+	logger.GetLogger().Infof("[%s] refreshing %d token(s) this tick (expiring before %s)", w.Name(), len(toRefresh), cutoff.Format(time.RFC3339))
+
+	// Refresh each tenant's token
+	for _, token := range toRefresh {
+		if err := w.refreshTokenForTenant(ctx, token); err != nil {
+			logger.GetLogger().Errorf("[%s] failed to refresh token for tenant %s: %v", w.Name(), token.TenantID, err)
+			// Continue with other tenants even if one fails
+			continue
+		}
+		logger.GetLogger().Infof("[%s] successfully refreshed token for tenant %s", w.Name(), token.TenantID)
+	}
+}
+
+func (w *zaloRefreshTokenWorker) refreshTokenForTenant(ctx context.Context, token *domain.ZaloToken) error {
+	// Decrypt token to get credentials
+	decrypted, err := w.zaloTokenCrypto.Decrypt(ctx, token)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt token: %w", err)
+	}
+
+	// Use Zalo OAuth base URL
+	cli, err := client.NewZaloClient(ctx, constants.ZaloBaseURL, decrypted.SecretKey, decrypted.AppID, "", decrypted.RefreshToken)
+	if err != nil {
+		return fmt.Errorf("failed to create Zalo client: %w", err)
+	}
+
+	// Call Zalo API to refresh
+	resp, err := cli.RefreshAccessToken(ctx, decrypted.RefreshToken)
+	if err != nil {
+		return fmt.Errorf("failed to refresh access token: %w", err)
+	}
+
+	// Convert expires_in string to time
+	expiresIn, convErr := strconv.Atoi(resp.ExpiresIn)
+	if convErr != nil {
+		return fmt.Errorf("invalid expires_in: %w", convErr)
+	}
+
+	// Update token with new values
+	updatedToken := &domain.ZaloToken{
+		ID:            token.ID,
+		TenantID:      token.TenantID,
+		AppID:         decrypted.AppID,
+		SecretKey:     decrypted.SecretKey,
+		AccessToken:   resp.AccessToken,
+		RefreshToken:  resp.RefreshToken,
+		OtpTemplateID: decrypted.OtpTemplateID,
+		ExpiresAt:     time.Now().Add(time.Duration(expiresIn) * time.Second),
+	}
+
+	// Encrypt and save
+	encrypted, err := w.zaloTokenCrypto.Encrypt(ctx, updatedToken)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt token: %w", err)
+	}
+
+	if err := w.zaloTokenRepo.Save(ctx, encrypted); err != nil {
+		return fmt.Errorf("failed to save token: %w", err)
+	}
+
+	return nil
 }
